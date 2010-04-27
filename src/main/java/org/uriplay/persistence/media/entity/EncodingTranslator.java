@@ -1,0 +1,99 @@
+package org.uriplay.persistence.media.entity;
+
+import java.util.List;
+import java.util.Set;
+
+import org.uriplay.media.entity.Encoding;
+import org.uriplay.media.entity.Location;
+
+import com.google.common.collect.Sets;
+import com.mongodb.BasicDBList;
+import com.mongodb.DBObject;
+
+public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
+    private final DescriptionTranslator descriptionTranslator;
+    private final LocationTranslator locationTranslator;
+    
+    public EncodingTranslator(DescriptionTranslator descriptionTranslator, LocationTranslator locationTranslator) {
+        this.descriptionTranslator = descriptionTranslator;
+        this.locationTranslator = locationTranslator;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Encoding fromDBObject(DBObject dbObject, Encoding entity) {
+        if (entity == null) {
+            entity = new Encoding();
+        }
+        
+        descriptionTranslator.fromDBObject(dbObject, entity);
+        
+        entity.setAdvertisingDuration((Integer) dbObject.get("advertisingDuration"));
+        entity.setAudioBitRate((Integer) dbObject.get("audioBitRate"));
+        entity.setAudioChannels((Integer) dbObject.get("audioChannels"));
+        entity.setAudioCoding((String) dbObject.get("audioCoding"));
+        entity.setBitRate((Integer) dbObject.get("bitRate"));
+        entity.setAudioChannels((Integer) dbObject.get("audioChannels"));
+        entity.setContainsAdvertising((Boolean) dbObject.get("containsAdvertising"));
+        entity.setDataContainerFormat((String) dbObject.get("dataContainerFormat"));
+        entity.setDataSize((Long) dbObject.get("dataSize"));
+        entity.setDistributor((String) dbObject.get("distributor"));
+        entity.setHasDOG((Boolean) dbObject.get("hasDOG"));
+        entity.setSource((String) dbObject.get("source"));
+        entity.setVideoAspectRatio((String) dbObject.get("videoAspectRatio"));
+        entity.setVideoBitRate((Integer) dbObject.get("videoBitRate"));
+        entity.setVideoCoding((String) dbObject.get("videoCoding"));
+        entity.setVideoFrameRate((Float) dbObject.get("videoFrameRate"));
+        entity.setVideoHorizontalSize((Integer) dbObject.get("videoHorizontalSize"));
+        entity.setVideoProgressiveScan((Boolean) dbObject.get("videoProgressiveScan"));
+        entity.setVideoVerticalSize((Integer) dbObject.get("videoVerticalSize"));
+        
+        List<DBObject> list = (List<DBObject>) dbObject.get("availableAt");
+        if (list != null && ! list.isEmpty()) {
+            Set<Location> locations = Sets.newHashSet();
+            for (DBObject object: list) {
+                Location location = locationTranslator.fromDBObject(object, null);
+                locations.add(location);
+            }
+            entity.setAvailableAt(locations);
+        }
+        
+        return entity;
+    }
+
+    @Override
+    public DBObject toDBObject(DBObject dbObject, Encoding entity) {
+        dbObject = descriptionTranslator.toDBObject(dbObject, entity);
+        
+        TranslatorUtils.from(dbObject, "advertisingDuration", entity.getAdvertisingDuration());
+        TranslatorUtils.from(dbObject, "audioBitRate", entity.getAudioBitRate());
+        TranslatorUtils.from(dbObject, "audioChannels", entity.getAudioChannels());
+        TranslatorUtils.from(dbObject, "audioCoding", entity.getAudioCoding());
+        TranslatorUtils.from(dbObject, "bitRate", entity.getBitRate());
+        TranslatorUtils.from(dbObject, "audioChannels", entity.getAudioChannels());
+        TranslatorUtils.from(dbObject, "containsAdvertising", entity.getContainsAdvertising());
+        TranslatorUtils.from(dbObject, "dataContainerFormat", entity.getDataContainerFormat());
+        TranslatorUtils.from(dbObject, "dataSize", entity.getDataSize());
+        TranslatorUtils.from(dbObject, "distributor", entity.getDistributor());
+        TranslatorUtils.from(dbObject, "hasDOG", entity.getHasDOG());
+        TranslatorUtils.from(dbObject, "source", entity.getSource());
+        TranslatorUtils.from(dbObject, "videoAspectRatio", entity.getVideoAspectRatio());
+        TranslatorUtils.from(dbObject, "videoBitRate", entity.getVideoBitRate());
+        TranslatorUtils.from(dbObject, "videoCoding", entity.getVideoCoding());
+        TranslatorUtils.from(dbObject, "videoFrameRate", entity.getVideoFrameRate());
+        TranslatorUtils.from(dbObject, "videoHorizontalSize", entity.getVideoHorizontalSize());
+        TranslatorUtils.from(dbObject, "videoProgressiveScan", entity.getVideoProgressiveScan());
+        TranslatorUtils.from(dbObject, "videoVerticalSize", entity.getVideoVerticalSize());
+        
+        if (! entity.getAvailableAt().isEmpty()) {
+            BasicDBList list = new BasicDBList();
+            for (Location location: entity.getAvailableAt()) {
+                list.add(locationTranslator.toDBObject(null, location));
+            }
+            dbObject.put("availableAt", list);
+        }
+        
+        return dbObject;
+    }
+
+}
