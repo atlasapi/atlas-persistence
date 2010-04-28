@@ -27,6 +27,8 @@ public class PlaylistTranslator implements DBObjectEntityTranslator<Playlist> {
         entity.setPublisher((String) dbObject.get("publisher"));
         entity.setPlaylistUris(TranslatorUtils.toList(dbObject, "playlistUris"));
         entity.setItemUris(TranslatorUtils.toList(dbObject, "itemUris"));
+        entity.setGenres(TranslatorUtils.toSet(dbObject, "genre"));
+        entity.setTags(TranslatorUtils.toSet(dbObject, "tag"));
         
         return entity;
     }
@@ -43,6 +45,8 @@ public class PlaylistTranslator implements DBObjectEntityTranslator<Playlist> {
         TranslatorUtils.fromList(dbObject, entity.getItemUris(), "itemUris");
         TranslatorUtils.fromList(dbObject, entity.getPlaylistUris(), "playlistUris");
         TranslatorUtils.fromDateTime(dbObject, "lastFetched", entity.getLastFetched());
+        TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genre");
+        TranslatorUtils.fromSet(dbObject, entity.getTags(), "tag");
         
         return dbObject;
     }

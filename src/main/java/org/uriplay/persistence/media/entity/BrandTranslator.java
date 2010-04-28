@@ -19,8 +19,6 @@ public class BrandTranslator implements DBObjectEntityTranslator<Brand> {
         
         playlistTranslator.fromDBObject(dbObject, entity);
         
-        entity.setGenres(TranslatorUtils.toSet(dbObject, "genre"));
-        
         return entity;
     }
 
@@ -28,7 +26,6 @@ public class BrandTranslator implements DBObjectEntityTranslator<Brand> {
     public DBObject toDBObject(DBObject dbObject, Brand entity) {
         dbObject = playlistTranslator.toDBObject(dbObject, entity);
         
-        TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genre");
         dbObject.put("type", Brand.class.getSimpleName());
         
         return dbObject;

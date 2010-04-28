@@ -47,6 +47,14 @@ public class PlaylistTranslatorTest extends TestCase {
         Set<String> containedInUris = Sets.newHashSet("uri");
         playlist.setContainedInUris(containedInUris);
         
+        Set<String> genres = Sets.newHashSet();
+        genres.add("genre");
+        playlist.setGenres(genres);
+        
+        Set<String> tags = Sets.newHashSet();
+        tags.add("tag");
+        playlist.setGenres(tags);
+        
         List<String> playlists = Lists.newArrayList();
         playlists.add("playlist");
         playlist.setItemUris(playlists);
@@ -65,6 +73,8 @@ public class PlaylistTranslatorTest extends TestCase {
         assertEquals(playlist.getPublisher(), p.getPublisher());
         assertEquals(playlist.getContainedInUris(), p.getContainedInUris());
         assertEquals(playlist.getPlaylistUris(), p.getPlaylistUris());
+        assertEquals(playlist.getGenres(), p.getGenres());
+        assertEquals(playlist.getTags(), p.getTags());
         
         List<String> itemUris = playlist.getItemUris();
         assertEquals(1, itemUris.size());
