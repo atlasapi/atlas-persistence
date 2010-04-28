@@ -99,6 +99,7 @@ public class DummyContentData {
 		
 		eastenders = new Brand();
 		eastenders.setDescription("Gritty drama etc.");
+		eastenders.setPublisher("bbc.co.uk");
 		eastenders.setTitle("Eastenders");
 		eastenders.setCanonicalUri("http://www.bbc.co.uk/eastenders");
 		eastenders.addItems(dotCottonsBigAdventure, peggySlapsFrank);
@@ -115,6 +116,7 @@ public class DummyContentData {
 		sellingStuff.addVersion(versionWithEmbeddableLocation());
 		
 		apprentice = new Brand();
+		apprentice.setPublisher("bbc.co.uk");
 		apprentice.setDescription("With Sir Alan Sugar");
 		apprentice.setTitle("The Apprentice");
 		apprentice.setCanonicalUri("http://www.bbc.co.uk/apprentice");
@@ -163,6 +165,7 @@ public class DummyContentData {
 		
 		newsNight = new Brand();
 		newsNight.setDescription("Interviews");
+		newsNight.setPublisher("bbc.co.uk");
 		newsNight.setTitle("Newsnight");
 		newsNight.setCanonicalUri("http://www.bbc.co.uk/newsnight");
 		newsNight.addItems( interviewWithMp);

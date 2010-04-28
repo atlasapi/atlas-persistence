@@ -121,7 +121,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		
 		Maybe<ContentQuery> brandQuery = splitter.retain(query, (Set) Sets.newHashSet(Brand.class, Playlist.class));
 		Maybe<ContentQuery> itemQuery = splitter.discard(query, (Set) Sets.newHashSet(Brand.class, Playlist.class));
-		
+
 		if (brandQuery.isNothing() && itemQuery.isNothing()) {
 			throw new IllegalArgumentException("Query is too broad");
 		}
@@ -249,7 +249,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		operands.add(Queries.equalTo(attribute, playlistUris));
 		
 		if (subElementQuery.hasValue()) {
-			operands.add(subElementQuery.requireValue());
+			operands.add(subElementQuery.requireValue().withSelection(null));
 		}
 		return new ConjunctiveQuery(operands);
 	}

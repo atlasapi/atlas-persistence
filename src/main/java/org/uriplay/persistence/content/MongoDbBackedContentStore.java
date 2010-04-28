@@ -41,7 +41,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
@@ -66,6 +65,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             }
             createOrUpdateGraph(Sets.newHashSet(desc), false);
         }
+        
     }
 
     @Override
@@ -199,7 +199,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
 
     private List<Item> executeItemQuery(DBObject query, Selection selection) {
     	
-        Iterator<DBObject> cur = cursor(query, selection);
+        Iterator<DBObject> cur = cursor(itemCollection, query, selection);
         
         if (cur == null) {
         	return Collections.emptyList();
@@ -214,11 +214,11 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         return items;
     }
 
-    private Iterator<DBObject> cursor(DBObject query, Selection selection) {
+    private Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection) {
         if (selection != null && (selection.hasLimit() || selection.hasStartIndex())) {
-            return itemCollection.find(query, new BasicDBObject(), selection.startIndexOrDefaultValue(0), hardLimit(selection));
+            return collection.find(query, new BasicDBObject(), selection.startIndexOrDefaultValue(0), hardLimit(selection));
         } else {
-            return itemCollection.find(query);
+            return collection.find(query, new BasicDBObject(), 0, DEFAULT_BATCH_SIZE);
         }
     }
 
@@ -234,27 +234,27 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
     
 	@SuppressWarnings("unchecked")
 	public List<Brand> dehydratedBrandsMatching(ContentQuery query) {
-		return (List) executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), false);
+		return (List) executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), query.getSelection(), false);
 	}    
 	
 	@SuppressWarnings("unchecked")
 	public List<Playlist> dehydratedPlaylistsMatching(ContentQuery query) {
-		return (List) executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, false);
+		return (List) executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
 	}    
 
     @Override
     public List<Playlist> findPlaylists(List<String> uris) {
-        return executePlaylistQuery(in("aliases", uris), null, true);
+        return executePlaylistQuery(in("aliases", uris), null, null, true);
     }
 
-	private List<Playlist> executePlaylistQuery(DBObject query, String type,  boolean hydrate) {
+	private List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
         List<Playlist> playlists = Lists.newArrayList();
         try {
         	
         	if (type != null) {
         		query.put("type", type);
         	}
-            DBCursor cur = playlistCollection.find(query);
+            Iterator<DBObject> cur = cursor(playlistCollection, query, selection);
             if (cur == null) {
             	return Collections.emptyList();
             }

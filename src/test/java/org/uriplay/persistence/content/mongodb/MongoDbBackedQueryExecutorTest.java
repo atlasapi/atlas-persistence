@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
+import org.jherd.util.Selection;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.attribute.Attributes;
 import org.uriplay.media.TransportType;
@@ -50,6 +51,7 @@ public class MongoDbBackedQueryExecutorTest extends BaseMongoDBTest {
     	super.setUp();
 		
     	store.createOrUpdatePlaylist(data.eastenders, true);
+    	store.createOrUpdatePlaylist(data.apprentice, true);
     	store.createOrUpdatePlaylist(data.newsNight, true);
     	store.createOrUpdatePlaylist(data.ER, true);
     	
@@ -89,6 +91,13 @@ public class MongoDbBackedQueryExecutorTest extends BaseMongoDBTest {
 	
 		// check an alias
 		checkBrandQuery(equalTo(Attributes.BRAND_URI, "http://eastenders.bbc"), data.eastenders);
+	}
+	
+	public void testSelections() throws Exception {
+		checkBrandQuery(equalTo(Attributes.BRAND_PUBLISHER, "bbc.co.uk").withSelection(new Selection(0, 3)), data.eastenders, data.apprentice, data.newsNight);
+		checkBrandQuery(equalTo(Attributes.BRAND_PUBLISHER, "bbc.co.uk").withSelection(new Selection(1, 3)), data.apprentice, data.newsNight);
+		checkBrandQuery(equalTo(Attributes.BRAND_PUBLISHER, "bbc.co.uk").withSelection(new Selection(0, 1)), data.eastenders);
+		checkBrandQuery(equalTo(Attributes.BRAND_PUBLISHER, "bbc.co.uk").withSelection(new Selection(1, 2)), data.apprentice, data.newsNight);
 	}
 	
 	public void testThatIfAnBrandIsFoundByUriOrCurieItIsNotFilteredOut() throws Exception {
@@ -178,7 +187,7 @@ public class MongoDbBackedQueryExecutorTest extends BaseMongoDBTest {
 	}
 	
 	public void testFindingAvailableItems() throws Exception {
-		checkItemQuery(equalTo(Attributes.LOCATION_AVAILABLE, true), data.brainSurgery, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.peggySlapsFrank, data.dotCottonsBigAdventure);
+		checkItemQuery(equalTo(Attributes.LOCATION_AVAILABLE, true), data.brainSurgery, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.peggySlapsFrank, data.dotCottonsBigAdventure, data.sellingStuff);
 	}
 	
 	public void testFindingAvailableAndLongFromItems() throws Exception {
@@ -242,10 +251,10 @@ public class MongoDbBackedQueryExecutorTest extends BaseMongoDBTest {
 	
 	public void testTransmittedAfterForItems() throws Exception {
 		ContentQuery query = after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april22nd1930); 
-		checkItemQuery(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.peggySlapsFrank, data.interviewWithMp, data.brainSurgery);
+		checkItemQuery(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.peggySlapsFrank, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
 		
 		query = after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april23rd); 
-		checkItemQuery(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.brainSurgery);
+		checkItemQuery(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
 	}
 	
 	private void checkItemQueryMatchesNothing(ContentQuery query) {
