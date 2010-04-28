@@ -240,6 +240,9 @@ public class MongoDBQueryBuilder {
 		if (Brand.class.equals(queryType) && Attributes.BRAND_URI.equals(attribute)) {
 			return "aliases";
 		}
+		if (Playlist.class.equals(queryType) && Attributes.PLAYLIST_URI.equals(attribute)) {
+            return "aliases";
+        }
 		return attribute.javaAttributeName() + (attribute.isCollectionOfValues() ? "s" : "");
 	}
 
