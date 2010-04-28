@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jherd.util.Maybe;
+import org.jherd.util.Selection;
 import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.MatchesNothing;
@@ -79,7 +80,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		Maybe<ContentQuery> everythingElse = splitter.discard(query, brandAndPlaylistAttributes);
 		
 		// Execute the item query but constrain results to the 
-		return executeItemQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI));
+		return executeItemQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI, query.getSelection()));
 	}
 
 	private List<Item> executeItemQueryInternal(ContentQuery query) {
@@ -113,7 +114,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		
 		Maybe<ContentQuery> everythingElse = splitter.discard(query, playlistAttributes);
 
-		return executeBrandQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI));
+		return executeBrandQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI, query.getSelection()));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -153,7 +154,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			if (brands.isEmpty()) {
 				return Lists.newArrayList();
 			}
-			items = executeItemQueryInternal(createContainedInPlaylistQuery(itemQuery, brands, Attributes.BRAND_URI));
+			items = executeItemQueryInternal(createContainedInPlaylistQuery(itemQuery, brands, Attributes.BRAND_URI, null));
 		}
 		
 		hydratePlaylists(brands, items, null);
@@ -187,7 +188,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			return Collections.emptyList();
 		}
 		
-		ContentQuery subElementsContainedIn = createContainedInPlaylistQuery(subElementQuery, playlists, Attributes.PLAYLIST_URI);
+		ContentQuery subElementsContainedIn = createContainedInPlaylistQuery(subElementQuery, playlists, Attributes.PLAYLIST_URI, null);
 		
 		
 		List<Item> items = executeItemQueryInternal(subElementsContainedIn);
@@ -240,7 +241,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		}
 	}
 
-	private ContentQuery createContainedInPlaylistQuery(Maybe<ContentQuery> subElementQuery, List<? extends Playlist> playlists, Attribute<String> attribute) {
+	private ContentQuery createContainedInPlaylistQuery(Maybe<ContentQuery> subElementQuery, List<? extends Playlist> playlists, Attribute<String> attribute, Selection selection) {
 		List<ContentQuery> operands = Lists.newArrayListWithCapacity(playlists.size());
 		Set<String> playlistUris = Sets.newHashSet();
 		for (Playlist playlist : playlists) {
@@ -251,7 +252,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		if (subElementQuery.hasValue()) {
 			operands.add(subElementQuery.requireValue().withSelection(null));
 		}
-		return new ConjunctiveQuery(operands);
+		return new ConjunctiveQuery(operands).withSelection(selection);
 	}
 	
 		
