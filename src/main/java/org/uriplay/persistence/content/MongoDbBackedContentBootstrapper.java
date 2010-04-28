@@ -14,7 +14,7 @@ import com.google.common.collect.Lists;
 
 public class MongoDbBackedContentBootstrapper implements InitializingBean {
     private static final Log log = LogFactory.getLog(MongoDbBackedContentBootstrapper.class);
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 500;
 
     private final ContentListener contentListener;
     private final ContentStore contentStore;
@@ -39,7 +39,7 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
             log.info("Bootstrapping Brands");
         }
         loadAllBrands();
-        
+
         if (log.isInfoEnabled()) {
             log.info("Bootstrapping Brands");
         }
@@ -50,6 +50,7 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
         int offset = 0;
 
         List<Item> items = Lists.newArrayList();
+        int count = 0;
         do {
             Selection selection = new Selection(offset, batchSize);
             items = contentStore.listAllItems(selection);
@@ -58,9 +59,14 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
                 contentListener.itemChanged(items, ContentListener.changeType.BOOTSTRAP);
             }
             offset += items.size();
-            
-            if (log.isInfoEnabled()) {
-                log.info("Bootstrapped "+items.size()+" items");
+
+            if (count > 10000) {
+                if (log.isInfoEnabled()) {
+                    log.info("Bootstrapped " + count + " items");
+                }
+                count = 0;
+            } else {
+                count = count + items.size();
             }
         } while (items.size() == batchSize);
     }
@@ -69,6 +75,7 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
         int offset = 0;
 
         List<Playlist> playlists = Lists.newArrayList();
+        int count = 0;
         do {
             List<Brand> brands = Lists.newArrayList();
             Selection selection = new Selection(offset, batchSize);
@@ -84,8 +91,13 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
                 contentListener.brandChanged(brands, ContentListener.changeType.BOOTSTRAP);
             }
             offset += playlists.size();
-            if (log.isInfoEnabled()) {
-                log.info("Bootstrapped "+brands.size()+" brands");
+            if (count > 10000) {
+                if (log.isInfoEnabled()) {
+                    log.info("Bootstrapped " + count + " brands");
+                }
+                count = 0;
+            } else {
+                count = count + playlists.size();
             }
         } while (playlists.size() == batchSize);
     }
