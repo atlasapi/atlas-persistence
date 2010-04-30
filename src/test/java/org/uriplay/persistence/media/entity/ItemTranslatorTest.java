@@ -56,8 +56,8 @@ public class ItemTranslatorTest extends TestCase {
         ItemTranslator it = new ItemTranslator(dt, vt);
         DBObject dbObject = it.toDBObject(null, item);
         
-        assertEquals("canonicalUri", "canonicalUri");
-        assertEquals("title", "title");
+        assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
+        assertEquals("title", dbObject.get("title"));
         
         List<String> t = (List<String>) dbObject.get("tags");
         assertFalse(t.isEmpty());

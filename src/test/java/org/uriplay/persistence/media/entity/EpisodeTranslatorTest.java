@@ -24,7 +24,7 @@ public class EpisodeTranslatorTest extends TestCase {
         episode.setEpisodeNumber(1);
         
         DBObject dbo = et.toDBObject(null, episode);
-        assertEquals("canonicalUri", dbo.get("canonicalUri"));
+        assertEquals("canonicalUri", dbo.get(DescriptionTranslator.CANONICAL_URI));
         assertEquals(1, dbo.get("episodeNumber"));
     }
     

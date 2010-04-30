@@ -34,6 +34,7 @@ import org.uriplay.media.entity.Version;
 import org.uriplay.media.util.ChildFinder;
 import org.uriplay.persistence.content.mongodb.MongoDBQueryBuilder;
 import org.uriplay.persistence.content.mongodb.MongoDBTemplate;
+import org.uriplay.persistence.media.entity.DescriptionTranslator;
 
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -107,7 +108,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             item.setLastFetched(new DateTime());
 
             DBObject query = new BasicDBObject();
-            query.put("canonicalUri", item.getCanonicalUri());
+            query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
 
             itemCollection.update(query, formatForDB(item), true, false);
         } catch (Exception e) {
@@ -155,7 +156,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             playlist.setLastFetched(new DateTime());
 
             DBObject query = new BasicDBObject();
-            query.put("canonicalUri", playlist.getCanonicalUri());
+            query.put(DescriptionTranslator.CANONICAL_URI, playlist.getCanonicalUri());
 
             playlistCollection.update(query, formatForDB(playlist), true, false);
         } catch (Exception e) {

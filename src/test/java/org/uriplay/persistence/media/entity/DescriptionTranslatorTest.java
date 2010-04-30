@@ -25,7 +25,7 @@ public class DescriptionTranslatorTest extends TestCase {
         DescriptionTranslator translator = new DescriptionTranslator();
         DBObject dbObj = translator.toDBObject(null, desc);
         
-        assertEquals("canonicalUri", dbObj.get("canonicalUri"));
+        assertEquals("canonicalUri", dbObj.get(DescriptionTranslator.CANONICAL_URI));
         assertEquals("curie", dbObj.get("curie"));
         
         List<String> a = (List<String>) dbObj.get("aliases");

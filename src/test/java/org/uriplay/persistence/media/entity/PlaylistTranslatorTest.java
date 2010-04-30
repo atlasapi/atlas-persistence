@@ -27,7 +27,7 @@ public class PlaylistTranslatorTest extends TestCase {
         playlist.setItemUris(items);
         
         DBObject obj = pt.toDBObject(null, playlist);
-        assertEquals("uri", obj.get("canonicalUri"));
+        assertEquals("uri", obj.get(DescriptionTranslator.CANONICAL_URI));
         assertEquals(playlist.getFirstSeen().getMillis(), obj.get("firstSeen"));
         
         List<String> i = (List<String>) obj.get("itemUris");
