@@ -88,7 +88,10 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		Maybe<ContentQuery> byUriOrCurie = mentions(query, Sets.<Attribute<String>>newHashSet(Attributes.ITEM_URI, Attributes.ITEM_CURIE));
 		// If the request is for an exact match query then query for the item by uri or curie and filter the result
 		if (byUriOrCurie.hasValue()) {
-			return filter(query, roughSearch.itemsMatching(byUriOrCurie.requireValue()), false);
+			// Preserve any 'contained in' constraints
+			Maybe<ContentQuery> containedIn = mentions(query, Sets.<Attribute<String>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
+			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ConjunctiveQuery(Lists.newArrayList(byUriOrCurie.requireValue(), containedIn.requireValue())) : byUriOrCurie.requireValue(); 
+			return filter(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
 		}
 		return filter(query, roughSearch.itemsMatching(query), true);
 	}
