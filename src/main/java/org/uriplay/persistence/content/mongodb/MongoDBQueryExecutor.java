@@ -37,6 +37,7 @@ import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.MongoDbBackedContentStore;
 import org.uriplay.persistence.content.query.KnownTypeQueryExecutor;
+import org.uriplay.persistence.content.query.QueryFragmentExtractor;
 
 import com.google.common.collect.Sets;
 import com.google.soy.common.collect.Lists;
@@ -85,11 +86,11 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 
 	private List<Item> executeItemQueryInternal(ContentQuery query) {
 		// Extract exact item match query fragments (item by uri or curie)
-		Maybe<ContentQuery> byUriOrCurie = mentions(query, Sets.<Attribute<String>>newHashSet(Attributes.ITEM_URI, Attributes.ITEM_CURIE));
+		Maybe<ContentQuery> byUriOrCurie = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.ITEM_URI, Attributes.ITEM_CURIE));
 		// If the request is for an exact match query then query for the item by uri or curie and filter the result
 		if (byUriOrCurie.hasValue()) {
 			// Preserve any 'contained in' constraints
-			Maybe<ContentQuery> containedIn = mentions(query, Sets.<Attribute<String>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
+			Maybe<ContentQuery> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
 			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ConjunctiveQuery(Lists.newArrayList(byUriOrCurie.requireValue(), containedIn.requireValue())) : byUriOrCurie.requireValue(); 
 			return filter(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
 		}
@@ -164,7 +165,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 
 		
 		// Filter out subplaylists that don't match if there was a constraint on a sub element
-		if (itemQuery.hasValue() && mentions(query, Sets.<Attribute<String>>newHashSet(Attributes.BRAND_URI, Attributes.BRAND_CURIE)).isNothing()) {
+		if (itemQuery.hasValue() && QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI, Attributes.BRAND_CURIE)).isNothing()) {
 			return filterEmpty(brands);
 		}
 		
@@ -259,45 +260,6 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	}
 	
 		
-	/**
-	 * Extracts the part of the query that concern {@link StringValuedAttribute}s passed
-	 * Used to extract URI and CURIE query parts.
-	 */
-	private Maybe<ContentQuery> mentions(ContentQuery query, final Set<Attribute<String>> attributes) {
-		return query.accept(new QueryVisitorAdapter<Maybe<ContentQuery>>() {
-			
-			@Override
-			public  Maybe<ContentQuery> visit(StringAttributeQuery query) {
-				if (attributes.contains(query.getAttribute())) {
-					return Maybe.<ContentQuery>just(query);
-				} 
-				return Maybe.nothing();
-				
-			}
-			
-			@Override
-			public  Maybe<ContentQuery> visit(ConjunctiveQuery conjunctiveQuery) {
-				List<ContentQuery> matchingQueries = Lists.newArrayList();
-				
-				for (ContentQuery operand : conjunctiveQuery.operands()) {
-					Maybe<ContentQuery> subMatch = operand.accept(this);
-					if (subMatch.hasValue()) {
-						matchingQueries.add(subMatch.requireValue());
-					}
-				}
-				if (matchingQueries.isEmpty()) {
-					return Maybe.nothing();
-				}
-				return Maybe.<ContentQuery>just(conjunctiveQuery.copyWithOperands(matchingQueries));
-			}
-			
-			@Override
-			protected Maybe<ContentQuery> defaultValue() {
-				return Maybe.nothing();
-			}
-		});
-	}
-	
 	/** 
 	 * Util method for converting a list of Descriptions into a lookup-by-uri map.
 	 */
