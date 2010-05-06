@@ -25,11 +25,8 @@ import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.MatchesNothing;
 import org.uriplay.content.criteria.Queries;
-import org.uriplay.content.criteria.QueryVisitorAdapter;
-import org.uriplay.content.criteria.StringAttributeQuery;
 import org.uriplay.content.criteria.attribute.Attribute;
 import org.uriplay.content.criteria.attribute.Attributes;
-import org.uriplay.content.criteria.attribute.StringValuedAttribute;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Episode;
@@ -73,14 +70,13 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		// Find the playlists
 		List<Playlist> playlists = roughSearch.dehydratedPlaylistsMatching(playlistQuery.requireValue());
 		
-		
 		if (playlists.isEmpty()) {
 			return Collections.emptyList();
 		}
 		
 		Maybe<ContentQuery> everythingElse = splitter.discard(query, brandAndPlaylistAttributes);
 		
-		// Execute the item query but constrain results to the 
+		// Execute the item query but constrain results to the playlists found
 		return executeItemQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI, query.getSelection()));
 	}
 
@@ -131,44 +127,46 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			throw new IllegalArgumentException("Query is too broad");
 		}
 		
-		List<Brand> brands;
-		List<Item> items;
+		List<Brand> brands = brandQuery.isNothing() ? loadBrandsFromItems(itemQuery) : loadBrandsAndFilterItems(brandQuery, itemQuery);
 		
-		if (brandQuery.isNothing()) {
-			items = executeItemQueryInternal(itemQuery.requireValue());
-			if (items.isEmpty()) {
-				return Lists.newArrayList();
-			}
-			brands = Lists.newArrayList();
-			for (Item item : items) {
-				if (item instanceof Episode) {
-					Episode episode = (Episode) item;
-					if (episode.getBrand() != null) {
-						Brand brand = episode.getBrand();
-						brands.add(brand);
-					}
-				}
-			}
-		} else {
-			brands = roughSearch.dehydratedBrandsMatching(brandQuery.requireValue());
-			if (brands.size() > 500) {
-				throw new IllegalArgumentException("Query is too broad");
-			}
-			
-			if (brands.isEmpty()) {
-				return Lists.newArrayList();
-			}
-			items = executeItemQueryInternal(createContainedInPlaylistQuery(itemQuery, brands, Attributes.BRAND_URI, null));
+		if (brands.isEmpty()) {
+			return Collections.emptyList();
 		}
 		
-		hydratePlaylists(brands, items, null);
-
-		
-		// Filter out subplaylists that don't match if there was a constraint on a sub element
+		// Filter out subplaylists that don't match if the query was not by uri or curie
 		if (itemQuery.hasValue() && QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI, Attributes.BRAND_CURIE)).isNothing()) {
 			return filterEmpty(brands);
 		}
 		
+		return brands;
+	}
+
+	private List<Brand> loadBrandsAndFilterItems(Maybe<ContentQuery> brandQuery, Maybe<ContentQuery> itemQuery) {
+		List<Brand> brands = roughSearch.dehydratedBrandsMatching(brandQuery.requireValue());
+		if (brands.isEmpty()) {
+			return Lists.newArrayList();
+		}
+		List<Item> items = executeItemQueryInternal(createContainedInPlaylistQuery(itemQuery, brands, Attributes.BRAND_URI, null));
+		hydratePlaylists(brands, items, null);
+		return brands;
+	}
+
+	private List<Brand> loadBrandsFromItems(Maybe<ContentQuery> itemQuery) {
+		List<Item> items = executeItemQueryInternal(itemQuery.requireValue());
+		if (items.isEmpty()) {
+			return Lists.newArrayList();
+		}
+		List<String> brandUris = Lists.newArrayList();
+		for (Item item : items) {
+			if (item instanceof Episode) {
+				Episode episode = (Episode) item;
+				if (episode.getBrand() != null) {
+					brandUris.add(episode.getBrand().getCanonicalUri());
+				}
+			}
+		}
+		List<Brand> brands = roughSearch.dehydratedBrandsMatching(Queries.equalTo(Attributes.BRAND_URI, brandUris));
+		hydratePlaylists(brands, items, null);
 		return brands;
 	}
 

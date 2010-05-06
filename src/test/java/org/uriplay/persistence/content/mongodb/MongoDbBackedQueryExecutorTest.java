@@ -93,6 +93,10 @@ public class MongoDbBackedQueryExecutorTest extends BaseMongoDBTest {
 		checkBrandQuery(equalTo(Attributes.BRAND_URI, "http://eastenders.bbc"), data.eastenders);
 	}
 	
+	public void testFindingBrandsItemsWithinThem() throws Exception {
+		checkBrandQuery(equalTo(Attributes.ITEM_URI, data.dotCottonsBigAdventure.getCanonicalUri()), data.eastenders);
+	}
+	
 	public void testSelections() throws Exception {
 		checkBrandQuery(equalTo(Attributes.BRAND_PUBLISHER, "bbc.co.uk").withSelection(new Selection(0, 3)), data.eastenders, data.apprentice, data.newsNight);
 		checkBrandQuery(equalTo(Attributes.BRAND_PUBLISHER, "bbc.co.uk").withSelection(new Selection(1, 3)), data.apprentice, data.newsNight);
