@@ -48,6 +48,8 @@ import com.mongodb.Mongo;
 public class MongoDbBackedContentStore extends MongoDBTemplate implements MutableContentStore {
     
 	private final static int DEFAULT_BATCH_SIZE = 50;
+	private final static int MAX_RESULTS = 2000;
+	
     private final DBCollection itemCollection;
     private final DBCollection playlistCollection;
 
@@ -205,11 +207,15 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         if (cur == null) {
         	return Collections.emptyList();
         }
-        
+        int loaded = 0;
         List<Item> items = Lists.newArrayList();
         while (cur.hasNext()) {
             DBObject current = cur.next();
             items.add(toItem(current));
+            loaded++;
+            if (loaded > MAX_RESULTS) {
+            	throw new IllegalArgumentException("Too many results for query");
+            }
         }
 
         return items;
@@ -259,10 +265,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             if (cur == null) {
             	return Collections.emptyList();
             }
-            
+            int loaded = 0;
             while (cur.hasNext()) {
                 DBObject current = cur.next();
                 playlists.add(toPlaylist(current, hydrate));
+                loaded++;
+                if (loaded > MAX_RESULTS) {
+                	throw new IllegalArgumentException("Too many results for query");
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
