@@ -1,5 +1,6 @@
 package org.uriplay.persistence.media.entity;
 
+import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Location;
 
 import com.mongodb.DBObject;
@@ -27,13 +28,21 @@ public class LocationTranslator implements DBObjectEntityTranslator<Location> {
         entity.setRestrictedBy((String) dbObject.get("restrictedBy"));
         entity.setTransportIsLive((Boolean) dbObject.get("transportIsLive"));
         entity.setTransportSubType((String) dbObject.get("transportSubType"));
-        entity.setTransportType((String) dbObject.get("transportType"));
+        entity.setTransportType(readTransportType(dbObject));
         entity.setUri((String) dbObject.get("uri"));
         
         return entity;
     }
 
-    @Override
+    private TransportType readTransportType(DBObject dbObject) {
+    	String transportTypeString = (String) dbObject.get("transportType");
+    	if (transportTypeString == null) { 
+    		return null;
+    	}
+		return TransportType.fromString(transportTypeString);
+	}
+
+	@Override
     public DBObject toDBObject(DBObject dbObject, Location entity) {
         dbObject = descriptionTranslator.toDBObject(dbObject, entity);
         
@@ -45,7 +54,9 @@ public class LocationTranslator implements DBObjectEntityTranslator<Location> {
         TranslatorUtils.from(dbObject, "restrictedBy", entity.getRestrictedBy());
         TranslatorUtils.from(dbObject, "transportIsLive", entity.getTransportIsLive());
         TranslatorUtils.from(dbObject, "transportSubType", entity.getTransportSubType());
-        TranslatorUtils.from(dbObject, "transportType", entity.getTransportType());
+        if (entity.getTransportType() != null) {
+        	TranslatorUtils.from(dbObject, "transportType", entity.getTransportType().toString());
+        }
         TranslatorUtils.from(dbObject, "uri", entity.getUri());
         
         return dbObject;

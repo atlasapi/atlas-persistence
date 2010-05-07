@@ -102,7 +102,7 @@ class InMemoryQueryResultChecker  {
 				if (!shouldApplyTo(query)) {
 					return true;
 				}
-				final String lhs = (String) valueOfBean(query);
+				final Enum<?> lhs = (Enum<?>) valueOfBean(query);
 				if (lhs == null) {
 					return false;
 				}
@@ -114,7 +114,7 @@ class InMemoryQueryResultChecker  {
 						
 						@Override
 						public Boolean visit(Equals equals) {
-							return lhs.equals(value.name().toLowerCase());
+							return lhs.equals(value);
 						}
 					});
 					if (result)  {

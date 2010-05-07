@@ -260,7 +260,7 @@ public class DummyContentData {
 		Location l = new Location();
 		v.addManifestedAs(e);
 		e.addAvailableAt(l);
-		l.setTransportType(type.toString());
+		l.setTransportType(type);
 		return v;
 	}
 

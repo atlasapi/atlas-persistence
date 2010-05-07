@@ -62,7 +62,7 @@ public class QueryResultTrimmerTest extends MockObjectTestCase {
 		unavailableLocation.setAvailable(false);
 		
 		streamingLocation = new Location();
-		streamingLocation.setTransportType(TransportType.STREAM.toString().toLowerCase());
+		streamingLocation.setTransportType(TransportType.STREAM);
 	}
 	
 	public void testAQueryThatShouldNotBeTrimmed() throws Exception {

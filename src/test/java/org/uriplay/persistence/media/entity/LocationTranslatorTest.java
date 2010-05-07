@@ -3,6 +3,7 @@ package org.uriplay.persistence.media.entity;
 import junit.framework.TestCase;
 
 import org.joda.time.DateTime;
+import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Location;
 
 import com.mongodb.DBObject;
@@ -33,7 +34,7 @@ public class LocationTranslatorTest extends TestCase {
         location.setDrmPlayableFrom(new DateTime());
         location.setEmbedCode("embed");
         location.setTransportSubType("sub");
-        location.setTransportType("type");
+        location.setTransportType(TransportType.HTMLEMBED);
         location.setTransportIsLive(true);
         location.setUri("uri");
         
