@@ -3,13 +3,9 @@ package org.uriplay.persistence.content.mongodb;
 import java.util.List;
 
 import org.uriplay.media.entity.Brand;
-import org.uriplay.media.entity.Broadcast;
-import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Episode;
 import org.uriplay.media.entity.Item;
-import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Playlist;
-import org.uriplay.media.entity.Version;
 import org.uriplay.persistence.media.entity.BrandTranslator;
 import org.uriplay.persistence.media.entity.BroadcastTranslator;
 import org.uriplay.persistence.media.entity.ContentMentionTranslator;
