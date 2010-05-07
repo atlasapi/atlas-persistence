@@ -2,6 +2,7 @@ package org.uriplay.persistence.media.entity;
 
 import junit.framework.TestCase;
 
+import org.jherd.core.MimeType;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Location;
 
@@ -35,7 +36,7 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setAudioChannels(1);
         encoding.setAudioCoding("audio");
         encoding.setBitRate(1);
-        encoding.setDataContainerFormat("format");
+        encoding.setDataContainerFormat(MimeType.VIDEO_H264);
         encoding.setDataSize(1L);
         encoding.setDistributor("dis");
         encoding.setHasDOG(true);

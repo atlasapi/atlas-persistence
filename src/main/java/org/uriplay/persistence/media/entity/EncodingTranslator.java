@@ -3,6 +3,7 @@ package org.uriplay.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.jherd.core.MimeType;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Location;
 
@@ -35,7 +36,7 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         entity.setBitRate((Integer) dbObject.get("bitRate"));
         entity.setAudioChannels((Integer) dbObject.get("audioChannels"));
         entity.setContainsAdvertising((Boolean) dbObject.get("containsAdvertising"));
-        entity.setDataContainerFormat((String) dbObject.get("dataContainerFormat"));
+        entity.setDataContainerFormat(readContainerFormat(dbObject));
         entity.setDataSize((Long) dbObject.get("dataSize"));
         entity.setDistributor((String) dbObject.get("distributor"));
         entity.setHasDOG((Boolean) dbObject.get("hasDOG"));
@@ -61,7 +62,15 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         return entity;
     }
 
-    @Override
+    private MimeType readContainerFormat(DBObject dbObject) {
+    	String formatName = (String) dbObject.get("dataContainerFormat");
+    	if (formatName == null) {
+    		return null;
+    	}
+    	return MimeType.fromString(formatName);
+    }
+
+	@Override
     public DBObject toDBObject(DBObject dbObject, Encoding entity) {
         dbObject = descriptionTranslator.toDBObject(dbObject, entity);
         
@@ -72,7 +81,11 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "bitRate", entity.getBitRate());
         TranslatorUtils.from(dbObject, "audioChannels", entity.getAudioChannels());
         TranslatorUtils.from(dbObject, "containsAdvertising", entity.getContainsAdvertising());
-        TranslatorUtils.from(dbObject, "dataContainerFormat", entity.getDataContainerFormat());
+        
+        if (entity.getDataContainerFormat() != null) {
+        	TranslatorUtils.from(dbObject, "dataContainerFormat", entity.getDataContainerFormat().toString());
+        }
+        
         TranslatorUtils.from(dbObject, "dataSize", entity.getDataSize());
         TranslatorUtils.from(dbObject, "distributor", entity.getDistributor());
         TranslatorUtils.from(dbObject, "hasDOG", entity.getHasDOG());
