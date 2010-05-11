@@ -34,7 +34,7 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setVideoFrameRate(1.0F);
         encoding.setAdvertisingDuration(1);
         encoding.setAudioChannels(1);
-        encoding.setAudioCoding("audio");
+        encoding.setAudioCoding(MimeType.AUDIO_3GPP);
         encoding.setBitRate(1);
         encoding.setDataContainerFormat(MimeType.VIDEO_H264);
         encoding.setDataSize(1L);
@@ -43,7 +43,7 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setSource("source");
         encoding.setVideoAspectRatio("ar");
         encoding.setVideoBitRate(2);
-        encoding.setVideoCoding("coding");
+        encoding.setVideoCoding(MimeType.VIDEO_H263);
         encoding.setVideoFrameRate(2.0F);
         encoding.setVideoHorizontalSize(1);
         encoding.setVideoProgressiveScan(true);

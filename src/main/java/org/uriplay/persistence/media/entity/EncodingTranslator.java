@@ -32,7 +32,9 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         entity.setAdvertisingDuration((Integer) dbObject.get("advertisingDuration"));
         entity.setAudioBitRate((Integer) dbObject.get("audioBitRate"));
         entity.setAudioChannels((Integer) dbObject.get("audioChannels"));
-        entity.setAudioCoding((String) dbObject.get("audioCoding"));
+        
+        entity.setAudioCoding(readAudioCoding(dbObject));
+        
         entity.setBitRate((Integer) dbObject.get("bitRate"));
         entity.setAudioChannels((Integer) dbObject.get("audioChannels"));
         entity.setContainsAdvertising((Boolean) dbObject.get("containsAdvertising"));
@@ -43,7 +45,9 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         entity.setSource((String) dbObject.get("source"));
         entity.setVideoAspectRatio((String) dbObject.get("videoAspectRatio"));
         entity.setVideoBitRate((Integer) dbObject.get("videoBitRate"));
-        entity.setVideoCoding((String) dbObject.get("videoCoding"));
+        
+        entity.setVideoCoding(readVideoCoding(dbObject));
+        
         entity.setVideoFrameRate((Float) dbObject.get("videoFrameRate"));
         entity.setVideoHorizontalSize((Integer) dbObject.get("videoHorizontalSize"));
         entity.setVideoProgressiveScan((Boolean) dbObject.get("videoProgressiveScan"));
@@ -62,7 +66,23 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         return entity;
     }
 
-    private MimeType readContainerFormat(DBObject dbObject) {
+    private MimeType readVideoCoding(DBObject dbObject) {
+    	String codingAsString = (String) dbObject.get("videoCoding");
+    	if (codingAsString == null) {
+    		return null;
+    	}
+    	return MimeType.fromString(codingAsString);
+    }
+    
+    private MimeType readAudioCoding(DBObject dbObject) {
+    	String codingAsString = (String) dbObject.get("audioCoding");
+    	if (codingAsString == null) {
+    		return null;
+    	}
+    	return MimeType.fromString(codingAsString);
+    }
+
+	private MimeType readContainerFormat(DBObject dbObject) {
     	String formatName = (String) dbObject.get("dataContainerFormat");
     	if (formatName == null) {
     		return null;
@@ -77,7 +97,11 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "advertisingDuration", entity.getAdvertisingDuration());
         TranslatorUtils.from(dbObject, "audioBitRate", entity.getAudioBitRate());
         TranslatorUtils.from(dbObject, "audioChannels", entity.getAudioChannels());
-        TranslatorUtils.from(dbObject, "audioCoding", entity.getAudioCoding());
+        
+        if (entity.getAudioCoding() != null) {
+        	TranslatorUtils.from(dbObject, "audioCoding", entity.getAudioCoding());
+        }
+        
         TranslatorUtils.from(dbObject, "bitRate", entity.getBitRate());
         TranslatorUtils.from(dbObject, "audioChannels", entity.getAudioChannels());
         TranslatorUtils.from(dbObject, "containsAdvertising", entity.getContainsAdvertising());
@@ -92,7 +116,11 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "source", entity.getSource());
         TranslatorUtils.from(dbObject, "videoAspectRatio", entity.getVideoAspectRatio());
         TranslatorUtils.from(dbObject, "videoBitRate", entity.getVideoBitRate());
-        TranslatorUtils.from(dbObject, "videoCoding", entity.getVideoCoding());
+       
+        if (entity.getVideoCoding() != null) {
+        	TranslatorUtils.from(dbObject, "videoCoding", entity.getVideoCoding());
+        }
+        
         TranslatorUtils.from(dbObject, "videoFrameRate", entity.getVideoFrameRate());
         TranslatorUtils.from(dbObject, "videoHorizontalSize", entity.getVideoHorizontalSize());
         TranslatorUtils.from(dbObject, "videoProgressiveScan", entity.getVideoProgressiveScan());
