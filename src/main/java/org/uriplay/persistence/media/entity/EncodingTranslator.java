@@ -99,7 +99,7 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "audioChannels", entity.getAudioChannels());
         
         if (entity.getAudioCoding() != null) {
-        	TranslatorUtils.from(dbObject, "audioCoding", entity.getAudioCoding());
+        	TranslatorUtils.from(dbObject, "audioCoding", entity.getAudioCoding().toString());
         }
         
         TranslatorUtils.from(dbObject, "bitRate", entity.getBitRate());
@@ -118,7 +118,7 @@ public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "videoBitRate", entity.getVideoBitRate());
        
         if (entity.getVideoCoding() != null) {
-        	TranslatorUtils.from(dbObject, "videoCoding", entity.getVideoCoding());
+        	TranslatorUtils.from(dbObject, "videoCoding", entity.getVideoCoding().toString());
         }
         
         TranslatorUtils.from(dbObject, "videoFrameRate", entity.getVideoFrameRate());

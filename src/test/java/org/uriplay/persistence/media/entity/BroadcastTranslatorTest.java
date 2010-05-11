@@ -1,6 +1,7 @@
 package org.uriplay.persistence.media.entity;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.uriplay.media.entity.Broadcast;
 
 import com.mongodb.DBObject;
@@ -26,7 +27,7 @@ public class BroadcastTranslatorTest extends TestCase {
         broadcast.setBroadcastDuration(1);
         broadcast.setTransmissionTime(new DateTime());
         broadcast.setBroadcastOn("on");
-        broadcast.setScheduleDate("date");
+        broadcast.setScheduleDate(new LocalDate(2010, 3, 20));
         
         DBObject dbObject = brt.toDBObject(null, broadcast);
         Broadcast b = brt.fromDBObject(dbObject, null);

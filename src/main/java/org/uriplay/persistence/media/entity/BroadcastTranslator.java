@@ -20,7 +20,7 @@ public class BroadcastTranslator implements DBObjectEntityTranslator<Broadcast> 
         descriptionTranslator.fromDBObject(dbObject, entity);
         entity.setBroadcastDuration((Integer) dbObject.get("broadcastDuration"));
         entity.setBroadcastOn((String) dbObject.get("broadcastOn"));
-        entity.setScheduleDate((String) dbObject.get("scheduleDate"));
+        entity.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
         entity.setTransmissionTime(TranslatorUtils.toDateTime(dbObject, "transmissionTime"));
         
         return entity;
@@ -32,7 +32,7 @@ public class BroadcastTranslator implements DBObjectEntityTranslator<Broadcast> 
         
         TranslatorUtils.from(dbObject, "broadcastDuration", entity.getBroadcastDuration());
         TranslatorUtils.from(dbObject, "broadcastOn", entity.getBroadcastOn());
-        TranslatorUtils.from(dbObject, "scheduleDate", entity.getScheduleDate());
+        TranslatorUtils.fromLocalDate(dbObject, "scheduleDate", entity.getScheduleDate());
         TranslatorUtils.fromDateTime(dbObject, "transmissionTime", entity.getTransmissionTime());
         
         return dbObject;

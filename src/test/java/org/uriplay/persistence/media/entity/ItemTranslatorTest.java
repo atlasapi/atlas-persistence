@@ -5,6 +5,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.joda.time.LocalDate;
 import org.uriplay.media.entity.Broadcast;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Item;
@@ -41,7 +42,7 @@ public class ItemTranslatorTest extends TestCase {
         enc.addAvailableAt(loc);
         
         Broadcast br = new Broadcast();
-        br.setScheduleDate("date");
+        br.setScheduleDate(new LocalDate(2010, 3, 20));
         
         Version version = new Version();
         version.setDuration(1);
@@ -73,7 +74,7 @@ public class ItemTranslatorTest extends TestCase {
         BasicDBList bs = (BasicDBList) v.get("broadcasts");
         assertEquals(1, bs.size());
         DBObject b = (DBObject) bs.get(0);
-        assertEquals(br.getScheduleDate(), b.get("scheduleDate"));
+        assertEquals(br.getScheduleDate().toString(), b.get("scheduleDate"));
         
         BasicDBList ma = (BasicDBList) v.get("manifestedAs");
         assertEquals(1, ma.size());
@@ -104,7 +105,7 @@ public class ItemTranslatorTest extends TestCase {
         enc.addAvailableAt(loc);
         
         Broadcast br = new Broadcast();
-        br.setScheduleDate("date");
+        br.setScheduleDate(new LocalDate(2010, 3, 20));
         
         Version version = new Version();
         version.setDuration(1);

@@ -1,15 +1,17 @@
 package org.uriplay.persistence.system;
 
 import java.util.Collections;
-import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jherd.remotesite.Fetcher;
 import org.jherd.remotesite.timing.NullRequestTimer;
+import org.jherd.servlet.ContentNotFoundException;
 import org.springframework.beans.factory.annotation.Required;
 import org.uriplay.media.entity.Description;
 import org.uriplay.persistence.content.MutableContentStore;
+
+import com.google.common.collect.Sets;
 
 /* Copyright 2009 Meta Broadcast Ltd
 
@@ -29,7 +31,7 @@ public class UriRefresher implements Runnable  {
 
 	private static final Log log = LogFactory.getLog(UriRefresher.class);
 	
-	private Fetcher<Set<Description>> fetcher;
+	private Fetcher<Description> fetcher;
 	private MutableContentStore contentStore;
 	private Iterable<String> uris;
 	private boolean missingContentShouldBeMarkedAsUnavailable;
@@ -38,7 +40,7 @@ public class UriRefresher implements Runnable  {
 
 	}
 	
-	public UriRefresher(Fetcher<Set<Description>> fetcher, MutableContentStore contentStore) {
+	public UriRefresher(Fetcher<Description> fetcher, MutableContentStore contentStore) {
 		this.fetcher = fetcher;
 		this.contentStore = contentStore;
 	}
@@ -55,18 +57,21 @@ public class UriRefresher implements Runnable  {
 
 	private void update(String uri) {
 		
-		Set<Description> latestContent = Collections.emptySet();
+		Description latestContent = null;
 		
 		try {
 			latestContent = fetcher.fetch(uri, new NullRequestTimer());
-			log.info("Retrieved data from URIplay for " + uri + ", " + latestContent.size() + " Descriptions");
+			if (latestContent == null) {
+				throw new ContentNotFoundException(uri);
+			}
+			log.info("Retrieved data from URIplay for " + uri);
 		} catch (Exception e) {
 			log.warn(e);
 			return;
 		}
 
 		try {
-			contentStore.createOrUpdateGraph(latestContent, missingContentShouldBeMarkedAsUnavailable);
+			contentStore.createOrUpdateGraph(Sets.newHashSet(latestContent), missingContentShouldBeMarkedAsUnavailable);
 		} catch (Exception e) {
 			log.warn(e);
 			return;
@@ -76,7 +81,7 @@ public class UriRefresher implements Runnable  {
 	}
 	
 	@Required
-	public void setFetcher(Fetcher<Set<Description>> fetcher) {
+	public void setFetcher(Fetcher<Description> fetcher) {
 		this.fetcher = fetcher;
 	}
 

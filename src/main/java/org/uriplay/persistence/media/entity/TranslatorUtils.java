@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -43,6 +44,13 @@ public class TranslatorUtils {
         }
         return null;
     }
+    
+    public static LocalDate toLocalDate(DBObject dbObject, String name) {
+    	if (dbObject.containsField(name)) {
+    		return new LocalDate(dbObject.get(name));
+    	}
+    	return null;
+	}
 
     public static void fromSet(DBObject dbObject, Set<String> set, String name) {
         if (!set.isEmpty()) {
@@ -74,10 +82,18 @@ public class TranslatorUtils {
             dbObject.put(name, millis);
         }
     }
+    
+    public static void fromLocalDate(DBObject dbObject, String name, LocalDate localDate) {
+        if (localDate != null) {
+            dbObject.put(name, localDate.toString());
+        }
+    }
 
     public static void from(DBObject dbObject, String name, Object value) {
         if (value != null) {
             dbObject.put(name, value);
         }
     }
+
+	
 }
