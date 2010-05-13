@@ -29,6 +29,7 @@ import org.uriplay.persistence.media.entity.EpisodeTranslator;
 import org.uriplay.persistence.media.entity.ItemTranslator;
 import org.uriplay.persistence.media.entity.LocationTranslator;
 import org.uriplay.persistence.media.entity.PlaylistTranslator;
+import org.uriplay.persistence.media.entity.PolicyTranslator;
 import org.uriplay.persistence.media.entity.VersionTranslator;
 import org.uriplay.persistence.tracking.ContentMention;
 
@@ -44,7 +45,7 @@ import com.mongodb.Mongo;
 public class MongoDBTemplate {
     private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator(descriptionTranslator);
-    private final LocationTranslator locationTranslator = new LocationTranslator(descriptionTranslator);
+    private final LocationTranslator locationTranslator = new LocationTranslator(descriptionTranslator, new PolicyTranslator());
     private final EncodingTranslator encodingTranslator = new EncodingTranslator(descriptionTranslator, locationTranslator);
     private final VersionTranslator versionTranslator = new VersionTranslator(descriptionTranslator, broadcastTranslator, encodingTranslator);
     private final ItemTranslator itemTranslator = new ItemTranslator(descriptionTranslator, versionTranslator);

@@ -1,5 +1,6 @@
 package org.uriplay.persistence.media.entity;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -64,7 +65,7 @@ public class TranslatorUtils {
         }
     }
 
-    public static void fromList(DBObject dbObject, List<String> list, String name) {
+    public static void fromList(DBObject dbObject, Collection<String> list, String name) {
         if (!list.isEmpty()) {
             BasicDBList values = new BasicDBList();
             for (String value : list) {

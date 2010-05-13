@@ -11,7 +11,7 @@ import com.mongodb.DBObject;
 public class EncodingTranslatorTest extends TestCase {
     DescriptionTranslator dt = new DescriptionTranslator();
     BroadcastTranslator brt = new BroadcastTranslator(dt);
-    LocationTranslator lt = new LocationTranslator(dt);
+    LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
     EncodingTranslator ent = new EncodingTranslator(dt, lt);
     
     public void testFromEncoding() throws Exception {
