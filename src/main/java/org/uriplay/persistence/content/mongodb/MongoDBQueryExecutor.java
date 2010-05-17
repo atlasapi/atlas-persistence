@@ -252,7 +252,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		operands.add(Queries.equalTo(attribute, playlistUris));
 		
 		if (subElementQuery.hasValue()) {
-			operands.add(subElementQuery.requireValue().withSelection(null));
+			operands.add(subElementQuery.requireValue());
 		}
 		return new ConjunctiveQuery(operands).withSelection(selection);
 	}
