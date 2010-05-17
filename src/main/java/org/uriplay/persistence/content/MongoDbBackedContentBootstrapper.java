@@ -18,13 +18,13 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jherd.util.Selection;
 import org.springframework.beans.factory.InitializingBean;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.query.Selection;
 
 public class MongoDbBackedContentBootstrapper implements InitializingBean {
     private static final Log log = LogFactory.getLog(MongoDbBackedContentBootstrapper.class);

@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jherd.util.Maybe;
-import org.jherd.util.Selection;
 import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.MatchesNothing;
@@ -39,6 +38,7 @@ import org.uriplay.persistence.content.query.QueryFragmentExtractor;
 import com.google.common.collect.Sets;
 import com.google.soy.common.collect.Lists;
 import com.google.soy.common.collect.Maps;
+import com.metabroadcast.common.query.Selection;
 
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 

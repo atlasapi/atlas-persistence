@@ -2,7 +2,6 @@ package org.uriplay.persistence.content.mongodb;
 
 import java.util.List;
 
-import org.jherd.util.Selection;
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 import org.uriplay.media.entity.Brand;
@@ -14,6 +13,7 @@ import org.uriplay.persistence.content.MongoDbBackedContentBootstrapper;
 import org.uriplay.persistence.testing.DummyContentData;
 
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.query.Selection;
 
 public class MongoDbBackedContentListenerTest extends MockObjectTestCase {
     private ContentStore store = mock(ContentStore.class);

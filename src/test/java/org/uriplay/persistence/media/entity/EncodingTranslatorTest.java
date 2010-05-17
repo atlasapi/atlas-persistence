@@ -2,9 +2,9 @@ package org.uriplay.persistence.media.entity;
 
 import junit.framework.TestCase;
 
-import org.jherd.core.MimeType;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Location;
+import org.uriplay.media.reference.entity.MimeType;
 
 import com.mongodb.DBObject;
 

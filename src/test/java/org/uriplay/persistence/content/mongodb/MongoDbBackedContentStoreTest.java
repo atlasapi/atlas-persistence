@@ -18,8 +18,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-
-import org.jherd.util.Selection;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Encoding;
@@ -34,6 +32,7 @@ import org.uriplay.persistence.testing.DummyContentData;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.query.Selection;
 
 public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
 	

@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.time.StopWatch;
-import org.jherd.util.Selection;
 import org.joda.time.DateTime;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.entity.Brand;
@@ -40,6 +39,7 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;

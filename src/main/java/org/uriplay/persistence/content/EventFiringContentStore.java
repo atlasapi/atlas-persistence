@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.jherd.util.Selection;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Item;
@@ -15,6 +14,7 @@ import org.uriplay.persistence.content.ContentListener.changeType;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.soy.common.collect.Sets;
+import com.metabroadcast.common.query.Selection;
 
 public class EventFiringContentStore implements MutableContentStore {
 

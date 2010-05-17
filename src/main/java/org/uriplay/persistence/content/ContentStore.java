@@ -16,10 +16,11 @@ package org.uriplay.persistence.content;
 
 import java.util.List;
 
-import org.jherd.util.Selection;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
+
+import com.metabroadcast.common.query.Selection;
 
 /**
  * Simple interface to the store of available content.

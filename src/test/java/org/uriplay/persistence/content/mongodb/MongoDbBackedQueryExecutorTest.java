@@ -16,15 +16,26 @@ package org.uriplay.persistence.content.mongodb;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.uriplay.content.criteria.Queries.*;
-import static org.uriplay.content.criteria.attribute.Attributes.*;
+import static org.uriplay.content.criteria.Queries.after;
+import static org.uriplay.content.criteria.Queries.and;
+import static org.uriplay.content.criteria.Queries.before;
+import static org.uriplay.content.criteria.Queries.beginning;
+import static org.uriplay.content.criteria.Queries.equalTo;
+import static org.uriplay.content.criteria.Queries.greaterThan;
+import static org.uriplay.content.criteria.Queries.lessThan;
+import static org.uriplay.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_TIME;
+import static org.uriplay.content.criteria.attribute.Attributes.EPISODE_POSITION;
+import static org.uriplay.content.criteria.attribute.Attributes.ITEM_GENRE;
+import static org.uriplay.content.criteria.attribute.Attributes.ITEM_PUBLISHER;
+import static org.uriplay.content.criteria.attribute.Attributes.ITEM_TITLE;
+import static org.uriplay.content.criteria.attribute.Attributes.LOCATION_TRANSPORT_TYPE;
+import static org.uriplay.content.criteria.attribute.Attributes.VERSION_DURATION;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.jherd.util.Selection;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.attribute.Attributes;
 import org.uriplay.media.TransportType;
@@ -38,6 +49,7 @@ import org.uriplay.persistence.testing.DummyContentData;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.query.Selection;
 
 public class MongoDbBackedQueryExecutorTest extends BaseMongoDBTest {
 	

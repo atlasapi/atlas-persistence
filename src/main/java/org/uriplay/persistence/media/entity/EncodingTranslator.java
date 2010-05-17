@@ -3,9 +3,9 @@ package org.uriplay.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
-import org.jherd.core.MimeType;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Location;
+import org.uriplay.media.reference.entity.MimeType;
 
 import com.google.common.collect.Sets;
 import com.mongodb.BasicDBList;
