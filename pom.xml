@@ -78,6 +78,12 @@
             <artifactId>commons-beanutils</artifactId>
             <version>20030211.134440</version>
         </dependency>
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.1</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
     
     <scm>

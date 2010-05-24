@@ -17,7 +17,6 @@ package org.uriplay.persistence.content.mongodb;
 import java.util.List;
 import java.util.Set;
 
-import org.jherd.util.Maybe;
 import org.uriplay.content.criteria.AttributeQuery;
 import org.uriplay.content.criteria.BooleanAttributeQuery;
 import org.uriplay.content.criteria.ConjunctiveQuery;
@@ -32,7 +31,8 @@ import org.uriplay.content.criteria.StringAttributeQuery;
 import org.uriplay.media.entity.Description;
 
 import com.google.common.collect.Iterables;
-import com.google.soy.common.collect.Lists;
+import com.google.common.collect.Lists;
+import com.metabroadcast.common.base.Maybe;
 
 public class QuerySplitter {
 

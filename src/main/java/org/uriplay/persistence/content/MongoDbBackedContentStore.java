@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.lang.time.StopWatch;
 import org.joda.time.DateTime;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.entity.Brand;
@@ -75,9 +74,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
     public void createOrUpdateGraph(Set<?> beans, boolean markMissingItemsAsUnavailable) {
         Iterable<?> roots = rootsOf(beans);
 
-        StopWatch timer = new StopWatch();
-        timer.start();
-
         for (Object root : roots) {
             if (root instanceof Playlist) {
                 createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
@@ -86,7 +82,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
                 createOrUpdateItem((Item) root);
             }
         }
-        timer.stop();
     }
 
     private Iterable<?> rootsOf(Set<?> beans) {

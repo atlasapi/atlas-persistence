@@ -28,7 +28,7 @@ import org.uriplay.content.criteria.QueryVisitor;
 import org.uriplay.content.criteria.StringAttributeQuery;
 import org.uriplay.media.entity.Description;
 
-import com.google.soy.common.collect.Sets;
+import com.google.common.collect.Sets;
 
 public class QueryConcernsTypeDecider {
 

@@ -14,21 +14,21 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content.mongodb;
 
+import static org.uriplay.persistence.content.mongodb.QueryConcernsTypeDecider.concernsType;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.jherd.util.Maybe;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Version;
 
-import com.google.soy.common.collect.Lists;
-import com.google.soy.common.collect.Sets;
-
-import static org.uriplay.persistence.content.mongodb.QueryConcernsTypeDecider.concernsType;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.metabroadcast.common.base.Maybe;
 
 /**
  * This class filters associations ({@link Version}s, {@link Encoding}s etc) that don't match the query.

@@ -17,7 +17,6 @@ package org.uriplay.persistence.content.query;
 import java.util.List;
 import java.util.Set;
 
-import org.jherd.util.Maybe;
 import org.uriplay.content.criteria.AttributeQuery;
 import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
@@ -26,6 +25,7 @@ import org.uriplay.content.criteria.attribute.Attribute;
 import org.uriplay.content.criteria.attribute.StringValuedAttribute;
 
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.base.Maybe;
 
 
 public class QueryFragmentExtractor {

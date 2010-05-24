@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jherd.util.Maybe;
 import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.MatchesNothing;
@@ -35,11 +34,13 @@ import org.uriplay.persistence.content.MongoDbBackedContentStore;
 import org.uriplay.persistence.content.query.KnownTypeQueryExecutor;
 import org.uriplay.persistence.content.query.QueryFragmentExtractor;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.soy.common.collect.Lists;
-import com.google.soy.common.collect.Maps;
+import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.query.Selection;
 
+@SuppressWarnings("unchecked")
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 
 	private static final Set<Class<? extends Description>> playlistAttributes = (Set) Sets.newHashSet(Playlist.class);
@@ -117,7 +118,6 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		return executeBrandQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI, query.getSelection()));
 	}
 
-	@SuppressWarnings("unchecked")
 	private List<Brand> executeBrandQueryInternal(ContentQuery query) {
 		
 		Maybe<ContentQuery> brandQuery = splitter.retain(query, (Set) Sets.newHashSet(Brand.class, Playlist.class));

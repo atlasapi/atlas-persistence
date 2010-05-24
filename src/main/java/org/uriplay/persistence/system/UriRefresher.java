@@ -4,12 +4,10 @@ import java.util.Collections;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jherd.remotesite.Fetcher;
-import org.jherd.remotesite.timing.NullRequestTimer;
-import org.jherd.servlet.ContentNotFoundException;
 import org.springframework.beans.factory.annotation.Required;
 import org.uriplay.media.entity.Description;
 import org.uriplay.persistence.content.MutableContentStore;
+import org.uriplay.persistence.servlet.ContentNotFoundException;
 
 import com.google.common.collect.Sets;
 
