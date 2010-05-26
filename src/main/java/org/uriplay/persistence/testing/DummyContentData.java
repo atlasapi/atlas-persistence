@@ -146,7 +146,7 @@ public class DummyContentData {
 		interviewWithMp = new Episode("http://www.bbc.co.uk/newsnight/1", "bbc:newsnight:1");
 		interviewWithMp.setTitle("Interview with MP");
 		interviewWithMp.setPublisher("bbc.co.uk");
-		interviewWithMp.addVersion(versionWithEmbeddableLocation(new DateTime(), 60, TransportType.HTMLEMBED));
+		interviewWithMp.addVersion(versionWithEmbeddableLocation(new DateTime(), 60, TransportType.LINK));
 		interviewWithMp.setIsLongForm(true);
 
 		
@@ -160,7 +160,7 @@ public class DummyContentData {
 		susanAndCarlGoFishing = new Episode("http://www.five.tv/neighbours/82883883", "c5:82883883");
 		susanAndCarlGoFishing.setTitle("Susan and Carl Go Fishing");
 		susanAndCarlGoFishing.setPublisher("five.tv");
-		susanAndCarlGoFishing.addVersion(versionWithEmbeddableLocation(april22nd1730, 30, TransportType.HTMLEMBED));
+		susanAndCarlGoFishing.addVersion(versionWithEmbeddableLocation(april22nd1730, 30, TransportType.LINK));
 		susanAndCarlGoFishing.setTags(Sets.newHashSet("soap", "aussie"));
 		susanAndCarlGoFishing.addVersion(versionWithEmbeddableLocation());
 
@@ -222,7 +222,7 @@ public class DummyContentData {
 	}
 	
 	public Version versionWithEmbeddableLocation() {
-		return versionWithEmbeddableLocation(new DateTime(), 10, TransportType.HTMLEMBED);
+		return versionWithEmbeddableLocation(new DateTime(), 10, TransportType.LINK);
 	}
 	
 	public static Version versionWithEmbeddableLocation(DateTime date, int duration, TransportType type) {

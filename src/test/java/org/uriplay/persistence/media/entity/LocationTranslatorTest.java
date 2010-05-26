@@ -47,7 +47,7 @@ public class LocationTranslatorTest extends TestCase {
 
         location.setEmbedCode("embed");
         location.setTransportSubType("sub");
-        location.setTransportType(TransportType.HTMLEMBED);
+        location.setTransportType(TransportType.LINK);
         location.setTransportIsLive(true);
         location.setUri("uri");
         
