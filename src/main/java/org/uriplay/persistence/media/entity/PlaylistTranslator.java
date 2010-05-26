@@ -5,10 +5,10 @@ import org.uriplay.media.entity.Playlist;
 import com.mongodb.DBObject;
 
 public class PlaylistTranslator implements DBObjectEntityTranslator<Playlist> {
-    private final DescriptionTranslator descriptionTranslator;
+    private final ContentTranslator contentTranslator;
     
-    public PlaylistTranslator(DescriptionTranslator descriptionTranslator) {
-        this.descriptionTranslator = descriptionTranslator;
+    public PlaylistTranslator(ContentTranslator descriptionTranslator) {
+        this.contentTranslator = descriptionTranslator;
     }
 
     @Override
@@ -17,36 +17,20 @@ public class PlaylistTranslator implements DBObjectEntityTranslator<Playlist> {
             entity = new Playlist();
         }
         
-        descriptionTranslator.fromDBObject(dbObject, entity);
+        contentTranslator.fromDBObject(dbObject, entity);
         
-        entity.setContainedInUris(TranslatorUtils.toSet(dbObject, "containedInUris"));
-        entity.setDescription((String) dbObject.get("description"));
-        entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
-        entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, "lastFetched"));
-        entity.setTitle((String) dbObject.get("title"));
-        entity.setPublisher((String) dbObject.get("publisher"));
         entity.setPlaylistUris(TranslatorUtils.toList(dbObject, "playlistUris"));
         entity.setItemUris(TranslatorUtils.toList(dbObject, "itemUris"));
-        entity.setGenres(TranslatorUtils.toSet(dbObject, "genre"));
-        entity.setTags(TranslatorUtils.toSet(dbObject, "tag"));
         
         return entity;
     }
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Playlist entity) {
-        dbObject = descriptionTranslator.toDBObject(dbObject, entity);
+        dbObject = contentTranslator.toDBObject(dbObject, entity);
         
-        TranslatorUtils.fromSet(dbObject, entity.getContainedInUris(), "containedInUris");
-        TranslatorUtils.from(dbObject, "description", entity.getDescription());
-        TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
-        TranslatorUtils.from(dbObject, "title", entity.getTitle());
-        TranslatorUtils.from(dbObject, "publisher", entity.getPublisher());
         TranslatorUtils.fromList(dbObject, entity.getItemUris(), "itemUris");
         TranslatorUtils.fromList(dbObject, entity.getPlaylistUris(), "playlistUris");
-        TranslatorUtils.fromDateTime(dbObject, "lastFetched", entity.getLastFetched());
-        TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genre");
-        TranslatorUtils.fromSet(dbObject, entity.getTags(), "tag");
         
         return dbObject;
     }

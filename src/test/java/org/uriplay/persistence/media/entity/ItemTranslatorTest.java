@@ -19,19 +19,19 @@ import com.mongodb.DBObject;
 
 public class ItemTranslatorTest extends TestCase {
     DescriptionTranslator dt = new DescriptionTranslator();
+    ContentTranslator ct = new ContentTranslator();
     BroadcastTranslator brt = new BroadcastTranslator(dt);
     LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
     EncodingTranslator ent = new EncodingTranslator(dt, lt);
     VersionTranslator vt = new VersionTranslator(dt, brt, ent);
-    ItemTranslator it = new ItemTranslator(dt, vt);
-    PlaylistTranslator pt = new PlaylistTranslator(dt);
+    ItemTranslator it = new ItemTranslator(ct, vt);
+    PlaylistTranslator pt = new PlaylistTranslator(ct);
     BrandTranslator bt = new BrandTranslator(pt);
     EpisodeTranslator et = new EpisodeTranslator(it, bt);
     
     @SuppressWarnings("unchecked")
     public void testConvertFromItem() throws Exception {
-        Item item = new Item();
-        item.setCanonicalUri("canonicalUri");
+        Item item = new Item("canonicalUri", "curie");
         item.setTitle("title");
         
         Location loc = new Location();
@@ -54,7 +54,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator(dt, vt);
+        ItemTranslator it = new ItemTranslator(ct, vt);
         DBObject dbObject = it.toDBObject(null, item);
         
         assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
@@ -88,15 +88,13 @@ public class ItemTranslatorTest extends TestCase {
     }
     
     public void testConvertToItem() throws Exception {
-        Item item = new Item();
-        item.setCanonicalUri("canonicalUri");
+        Item item = new Item("canonicalUri", "curie");
         item.setTitle("title");
         
-        Playlist playlist = new Playlist();
+        Playlist playlist = new Playlist("uri", "playlist-curie");
         Set<Playlist> playlists = Sets.newHashSet(playlist);
         item.setContainedIn(playlists);
-        playlist.setCanonicalUri("uri");
-        
+            
         Location loc = new Location();
         loc.setAvailable(true);
         
@@ -117,7 +115,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator(dt, vt);
+        ItemTranslator it = new ItemTranslator(ct, vt);
         DBObject dbObject = it.toDBObject(null, item);
         
         Item i = it.fromDBObject(dbObject, null);

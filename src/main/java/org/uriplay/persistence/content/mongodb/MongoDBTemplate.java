@@ -23,6 +23,7 @@ import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.media.entity.BrandTranslator;
 import org.uriplay.persistence.media.entity.BroadcastTranslator;
 import org.uriplay.persistence.media.entity.ContentMentionTranslator;
+import org.uriplay.persistence.media.entity.ContentTranslator;
 import org.uriplay.persistence.media.entity.DescriptionTranslator;
 import org.uriplay.persistence.media.entity.EncodingTranslator;
 import org.uriplay.persistence.media.entity.EpisodeTranslator;
@@ -44,12 +45,13 @@ import com.mongodb.Mongo;
 
 public class MongoDBTemplate {
     private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
+    private final ContentTranslator contentTranslator = new ContentTranslator();
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator(descriptionTranslator);
     private final LocationTranslator locationTranslator = new LocationTranslator(descriptionTranslator, new PolicyTranslator());
     private final EncodingTranslator encodingTranslator = new EncodingTranslator(descriptionTranslator, locationTranslator);
     private final VersionTranslator versionTranslator = new VersionTranslator(descriptionTranslator, broadcastTranslator, encodingTranslator);
-    private final ItemTranslator itemTranslator = new ItemTranslator(descriptionTranslator, versionTranslator);
-    private final PlaylistTranslator playlistTranslator = new PlaylistTranslator(descriptionTranslator);
+    private final ItemTranslator itemTranslator = new ItemTranslator(contentTranslator, versionTranslator);
+    private final PlaylistTranslator playlistTranslator = new PlaylistTranslator(contentTranslator);
     private final BrandTranslator brandTranslator = new BrandTranslator(playlistTranslator);
     private final EpisodeTranslator episodeTranslator = new EpisodeTranslator(itemTranslator, brandTranslator);
     private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();

@@ -13,8 +13,8 @@ import com.google.common.collect.Sets;
 import com.mongodb.DBObject;
 
 public class PlaylistTranslatorTest extends TestCase {
-    DescriptionTranslator dt = new DescriptionTranslator();
-    PlaylistTranslator pt = new PlaylistTranslator(dt);
+	
+    PlaylistTranslator pt = new PlaylistTranslator(new ContentTranslator());
     
     @SuppressWarnings("unchecked")
     public void testFromPlaylist() throws Exception {

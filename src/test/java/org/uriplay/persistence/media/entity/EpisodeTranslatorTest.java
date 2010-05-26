@@ -9,18 +9,18 @@ import com.mongodb.DBObject;
 
 public class EpisodeTranslatorTest extends TestCase {
     DescriptionTranslator dt = new DescriptionTranslator();
+    ContentTranslator ct = new ContentTranslator();
     BroadcastTranslator brt = new BroadcastTranslator(dt);
     LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
     EncodingTranslator ent = new EncodingTranslator(dt, lt);
     VersionTranslator vt = new VersionTranslator(dt, brt, ent);
-    ItemTranslator it = new ItemTranslator(dt, vt);
-    PlaylistTranslator pt = new PlaylistTranslator(dt);
+    ItemTranslator it = new ItemTranslator(ct, vt);
+    PlaylistTranslator pt = new PlaylistTranslator(ct);
     BrandTranslator bt = new BrandTranslator(pt);
     EpisodeTranslator et = new EpisodeTranslator(it, bt);
     
     public void testFromEpisode() throws Exception {
-        Episode episode = new Episode();
-        episode.setCanonicalUri("canonicalUri");
+        Episode episode = new Episode("canonicalUri", "episodeCurie");
         episode.setEpisodeNumber(1);
         
         DBObject dbo = et.toDBObject(null, episode);
@@ -29,14 +29,11 @@ public class EpisodeTranslatorTest extends TestCase {
     }
     
     public void testToEpisode() throws Exception {
-        Episode episode = new Episode();
-        episode.setCanonicalUri("canonicalUri");
+        Episode episode = new Episode("canonicalUri", "episodeCurie");
         episode.setEpisodeNumber(1);
         episode.setSeriesNumber(1);
         
-        Brand brand = new Brand();
-        brand.setCanonicalUri("uri");
-        brand.setCurie("curie");
+        Brand brand = new Brand("uri", "curie");
         episode.setBrand(brand);
         
         DBObject dbo = et.toDBObject(null, episode);

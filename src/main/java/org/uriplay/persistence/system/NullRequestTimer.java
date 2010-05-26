@@ -29,5 +29,18 @@ public class NullRequestTimer implements RequestTimer {
 	public void unnest() {
 		// TODO Auto-generated method stub
 	}
+	
+	@Override
+	public int hashCode() {
+		return 42;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		} 
+		return obj instanceof NullRequestTimer;
+	}
 
 }

@@ -5,7 +5,8 @@ import org.uriplay.media.entity.Brand;
 import com.mongodb.DBObject;
 
 public class BrandTranslator implements DBObjectEntityTranslator<Brand> {
-    private final PlaylistTranslator playlistTranslator;
+    
+	private final PlaylistTranslator playlistTranslator;
     
     public BrandTranslator(PlaylistTranslator playlistTranslator) {
         this.playlistTranslator = playlistTranslator;

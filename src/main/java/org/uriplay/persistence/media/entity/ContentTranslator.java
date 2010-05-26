@@ -1,0 +1,59 @@
+package org.uriplay.persistence.media.entity;
+
+import org.uriplay.media.entity.Content;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+
+public class ContentTranslator implements DBObjectEntityTranslator<Content> {
+
+	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
+	
+	@Override
+	public Content fromDBObject(DBObject dbObject, Content entity) {
+		    if (entity == null) {
+			   entity = new Content();
+	        }
+		    
+		    descriptionTranslator.fromDBObject(dbObject, entity);
+
+	        entity.setContainedInUris(TranslatorUtils.toSet(dbObject, "containedInUris"));
+	        
+	        entity.setDescription((String) dbObject.get("description"));
+	        
+	        entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
+	        
+	        entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
+	        entity.setImage((String) dbObject.get("image"));
+	        entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, "lastFetched"));
+	        entity.setPublisher((String) dbObject.get("publisher"));
+	        entity.setTags(TranslatorUtils.toSet(dbObject, "tags"));
+	        entity.setThumbnail((String) dbObject.get("thumbnail"));
+	        entity.setTitle((String) dbObject.get("title"));
+		   
+	       return entity;
+	}
+
+	@Override
+	public DBObject toDBObject(DBObject dbObject, Content entity) {
+		 if (dbObject == null) {
+	            dbObject = new BasicDBObject();
+	        }
+		 
+		    descriptionTranslator.toDBObject(dbObject, entity);
+
+	        TranslatorUtils.fromSet(dbObject, entity.getContainedInUris(), "containedInUris");
+	        TranslatorUtils.from(dbObject, "description", entity.getDescription());
+	        TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
+	        TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genres");
+	        TranslatorUtils.from(dbObject, "image", entity.getImage());
+	        TranslatorUtils.fromDateTime(dbObject, "lastFetched", entity.getLastFetched());
+	        TranslatorUtils.from(dbObject, "publisher", entity.getPublisher());
+	        TranslatorUtils.fromSet(dbObject, entity.getTags(), "tags");
+	        TranslatorUtils.from(dbObject, "thumbnail", entity.getThumbnail());
+	        TranslatorUtils.from(dbObject, "title", entity.getTitle());
+
+	        return dbObject;
+	}
+
+}

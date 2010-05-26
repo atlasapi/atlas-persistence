@@ -12,14 +12,12 @@ import com.google.common.collect.Sets;
 import com.mongodb.DBObject;
 
 public class BrandTranslatorTest extends TestCase {
-    DescriptionTranslator dt = new DescriptionTranslator();
-    PlaylistTranslator pt = new PlaylistTranslator(dt);
+    PlaylistTranslator pt = new PlaylistTranslator(new ContentTranslator());
     BrandTranslator bt = new BrandTranslator(pt);
     
     @SuppressWarnings("unchecked")
     public void testFromBrand() throws Exception {
-        Brand brand = new Brand();
-        brand.setCanonicalUri("canonicalUri");
+        Brand brand = new Brand("canonicalUri", "curie");
         brand.setFirstSeen(new DateTime());
         
         Set<String> genres = Sets.newHashSet();
@@ -30,7 +28,7 @@ public class BrandTranslatorTest extends TestCase {
         assertEquals("canonicalUri", obj.get(DescriptionTranslator.CANONICAL_URI));
         assertEquals(brand.getFirstSeen().getMillis(), obj.get("firstSeen"));
         
-        List<String> i = (List<String>) obj.get("genre");
+        List<String> i = (List<String>) obj.get("genres");
         assertEquals(1, i.size());
         for (String genre: i) {
             brand.getGenres().contains(genre);
@@ -38,13 +36,12 @@ public class BrandTranslatorTest extends TestCase {
     }
     
     public void testToBrand() throws Exception {
-        Brand brand = new Brand();
-        brand.setCanonicalUri("canonicalUri");
+        Brand brand = new Brand("canonicalUri", "curie");
         brand.setFirstSeen(new DateTime());
         brand.setLastFetched(new DateTime());
         
         Set<String> genres = Sets.newHashSet();
-        genres.add("genre");
+        genres.add("genres");
         brand.setGenres(genres);
         
         DBObject obj = bt.toDBObject(null, brand);

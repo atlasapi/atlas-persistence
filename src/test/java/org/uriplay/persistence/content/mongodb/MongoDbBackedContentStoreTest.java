@@ -60,7 +60,6 @@ public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
         items = store.findItems(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri(), data.englishForCats.getCanonicalUri()));
         assertEquals(2, items.size());
 
-        data.eggsForBreakfast.setCurie("some curie");
         store.createOrUpdateItem(data.eggsForBreakfast);
 
         items = store.findItems(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri()));
@@ -93,7 +92,6 @@ public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
         assertEquals(1, items.size());
         assertEquals(data.dotCottonsBigAdventure.getTitle(), items.get(0).getTitle());
 
-        data.goodEastendersEpisodes.setCurie("some curie");
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
 
         List<Playlist> playlists = store.findPlaylists(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
@@ -120,8 +118,7 @@ public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
     
     public void testShouldCreateElementsInPlaylistIfRequested() throws Exception {
 
-    	Playlist beginningWithA = new Playlist();
-    	beginningWithA.setCanonicalUri("/a");
+    	Playlist beginningWithA = new Playlist("/a");
     	beginningWithA.setPlaylists(Lists.<Playlist>newArrayList(data.eastenders));
     	
         store.createOrUpdatePlaylist(beginningWithA, true);

@@ -19,7 +19,6 @@ package org.uriplay.persistence.system;
  *
  * @author Robert Chatley (robert@metabroadcast.com)
  */
-@Deprecated
 public interface RemoteSiteClient<T> {
 
 	T get(String uri) throws Exception;
