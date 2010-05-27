@@ -98,7 +98,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
                 preserveAliases(item, oldItem);
             }
 
-            addUriToAliases(item);
+            addUriAndCurieToAliases(item);
             if (oldItem == null) {
                 item.setFirstSeen(new DateTime());
             }
@@ -146,7 +146,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
                 createOrUpdatePlaylist(subPlaylist, markMissingItemsAsUnavailable);
             }
 
-            addUriToAliases(playlist);
+            addUriAndCurieToAliases(playlist);
             if (oldPlaylist == null) {
                 playlist.setFirstSeen(new DateTime());
             }
@@ -169,12 +169,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         }
     }
 
-    private void addUriToAliases(Description desc) {
+    private void addUriAndCurieToAliases(Description desc) {
         desc.addAlias(desc.getCanonicalUri());
+        desc.addAlias(desc.getCurie());
     }
 
     private void removeUriFromAliases(Description desc) {
         desc.getAliases().remove(desc.getCanonicalUri());
+        desc.getAliases().remove(desc.getCurie());
     }
 
     @Override
