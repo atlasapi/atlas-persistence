@@ -2,6 +2,7 @@ package org.uriplay.persistence.media.entity;
 
 import junit.framework.TestCase;
 
+import org.uriplay.media.TransportSubType;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Countries;
 import org.uriplay.media.entity.Location;
@@ -45,7 +46,7 @@ public class LocationTranslatorTest extends TestCase {
         	.withDrmPlayableFrom(new SystemClock().now()));
 
         location.setEmbedCode("embed");
-        location.setTransportSubType("sub");
+        location.setTransportSubType(TransportSubType.RTSP);
         location.setTransportType(TransportType.LINK);
         location.setTransportIsLive(true);
         location.setUri("uri");

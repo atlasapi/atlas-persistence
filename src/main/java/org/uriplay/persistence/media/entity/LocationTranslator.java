@@ -1,5 +1,6 @@
 package org.uriplay.persistence.media.entity;
 
+import org.uriplay.media.TransportSubType;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Policy;
@@ -31,8 +32,10 @@ public class LocationTranslator implements ModelTranslator<Location> {
         entity.setAvailable((Boolean) dbObject.get("available"));
         entity.setEmbedCode((String) dbObject.get("embedCode"));
         entity.setTransportIsLive((Boolean) dbObject.get("transportIsLive"));
-        entity.setTransportSubType((String) dbObject.get("transportSubType"));
-        entity.setTransportType(readTransportType(dbObject));
+        
+        entity.setTransportType(readEnum(TransportType.class, dbObject, "transportType"));
+        entity.setTransportSubType(readEnum(TransportSubType.class, dbObject, "transportSubType"));
+        
         entity.setUri((String) dbObject.get("uri"));
         
         DBObject policyObject = (DBObject) dbObject.get("policy");
@@ -42,12 +45,12 @@ public class LocationTranslator implements ModelTranslator<Location> {
         return entity;
     }
 
-    private TransportType readTransportType(DBObject dbObject) {
-    	String transportTypeString = (String) dbObject.get("transportType");
-    	if (transportTypeString == null) { 
+    private <T extends Enum<T>> T readEnum(Class<T> clazz, DBObject dbObject, String field) {
+    	String value = (String) dbObject.get(field);
+    	if (value == null) { 
     		return null;
     	}
-		return TransportType.fromString(transportTypeString);
+		return Enum.valueOf(clazz, value.toUpperCase());
 	}
 
 	@Override
@@ -57,10 +60,13 @@ public class LocationTranslator implements ModelTranslator<Location> {
         TranslatorUtils.from(dbObject, "available", entity.getAvailable());
         TranslatorUtils.from(dbObject, "embedCode", entity.getEmbedCode());
         TranslatorUtils.from(dbObject, "transportIsLive", entity.getTransportIsLive());
-        TranslatorUtils.from(dbObject, "transportSubType", entity.getTransportSubType());
         
         if (entity.getTransportType() != null) {
         	TranslatorUtils.from(dbObject, "transportType", entity.getTransportType().toString());
+        }
+        
+        if (entity.getTransportSubType() != null) {
+        	TranslatorUtils.from(dbObject, "transportSubType", entity.getTransportSubType().toString());
         }
         
         TranslatorUtils.from(dbObject, "uri", entity.getUri());
