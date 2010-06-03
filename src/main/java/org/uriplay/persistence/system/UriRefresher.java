@@ -5,11 +5,9 @@ import java.util.Collections;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Required;
-import org.uriplay.media.entity.Description;
+import org.uriplay.media.entity.Content;
 import org.uriplay.persistence.content.MutableContentStore;
 import org.uriplay.persistence.servlet.ContentNotFoundException;
-
-import com.google.common.collect.Sets;
 
 /* Copyright 2009 Meta Broadcast Ltd
 
@@ -29,7 +27,7 @@ public class UriRefresher implements Runnable  {
 
 	private static final Log log = LogFactory.getLog(UriRefresher.class);
 	
-	private Fetcher<Description> fetcher;
+	private Fetcher<Content> fetcher;
 	private MutableContentStore contentStore;
 	private Iterable<String> uris;
 	private boolean missingContentShouldBeMarkedAsUnavailable;
@@ -38,7 +36,7 @@ public class UriRefresher implements Runnable  {
 
 	}
 	
-	public UriRefresher(Fetcher<Description> fetcher, MutableContentStore contentStore) {
+	public UriRefresher(Fetcher<Content> fetcher, MutableContentStore contentStore) {
 		this.fetcher = fetcher;
 		this.contentStore = contentStore;
 	}
@@ -55,7 +53,7 @@ public class UriRefresher implements Runnable  {
 
 	private void update(String uri) {
 		
-		Description latestContent = null;
+		Content latestContent = null;
 		
 		try {
 			latestContent = fetcher.fetch(uri, new NullRequestTimer());
@@ -69,7 +67,7 @@ public class UriRefresher implements Runnable  {
 		}
 
 		try {
-			contentStore.createOrUpdateGraph(Sets.newHashSet(latestContent), missingContentShouldBeMarkedAsUnavailable);
+			contentStore.createOrUpdateContent(latestContent, missingContentShouldBeMarkedAsUnavailable);
 		} catch (Exception e) {
 			log.warn(e);
 			return;
@@ -79,7 +77,7 @@ public class UriRefresher implements Runnable  {
 	}
 	
 	@Required
-	public void setFetcher(Fetcher<Description> fetcher) {
+	public void setFetcher(Fetcher<Content> fetcher) {
 		this.fetcher = fetcher;
 	}
 

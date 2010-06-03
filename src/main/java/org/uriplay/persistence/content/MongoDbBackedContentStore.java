@@ -22,6 +22,7 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.entity.Brand;
+import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Episode;
@@ -29,13 +30,11 @@ import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
-import org.uriplay.media.util.ChildFinder;
 import org.uriplay.persistence.content.mongodb.MongoDBQueryBuilder;
 import org.uriplay.persistence.content.mongodb.MongoDBTemplate;
+import org.uriplay.persistence.media.entity.ContentTranslator;
 import org.uriplay.persistence.media.entity.DescriptionTranslator;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
@@ -60,32 +59,23 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
 
 	@Override
     public void addAliases(String uri, Set<String> aliases) {
-        Description desc = findByUri(uri);
+        Content desc = findByUri(uri);
         if (desc != null) {
             for (String alias : aliases) {
                 desc.addAlias(alias);
             }
-            createOrUpdateGraph(Sets.newHashSet(desc), false);
+            createOrUpdateContent(desc, false);
         }
-        
     }
 
     @Override
-    public void createOrUpdateGraph(Set<?> beans, boolean markMissingItemsAsUnavailable) {
-        Iterable<?> roots = rootsOf(beans);
-
-        for (Object root : roots) {
-            if (root instanceof Playlist) {
-                createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
-            }
-            if (root instanceof Item) {
-                createOrUpdateItem((Item) root);
-            }
+    public void createOrUpdateContent(Content root, boolean markMissingItemsAsUnavailable) {
+        if (root instanceof Playlist) {
+            createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
         }
-    }
-
-    private Iterable<?> rootsOf(Set<?> beans) {
-        return Iterables.filter(beans, Predicates.not(new ChildFinder(beans)));
+        if (root instanceof Item) {
+            createOrUpdateItem((Item) root);
+        }
     }
 
     @Override
@@ -96,6 +86,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             if (!items.isEmpty()) {
                 oldItem = items.get(0);
                 preserveAliases(item, oldItem);
+                preserveContainedIn(item, oldItem);
             }
 
             addUriAndCurieToAliases(item);
@@ -123,19 +114,34 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
                 preserveAliases(playlist, oldPlaylist);
             }
 
-            if (markMissingItemsAsUnavailable && oldPlaylist != null) {
-                Set<String> oldUris = Sets.difference(Sets.newHashSet(oldPlaylist.getItemUris()), Sets.newHashSet(playlist.getItemUris()));
+            if (oldPlaylist != null) {
+            	Set<String> oldItemUris = Sets.difference(Sets.newHashSet(oldPlaylist.getItemUris()), Sets.newHashSet(playlist.getItemUris()));
+            	List<Item> oldItems = findItems(Lists.newArrayList(oldItemUris));
+	            if (markMissingItemsAsUnavailable) {
+					for (Item item : oldItems) {
+	                    for (Version version : item.getVersions()) {
+	                        for (Encoding encoding : version.getManifestedAs()) {
+	                            for (Location location : encoding.getAvailableAt()) {
+	                                location.setAvailable(false);
+	                            }
+	                        }
+	                    }
+	                    playlist.addItem(item);
+	                }
+	            } else {
+	            	for (Item item : oldItems) {
+						removeContainedIn(itemCollection, item, playlist.getCanonicalUri());
+					}
+	            }
+	            
+	            preserveContainedIn(playlist, oldPlaylist);
+	            
+            	Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets.newHashSet(playlist.getPlaylistUris()));
+            	List<Playlist> oldPlaylists = findPlaylists(Lists.newArrayList(oldPlaylistUris));
 
-                for (Item item : findItems(Lists.newArrayList(oldUris))) {
-                    for (Version version : item.getVersions()) {
-                        for (Encoding encoding : version.getManifestedAs()) {
-                            for (Location location : encoding.getAvailableAt()) {
-                                location.setAvailable(false);
-                            }
-                        }
-                    }
-                    playlist.addItem(item);
-                }
+	            for (Playlist oldSubPlaylist : oldPlaylists) {
+					removeContainedIn(playlistCollection, oldSubPlaylist, playlist.getCanonicalUri());
+				}
             }
 
             for (Item item : playlist.getItems()) {
@@ -160,14 +166,22 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             throw new RuntimeException(e);
         }
     }
+	
+    private void removeContainedIn(DBCollection collection, Content content, String containedInUri) {
+    	collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()), new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY, containedInUri)));
+    }
 
-    private void preserveAliases(Description newDesc, Description oldDesc) {
+	private void preserveAliases(Description newDesc, Description oldDesc) {
         Set<String> oldAliases = Sets.difference(oldDesc.getAliases(), newDesc.getAliases());
 
         for (String alias : oldAliases) {
             newDesc.addAlias(alias);
         }
     }
+	
+	private void preserveContainedIn(Content newDesc, Content oldDesc) {
+		newDesc.setContainedInUris(Sets.newHashSet(Sets.union(oldDesc.getContainedInUris(), newDesc.getContainedInUris())));
+	}
 
     private void addUriAndCurieToAliases(Description desc) {
         desc.addAlias(desc.getCanonicalUri());
@@ -180,7 +194,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
     }
 
     @Override
-    public Description findByUri(String uri) {
+    public Content findByUri(String uri) {
         List<Item> items = findItems(Lists.newArrayList(uri));
         if (!items.isEmpty()) {
             return items.get(0);

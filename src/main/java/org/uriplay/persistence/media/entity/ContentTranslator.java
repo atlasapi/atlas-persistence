@@ -7,6 +7,8 @@ import com.mongodb.DBObject;
 
 public class ContentTranslator implements DBObjectEntityTranslator<Content> {
 
+	public static final String CONTAINED_IN_URIS_KEY = "containedInUris";
+	
 	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
 	
 	@Override
@@ -17,7 +19,7 @@ public class ContentTranslator implements DBObjectEntityTranslator<Content> {
 		    
 		    descriptionTranslator.fromDBObject(dbObject, entity);
 
-	        entity.setContainedInUris(TranslatorUtils.toSet(dbObject, "containedInUris"));
+	        entity.setContainedInUris(TranslatorUtils.toSet(dbObject, CONTAINED_IN_URIS_KEY));
 	        
 	        entity.setDescription((String) dbObject.get("description"));
 	        
@@ -42,7 +44,7 @@ public class ContentTranslator implements DBObjectEntityTranslator<Content> {
 		 
 		    descriptionTranslator.toDBObject(dbObject, entity);
 
-	        TranslatorUtils.fromSet(dbObject, entity.getContainedInUris(), "containedInUris");
+	        TranslatorUtils.fromSet(dbObject, entity.getContainedInUris(), CONTAINED_IN_URIS_KEY);
 	        TranslatorUtils.from(dbObject, "description", entity.getDescription());
 	        TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
 	        TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genres");

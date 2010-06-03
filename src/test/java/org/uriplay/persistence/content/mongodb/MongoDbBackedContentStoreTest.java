@@ -15,6 +15,7 @@ permissions and limitations under the License. */
 package org.uriplay.persistence.content.mongodb;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -33,6 +34,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
+
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.*;
 
 public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
 	
@@ -234,7 +238,7 @@ public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
     }
     
     public void testShouldGetEpisodeThroughAnonymousMethods() throws Exception {
-        store.createOrUpdateGraph(Sets.newHashSet(data.brainSurgery), false);
+        store.createOrUpdateContent(data.brainSurgery, false);
         
         Description episode = store.findByUri(data.brainSurgery.getCanonicalUri());
         assertNotNull(episode);
@@ -339,4 +343,47 @@ public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
             }
         }
     }
+    
+    public void testItemsRemainInPlaylistsAfterUpdate() throws Exception {
+    	String itemUri = "itemUri";
+    	String playlistUri = "playlistUri";
+    	
+		Playlist playlist = new Playlist(playlistUri);
+		playlist.addItem(new Item(itemUri, "item:curie"));
+		
+		store.createOrUpdatePlaylist(playlist, false);
+		
+		assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(playlistUri));
+		
+		store.createOrUpdateItem(new Item(itemUri, "item:curie"));
+		
+		// the item should remain in the playlist
+		assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(playlistUri));
+		
+		store.createOrUpdatePlaylist(new Playlist(playlistUri), false);
+		
+		// it should now be removed from the playlist
+		assertThat(store.findByUri(itemUri).getContainedInUris(), is(Collections.<String>emptySet()));
+	}
+    
+    public void testBrandsRemainInPlaylistsAfterUpdate() throws Exception {
+		String playlistUri = "playlistUri";
+    	String brandUri = "brandUri";
+    	
+    	Playlist playlist = new Playlist(playlistUri);
+		playlist.addPlaylist(new Brand(brandUri, "brand:curie"));
+		
+		store.createOrUpdatePlaylist(playlist, false);
+		
+		assertThat(store.findByUri(brandUri).getContainedInUris(), hasItem(playlistUri));
+
+		store.createOrUpdatePlaylist(new Brand(brandUri, "brand:curie"), true);
+		
+		assertThat(store.findByUri(brandUri).getContainedInUris(), hasItem(playlistUri));
+		
+		store.createOrUpdatePlaylist(new Playlist(playlistUri), false);
+		
+		assertThat(store.findByUri(brandUri).getContainedInUris(), is(Collections.<String>emptySet()));
+
+	}
 }

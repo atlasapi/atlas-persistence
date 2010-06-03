@@ -5,14 +5,12 @@ import java.util.List;
 import java.util.Set;
 
 import org.uriplay.media.entity.Brand;
+import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
-import org.uriplay.media.util.ChildFinder;
 import org.uriplay.persistence.content.ContentListener.changeType;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
 
@@ -30,21 +28,17 @@ public class EventFiringContentStore implements MutableContentStore {
 		delegate.addAliases(uri, aliases);
 	}
 
-	public void createOrUpdateGraph(Set<?> beans, boolean markMissingItemsAsUnavailable) {
-        for (Object root : rootsOf(beans)) {
-            if (root instanceof Playlist) {
-                createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
-            }
-            if (root instanceof Item) {
-                createOrUpdateItem((Item) root);
-            }
+	@Override
+	public void createOrUpdateContent(Content root, boolean markMissingItemsAsUnavailable) {
+        if (root instanceof Playlist) {
+            createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
+        }
+        if (root instanceof Item) {
+            createOrUpdateItem((Item) root);
         }
 	}
 	
-    private Iterable<?> rootsOf(Set<?> beans) {
-        return Iterables.filter(beans, Predicates.not(new ChildFinder(beans)));
-    }
-
+	@Override
 	public void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable) {
 		delegate.createOrUpdatePlaylist(enclosingList, markMissingItemsAsUnavailable);
 		
@@ -62,6 +56,7 @@ public class EventFiringContentStore implements MutableContentStore {
 		listener.brandChanged(brands, changeType.CONTENT_UPDATE);
 	}
 	
+	@Override
 	public void createOrUpdateItem(Item item) {
 		delegate.createOrUpdateItem(item);
 		listener.itemChanged(Collections.singletonList(item), changeType.CONTENT_UPDATE);
