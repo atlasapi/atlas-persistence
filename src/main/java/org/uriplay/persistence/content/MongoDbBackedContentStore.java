@@ -14,6 +14,9 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content;
 
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +40,8 @@ import org.uriplay.persistence.media.entity.DescriptionTranslator;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
 import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -85,27 +90,26 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
 
     private void createOrUpdateItem(Item item, boolean markMissingItemsAsUnavailable) {
         try {
-            Item oldItem = null;
             Content content = findByUri(item.getCanonicalUri());
             if (content != null) {
             	if (! (content instanceof Item)) {
             		throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() +  "  since the old entity was not an item");
             	}
-                oldItem = (Item) content;
+                Item oldItem = (Item) content;
+
+                preserveContainedIn(item, oldItem);
                 
                 if (!markMissingItemsAsUnavailable && oldItem instanceof Episode) {
-                	preserveContainedIn(item, oldItem);
+                	writeContainedIn(itemCollection, item, item.getContainedInUris());
                 	return;
                 }
                 
                 preserveAliases(item, oldItem);
-                preserveContainedIn(item, oldItem);
+            } else {
+            	item.setFirstSeen(new DateTime());
             }
 
             addUriAndCurieToAliases(item);
-            if (oldItem == null) {
-                item.setFirstSeen(new DateTime());
-            }
             item.setLastFetched(new DateTime());
 
             DBObject query = new BasicDBObject();
@@ -182,6 +186,12 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
 	
     private void removeContainedIn(DBCollection collection, Content content, String containedInUri) {
     	collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()), new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY, containedInUri)));
+    }
+    
+    private void writeContainedIn(DBCollection collection, Content content, Set<String> containedInUris) {
+		MongoQueryBuilder findByUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri());
+		MongoUpdateBuilder update = update().setField(ContentTranslator.CONTAINED_IN_URIS_KEY, containedInUris);
+		collection.update(findByUri.build(), update.build());
     }
 
 	private void preserveAliases(Description newDesc, Description oldDesc) {
