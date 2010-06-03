@@ -125,7 +125,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     
     public void testShouldCreateElementsInPlaylistIfRequested() throws Exception {
 
-    	Playlist beginningWithA = new Playlist("/a");
+    	Playlist beginningWithA = new Playlist("/a", "curie");
     	beginningWithA.setPlaylists(Lists.<Playlist>newArrayList(data.eastenders));
     	
         store.createOrUpdatePlaylist(beginningWithA, true);
@@ -365,7 +365,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	assertThat(((Episode) store.findByUri(itemUri)).getBrand(), is(brand)); 
     	
     	String playlistUri = "playlistUri";
-		Playlist playlist = new Playlist(playlistUri);
+		Playlist playlist = new Playlist(playlistUri, "playist:curie");
     	playlist.addItem(new Item(itemUri, "item:curie"));
     	
     	store.createOrUpdatePlaylist(playlist, false);
@@ -376,7 +376,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	String itemUri = "itemUri";
     	String playlistUri = "playlistUri";
     	
-		Playlist playlist = new Playlist(playlistUri);
+		Playlist playlist = new Playlist(playlistUri, "playlist:curie");
 		playlist.addItem(new Item(itemUri, "item:curie"));
 		
 		store.createOrUpdatePlaylist(playlist, false);
@@ -388,7 +388,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		// the item should remain in the playlist
 		assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(playlistUri));
 		
-		store.createOrUpdatePlaylist(new Playlist(playlistUri), false);
+		store.createOrUpdatePlaylist(new Playlist(playlistUri, "playlist:curie"), false);
 		
 		// it should now be removed from the playlist
 		assertThat(store.findByUri(itemUri).getContainedInUris(), is(Collections.<String>emptySet()));
@@ -399,7 +399,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		String playlistUri = "playlistUri";
     	String brandUri = "brandUri";
     	
-    	Playlist playlist = new Playlist(playlistUri);
+    	Playlist playlist = new Playlist(playlistUri, "playlist:curie");
 		playlist.addPlaylist(new Brand(brandUri, "brand:curie"));
 		
 		store.createOrUpdatePlaylist(playlist, false);
@@ -410,7 +410,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		
 		assertThat(store.findByUri(brandUri).getContainedInUris(), hasItem(playlistUri));
 		
-		store.createOrUpdatePlaylist(new Playlist(playlistUri), false);
+		store.createOrUpdatePlaylist(new Playlist(playlistUri, "playlist:curie"), false);
 		
 		assertThat(store.findByUri(brandUri).getContainedInUris(), is(Collections.<String>emptySet()));
 
