@@ -15,6 +15,7 @@ permissions and limitations under the License. */
 package org.uriplay.persistence.testing;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Broadcast;
@@ -27,12 +28,14 @@ import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.time.SystemClock;
 
 public class DummyContentData {
 
-	public static final DateTime april22nd1730 = new DateTime(2009, 04, 22, 17, 30, 00, 000);
-	public static final DateTime april22nd1930 = new DateTime(2009, 04, 22, 19, 30, 00, 000);
-	public static final DateTime april23rd = new DateTime(2009, 04, 23, 19, 30, 00, 000);
+	public static final DateTime april22nd1730 = new DateTime(2009, 04, 22, 17, 30, 00, 000, DateTimeZone.UTC);
+	public static final DateTime april22nd1930 = new DateTime(2009, 04, 22, 19, 30, 00, 000, DateTimeZone.UTC);
+	public static final DateTime april23rd = new DateTime(2009, 04, 23, 19, 30, 00, 000, DateTimeZone.UTC);
+	public static final DateTime now = new SystemClock().now();
 	
 	public Brand eastenders;
 	public Episode dotCottonsBigAdventure;
@@ -146,7 +149,7 @@ public class DummyContentData {
 		interviewWithMp = new Episode("http://www.bbc.co.uk/newsnight/1", "bbc:newsnight:1");
 		interviewWithMp.setTitle("Interview with MP");
 		interviewWithMp.setPublisher("bbc.co.uk");
-		interviewWithMp.addVersion(versionWithEmbeddableLocation(new DateTime(), 60, TransportType.LINK));
+		interviewWithMp.addVersion(versionWithEmbeddableLocation(now, 60, TransportType.LINK));
 		interviewWithMp.setIsLongForm(true);
 
 		
@@ -222,7 +225,7 @@ public class DummyContentData {
 	}
 	
 	public Version versionWithEmbeddableLocation() {
-		return versionWithEmbeddableLocation(new DateTime(), 10, TransportType.LINK);
+		return versionWithEmbeddableLocation(now, 10, TransportType.LINK);
 	}
 	
 	public static Version versionWithEmbeddableLocation(DateTime date, int duration, TransportType type) {

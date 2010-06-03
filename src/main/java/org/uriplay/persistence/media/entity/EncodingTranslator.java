@@ -8,10 +8,12 @@ import org.uriplay.media.entity.Location;
 import org.uriplay.media.reference.entity.MimeType;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
-public class EncodingTranslator implements DBObjectEntityTranslator<Encoding> {
+public class EncodingTranslator implements ModelTranslator<Encoding> {
     private final DescriptionTranslator descriptionTranslator;
     private final LocationTranslator locationTranslator;
     

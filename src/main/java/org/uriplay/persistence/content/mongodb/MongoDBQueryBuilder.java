@@ -16,6 +16,7 @@ package org.uriplay.persistence.content.mongodb;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -55,6 +56,7 @@ import org.uriplay.media.entity.Version;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -174,7 +176,7 @@ public class MongoDBQueryBuilder {
 			@SuppressWarnings("unchecked")
             @Override
 			public BasicDBObject visit(DateTimeAttributeQuery query) {
-				final List<Long> values = toMillis((List<DateTime>) query.getValue());
+				final List<Date> values = toDate((List<DateTime>) query.getValue());
 
 				BasicDBObject rhs = query.accept(new DateTimeOperatorVisitor<BasicDBObject>() {
 
@@ -191,11 +193,11 @@ public class MongoDBQueryBuilder {
 				return new BasicDBObject(fullyQualifiedPath(queryType, query.getAttribute()), rhs);
 			}
 
-			private List<Long> toMillis(List<DateTime> values) {
-				return Lists.transform(values, new Function<DateTime, Long>(){
+			private List<Date> toDate(List<DateTime> values) {
+				return Lists.transform(values, new Function<DateTime, Date>(){
 					@Override
-					public Long apply(DateTime time) {
-						return time.getMillis();
+					public Date apply(DateTime time) {
+						return time.toDateTime(DateTimeZones.UTC).toDate();
 					}
 				});
 			}

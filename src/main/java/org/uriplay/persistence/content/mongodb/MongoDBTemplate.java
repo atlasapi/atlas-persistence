@@ -14,8 +14,6 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content.mongodb;
 
-import java.util.List;
-
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Episode;
 import org.uriplay.media.entity.Item;
@@ -34,16 +32,11 @@ import org.uriplay.persistence.media.entity.PolicyTranslator;
 import org.uriplay.persistence.media.entity.VersionTranslator;
 import org.uriplay.persistence.tracking.ContentMention;
 
-import com.google.common.collect.Lists;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
-public class MongoDBTemplate {
+public class MongoDBTemplate extends com.metabroadcast.common.persistence.MongoDBTemplate {
+
     private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final ContentTranslator contentTranslator = new ContentTranslator();
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator(descriptionTranslator);
@@ -56,27 +49,12 @@ public class MongoDBTemplate {
     private final EpisodeTranslator episodeTranslator = new EpisodeTranslator(itemTranslator, brandTranslator);
     private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();
 
-    private final DB db;
-
     public MongoDBTemplate(Mongo mongo, String dbName) {
-        db = mongo.getDB("uriplay");
+        super(mongo, dbName);
     }
-
-    protected final DBCollection table(String name) {
-        return db.getCollection(name);
-    }
-
-    protected final BasicDBObject in(String attribute, List<?> elems) {
-        return new BasicDBObject(attribute, new BasicDBObject("$in", list(elems)));
-    }
-
-    private BasicDBList list(List<?> elems) {
-        BasicDBList dbList = new BasicDBList();
-        dbList.addAll(elems);
-        return dbList;
-    }
-
-    protected DBObject formatForDB(Object obj) {
+    
+    @Override
+    protected DBObject toDB(Object obj) {
         try {
             if (obj instanceof Brand) {
                 return brandTranslator.toDBObject(null, (Brand) obj);
@@ -97,7 +75,8 @@ public class MongoDBTemplate {
     }
 
     @SuppressWarnings("unchecked")
-    protected <T> T fromDb(DBObject dbObject, Class<T> clazz) {
+    @Override
+    protected <T> T fromDB(DBObject dbObject, Class<T> clazz) {
         try {
             if (clazz.equals(Item.class)) {
                 return (T) itemTranslator.fromDBObject(dbObject, null);
@@ -115,13 +94,5 @@ public class MongoDBTemplate {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    protected <T> List<T> toList(DBCursor cursor, Class<T> type) {
-        List<T> asList = Lists.newArrayList();
-        while (cursor.hasNext()) {
-            asList.add(fromDb(cursor.next(), type));
-        }
-        return asList;
     }
 }

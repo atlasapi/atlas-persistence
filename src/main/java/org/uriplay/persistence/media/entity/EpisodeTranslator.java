@@ -3,9 +3,11 @@ package org.uriplay.persistence.media.entity;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Episode;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
-public class EpisodeTranslator implements DBObjectEntityTranslator<Episode> {
+public class EpisodeTranslator implements ModelTranslator<Episode> {
     private final ItemTranslator itemTranslator;
     private final BrandTranslator brandTranslator;
     

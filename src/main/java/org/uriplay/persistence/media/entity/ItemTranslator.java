@@ -7,10 +7,11 @@ import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Version;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
-public class ItemTranslator implements DBObjectEntityTranslator<Item> {
+public class ItemTranslator implements ModelTranslator<Item> {
     private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator;
     

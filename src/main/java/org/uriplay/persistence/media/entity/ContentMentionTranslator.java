@@ -3,10 +3,12 @@ package org.uriplay.persistence.media.entity;
 import org.uriplay.persistence.tracking.ContentMention;
 import org.uriplay.persistence.tracking.TrackingSource;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class ContentMentionTranslator implements DBObjectEntityTranslator<ContentMention> {
+public class ContentMentionTranslator implements ModelTranslator<ContentMention> {
 
     @Override
     public ContentMention fromDBObject(DBObject dbObject, ContentMention entity) {

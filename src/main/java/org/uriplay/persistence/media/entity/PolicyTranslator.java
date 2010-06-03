@@ -3,9 +3,11 @@ package org.uriplay.persistence.media.entity;
 import org.uriplay.media.entity.Countries;
 import org.uriplay.media.entity.Policy;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
-public class PolicyTranslator implements DBObjectEntityTranslator<Policy> {
+public class PolicyTranslator implements ModelTranslator<Policy> {
 	
 	@Override
     public Policy fromDBObject(DBObject dbObject, Policy entity) {

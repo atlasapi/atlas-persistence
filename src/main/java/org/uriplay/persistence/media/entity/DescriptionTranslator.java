@@ -2,10 +2,12 @@ package org.uriplay.persistence.media.entity;
 
 import org.uriplay.media.entity.Description;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class DescriptionTranslator implements DBObjectEntityTranslator<Description> {
+public class DescriptionTranslator implements ModelTranslator<Description> {
     public static final String CANONICAL_URI = "canonicalUri";
 
     @Override

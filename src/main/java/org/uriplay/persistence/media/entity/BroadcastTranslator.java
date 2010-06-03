@@ -2,9 +2,11 @@ package org.uriplay.persistence.media.entity;
 
 import org.uriplay.media.entity.Broadcast;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
-public class BroadcastTranslator implements DBObjectEntityTranslator<Broadcast> {
+public class BroadcastTranslator implements ModelTranslator<Broadcast> {
     private DescriptionTranslator descriptionTranslator;
     
     public BroadcastTranslator(DescriptionTranslator descriptionTranslator) {

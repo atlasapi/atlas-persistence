@@ -2,9 +2,10 @@ package org.uriplay.persistence.media.entity;
 
 import org.uriplay.media.entity.Brand;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.mongodb.DBObject;
 
-public class BrandTranslator implements DBObjectEntityTranslator<Brand> {
+public class BrandTranslator implements ModelTranslator<Brand> {
     
 	private final PlaylistTranslator playlistTranslator;
     

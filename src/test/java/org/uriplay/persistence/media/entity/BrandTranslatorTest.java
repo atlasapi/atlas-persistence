@@ -5,10 +5,10 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
-import org.joda.time.DateTime;
 import org.uriplay.media.entity.Brand;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
 public class BrandTranslatorTest extends TestCase {
@@ -18,7 +18,7 @@ public class BrandTranslatorTest extends TestCase {
     @SuppressWarnings("unchecked")
     public void testFromBrand() throws Exception {
         Brand brand = new Brand("canonicalUri", "curie");
-        brand.setFirstSeen(new DateTime());
+        brand.setFirstSeen(new SystemClock().now());
         
         Set<String> genres = Sets.newHashSet();
         genres.add("genre");
@@ -26,7 +26,6 @@ public class BrandTranslatorTest extends TestCase {
         
         DBObject obj = bt.toDBObject(null, brand);
         assertEquals("canonicalUri", obj.get(DescriptionTranslator.CANONICAL_URI));
-        assertEquals(brand.getFirstSeen().getMillis(), obj.get("firstSeen"));
         
         List<String> i = (List<String>) obj.get("genres");
         assertEquals(1, i.size());
@@ -37,8 +36,8 @@ public class BrandTranslatorTest extends TestCase {
     
     public void testToBrand() throws Exception {
         Brand brand = new Brand("canonicalUri", "curie");
-        brand.setFirstSeen(new DateTime());
-        brand.setLastFetched(new DateTime());
+        brand.setFirstSeen(new SystemClock().now());
+        brand.setLastFetched(new SystemClock().now());
         
         Set<String> genres = Sets.newHashSet();
         genres.add("genres");

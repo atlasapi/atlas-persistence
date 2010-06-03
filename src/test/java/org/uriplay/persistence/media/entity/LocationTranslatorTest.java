@@ -2,13 +2,13 @@ package org.uriplay.persistence.media.entity;
 
 import junit.framework.TestCase;
 
-import org.joda.time.DateTime;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Countries;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Policy;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
@@ -22,7 +22,7 @@ public class LocationTranslatorTest extends TestCase {
         location.setAvailable(true);
         
         location.setPolicy(new Policy()
-        					.withAvailabilityStart(new DateTime())
+        					.withAvailabilityStart(new SystemClock().now())
         					.withAvailableCountries(Countries.IE, Countries.GB));
         
         DBObject dbObject = lt.toDBObject(null, location);
@@ -30,7 +30,6 @@ public class LocationTranslatorTest extends TestCase {
         assertEquals(location.getAvailable(), dbObject.get("available"));
     
         DBObject policyObject = (DBObject) dbObject.get("policy");
-		assertEquals(location.getPolicy().getAvailabilityStart().getMillis(), policyObject.get("availabilityStart"));
         assertEquals(Sets.newHashSet("GB", "IE"),  Sets.newHashSet(((BasicDBList)  policyObject.get("availableCountries"))));
     }
     
@@ -40,10 +39,10 @@ public class LocationTranslatorTest extends TestCase {
         
         
         location.setPolicy(new Policy()
-        	.withAvailabilityStart(new DateTime())
-        	.withAvailabilityEnd(new DateTime().plusHours(1))
+        	.withAvailabilityStart(new SystemClock().now())
+        	.withAvailabilityEnd(new SystemClock().now().plusHours(1))
         	.withAvailableCountries(Countries.IE, Countries.GB)
-        	.withDrmPlayableFrom(new DateTime()));
+        	.withDrmPlayableFrom(new SystemClock().now()));
 
         location.setEmbedCode("embed");
         location.setTransportSubType("sub");

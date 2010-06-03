@@ -98,7 +98,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             DBObject query = new BasicDBObject();
             query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
 
-            itemCollection.update(query, formatForDB(item), true, false);
+            itemCollection.update(query, toDB(item), true, false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -161,7 +161,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             DBObject query = new BasicDBObject();
             query.put(DescriptionTranslator.CANONICAL_URI, playlist.getCanonicalUri());
 
-            playlistCollection.update(query, formatForDB(playlist), true, false);
+            playlistCollection.update(query, toDB(playlist), true, false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -230,18 +230,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         }
 
         return items;
-    }
-
-    private Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection) {
-        if (selection != null && (selection.hasLimit() || selection.hasStartIndex())) {
-            return collection.find(query, new BasicDBObject(), selection.startIndexOrDefaultValue(0), hardLimit(selection));
-        } else {
-            return collection.find(query, new BasicDBObject(), 0, DEFAULT_BATCH_SIZE);
-        }
-    }
-
-    private Integer hardLimit(Selection selection) {
-        return -1 * selection.limitOrDefaultValue(0);
     }
 
     private MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
@@ -323,9 +311,9 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
 
         try {
             if (object.containsField("type") && Episode.class.getSimpleName().equals(object.get("type"))) {
-                item = fromDb(object, Episode.class);
+                item = fromDB(object, Episode.class);
             } else {
-                item = fromDb(object, Item.class);
+                item = fromDB(object, Item.class);
             }
 
             removeUriFromAliases(item);
@@ -340,9 +328,9 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         
         try {
             if (object.containsField("type") && Brand.class.getSimpleName().equals(object.get("type"))) {
-                playlist = fromDb(object, Brand.class);
+                playlist = fromDB(object, Brand.class);
             } else {
-                playlist = fromDb(object, Playlist.class);
+                playlist = fromDB(object, Playlist.class);
             }
 
             if (hydrate) {

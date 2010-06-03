@@ -2,10 +2,12 @@ package org.uriplay.persistence.media.entity;
 
 import org.uriplay.media.entity.Content;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class ContentTranslator implements DBObjectEntityTranslator<Content> {
+public class ContentTranslator implements ModelTranslator<Content> {
 
 	public static final String CONTAINED_IN_URIS_KEY = "containedInUris";
 	

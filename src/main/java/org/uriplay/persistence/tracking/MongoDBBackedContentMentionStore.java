@@ -34,7 +34,7 @@ public class MongoDBBackedContentMentionStore extends MongoDBTemplate implements
 	
 	@Override
 	public void mentioned(ContentMention mention) {
-		contentMentions.save(formatForDB(mention));
+		contentMentions.save(toDB(mention));
 	}
 
 	@Override

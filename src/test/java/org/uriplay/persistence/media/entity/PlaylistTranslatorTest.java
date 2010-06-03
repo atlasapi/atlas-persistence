@@ -5,11 +5,11 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
-import org.joda.time.DateTime;
 import org.uriplay.media.entity.Playlist;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
 public class PlaylistTranslatorTest extends TestCase {
@@ -20,7 +20,7 @@ public class PlaylistTranslatorTest extends TestCase {
     public void testFromPlaylist() throws Exception {
         Playlist playlist = new Playlist();
         playlist.setCanonicalUri("uri");
-        playlist.setFirstSeen(new DateTime());
+        playlist.setFirstSeen(new SystemClock().now());
         
         List<String> items = Lists.newArrayList();
         items.add("item");
@@ -28,7 +28,6 @@ public class PlaylistTranslatorTest extends TestCase {
         
         DBObject obj = pt.toDBObject(null, playlist);
         assertEquals("uri", obj.get(DescriptionTranslator.CANONICAL_URI));
-        assertEquals(playlist.getFirstSeen().getMillis(), obj.get("firstSeen"));
         
         List<String> i = (List<String>) obj.get("itemUris");
         assertEquals(1, i.size());
@@ -40,7 +39,7 @@ public class PlaylistTranslatorTest extends TestCase {
     public void testToPlaylist() throws Exception {
         Playlist playlist = new Playlist();
         playlist.setCanonicalUri("uri");
-        playlist.setFirstSeen(new DateTime());
+        playlist.setFirstSeen(new SystemClock().now());
         playlist.setDescription("description");
         playlist.setTitle("title");
         playlist.setPublisher("publisher");

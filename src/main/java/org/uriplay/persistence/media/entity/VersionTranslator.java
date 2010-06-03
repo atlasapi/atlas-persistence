@@ -8,10 +8,12 @@ import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Version;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
-public class VersionTranslator implements DBObjectEntityTranslator<Version> {
+public class VersionTranslator implements ModelTranslator<Version> {
     private final DescriptionTranslator descriptionTranslator;
     private final BroadcastTranslator broadcastTranslator;
     private final EncodingTranslator encodingTranslator;

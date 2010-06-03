@@ -4,10 +4,12 @@ import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Policy;
 
+import com.metabroadcast.common.persistence.translator.ModelTranslator;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class LocationTranslator implements DBObjectEntityTranslator<Location> {
+public class LocationTranslator implements ModelTranslator<Location> {
 	
     private final DescriptionTranslator descriptionTranslator;
 	private final PolicyTranslator policyTranslator;
