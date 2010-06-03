@@ -19,6 +19,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import junit.framework.TestCase;
+
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Encoding;
@@ -33,12 +35,13 @@ import org.uriplay.persistence.testing.DummyContentData;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.query.Selection;
 
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.*;
 
-public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
+public class MongoDbBackedContentStoreTest extends TestCase {
 	
 	private MongoDbBackedContentStore store;
 	private DummyContentData data ;
@@ -46,7 +49,7 @@ public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-    	this.store = new MongoDbBackedContentStore(mongo(), "uriplay");
+    	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyMongo(), "uriplay");
     	data = new DummyContentData();
     }
 
@@ -343,6 +346,24 @@ public class MongoDbBackedContentStoreTest extends BaseMongoDBTest {
             }
         }
     }
+    
+    public void testThatItemsAreNotRemovedFromTheirBrands() throws Exception {
+    	String itemUri = "itemUri";
+    	String brandUri = "brandUri";
+
+		Brand brand = new Brand(brandUri, "brand:curie");
+		brand.addItems(new Episode(itemUri, "item:curie"));
+		
+    	store.createOrUpdatePlaylist(brand, true);
+    	
+    	assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(brandUri)); 
+    	assertThat(((Episode) store.findByUri(itemUri)).getBrand(), is(brand)); 
+    	
+    	store.createOrUpdateItem((new Item(itemUri, "item:curie")));
+
+    	assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(brandUri));
+    	assertThat(((Episode) store.findByUri(itemUri)).getBrand(), is(brand)); 
+	}
     
     public void testItemsRemainInPlaylistsAfterUpdate() throws Exception {
     	String itemUri = "itemUri";

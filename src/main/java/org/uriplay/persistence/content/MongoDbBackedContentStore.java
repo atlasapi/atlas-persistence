@@ -77,14 +77,27 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             createOrUpdateItem((Item) root);
         }
     }
-
+    
     @Override
     public void createOrUpdateItem(Item item) {
+    	createOrUpdateItem(item, false);
+    }
+
+    private void createOrUpdateItem(Item item, boolean markMissingItemsAsUnavailable) {
         try {
             Item oldItem = null;
-            List<Item> items = findItems(Lists.newArrayList(item.getCanonicalUri()));
-            if (!items.isEmpty()) {
-                oldItem = items.get(0);
+            Content content = findByUri(item.getCanonicalUri());
+            if (content != null) {
+            	if (! (content instanceof Item)) {
+            		throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() +  "  since the old entity was not an item");
+            	}
+                oldItem = (Item) content;
+                
+                if (!markMissingItemsAsUnavailable && oldItem instanceof Episode) {
+                	preserveContainedIn(item, oldItem);
+                	return;
+                }
+                
                 preserveAliases(item, oldItem);
                 preserveContainedIn(item, oldItem);
             }
@@ -145,7 +158,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
             }
 
             for (Item item : playlist.getItems()) {
-                createOrUpdateItem(item);
+                createOrUpdateItem(item, markMissingItemsAsUnavailable);
             }
 
             for (Playlist subPlaylist : playlist.getPlaylists()) {

@@ -36,6 +36,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
+import junit.framework.TestCase;
+
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.attribute.Attributes;
 import org.uriplay.media.TransportType;
@@ -49,19 +51,26 @@ import org.uriplay.persistence.testing.DummyContentData;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.query.Selection;
+import com.mongodb.Mongo;
 
-public class MongoDbBackedQueryExecutorTest extends BaseMongoDBTest {
+public class MongoDbBackedQueryExecutorTest extends TestCase {
 	
     private DummyContentData data = new DummyContentData();
 
-    private MongoDbBackedContentStore store = new MongoDbBackedContentStore(mongo(), "uriplay");
-    private MongoDBQueryExecutor queryExecutor = new MongoDBQueryExecutor(store);
+    private MongoDbBackedContentStore store;
+    private MongoDBQueryExecutor queryExecutor;
     
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
 		
+    	Mongo mongo = MongoTestHelper.anEmptyMongo();
+    	
+    	store = new MongoDbBackedContentStore(mongo, "uriplay");
+    	queryExecutor = new MongoDBQueryExecutor(store);
+    	
     	store.createOrUpdatePlaylist(data.eastenders, true);
     	store.createOrUpdatePlaylist(data.apprentice, true);
     	store.createOrUpdatePlaylist(data.newsNight, true);

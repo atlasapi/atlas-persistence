@@ -16,6 +16,7 @@ package org.uriplay.persistence.content.mongodb;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import junit.framework.TestCase;
 
 import org.joda.time.DateTime;
 import org.uriplay.persistence.tracking.ContentMention;
@@ -23,19 +24,23 @@ import org.uriplay.persistence.tracking.MongoDBBackedContentMentionStore;
 import org.uriplay.persistence.tracking.TrackingSource;
 
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.mongodb.Mongo;
 
 
-public class MongoDbBackedContentMentionStoreTest extends BaseMongoDBTest {
+public class MongoDbBackedContentMentionStoreTest extends TestCase {
 	
     private static final String DB_NAME = "uriplay";
     
-	private MongoDBBackedContentMentionStore store = new MongoDBBackedContentMentionStore(mongo(), DB_NAME);
+	private MongoDBBackedContentMentionStore store;
     
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-    	mongo().getDB(DB_NAME).eval("db.contentMentions.ensureIndex({uri:1, externalRef:1, source: 1}, {unique : true, dropDups : true})");
-    	mongo().getDB(DB_NAME).eval("db.contentMentions.ensureIndex({mentionedAt:-1})");
+    	Mongo mongo = MongoTestHelper.anEmptyMongo();
+    	store = new MongoDBBackedContentMentionStore(mongo, DB_NAME);
+    	mongo.getDB(DB_NAME).eval("db.contentMentions.ensureIndex({uri:1, externalRef:1, source: 1}, {unique : true, dropDups : true})");
+    	mongo.getDB(DB_NAME).eval("db.contentMentions.ensureIndex({mentionedAt:-1})");
     }
 
 	public void testSavingAMention() throws Exception {
