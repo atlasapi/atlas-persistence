@@ -363,6 +363,13 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 
     	assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(brandUri));
     	assertThat(((Episode) store.findByUri(itemUri)).getBrand(), is(brand)); 
+    	
+    	String playlistUri = "playlistUri";
+		Playlist playlist = new Playlist(playlistUri);
+    	playlist.addItem(new Item(itemUri, "item:curie"));
+    	
+    	store.createOrUpdatePlaylist(playlist, false);
+    	assertThat(store.findByUri(itemUri).getContainedInUris(), hasItems(playlistUri, brandUri)); 
 	}
     
     public void testItemsRemainInPlaylistsAfterUpdate() throws Exception {
@@ -385,6 +392,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		
 		// it should now be removed from the playlist
 		assertThat(store.findByUri(itemUri).getContainedInUris(), is(Collections.<String>emptySet()));
+		
 	}
     
     public void testBrandsRemainInPlaylistsAfterUpdate() throws Exception {
