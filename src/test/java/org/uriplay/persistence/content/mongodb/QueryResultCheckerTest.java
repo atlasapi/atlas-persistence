@@ -14,8 +14,6 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content.mongodb;
 
-import static org.uriplay.content.criteria.Queries.and;
-import static org.uriplay.content.criteria.Queries.equalTo;
 import static org.uriplay.content.criteria.attribute.Attributes.BRAND_TITLE;
 import static org.uriplay.content.criteria.attribute.Attributes.ENCODING_DATA_CONTAINER_FORMAT;
 import static org.uriplay.content.criteria.attribute.Attributes.LOCATION_AVAILABLE;
@@ -25,6 +23,7 @@ import static org.uriplay.content.criteria.attribute.Attributes.VERSION_DURATION
 import java.util.Collections;
 
 import org.jmock.integration.junit3.MockObjectTestCase;
+import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Item;
@@ -34,7 +33,9 @@ import org.uriplay.persistence.content.mongodb.QueryResultTrimmer;
 
 import com.google.common.collect.Sets;
 
-public class QueryResultTrimmerTest extends MockObjectTestCase {
+import static org.uriplay.content.criteria.ContentQueryBuilder.query;
+
+public class QueryResultCheckerTest extends MockObjectTestCase {
 
 	private QueryResultTrimmer trimmer;
 	private Version shortVersion;
@@ -72,7 +73,7 @@ public class QueryResultTrimmerTest extends MockObjectTestCase {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trim(Collections.singletonList(item), equalTo(BRAND_TITLE, "test"), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(BRAND_TITLE, "test").build(), true);
 		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 	}
 	
@@ -82,11 +83,11 @@ public class QueryResultTrimmerTest extends MockObjectTestCase {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trim(Collections.singletonList(item), equalTo(VERSION_DURATION, 10), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(VERSION_DURATION, 10).build(), true);
 		
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	
-		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), equalTo(ENCODING_DATA_CONTAINER_FORMAT, "test"), true));
+		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, "test").build(), true));
 	}
 	
 	public void testTrimmingALocationByAvailablity() {
@@ -97,9 +98,15 @@ public class QueryResultTrimmerTest extends MockObjectTestCase {
 		
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
+
+		// should match both
+		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true, false).build(), true);
+		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 		
-		trimmer.trim(Collections.singletonList(item), equalTo(LOCATION_AVAILABLE, true), true);
+		// should match one
+		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true).build(), true);
 		assertEquals(Sets.newHashSet(shortVersion), item.getVersions());
+	
 	}
 	
 	public void testTrimmingALocationByTransportType() {
@@ -111,7 +118,7 @@ public class QueryResultTrimmerTest extends MockObjectTestCase {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trim(Collections.singletonList(item), equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM).build(), true);
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	}
 	
@@ -127,8 +134,9 @@ public class QueryResultTrimmerTest extends MockObjectTestCase {
 		item1.addVersion(shortVersion);
 		item1.addVersion(longVersion);
 		
-		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item1), and(equalTo(LOCATION_AVAILABLE, true), equalTo(ENCODING_DATA_CONTAINER_FORMAT, "html")), true));
-		assertEquals(Collections.singletonList(item1), trimmer.trim(Collections.singletonList(item1), and(equalTo(LOCATION_AVAILABLE, true), equalTo(ENCODING_DATA_CONTAINER_FORMAT, "html")), false));
+		ContentQuery query = query().equalTo(LOCATION_AVAILABLE, true).equalTo(ENCODING_DATA_CONTAINER_FORMAT, "html").build();
+		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item1), query, true));
+		assertEquals(Collections.singletonList(item1), trimmer.trim(Collections.singletonList(item1), query, false));
 	}
 
 	private Encoding encodingWithLocation(Location location) {

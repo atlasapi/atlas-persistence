@@ -17,21 +17,19 @@ package org.uriplay.persistence.content.mongodb;
 import java.util.List;
 import java.util.Set;
 
+import org.uriplay.content.criteria.AtomicQuery;
 import org.uriplay.content.criteria.AttributeQuery;
 import org.uriplay.content.criteria.BooleanAttributeQuery;
-import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.DateTimeAttributeQuery;
 import org.uriplay.content.criteria.EnumAttributeQuery;
 import org.uriplay.content.criteria.IntegerAttributeQuery;
-import org.uriplay.content.criteria.LogicalOperatorQuery;
 import org.uriplay.content.criteria.MatchesNothing;
 import org.uriplay.content.criteria.QueryVisitor;
 import org.uriplay.content.criteria.StringAttributeQuery;
 import org.uriplay.media.entity.Description;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.metabroadcast.common.base.Maybe;
 
 public class QuerySplitter {
@@ -45,71 +43,54 @@ public class QuerySplitter {
 	}
 	
 	private Maybe<ContentQuery> split(ContentQuery query, final Set<Class<? extends Description>> allowedTypes, final boolean retain) {
-		return query.accept(new QueryVisitor<Maybe<ContentQuery>>() {
+		
+		List<Maybe<AtomicQuery>> extracted = query.accept(new QueryVisitor<Maybe<AtomicQuery>>() {
 
 			@Override
-			public Maybe<ContentQuery> visit(IntegerAttributeQuery query) {
+			public Maybe<AtomicQuery> visit(IntegerAttributeQuery query) {
 				return allowed(query);
 			}
 
 			@Override
-			public Maybe<ContentQuery> visit(StringAttributeQuery query) {
+			public Maybe<AtomicQuery> visit(StringAttributeQuery query) {
 				return allowed(query);
 			}
 
 			@Override
-			public Maybe<ContentQuery> visit(BooleanAttributeQuery query) {
+			public Maybe<AtomicQuery> visit(BooleanAttributeQuery query) {
 				return allowed(query);
 			}
 
 			@Override
-			public Maybe<ContentQuery> visit(EnumAttributeQuery<?> query) {
+			public Maybe<AtomicQuery> visit(EnumAttributeQuery<?> query) {
 				return allowed(query);
 			}
 
 			@Override
-			public Maybe<ContentQuery> visit(DateTimeAttributeQuery query) {
+			public Maybe<AtomicQuery> visit(DateTimeAttributeQuery query) {
 				return allowed(query);
 			}
 
 			@Override
-			public Maybe<ContentQuery> visit(ConjunctiveQuery query) {
-				return junction(query);
-			}
-
-			private Maybe<ContentQuery> junction(LogicalOperatorQuery query) {
-				List<ContentQuery> splits = Lists.newArrayList();
-				for (ContentQuery subQuery : query.operands()) {
-					Maybe<ContentQuery> split = split(subQuery, allowedTypes, retain);
-					if (split.hasValue()) {
-						splits.add(split.requireValue());
-					}
-				}
-				if (splits.isEmpty()) {
-					return Maybe.nothing();
-				}
-				if (splits.size() == 1) {
-					ContentQuery element = Iterables.getOnlyElement(splits);
-					if (query.getSelection() != null) {
-						element.withSelection(query.getSelection());
-						return Maybe.just(element);
-					}
-				}
-				return Maybe.<ContentQuery>just(query.copyWithOperands(splits));
-			}
-
-			@Override
-			public Maybe<ContentQuery> visit(MatchesNothing noOp) {
+			public Maybe<AtomicQuery> visit(MatchesNothing noOp) {
 				return Maybe.nothing();
 			}
 			
-			private Maybe<ContentQuery> allowed(AttributeQuery<?> query) {
+			private Maybe<AtomicQuery> allowed(AttributeQuery<?> query) {
 				if (allowedTypes.contains(query.getAttribute().target())) {
-					return retain ? Maybe.<ContentQuery>just(query) : Maybe.<ContentQuery>nothing();
+					return retain ? Maybe.<AtomicQuery>just(query) : Maybe.<AtomicQuery>nothing();
 				} else {
-					return retain ? Maybe.<ContentQuery>nothing() : Maybe.<ContentQuery>just(query);
+					return retain ? Maybe.<AtomicQuery>nothing() : Maybe.<AtomicQuery>just(query);
 				}
 			}
 		});
+		
+		Iterable<AtomicQuery> operands = Maybe.filterValues(extracted);
+		if (Iterables.isEmpty(operands)) {
+			return Maybe.nothing();
+		} else {
+			return Maybe.just(query.copyWithOperands(operands));
+		}
+		
 	}
 }

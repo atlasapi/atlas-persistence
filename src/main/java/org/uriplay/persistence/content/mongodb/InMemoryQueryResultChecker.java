@@ -20,7 +20,6 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.joda.time.DateTime;
 import org.uriplay.content.criteria.AttributeQuery;
 import org.uriplay.content.criteria.BooleanAttributeQuery;
-import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.DateTimeAttributeQuery;
 import org.uriplay.content.criteria.EnumAttributeQuery;
@@ -52,17 +51,7 @@ class InMemoryQueryResultChecker  {
 	
 	public boolean check(ContentQuery query) {
 
-		return query.accept(new QueryVisitor<Boolean>() {
-			
-			@Override
-			public Boolean visit(ConjunctiveQuery query) {
-				for (ContentQuery subQuery : query.operands()) {
-					if (!check(subQuery)) {
-						return false;
-					}
-				}
-				return true;
-			}
+		 List<Boolean> checked = query.accept(new QueryVisitor<Boolean>() {
 			
 			@Override
 			@SuppressWarnings("unchecked")
@@ -127,7 +116,7 @@ class InMemoryQueryResultChecker  {
 			@Override
 			@SuppressWarnings("unchecked")
 			public Boolean visit(final BooleanAttributeQuery query) {
-				if (!shouldApplyTo(query)) {
+				if (!shouldApplyTo(query) || query.isUnconditionallyTrue()) {
 					return true;
 				}
 				final Boolean lhs = (Boolean) valueOfBean(query);
@@ -249,5 +238,7 @@ class InMemoryQueryResultChecker  {
 				return false;
 			}
 		});
+		 
+		return !checked.contains(Boolean.FALSE);
 	}
 }

@@ -19,12 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.uriplay.content.criteria.ConjunctiveQuery;
+import org.uriplay.content.criteria.AtomicQuery;
+import org.uriplay.content.criteria.AttributeQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.MatchesNothing;
-import org.uriplay.content.criteria.Queries;
 import org.uriplay.content.criteria.attribute.Attribute;
 import org.uriplay.content.criteria.attribute.Attributes;
+import org.uriplay.content.criteria.operator.Operators;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Episode;
@@ -34,6 +35,7 @@ import org.uriplay.persistence.content.MongoDbBackedContentStore;
 import org.uriplay.persistence.content.query.KnownTypeQueryExecutor;
 import org.uriplay.persistence.content.query.QueryFragmentExtractor;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -83,12 +85,12 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 
 	private List<Item> executeItemQueryInternal(ContentQuery query) {
 		// Extract exact item match query fragments (item by uri or curie)
-		Maybe<ContentQuery> byUriOrCurie = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.ITEM_URI, Attributes.ITEM_CURIE));
+		Maybe<AttributeQuery<?>> byUriOrCurie = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.ITEM_URI, Attributes.ITEM_CURIE));
 		// If the request is for an exact match query then query for the item by uri or curie and filter the result
 		if (byUriOrCurie.hasValue()) {
 			// Preserve any 'contained in' constraints
-			Maybe<ContentQuery> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
-			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ConjunctiveQuery(Lists.newArrayList(byUriOrCurie.requireValue(), containedIn.requireValue())) : byUriOrCurie.requireValue(); 
+			Maybe<AttributeQuery<?>> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
+			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ContentQuery(ImmutableList.<AtomicQuery>of(byUriOrCurie.requireValue(), containedIn.requireValue())) : new ContentQuery(byUriOrCurie.requireValue()); 
 			return filter(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
 		}
 		return filter(query, roughSearch.itemsMatching(query), true);
@@ -165,7 +167,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 				}
 			}
 		}
-		List<Brand> brands = roughSearch.dehydratedBrandsMatching(Queries.equalTo(Attributes.BRAND_URI, brandUris));
+		List<Brand> brands = roughSearch.dehydratedBrandsMatching(new ContentQuery(Attributes.BRAND_URI.createQuery(Operators.EQUALS, brandUris)));
 		hydratePlaylists(brands, items, null);
 		return brands;
 	}
@@ -244,17 +246,17 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	}
 
 	private ContentQuery createContainedInPlaylistQuery(Maybe<ContentQuery> subElementQuery, List<? extends Playlist> playlists, Attribute<String> attribute, Selection selection) {
-		List<ContentQuery> operands = Lists.newArrayListWithCapacity(playlists.size());
+		List<AtomicQuery> operands = Lists.newArrayListWithCapacity(playlists.size());
 		Set<String> playlistUris = Sets.newHashSet();
 		for (Playlist playlist : playlists) {
 			playlistUris.add(playlist.getCanonicalUri());
 		}
-		operands.add(Queries.equalTo(attribute, playlistUris));
+		operands.add(attribute.createQuery(Operators.EQUALS, playlistUris));
 		
 		if (subElementQuery.hasValue()) {
-			operands.add(subElementQuery.requireValue());
+			operands.addAll(subElementQuery.requireValue().operands());
 		}
-		return new ConjunctiveQuery(operands).withSelection(selection);
+		return new ContentQuery(operands, selection);
 	}
 	
 		

@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
 import org.uriplay.content.criteria.BooleanAttributeQuery;
-import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.DateTimeAttributeQuery;
 import org.uriplay.content.criteria.EnumAttributeQuery;
@@ -54,7 +53,6 @@ import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBList;
@@ -81,6 +79,16 @@ public class MongoDBQueryBuilder {
 
 	private DBObject buildQuery(ContentQuery query, final Class<? extends Description> queryType) {
 		
+		DBObject dbQuery = new BasicDBObject();
+		
+		for (DBObject dbObject : buildQueries(query, queryType)) {
+			dbQuery.putAll(dbObject);
+		} 
+		
+		return dbQuery;
+	}
+
+	private List<DBObject> buildQueries(ContentQuery query, final Class<? extends Description> queryType) {
 		return query.accept(new QueryVisitor<DBObject>() {
 
 			@Override
@@ -137,6 +145,10 @@ public class MongoDBQueryBuilder {
 
 			@Override
 			public BasicDBObject visit(final BooleanAttributeQuery query) {
+				
+				if (query.isUnconditionallyTrue()) {
+					return new BasicDBObject();
+				}
 				
 				final Boolean value = (Boolean) query.getValue().get(0);
 				
@@ -200,18 +212,6 @@ public class MongoDBQueryBuilder {
 						return time.toDateTime(DateTimeZones.UTC).toDate();
 					}
 				});
-			}
-
-			@Override
-			public DBObject visit(ConjunctiveQuery query) {
-				if (query.operands().size() == 1) {
-					return buildQuery(Iterables.getOnlyElement(query.operands()), queryType);
-				}
-				BasicDBObject object = new BasicDBObject();
-				for(ContentQuery subQuery : query.operands()) {
-					object.putAll(buildQuery(subQuery, queryType));
-				}
-				return object;
 			}
 
 			@Override

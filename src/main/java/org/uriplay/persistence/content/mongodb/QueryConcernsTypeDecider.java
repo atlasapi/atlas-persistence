@@ -14,15 +14,14 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content.mongodb;
 
+import java.util.List;
 import java.util.Set;
 
 import org.uriplay.content.criteria.BooleanAttributeQuery;
-import org.uriplay.content.criteria.ConjunctiveQuery;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.DateTimeAttributeQuery;
 import org.uriplay.content.criteria.EnumAttributeQuery;
 import org.uriplay.content.criteria.IntegerAttributeQuery;
-import org.uriplay.content.criteria.LogicalOperatorQuery;
 import org.uriplay.content.criteria.MatchesNothing;
 import org.uriplay.content.criteria.QueryVisitor;
 import org.uriplay.content.criteria.StringAttributeQuery;
@@ -33,9 +32,10 @@ import com.google.common.collect.Sets;
 public class QueryConcernsTypeDecider {
 
 	public static boolean concernsType(final ContentQuery query, final Class<? extends Description>... type) {
+		
 		final Set<Class<? extends Description>> typeLookup = Sets.newHashSet(type);
 		
-		return query.accept(new QueryVisitor<Boolean>() {
+		 List<Boolean> found = query.accept(new QueryVisitor<Boolean>() {
 
 			@Override
 			public Boolean visit(IntegerAttributeQuery query) {
@@ -66,20 +66,8 @@ public class QueryConcernsTypeDecider {
 			public Boolean visit(MatchesNothing noOp) {
 				return false;
 			}
-
-			@Override
-			public Boolean visit(ConjunctiveQuery conjunctiveQuery) {
-				return visitJunction(conjunctiveQuery);
-			}
-			
-			private Boolean visitJunction(LogicalOperatorQuery query) {
-				for (ContentQuery subQuery : query.operands()) {
-					if (concernsType(subQuery, type)) {
-						return true;
-					}
-				}
-				return false;
-			}
 		});
+
+	    return found.contains(Boolean.TRUE);
 	}
 }
