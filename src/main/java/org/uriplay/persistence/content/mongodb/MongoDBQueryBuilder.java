@@ -20,8 +20,11 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.LESS_THA
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
@@ -62,6 +65,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBList;
@@ -84,37 +88,61 @@ public class MongoDBQueryBuilder {
 
 	private DBObject buildQuery(ContentQuery query, final Class<? extends Description> queryType) {
 		
-		Multimap<String, ConstrainedAttribute> attributeConstraints = HashMultimap.create();
+		// handle attributes that are not part of a list structure
+		Multimap<List<String>, ConstrainedAttribute> attributeConstraints = HashMultimap.create();
 		for (ConstrainedAttribute constraint : buildQueries(query)) {
 			if (constraint == null) {
 				continue;
 			}
-			attributeConstraints.put(entityPathAsString(queryType, constraint.attribute), constraint);
+			attributeConstraints.put(entityPath(queryType, constraint.attribute), constraint);
 		}
+
+		// sort the keys by length so that versions are dealt with before broadcasts etc.
+		TreeMap<List<String>, Collection<ConstrainedAttribute>> map = Maps.newTreeMap(lengthOrder);
+		map.putAll(attributeConstraints.asMap());
 		
-		DBObject dbQuery = new BasicDBObject();
-		for (Entry<String, Collection<ConstrainedAttribute>> entry : attributeConstraints.asMap().entrySet()) {
+		DBObject finalQuery = new BasicDBObject();
+		
+		Map<List<String>, DBObject> queries = Maps.newHashMap();
+		for (Entry<List<String>, Collection<ConstrainedAttribute>> entry : map.entrySet()) {
+			
+			List<String> entityPath = entry.getKey();
 			
 			Collection<ConstrainedAttribute> contraints = entry.getValue();
 			
-			String entityPath = entry.getKey();
-			if (entityPath.contains("versions") || entityPath.contains("manifestedAs") || entityPath.contains("availableAt") || entityPath.contains("broadcasts")) {
-				DBObject rhs = new BasicDBObject();
-				for (ConstrainedAttribute constrainedAttribute : contraints) {
-					String name = attributeName(queryType, constrainedAttribute.attribute);
-					rhs.put(name, constrainedAttribute.queryOrValue());
-				}
-				dbQuery.put(entityPath, new BasicDBObject("$elemMatch",  rhs));
-			} else {
+			if (entityPath.isEmpty()) {
 				for (ConstrainedAttribute constrainedAttribute : contraints) {
 					String fqn = fullyQualifiedPath(queryType, constrainedAttribute.attribute);
-					dbQuery.put(fqn, constrainedAttribute.queryOrValue());
+					finalQuery.put(fqn, constrainedAttribute.queryOrValue());
+				}
+				continue;
+			} 
+			
+			DBObject parentDbObject = null;
+				
+			List<String> parentPath = entityPath;
+			while(!parentPath.isEmpty()) {
+				parentPath = parentPath.subList(0, parentPath.size() - 1);
+				if (queries.get(parentPath) != null) {
+					parentDbObject = queries.get(parentPath);
+					break;
 				}
 			}
-
+			if (parentDbObject == null) {
+				parentDbObject = finalQuery;
+				parentPath = ImmutableList.of();
+			}
+			
+			DBObject rhs = new BasicDBObject();
+			for (ConstrainedAttribute constrainedAttribute : contraints) {
+				String name = attributeName(queryType, constrainedAttribute.attribute);
+				rhs.put(name, constrainedAttribute.queryOrValue());
+			}
+			parentDbObject.put(Joiner.on(".").join(entityPath.subList(parentPath.size(), entityPath.size())), new BasicDBObject("$elemMatch",  rhs));
+			queries.put(entityPath, rhs);
 		}
-		System.out.println(dbQuery);
-		return dbQuery;
+
+		return finalQuery;
 	}
 
 	private List<ConstrainedAttribute> buildQueries(ContentQuery query) {
@@ -272,13 +300,22 @@ public class MongoDBQueryBuilder {
 		if (Item.class.equals(queryType) && Attributes.ITEM_URI.equals(attribute)) {
 			return "aliases";
 		}
+		if (Item.class.equals(queryType) && Attributes.ITEM_CURIE.equals(attribute)) {
+			return "aliases";
+		}
 		if (Brand.class.equals(queryType) && Attributes.BRAND_URI.equals(attribute)) {
+			return "aliases";
+		}
+		if (Brand.class.equals(queryType) && Attributes.BRAND_CURIE.equals(attribute)) {
 			return "aliases";
 		}
 		if (Playlist.class.equals(queryType) && Attributes.PLAYLIST_URI.equals(attribute)) {
             return "aliases";
         }
-		return attribute.javaAttributeName() + (attribute.isCollectionOfValues() ? "s" : "");
+		
+		String brand = Brand.class.equals(attribute.target()) && Item.class.equals(queryType) ? "brand." : "";
+		
+		return brand + attribute.javaAttributeName() + (attribute.isCollectionOfValues() ? "s" : "");
 	}
 
 	private static List<String> entityPath(Class<? extends Description> queryType, Attribute<?> attribute) {
@@ -290,7 +327,7 @@ public class MongoDBQueryBuilder {
 			return ImmutableList.of();
 		}
 		if (Brand.class.equals(entity)) {
-			return Item.class.equals(queryType) ? ImmutableList.of("brand") : ImmutableList.<String>of();
+			return ImmutableList.of();
 		}
 		if (Version.class.equals(entity)) {
 			return ImmutableList.of("versions");
@@ -336,4 +373,12 @@ public class MongoDBQueryBuilder {
 			this.query = null;
 		}
 	}
+	
+	private static final Comparator<List<?>> lengthOrder = new Comparator<List<?>>() {
+
+		@Override
+		public int compare(List<?> o1, List<?> o2) {
+			return Integer.valueOf(o1.size()).compareTo(o2.size());
+		}
+	};
 }

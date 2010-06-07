@@ -262,10 +262,10 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		DateTime tenAm = new DateTime(2010, 10, 20, 10, 0, 0, 0, DateTimeZones.UTC);
 		
 		Item halfHourShowStartingAt10Am = new Item("item1", "curie:item1");
-		halfHourShowStartingAt10Am.addVersion(broadcast(tenAm, Duration.standardMinutes(30)));
+		halfHourShowStartingAt10Am.addVersion(versionWithBroadcast(tenAm, Duration.standardMinutes(30), "channel"));
 		
 		Item halfHourShowStartingAt11Am = new Item("item2", "curie:item2");
-		halfHourShowStartingAt11Am.addVersion(broadcast(tenAm.plusMinutes(30), Duration.standardMinutes(30)));
+		halfHourShowStartingAt11Am.addVersion(versionWithBroadcast(tenAm.plusMinutes(30), Duration.standardMinutes(30), "channel"));
 		
 		store.createOrUpdateItem(halfHourShowStartingAt10Am);
 		store.createOrUpdateItem(halfHourShowStartingAt11Am);
@@ -275,15 +275,35 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		checkItemQuery(transmissionTimeQuery(tenAm.plusMinutes(30)), halfHourShowStartingAt11Am);
 		
 	}
+	
+	public void testMultiLevelQuery() throws Exception {
+		DateTime tenAm = new DateTime(2010, 10, 20, 10, 0, 0, 0, DateTimeZones.UTC);
+		Item showStartingAt10Am = new Item("item1", "curie:item1");
+		
+		Version version1 = versionWithBroadcast(tenAm, Duration.standardMinutes(30), "c1");
+		
+		Version version2 = versionWithBroadcast(tenAm, Duration.standardMinutes(10), "c2");
+		
+		showStartingAt10Am.addVersion(version1);
+		showStartingAt10Am.addVersion(version2);
+		
+		store.createOrUpdateItem(showStartingAt10Am);
+		
+		checkItemQuery(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(30).getStandardSeconds()), showStartingAt10Am);
+		checkItemQuery(query().equalTo(Attributes.BROADCAST_ON, "c2").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()), showStartingAt10Am);
+		
+		checkItemQueryMatchesNothing(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()));
+		
+	}
 
 	private ContentQueryBuilder transmissionTimeQuery(DateTime when) {
 		return query().before(BROADCAST_TRANSMISSION_TIME, when.plusSeconds(1)).after(BROADCAST_TRANSMISSION_END_TIME, when);
 	}
 	
-	private static Version broadcast(DateTime start, Duration duration) {
+	private static Version versionWithBroadcast(DateTime start, Duration duration, String channel) {
 		Version version = new Version();
 		version.setDuration(duration);
-		version.addBroadcast(new Broadcast("channel", start, duration));
+		version.addBroadcast(new Broadcast(channel, start, duration));
 		return version;
 	}
 	
