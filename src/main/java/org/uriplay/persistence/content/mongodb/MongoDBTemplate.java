@@ -39,7 +39,7 @@ public class MongoDBTemplate extends com.metabroadcast.common.persistence.MongoD
 
     private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final ContentTranslator contentTranslator = new ContentTranslator();
-    private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator(descriptionTranslator);
+    private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
     private final LocationTranslator locationTranslator = new LocationTranslator(descriptionTranslator, new PolicyTranslator());
     private final EncodingTranslator encodingTranslator = new EncodingTranslator(descriptionTranslator, locationTranslator);
     private final VersionTranslator versionTranslator = new VersionTranslator(descriptionTranslator, broadcastTranslator, encodingTranslator);

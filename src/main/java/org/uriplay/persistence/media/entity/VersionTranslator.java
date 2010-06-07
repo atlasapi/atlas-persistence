@@ -3,6 +3,7 @@ package org.uriplay.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.Duration;
 import org.uriplay.media.entity.Broadcast;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Version;
@@ -32,8 +33,11 @@ public class VersionTranslator implements ModelTranslator<Version> {
         }
         
         descriptionTranslator.fromDBObject(dbObject, entity);
-        
-        entity.setDuration((Integer) dbObject.get("duration"));
+        Integer durationInSeconds = (Integer) dbObject.get("duration");
+		if (durationInSeconds != null) {
+			entity.setDuration(Duration.standardSeconds(durationInSeconds));
+		}
+		
         entity.setPublishedDuration((Integer) dbObject.get("publishedDuration"));
         entity.setRating((String) dbObject.get("rating"));
         entity.setRatingText((String) dbObject.get("ratingText"));
@@ -42,7 +46,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         if (list != null && ! list.isEmpty()) {
             Set<Broadcast> broadcasts = Sets.newHashSet();
             for (DBObject object: list) {
-                Broadcast broadcast = broadcastTranslator.fromDBObject(object, null);
+                Broadcast broadcast = broadcastTranslator.fromDBObject(object);
                 broadcasts.add(broadcast);
             }
             entity.setBroadcasts(broadcasts);
@@ -73,7 +77,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         if (! entity.getBroadcasts().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (Broadcast broadcast: entity.getBroadcasts()) {
-                list.add(broadcastTranslator.toDBObject(null, broadcast));
+                list.add(broadcastTranslator.toDBObject(broadcast));
             }
             dbObject.put("broadcasts", list);
         }

@@ -14,10 +14,15 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content.mongodb;
 
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.GREATER_THAN;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.LESS_THAN;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
@@ -53,17 +58,17 @@ import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class MongoDBQueryBuilder {
-
-	private static final String MONGO_GREATER_THAN = "$gt";
-	private static final String MONGO_LESS_THAN = "$lt";
-	private static final String MONGO_IN = "$in";
 
 	public DBObject buildPlaylistQuery(ContentQuery query) {
 		return buildQuery(query, Playlist.class);
@@ -79,64 +84,88 @@ public class MongoDBQueryBuilder {
 
 	private DBObject buildQuery(ContentQuery query, final Class<? extends Description> queryType) {
 		
+		Multimap<String, ConstrainedAttribute> attributeConstraints = HashMultimap.create();
+		for (ConstrainedAttribute constraint : buildQueries(query)) {
+			if (constraint == null) {
+				continue;
+			}
+			attributeConstraints.put(entityPathAsString(queryType, constraint.attribute), constraint);
+		}
+		
 		DBObject dbQuery = new BasicDBObject();
-		
-		for (DBObject dbObject : buildQueries(query, queryType)) {
-			dbQuery.putAll(dbObject);
-		} 
-		
+		for (Entry<String, Collection<ConstrainedAttribute>> entry : attributeConstraints.asMap().entrySet()) {
+			
+			Collection<ConstrainedAttribute> contraints = entry.getValue();
+			
+			String entityPath = entry.getKey();
+			if (entityPath.contains("versions") || entityPath.contains("manifestedAs") || entityPath.contains("availableAt") || entityPath.contains("broadcasts")) {
+				DBObject rhs = new BasicDBObject();
+				for (ConstrainedAttribute constrainedAttribute : contraints) {
+					String name = attributeName(queryType, constrainedAttribute.attribute);
+					rhs.put(name, constrainedAttribute.queryOrValue());
+				}
+				dbQuery.put(entityPath, new BasicDBObject("$elemMatch",  rhs));
+			} else {
+				for (ConstrainedAttribute constrainedAttribute : contraints) {
+					String fqn = fullyQualifiedPath(queryType, constrainedAttribute.attribute);
+					dbQuery.put(fqn, constrainedAttribute.queryOrValue());
+				}
+			}
+
+		}
+		System.out.println(dbQuery);
 		return dbQuery;
 	}
 
-	private List<DBObject> buildQueries(ContentQuery query, final Class<? extends Description> queryType) {
-		return query.accept(new QueryVisitor<DBObject>() {
+	private List<ConstrainedAttribute> buildQueries(ContentQuery query) {
+		return query.accept(new QueryVisitor<ConstrainedAttribute>() {
 
 			@Override
 			@SuppressWarnings("unchecked")
-			public DBObject visit(IntegerAttributeQuery query) {
+			public ConstrainedAttribute visit(IntegerAttributeQuery query) {
 				final List<Integer> values = (List<Integer>) query.getValue();
 				
 				BasicDBObject rhs = query.accept(new IntegerOperatorVisitor<BasicDBObject>() {
 
 					@Override
 					public BasicDBObject visit(Equals equals) {
-						return new BasicDBObject(MONGO_IN, list(values));
+						return new BasicDBObject(IN, list(values));
 					}
 
 					@Override
 					public BasicDBObject visit(LessThan lessThan) {
-						return new BasicDBObject(MONGO_LESS_THAN, Collections.max(values));
+						return new BasicDBObject(LESS_THAN, Collections.max(values));
 					}
 
 					@Override
 					public BasicDBObject visit(GreaterThan greaterThan) {
-						return new BasicDBObject(MONGO_GREATER_THAN, Collections.min(values));
+						return new BasicDBObject(GREATER_THAN, Collections.min(values));
 					}
 				});
 				
-				return new BasicDBObject(fullyQualifiedPath(queryType, query.getAttribute()), rhs);
+				return new ConstrainedAttribute(query.getAttribute(), rhs);
 			}
 
 			@Override
-			public BasicDBObject visit(final StringAttributeQuery query) {
+			public ConstrainedAttribute visit(final StringAttributeQuery query) {
 				final BasicDBList values = new BasicDBList();
 				values.addAll(query.getValue());
 				
-				return query.accept(new StringOperatorVisitor<BasicDBObject>() {
+				return query.accept(new StringOperatorVisitor<ConstrainedAttribute>() {
 
 					@Override
-					public BasicDBObject visit(Equals equals) {
-						return new BasicDBObject(fullyQualifiedPath(queryType, query.getAttribute()), new BasicDBObject(MONGO_IN, values));
+					public ConstrainedAttribute visit(Equals equals) {
+						return new ConstrainedAttribute(query.getAttribute(), new BasicDBObject(IN, values));
 					}
 
 					@Override
-					public BasicDBObject visit(Beginning beginning) {
+					public ConstrainedAttribute visit(Beginning beginning) {
 						Pattern pattern = Pattern.compile("^" + (String) query.getValue().get(0), Pattern.CASE_INSENSITIVE);
-						return new BasicDBObject(fullyQualifiedPath(queryType, query.getAttribute()), pattern);
+						return new ConstrainedAttribute(query.getAttribute(), pattern);
 					}
 
 					@Override
-					public BasicDBObject visit(Search search) {
+					public ConstrainedAttribute visit(Search search) {
 						throw new UnsupportedOperationException();
 					}
 				});
@@ -144,19 +173,19 @@ public class MongoDBQueryBuilder {
 			}
 
 			@Override
-			public BasicDBObject visit(final BooleanAttributeQuery query) {
+			public ConstrainedAttribute visit(final BooleanAttributeQuery query) {
 				
 				if (query.isUnconditionallyTrue()) {
-					return new BasicDBObject();
+					return null;
 				}
 				
 				final Boolean value = (Boolean) query.getValue().get(0);
 				
-				return query.accept(new BooleanOperatorVisitor<BasicDBObject>() {
+				return query.accept(new BooleanOperatorVisitor<ConstrainedAttribute>() {
 
 					@Override
-					public BasicDBObject visit(Equals equals) {
-						return new BasicDBObject(fullyQualifiedPath(queryType, query.getAttribute()), value);
+					public ConstrainedAttribute visit(Equals equals) {
+						return new ConstrainedAttribute(query.getAttribute(), value);
 					}
 				});
 				
@@ -164,15 +193,15 @@ public class MongoDBQueryBuilder {
 
 			@Override
 			@SuppressWarnings("unchecked")
-			public BasicDBObject visit(final EnumAttributeQuery<?> query) {
+			public ConstrainedAttribute visit(final EnumAttributeQuery<?> query) {
 				
 				final List<Enum<?>> values = (List<Enum<?>>) query.getValue();
 				
-				return query.accept(new EnumOperatorVisitor<BasicDBObject>() {
+				return query.accept(new EnumOperatorVisitor<ConstrainedAttribute>() {
 
 					@Override
-					public BasicDBObject visit(Equals equals) {
-						return new BasicDBObject(fullyQualifiedPath(queryType, query.getAttribute()), new BasicDBObject(MONGO_IN, list(toLowercaseStrings(values))));
+					public ConstrainedAttribute visit(Equals equals) {
+						return new ConstrainedAttribute(query.getAttribute(), new BasicDBObject(IN, list(toLowercaseStrings(values))));
 					}
 
 					private Collection<?> toLowercaseStrings(Collection<Enum<?>> values) {
@@ -187,22 +216,22 @@ public class MongoDBQueryBuilder {
 
 			@SuppressWarnings("unchecked")
             @Override
-			public BasicDBObject visit(DateTimeAttributeQuery query) {
+			public ConstrainedAttribute visit(DateTimeAttributeQuery query) {
 				final List<Date> values = toDate((List<DateTime>) query.getValue());
 
 				BasicDBObject rhs = query.accept(new DateTimeOperatorVisitor<BasicDBObject>() {
 
 					@Override
 					public BasicDBObject visit(Before before) {
-						return new BasicDBObject(MONGO_LESS_THAN, Collections.max(values));
+						return new BasicDBObject(LESS_THAN, Collections.max(values));
 					}
 
 					@Override
 					public BasicDBObject visit(After after) {
-						return new BasicDBObject(MONGO_GREATER_THAN, Collections.min(values));
+						return new BasicDBObject(GREATER_THAN, Collections.min(values));
 					}
 				});
-				return new BasicDBObject(fullyQualifiedPath(queryType, query.getAttribute()), rhs);
+				return new ConstrainedAttribute(query.getAttribute(), rhs);
 			}
 
 			private List<Date> toDate(List<DateTime> values) {
@@ -215,7 +244,7 @@ public class MongoDBQueryBuilder {
 			}
 
 			@Override
-			public BasicDBObject visit(MatchesNothing noOp) {
+			public ConstrainedAttribute visit(MatchesNothing noOp) {
 				throw new IllegalArgumentException();
 			}
 		});
@@ -228,8 +257,12 @@ public class MongoDBQueryBuilder {
 	}
 	
 	private static String fullyQualifiedPath(Class<? extends Description> queryType, Attribute<?> attribute) {
-		String entityPath = entityPath(queryType, attribute); 
+		String entityPath = entityPathAsString(queryType, attribute); 
 		return entityPath + (entityPath.length() > 0 ? "." : "") +  attributeName(queryType, attribute);
+	}
+
+	private static String entityPathAsString(Class<? extends Description> queryType, Attribute<?> attribute) {
+		return Joiner.on(".").join(entityPath(queryType, attribute));
 	}
 
 	private static String attributeName(Class<? extends Description> queryType, Attribute<?> attribute) {
@@ -248,29 +281,59 @@ public class MongoDBQueryBuilder {
 		return attribute.javaAttributeName() + (attribute.isCollectionOfValues() ? "s" : "");
 	}
 
-	private static String entityPath(Class<? extends Description> queryType, Attribute<?> attribute) {
+	private static List<String> entityPath(Class<? extends Description> queryType, Attribute<?> attribute) {
 		Class<? extends Description> entity = attribute.target();
 		if (Item.class.isAssignableFrom(entity)) {
-			return "";
+			return ImmutableList.of();
 		}
 		if (Playlist.class.equals(entity)) {
-			return "";
+			return ImmutableList.of();
 		}
 		if (Brand.class.equals(entity)) {
-			return Item.class.equals(queryType) ? "brand" : "";
+			return Item.class.equals(queryType) ? ImmutableList.of("brand") : ImmutableList.<String>of();
 		}
 		if (Version.class.equals(entity)) {
-			return "versions";
+			return ImmutableList.of("versions");
 		}
 		if (Broadcast.class.equals(entity)) {
-			return "versions.broadcasts";
+			return ImmutableList.of("versions", "broadcasts");
 		}
 		if (Encoding.class.equals(entity)) {
-			return "versions.manifestedAs";
+			return ImmutableList.of("versions", "manifestedAs");
 		}
 		if (Location.class.equals(entity)) {
-			return "versions.manifestedAs.availableAt";
+			return ImmutableList.of("versions", "manifestedAs", "availableAt");
 		}
 		throw new UnsupportedOperationException();
+	}
+	
+	private static class ConstrainedAttribute {
+		
+		private final Attribute<?> attribute;
+		private final DBObject query;
+		private final Object shouldEqual;
+
+		private ConstrainedAttribute(Attribute<?> attribute, BasicDBObject query) {
+			this.attribute = attribute;
+			this.query = query;
+			this.shouldEqual = null;
+		}
+
+		public Object queryOrValue() {
+			return shouldEqual == null ? query : shouldEqual;
+		}
+
+		
+		private <T> ConstrainedAttribute(Attribute<T> attribute, T shouldEqual) {
+			this.attribute = attribute;
+			this.shouldEqual = shouldEqual;
+			this.query = null;
+		}
+		
+		private ConstrainedAttribute(Attribute<String> attribute, Pattern shouldEqual) {
+			this.attribute = attribute;
+			this.shouldEqual = shouldEqual;
+			this.query = null;
+		}
 	}
 }

@@ -16,6 +16,7 @@ package org.uriplay.persistence.testing;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Duration;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Broadcast;
@@ -82,7 +83,7 @@ public class DummyContentData {
 		dotCottonsBigAdventure.setTitle("Dot Cotton's Big Adventure");
 		dotCottonsBigAdventure.setPublisher("bbc.co.uk");
 		dotCottonsBigAdventure.addAlias("http://dot.cotton");
-		dotCottonsBigAdventure.addVersion(versionWithEmbeddableLocation(april22nd1930, 30, TransportType.STREAM));
+		dotCottonsBigAdventure.addVersion(versionWithEmbeddableLocation(april22nd1930, Duration.standardSeconds(30), TransportType.STREAM));
 		dotCottonsBigAdventure.setTags(Sets.newHashSet("soap", "London"));
 		dotCottonsBigAdventure.setGenres(Sets.newHashSet("http://uriplay.org/genres/uriplay/drama"));
 		dotCottonsBigAdventure.setIsLongForm(true);
@@ -92,7 +93,7 @@ public class DummyContentData {
 		peggySlapsFrank.setEpisodeNumber(2);
 		peggySlapsFrank.setTitle("Episode where Peggy slaps Frank");
 		peggySlapsFrank.setPublisher("bbc.co.uk");
-		peggySlapsFrank.addVersion(versionWithEmbeddableLocation(april23rd, 30, TransportType.STREAM));
+		peggySlapsFrank.addVersion(versionWithEmbeddableLocation(april23rd, Duration.standardSeconds(30), TransportType.STREAM));
 		peggySlapsFrank.setTags(Sets.newHashSet("soap", "London"));
 		peggySlapsFrank.setGenres(Sets.newHashSet("http://uriplay.org/genres/uriplay/drama"));
 		peggySlapsFrank.setIsLongForm(true);
@@ -149,7 +150,7 @@ public class DummyContentData {
 		interviewWithMp = new Episode("http://www.bbc.co.uk/newsnight/1", "bbc:newsnight:1");
 		interviewWithMp.setTitle("Interview with MP");
 		interviewWithMp.setPublisher("bbc.co.uk");
-		interviewWithMp.addVersion(versionWithEmbeddableLocation(now, 60, TransportType.LINK));
+		interviewWithMp.addVersion(versionWithEmbeddableLocation(now, Duration.standardSeconds(60), TransportType.LINK));
 		interviewWithMp.setIsLongForm(true);
 
 		
@@ -163,7 +164,7 @@ public class DummyContentData {
 		susanAndCarlGoFishing = new Episode("http://www.five.tv/neighbours/82883883", "c5:82883883");
 		susanAndCarlGoFishing.setTitle("Susan and Carl Go Fishing");
 		susanAndCarlGoFishing.setPublisher("five.tv");
-		susanAndCarlGoFishing.addVersion(versionWithEmbeddableLocation(april22nd1730, 30, TransportType.LINK));
+		susanAndCarlGoFishing.addVersion(versionWithEmbeddableLocation(april22nd1730, Duration.standardSeconds(30), TransportType.LINK));
 		susanAndCarlGoFishing.setTags(Sets.newHashSet("soap", "aussie"));
 		susanAndCarlGoFishing.addVersion(versionWithEmbeddableLocation());
 
@@ -225,13 +226,12 @@ public class DummyContentData {
 	}
 	
 	public Version versionWithEmbeddableLocation() {
-		return versionWithEmbeddableLocation(now, 10, TransportType.LINK);
+		return versionWithEmbeddableLocation(now, Duration.standardSeconds(10), TransportType.LINK);
 	}
 	
-	public static Version versionWithEmbeddableLocation(DateTime date, int duration, TransportType type) {
+	public static Version versionWithEmbeddableLocation(DateTime date, Duration duration, TransportType type) {
 		Version v = new Version();
-		Broadcast broadcast = new Broadcast();
-		broadcast.setTransmissionTime(date);
+		Broadcast broadcast = new Broadcast("test channel", date, date.plusHours(1));
 		v.addBroadcast(broadcast);
 		v.setDuration(duration);
 		Encoding e = new Encoding();

@@ -1,42 +1,39 @@
 package org.uriplay.persistence.media.entity;
 
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.uriplay.media.entity.Broadcast;
 
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class BroadcastTranslator implements ModelTranslator<Broadcast> {
-    private DescriptionTranslator descriptionTranslator;
+public class BroadcastTranslator  {
+	
+    private static final String TRANSMISSION_END_TIME_KEY = "transmissionEndTime";
+	private static final String TRANSMISSION_TIME_KEY = "transmissionTime";
     
-    public BroadcastTranslator(DescriptionTranslator descriptionTranslator) {
-        this.descriptionTranslator = descriptionTranslator;
+    public Broadcast fromDBObject(DBObject dbObject) {
+        
+        String broadcastOn = (String) dbObject.get("broadcastOn");
+        DateTime transmissionTime = TranslatorUtils.toDateTime(dbObject, TRANSMISSION_TIME_KEY);
+		
+        Integer duration = (Integer) dbObject.get("broadcastDuration");
+        
+        Broadcast broadcast = new Broadcast(broadcastOn, transmissionTime, Duration.standardSeconds(duration));
+        
+        broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
+        
+        return broadcast;
     }
 
-    @Override
-    public Broadcast fromDBObject(DBObject dbObject, Broadcast entity) {
-        if (entity == null) {
-            entity = new Broadcast();
-        }
-        
-        descriptionTranslator.fromDBObject(dbObject, entity);
-        entity.setBroadcastDuration((Integer) dbObject.get("broadcastDuration"));
-        entity.setBroadcastOn((String) dbObject.get("broadcastOn"));
-        entity.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
-        entity.setTransmissionTime(TranslatorUtils.toDateTime(dbObject, "transmissionTime"));
-        
-        return entity;
-    }
-
-    @Override
-    public DBObject toDBObject(DBObject dbObject, Broadcast entity) {
-        dbObject = descriptionTranslator.toDBObject(dbObject, entity);
-        
+    public DBObject toDBObject(Broadcast entity) {
+    	DBObject dbObject = new BasicDBObject();
         TranslatorUtils.from(dbObject, "broadcastDuration", entity.getBroadcastDuration());
         TranslatorUtils.from(dbObject, "broadcastOn", entity.getBroadcastOn());
         TranslatorUtils.fromLocalDate(dbObject, "scheduleDate", entity.getScheduleDate());
-        TranslatorUtils.fromDateTime(dbObject, "transmissionTime", entity.getTransmissionTime());
-        
+        TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_TIME_KEY, entity.getTransmissionTime());
+        TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_END_TIME_KEY, entity.getTransmissionEndTime());
         return dbObject;
     }
 

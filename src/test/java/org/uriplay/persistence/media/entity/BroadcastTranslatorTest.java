@@ -2,6 +2,7 @@ package org.uriplay.persistence.media.entity;
 
 import junit.framework.TestCase;
 
+import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 import org.uriplay.media.entity.Broadcast;
 
@@ -10,26 +11,22 @@ import com.mongodb.DBObject;
 
 public class BroadcastTranslatorTest extends TestCase {
     DescriptionTranslator dt = new DescriptionTranslator();
-    BroadcastTranslator brt = new BroadcastTranslator(dt);
+    BroadcastTranslator brt = new BroadcastTranslator();
+    SystemClock clock = new SystemClock();
     
     public void testFromBroadcast() {
-        Broadcast broadcast = new Broadcast();
-        broadcast.setBroadcastDuration(1);
-        broadcast.setTransmissionTime(new SystemClock().now());
+		Broadcast broadcast = new Broadcast("on", clock.now(), Duration.standardSeconds(1));
         
-        DBObject dbObject = brt.toDBObject(null, broadcast);
+        DBObject dbObject = brt.toDBObject(broadcast);
         assertEquals(broadcast.getBroadcastDuration(), dbObject.get("broadcastDuration"));
     }
     
     public void testToBroadcast() {
-        Broadcast broadcast = new Broadcast();
-        broadcast.setBroadcastDuration(1);
-        broadcast.setTransmissionTime(new SystemClock().now());
-        broadcast.setBroadcastOn("on");
+		Broadcast broadcast = new Broadcast("on", clock.now(), Duration.standardSeconds(1));
         broadcast.setScheduleDate(new LocalDate(2010, 3, 20));
         
-        DBObject dbObject = brt.toDBObject(null, broadcast);
-        Broadcast b = brt.fromDBObject(dbObject, null);
+        DBObject dbObject = brt.toDBObject(broadcast);
+        Broadcast b = brt.fromDBObject(dbObject);
         
         assertEquals(broadcast.getScheduleDate(), b.getScheduleDate());
         assertEquals(broadcast.getTransmissionTime().getMillis(), b.getTransmissionTime().getMillis());

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 import org.uriplay.media.entity.Broadcast;
 import org.uriplay.media.entity.Encoding;
@@ -14,13 +15,18 @@ import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.time.Clock;
+import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
 public class ItemTranslatorTest extends TestCase {
+	
+	private final Clock clock = new SystemClock();
+	
     DescriptionTranslator dt = new DescriptionTranslator();
     ContentTranslator ct = new ContentTranslator();
-    BroadcastTranslator brt = new BroadcastTranslator(dt);
+    BroadcastTranslator brt = new BroadcastTranslator();
     LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
     EncodingTranslator ent = new EncodingTranslator(dt, lt);
     VersionTranslator vt = new VersionTranslator(dt, brt, ent);
@@ -41,11 +47,13 @@ public class ItemTranslatorTest extends TestCase {
         enc.setAdvertisingDuration(1);
         enc.addAvailableAt(loc);
         
-        Broadcast br = new Broadcast();
+        
+        Duration duration = Duration.standardSeconds(1);
+        Broadcast br = new Broadcast("channel", clock.now(), duration);
         br.setScheduleDate(new LocalDate(2010, 3, 20));
         
         Version version = new Version();
-        version.setDuration(1);
+        version.setDuration(duration);
         version.addManifestedAs(enc);
         version.addBroadcast(br);
         item.addVersion(version);
@@ -102,11 +110,13 @@ public class ItemTranslatorTest extends TestCase {
         enc.setAdvertisingDuration(1);
         enc.addAvailableAt(loc);
         
-        Broadcast br = new Broadcast();
+        Duration duration = Duration.standardSeconds(1);
+        
+        Broadcast br = new Broadcast("channel", clock.now(), duration);
         br.setScheduleDate(new LocalDate(2010, 3, 20));
         
         Version version = new Version();
-        version.setDuration(1);
+        version.setDuration(duration);
         version.addManifestedAs(enc);
         version.addBroadcast(br);
         item.addVersion(version);

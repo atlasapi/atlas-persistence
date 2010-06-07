@@ -23,6 +23,7 @@ import static org.uriplay.content.criteria.attribute.Attributes.VERSION_DURATION
 import java.util.Collections;
 
 import org.jmock.integration.junit3.MockObjectTestCase;
+import org.joda.time.Duration;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Encoding;
@@ -52,9 +53,9 @@ public class QueryResultCheckerTest extends MockObjectTestCase {
 		trimmer = new QueryResultTrimmer();
 		
 		shortVersion = new Version();
-		shortVersion.setDuration(1);
+		shortVersion.setDuration(Duration.standardSeconds(1));
 		longVersion = new Version();
-		longVersion.setDuration(10);
+		longVersion.setDuration(Duration.standardSeconds(10));
 		
 		availableLocation = new Location();
 		availableLocation.setAvailable(true);

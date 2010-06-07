@@ -17,6 +17,7 @@ package org.uriplay.persistence.content.mongodb;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.uriplay.content.criteria.ContentQueryBuilder.query;
+import static org.uriplay.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_END_TIME;
 import static org.uriplay.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_TIME;
 import static org.uriplay.content.criteria.attribute.Attributes.EPISODE_POSITION;
 import static org.uriplay.content.criteria.attribute.Attributes.ITEM_GENRE;
@@ -32,10 +33,13 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.uriplay.content.criteria.ContentQueryBuilder;
 import org.uriplay.content.criteria.attribute.Attributes;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Brand;
+import org.uriplay.media.entity.Broadcast;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
@@ -47,6 +51,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.Mongo;
 
 public class MongoDbBackedQueryExecutorTest extends TestCase {
@@ -56,12 +61,11 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
     private MongoDbBackedContentStore store;
     private MongoDBQueryExecutor queryExecutor;
     
-    private Mongo mongo = MongoTestHelper.anEmptyMongo();
 
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-		
+    	Mongo mongo = MongoTestHelper.anEmptyMongo();
     	
     	store = new MongoDbBackedContentStore(mongo, "uriplay");
     	queryExecutor = new MongoDBQueryExecutor(store);
@@ -251,6 +255,36 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		checkItemQuery(query().greaterThan(VERSION_DURATION, 20),   data.dotCottonsBigAdventure, data.peggySlapsFrank, data.interviewWithMp);
 		
 		checkItemQuery(query().greaterThan(VERSION_DURATION, 30), data.interviewWithMp);
+	}
+	
+	public void testTransmittedNowForItems() throws Exception {
+		
+		DateTime tenAm = new DateTime(2010, 10, 20, 10, 0, 0, 0, DateTimeZones.UTC);
+		
+		Item halfHourShowStartingAt10Am = new Item("item1", "curie:item1");
+		halfHourShowStartingAt10Am.addVersion(broadcast(tenAm, Duration.standardMinutes(30)));
+		
+		Item halfHourShowStartingAt11Am = new Item("item2", "curie:item2");
+		halfHourShowStartingAt11Am.addVersion(broadcast(tenAm.plusMinutes(30), Duration.standardMinutes(30)));
+		
+		store.createOrUpdateItem(halfHourShowStartingAt10Am);
+		store.createOrUpdateItem(halfHourShowStartingAt11Am);
+		
+		checkItemQuery(transmissionTimeQuery(tenAm), halfHourShowStartingAt10Am);
+		checkItemQuery(transmissionTimeQuery(tenAm.plusMinutes(25)), halfHourShowStartingAt10Am);
+		checkItemQuery(transmissionTimeQuery(tenAm.plusMinutes(30)), halfHourShowStartingAt11Am);
+		
+	}
+
+	private ContentQueryBuilder transmissionTimeQuery(DateTime when) {
+		return query().before(BROADCAST_TRANSMISSION_TIME, when.plusSeconds(1)).after(BROADCAST_TRANSMISSION_END_TIME, when);
+	}
+	
+	private static Version broadcast(DateTime start, Duration duration) {
+		Version version = new Version();
+		version.setDuration(duration);
+		version.addBroadcast(new Broadcast("channel", start, duration));
+		return version;
 	}
 	
 	public void testTransmittedBeforeForItems() throws Exception {
