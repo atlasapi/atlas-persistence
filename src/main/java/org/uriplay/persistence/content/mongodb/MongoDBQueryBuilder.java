@@ -374,11 +374,15 @@ public class MongoDBQueryBuilder {
 		}
 	}
 	
-	private static final Comparator<List<?>> lengthOrder = new Comparator<List<?>>() {
+	private static final Comparator<List<String>> lengthOrder = new Comparator<List<String>>() {
 
 		@Override
-		public int compare(List<?> o1, List<?> o2) {
-			return Integer.valueOf(o1.size()).compareTo(o2.size());
+		public int compare(List<String> o1, List<String> o2) {
+			int lengthComparison = Integer.valueOf(o1.size()).compareTo(o2.size());
+			if (lengthComparison == 0) {
+				return Joiner.on("").join(o1).compareTo(Joiner.on("").join(o2));
+			}
+			return lengthComparison;
 		}
 	};
 }
