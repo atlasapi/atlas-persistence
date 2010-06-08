@@ -32,9 +32,9 @@ public interface ContentStore {
 
 	Description findByUri(String uri);
 
-	List<Item> findItems(List<String> uri);
+	List<Item> findItems(Iterable<String> uri);
 	
-	List<Playlist> findPlaylists(List<String> uri);
+	List<Playlist> findPlaylists(Iterable<String> uri);
 	
 	List<Item> listAllItems(Selection selection);
 	

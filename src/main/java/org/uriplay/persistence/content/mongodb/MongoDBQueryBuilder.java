@@ -136,7 +136,11 @@ public class MongoDBQueryBuilder {
 			DBObject rhs = new BasicDBObject();
 			for (ConstrainedAttribute constrainedAttribute : contraints) {
 				String name = attributeName(queryType, constrainedAttribute.attribute);
-				rhs.put(name, constrainedAttribute.queryOrValue());
+				if (rhs.containsField(name)) {
+					((DBObject) rhs.get(name)).putAll((DBObject) constrainedAttribute.queryOrValue());
+				} else {
+					rhs.put(name, constrainedAttribute.queryOrValue());
+				}
 			}
 			parentDbObject.put(Joiner.on(".").join(entityPath.subList(parentPath.size(), entityPath.size())), new BasicDBObject("$elemMatch",  rhs));
 			queries.put(entityPath, rhs);

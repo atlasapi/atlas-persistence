@@ -230,8 +230,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
     }
 
     @Override
-    public List<Item> findItems(List<String> uris) {
-        return executeItemQuery(in("aliases", uris), null);
+    public List<Item> findItems(Iterable<String> uris) {
+        return executeItemQuery(in("aliases", Sets.newHashSet(uris)), null);
     }
 
     private List<Item> executeItemQuery(DBObject query, Selection selection) {
@@ -272,8 +272,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
 	}    
 
     @Override
-    public List<Playlist> findPlaylists(List<String> uris) {
-        return executePlaylistQuery(in("aliases", uris), null, null, true);
+    public List<Playlist> findPlaylists(Iterable<String> uris) {
+        return executePlaylistQuery(in("aliases", Sets.newHashSet(uris)), null, null, true);
     }
 
 	private List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
