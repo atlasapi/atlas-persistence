@@ -5,9 +5,9 @@ import java.util.Set;
 
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Location;
-import org.uriplay.media.reference.entity.MimeType;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;

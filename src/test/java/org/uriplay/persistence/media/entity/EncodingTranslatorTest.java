@@ -4,8 +4,8 @@ import junit.framework.TestCase;
 
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Location;
-import org.uriplay.media.reference.entity.MimeType;
 
+import com.metabroadcast.common.media.MimeType;
 import com.mongodb.DBObject;
 
 public class EncodingTranslatorTest extends TestCase {
