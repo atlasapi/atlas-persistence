@@ -307,7 +307,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
     public List<Item> listAllItems(Selection selection) {
         List<Item> items = Lists.newArrayList();
 
-        Iterator<DBObject> objects = itemCollection.find(null, null, selection.startIndexOrDefaultValue(0), -1 * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
+        Iterator<DBObject> objects = itemCollection.find(null, null, selection.getOffset(), -1 * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
         while (objects != null && objects.hasNext()) {
             DBObject current = objects.next();
             items.add(toItem(current));
@@ -320,7 +320,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
     public List<Playlist> listAllPlaylists(Selection selection) {
         List<Playlist> playlists = Lists.newArrayList();
 
-        Iterator<DBObject> objects = playlistCollection.find(null, null, selection.startIndexOrDefaultValue(0), -1 * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
+        Iterator<DBObject> objects = playlistCollection.find(null, null, selection.getOffset(), -1 * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
         while (objects != null && objects.hasNext()) {
             DBObject current = objects.next();
             playlists.add(toPlaylist(current, true));
