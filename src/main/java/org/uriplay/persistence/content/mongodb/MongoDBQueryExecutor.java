@@ -53,6 +53,8 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
 	private final MongoDbBackedContentStore roughSearch;
 	
+	private boolean filterUriQueries = false;
+	
 	public MongoDBQueryExecutor(MongoDbBackedContentStore roughSearch) {
 		this.roughSearch = roughSearch;
 	}
@@ -88,7 +90,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		// Extract exact item match query fragments (item by uri or curie)
 		Maybe<AttributeQuery<?>> byUriOrCurie = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.ITEM_URI, Attributes.ITEM_CURIE));
 		// If the request is for an exact match query then query for the item by uri or curie and filter the result
-		if (byUriOrCurie.hasValue()) {
+		if (byUriOrCurie.hasValue() && !filterUriQueries) {
 			// Preserve any 'contained in' constraints
 			Maybe<AttributeQuery<?>> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
 			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ContentQuery(ImmutableList.<AtomicQuery>of(byUriOrCurie.requireValue(), containedIn.requireValue())) : new ContentQuery(byUriOrCurie.requireValue()); 
@@ -137,7 +139,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		}
 		
 		// Filter out subplaylists that don't match if the query was not by uri or curie
-		if (itemQuery.hasValue() && QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI, Attributes.BRAND_CURIE)).isNothing()) {
+		if (itemQuery.hasValue() && (QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI, Attributes.BRAND_CURIE)).isNothing() || filterUriQueries)) {
 			return filterEmpty(brands);
 		}
 		
@@ -286,5 +288,9 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			merged.put(content.getCanonicalUri(), content);
 		}
 		return merged;
+	}
+	
+	public void setFilterUriQueries(boolean filterUriQueries) {
+		this.filterUriQueries = filterUriQueries;
 	}
 }
