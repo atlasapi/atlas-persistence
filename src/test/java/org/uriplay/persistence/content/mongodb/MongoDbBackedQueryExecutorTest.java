@@ -187,7 +187,7 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	}
 	
 	public void testFindingItemsByCurie() throws Exception {
-		checkItemQuery(query().equalTo(Attributes.ITEM_CURIE, data.englishForCats.getCurie()), data.englishForCats);
+		checkItemQuery(query().equalTo(Attributes.ITEM_URI, data.englishForCats.getCurie()), data.englishForCats);
 	}
 	
 	public void testBrandTitleStartsWith() throws Exception {
@@ -195,22 +195,22 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	}
 	
 	public void testFindingBrandsByCurie() throws Exception {
-		checkBrandQuery(query().equalTo(Attributes.BRAND_CURIE, data.eastenders.getCurie()), data.eastenders);
+		checkBrandQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCurie()), data.eastenders);
 	}
 	
 	public void testFindingItemsInABrand() throws Exception {
 		checkItemQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCanonicalUri()), data.peggySlapsFrank, data.dotCottonsBigAdventure);
-		checkItemQuery(query().equalTo(Attributes.BRAND_CURIE, data.eastenders.getCurie()), data.peggySlapsFrank, data.dotCottonsBigAdventure);
+		checkItemQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCurie()), data.peggySlapsFrank, data.dotCottonsBigAdventure);
 	}
 	
 	public void testFindingBrandsInAPlaylist() throws Exception {
 		checkBrandQuery(query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCanonicalUri()), data.eastenders, data.newsNight);
-		checkBrandQuery(query().equalTo(Attributes.PLAYLIST_CURIE, data.mentionedOnTwitter.getCurie()), data.eastenders, data.newsNight);
+		checkBrandQuery(query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCurie()), data.eastenders, data.newsNight);
 	}
 	
 	public void testFindingItemsInAPlaylist() throws Exception {
 		checkItemQuery(query().equalTo(Attributes.PLAYLIST_URI, data.goodEastendersEpisodes.getCanonicalUri()), data.dotCottonsBigAdventure);
-		checkItemQuery(query().equalTo(Attributes.PLAYLIST_CURIE, data.goodEastendersEpisodes.getCurie()), data.dotCottonsBigAdventure);
+		checkItemQuery(query().equalTo(Attributes.PLAYLIST_URI, data.goodEastendersEpisodes.getCurie()), data.dotCottonsBigAdventure);
 	}
 	
 	public void testFindingAvailableItems() throws Exception {

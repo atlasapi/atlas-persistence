@@ -87,7 +87,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 
 	private List<Item> executeItemQueryInternal(ContentQuery query) {
 		// Extract exact item match query fragments (item by uri or curie)
-		Maybe<AttributeQuery<?>> byUriOrCurie = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.ITEM_URI, Attributes.ITEM_CURIE));
+		Maybe<AttributeQuery<?>> byUriOrCurie = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.ITEM_URI));
 		// If the request is for an exact match query then query for the item by uri or curie and filter the result
 		if (byUriOrCurie.hasValue() && !filterUriQueries) {
 			// Preserve any 'contained in' constraints
@@ -138,7 +138,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		}
 		
 		// Filter out subplaylists that don't match if the query was not by uri or curie
-		if (itemQuery.hasValue() && (QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI, Attributes.BRAND_CURIE)).isNothing() || filterUriQueries)) {
+		if (itemQuery.hasValue() && (QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI)).isNothing() || filterUriQueries)) {
 			return filterEmpty(brands);
 		}
 		
