@@ -27,7 +27,6 @@ import org.uriplay.content.criteria.attribute.Attribute;
 import org.uriplay.content.criteria.attribute.Attributes;
 import org.uriplay.content.criteria.operator.Operators;
 import org.uriplay.media.entity.Brand;
-import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Episode;
 import org.uriplay.media.entity.Item;
@@ -276,18 +275,6 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	
 	private List<Item> filter(ContentQuery query, List<Item> items, boolean removeItemsThatDontMatch) {
 		return trimmer.trim(items, query, removeItemsThatDontMatch);
-	}
-
-	@Override
-	public Map<String, Content> executeAnyQuery(Iterable<String> uris) {
-		Map<String, Content> merged = Maps.newHashMap();
-		for (Content content : roughSearch.findItems(uris)) {
-			merged.put(content.getCanonicalUri(), content);
-		}
-		for (Content content : roughSearch.findPlaylists(uris)) {
-			merged.put(content.getCanonicalUri(), content);
-		}
-		return merged;
 	}
 	
 	public void setFilterUriQueries(boolean filterUriQueries) {

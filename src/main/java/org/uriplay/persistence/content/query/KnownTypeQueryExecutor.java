@@ -15,11 +15,9 @@ permissions and limitations under the License. */
 package org.uriplay.persistence.content.query;
 
 import java.util.List;
-import java.util.Map;
 
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.entity.Brand;
-import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 
@@ -31,5 +29,4 @@ public interface KnownTypeQueryExecutor {
 	
 	List<Brand> executeBrandQuery(ContentQuery query);
 
-	Map<String, Content> executeAnyQuery(Iterable<String> uris);
 }
