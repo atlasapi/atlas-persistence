@@ -25,6 +25,6 @@ package org.uriplay.persistence.system;
  */
 public interface Fetcher<T> {
 
-	T fetch(String uri, RequestTimer timer);
+	T fetch(String uri);
 
 }

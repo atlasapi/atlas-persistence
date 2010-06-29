@@ -56,7 +56,7 @@ public class UriRefresher implements Runnable  {
 		Content latestContent = null;
 		
 		try {
-			latestContent = fetcher.fetch(uri, new NullRequestTimer());
+			latestContent = fetcher.fetch(uri);
 			if (latestContent == null) {
 				throw new ContentNotFoundException(uri);
 			}
