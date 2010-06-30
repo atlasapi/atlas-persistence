@@ -108,7 +108,20 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 
 			@Override
 			public int compare(Content c1, Content c2) {
-				return Ints.compare(order.indexOf(c1.getCanonicalUri()), order.indexOf(c2.getCanonicalUri()));
+				return Ints.compare(indexOf(c1), order.indexOf(c2.getCanonicalUri()));
+			}
+
+			private int indexOf(Content content) {
+				for (String uri : content.getAllUris()) {
+					int idx = order.indexOf(uri);
+					if (idx != -1) {
+						return idx;
+					}
+				}
+				if (content.getCurie() != null) {
+					return order.indexOf(content.getCurie());
+				}
+				return -1;
 			}
 		};
 		
