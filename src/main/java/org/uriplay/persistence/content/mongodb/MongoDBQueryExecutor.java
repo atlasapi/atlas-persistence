@@ -15,6 +15,7 @@ permissions and limitations under the License. */
 package org.uriplay.persistence.content.mongodb;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,7 @@ import org.uriplay.content.criteria.attribute.Attribute;
 import org.uriplay.content.criteria.attribute.Attributes;
 import org.uriplay.content.criteria.operator.Operators;
 import org.uriplay.media.entity.Brand;
+import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Episode;
 import org.uriplay.media.entity.Item;
@@ -39,6 +41,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.query.Selection;
 
@@ -93,9 +96,25 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			// Preserve any 'contained in' constraints
 			Maybe<AttributeQuery<?>> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
 			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ContentQuery(ImmutableList.<AtomicQuery>of(byUriOrCurie.requireValue(), containedIn.requireValue())) : new ContentQuery(byUriOrCurie.requireValue()); 
-			return filter(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
+			List<Item> filtered = filter(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
+			return sort(filtered, (List<String>) byUriOrCurie.requireValue().getValue());
 		}
 		return filter(query, roughSearch.itemsMatching(query), true);
+	}
+	
+	private  <T extends Content> List<T> sort(List<T> content, final List<String> order) {
+		
+		Comparator<Content> byPositionInList = new Comparator<Content>() {
+
+			@Override
+			public int compare(Content c1, Content c2) {
+				return Ints.compare(order.indexOf(c1.getCanonicalUri()), order.indexOf(c2.getCanonicalUri()));
+			}
+		};
+		
+		List<T> toSort = Lists.newArrayList(content);
+		Collections.sort(toSort, byPositionInList);
+		return toSort;
 	}
 	
 	@Override
@@ -137,9 +156,15 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			return Collections.emptyList();
 		}
 		
+		Maybe<AttributeQuery<?>> brandUriQuery = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI));
+		
 		// Filter out subplaylists that don't match if the query was not by uri or curie
-		if (itemQuery.hasValue() && (QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI)).isNothing() || filterUriQueries)) {
+		if (itemQuery.hasValue() && (brandUriQuery.isNothing() || filterUriQueries)) {
 			return filterEmpty(brands);
+		}
+		
+		if (brandUriQuery.hasValue()) {
+			return sort(brands, (List<String>) brandUriQuery.requireValue().getValue());
 		}
 		
 		return brands;

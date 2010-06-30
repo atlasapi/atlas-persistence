@@ -29,6 +29,7 @@ import static org.uriplay.content.criteria.attribute.Attributes.VERSION_DURATION
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import junit.framework.TestCase;
@@ -111,6 +112,18 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	
 		// check an alias
 		checkBrandQuery(query().equalTo(Attributes.BRAND_URI, "http://eastenders.bbc"), data.eastenders);
+	}
+	
+	public void testFindingMultipleBrandsByUriReturnsTheResultsInTheRightOrder() throws Exception {
+		
+		List<Brand> brands = queryExecutor.executeBrandQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCanonicalUri(), data.apprentice.getCanonicalUri()).build());
+		
+		assertThat(brands, is(Arrays.asList(data.eastenders, data.apprentice)));
+		
+		brands = queryExecutor.executeBrandQuery(query().equalTo(Attributes.BRAND_URI, data.apprentice.getCanonicalUri(), data.eastenders.getCanonicalUri()).build());
+		assertThat(brands, is(Arrays.asList(data.apprentice, data.eastenders)));
+
+		
 	}
 	
 	public void testFindingBrandsItemsWithinThem() throws Exception {
