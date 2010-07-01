@@ -58,6 +58,7 @@ import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Playlist;
+import org.uriplay.media.entity.Policy;
 import org.uriplay.media.entity.Version;
 
 import com.google.common.base.Function;
@@ -310,10 +311,13 @@ public class MongoDBQueryBuilder {
 		if (Playlist.class.equals(queryType) && (Attributes.PLAYLIST_URI.equals(attribute) || Attributes.BRAND_URI.equals(attribute))) {
             return "aliases";
         }
+		if (Policy.class.equals(attribute.target())) {
+			return "policy." + attribute.javaAttributeName();
+		}
 		
 		String brand = Brand.class.equals(attribute.target()) && Item.class.equals(queryType) ? "brand." : "";
 		
-		return brand + attribute.javaAttributeName() + (attribute.isCollectionOfValues() ? "s" : "");
+		return brand + attribute.javaAttributeName() + ((attribute.isCollectionOfValues()  && !attribute.javaAttributeName().endsWith("s")) ? "s" : "");
 	}
 
 	private static List<String> entityPath(Class<? extends Description> queryType, Attribute<?> attribute) {
@@ -337,6 +341,9 @@ public class MongoDBQueryBuilder {
 			return ImmutableList.of("versions", "manifestedAs");
 		}
 		if (Location.class.equals(entity)) {
+			return ImmutableList.of("versions", "manifestedAs", "availableAt");
+		}
+		if (Policy.class.equals(entity)) {
 			return ImmutableList.of("versions", "manifestedAs", "availableAt");
 		}
 		throw new UnsupportedOperationException();
