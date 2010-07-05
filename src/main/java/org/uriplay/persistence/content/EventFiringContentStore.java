@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Content;
-import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentListener.changeType;
@@ -62,7 +61,7 @@ public class EventFiringContentStore implements MutableContentStore {
 		listener.itemChanged(Collections.singletonList(item), changeType.CONTENT_UPDATE);
 	}
 
-	public Description findByUri(String uri) {
+	public Content findByUri(String uri) {
 		return delegate.findByUri(uri);
 	}
 

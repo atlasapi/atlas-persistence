@@ -11,9 +11,9 @@ public class AggregateContentListener implements ContentListener {
 
 	private static final Log log = LogFactory.getLog(AggregateContentListener.class);
 
-	private final Collection<ContentListener> listeners;
+	private final Collection<? extends ContentListener> listeners;
 
-	public AggregateContentListener(Collection<ContentListener> listeners) {
+	public AggregateContentListener(Collection<? extends ContentListener> listeners) {
 		this.listeners = listeners;
 	}
 	

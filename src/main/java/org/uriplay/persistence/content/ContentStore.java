@@ -16,7 +16,7 @@ package org.uriplay.persistence.content;
 
 import java.util.List;
 
-import org.uriplay.media.entity.Description;
+import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 
@@ -30,7 +30,7 @@ import com.metabroadcast.common.query.Selection;
  */
 public interface ContentStore {
 
-	Description findByUri(String uri);
+	Content findByUri(String uri);
 
 	List<Item> listAllItems(Selection selection);
 	
