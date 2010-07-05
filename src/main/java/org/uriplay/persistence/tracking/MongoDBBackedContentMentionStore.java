@@ -16,7 +16,7 @@ package org.uriplay.persistence.tracking;
 
 import java.util.List;
 
-import org.uriplay.persistence.content.mongodb.MongoDBTemplate;
+import org.uriplay.persistence.content.mongo.MongoDBTemplate;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;

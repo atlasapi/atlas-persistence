@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License. */
 
-package org.uriplay.persistence.content.mongodb;
+package org.uriplay.persistence.content.mongo;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -29,7 +29,6 @@ import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
-import org.uriplay.persistence.content.MongoDbBackedContentStore;
 import org.uriplay.persistence.testing.DummyContentData;
 
 import com.google.common.collect.Iterables;

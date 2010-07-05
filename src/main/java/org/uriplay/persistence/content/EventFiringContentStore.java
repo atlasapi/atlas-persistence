@@ -66,15 +66,6 @@ public class EventFiringContentStore implements MutableContentStore {
 		return delegate.findByUri(uri);
 	}
 
-	public List<Item> findItems(Iterable<String> uri) {
-		return delegate.findItems(uri);
-	}
-
-	@Override
-	public List<Playlist> findPlaylists(Iterable<String> uri) {
-		return delegate.findPlaylists(uri);
-	}
-
     @Override
     public List<Item> listAllItems(Selection selection) {
         return delegate.listAllItems(selection);

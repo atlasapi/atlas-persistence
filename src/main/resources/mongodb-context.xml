@@ -6,7 +6,7 @@
         <constructor-arg value="${mongo.host}" type="java.lang.String" />
     </bean>
     
-    <bean id="mongoDbBackedContentStore" class="org.uriplay.persistence.content.MongoDbBackedContentStore">
+    <bean id="mongoDbBackedContentStore" class="org.uriplay.persistence.content.mongo.MongoDbBackedContentStore">
         <constructor-arg ref="mongo"/>
         <constructor-arg value="uriplay"/>
     </bean>

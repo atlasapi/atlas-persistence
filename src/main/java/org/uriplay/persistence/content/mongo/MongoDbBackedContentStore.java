@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License. */
 
-package org.uriplay.persistence.content;
+package org.uriplay.persistence.content.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -33,8 +33,7 @@ import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
-import org.uriplay.persistence.content.mongodb.MongoDBQueryBuilder;
-import org.uriplay.persistence.content.mongodb.MongoDBTemplate;
+import org.uriplay.persistence.content.MutableContentStore;
 import org.uriplay.persistence.media.entity.ContentTranslator;
 import org.uriplay.persistence.media.entity.DescriptionTranslator;
 
@@ -229,8 +228,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         return null;
     }
 
-    @Override
-    public List<Item> findItems(Iterable<String> uris) {
+    List<Item> findItems(Iterable<String> uris) {
         return executeItemQuery(in("aliases", Sets.newHashSet(uris)), null);
     }
 
@@ -271,8 +269,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
 		return (List) executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
 	}    
 
-    @Override
-    public List<Playlist> findPlaylists(Iterable<String> uris) {
+    List<Playlist> findPlaylists(Iterable<String> uris) {
         return executePlaylistQuery(in("aliases", Sets.newHashSet(uris)), null, null, true);
     }
 

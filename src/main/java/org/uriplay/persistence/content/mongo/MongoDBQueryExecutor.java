@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied. See the License for the specific language governing
 permissions and limitations under the License. */
 
-package org.uriplay.persistence.content.mongodb;
+package org.uriplay.persistence.content.mongo;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,7 +33,6 @@ import org.uriplay.media.entity.Description;
 import org.uriplay.media.entity.Episode;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
-import org.uriplay.persistence.content.MongoDbBackedContentStore;
 import org.uriplay.persistence.content.query.KnownTypeQueryExecutor;
 import org.uriplay.persistence.content.query.QueryFragmentExtractor;
 

@@ -1,4 +1,4 @@
-package org.uriplay.persistence.content.mongodb;
+package org.uriplay.persistence.content.mongo;
 
 import java.util.List;
 
