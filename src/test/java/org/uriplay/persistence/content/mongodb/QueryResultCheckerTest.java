@@ -14,6 +14,8 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content.mongodb;
 
+import static org.junit.Assert.assertEquals;
+import static org.uriplay.content.criteria.ContentQueryBuilder.query;
 import static org.uriplay.content.criteria.attribute.Attributes.BRAND_TITLE;
 import static org.uriplay.content.criteria.attribute.Attributes.ENCODING_DATA_CONTAINER_FORMAT;
 import static org.uriplay.content.criteria.attribute.Attributes.LOCATION_AVAILABLE;
@@ -22,21 +24,19 @@ import static org.uriplay.content.criteria.attribute.Attributes.VERSION_DURATION
 
 import java.util.Collections;
 
-import org.jmock.integration.junit3.MockObjectTestCase;
 import org.joda.time.Duration;
+import org.junit.Before;
+import org.junit.Test;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.media.TransportType;
 import org.uriplay.media.entity.Encoding;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Version;
-import org.uriplay.persistence.content.mongodb.QueryResultTrimmer;
 
 import com.google.common.collect.Sets;
 
-import static org.uriplay.content.criteria.ContentQueryBuilder.query;
-
-public class QueryResultCheckerTest extends MockObjectTestCase {
+public class QueryResultCheckerTest {
 
 	private QueryResultTrimmer trimmer;
 	private Version shortVersion;
@@ -46,10 +46,9 @@ public class QueryResultCheckerTest extends MockObjectTestCase {
 	private Location unavailableLocation;
 	private Location streamingLocation;
 
-	@Override
-	protected void setUp() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		
-		super.setUp();
 		trimmer = new QueryResultTrimmer();
 		
 		shortVersion = new Version();
@@ -67,6 +66,7 @@ public class QueryResultCheckerTest extends MockObjectTestCase {
 		streamingLocation.setTransportType(TransportType.STREAM);
 	}
 	
+	@Test
 	public void testAQueryThatShouldNotBeTrimmed() throws Exception {
 		
 		Item item = new Item();
@@ -78,6 +78,7 @@ public class QueryResultCheckerTest extends MockObjectTestCase {
 		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 	}
 	
+	@Test
 	public void testTrimmingVersions() throws Exception {
 		Item item = new Item();
 		
@@ -91,6 +92,7 @@ public class QueryResultCheckerTest extends MockObjectTestCase {
 		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, "test").build(), true));
 	}
 	
+	@Test
 	public void testTrimmingALocationByAvailablity() {
 		Item item = new Item();
 		
@@ -110,6 +112,7 @@ public class QueryResultCheckerTest extends MockObjectTestCase {
 	
 	}
 	
+	@Test
 	public void testTrimmingALocationByTransportType() {
 		Item item = new Item();
 		
@@ -123,6 +126,7 @@ public class QueryResultCheckerTest extends MockObjectTestCase {
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	}
 	
+	@Test
 	public void testCompoundQueries() throws Exception {
 		Item item1 = new Item();
 		item1.setIsLongForm(true);

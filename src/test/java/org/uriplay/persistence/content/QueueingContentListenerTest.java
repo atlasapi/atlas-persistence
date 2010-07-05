@@ -4,25 +4,33 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.jmock.Expectations;
-import org.jmock.integration.junit3.MockObjectTestCase;
+import org.jmock.Mockery;
+import org.jmock.integration.junit4.JMock;
 import org.jmock.lib.concurrent.DeterministicScheduler;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Item;
 
 import com.google.common.collect.Lists;
 
-public class QueueingContentListenerTest extends MockObjectTestCase {
+@RunWith(JMock.class)
+public class QueueingContentListenerTest {
     
-    private ContentListener delegate = mock(ContentListener.class);
+	private final Mockery context = new Mockery();
+	
+    private ContentListener delegate = context.mock(ContentListener.class);
     private DeterministicScheduler scheduler = new DeterministicScheduler();
     
     private QueueingContentListener contentListener = new QueueingContentListener(scheduler, delegate);
     
-    @Override
+    @Before
     public void setUp() throws Exception {
         contentListener.afterPropertiesSet();
     }
     
+    @Test
     public void testBrandUpdate() throws Exception {
         List<Brand> brands = Lists.newArrayList();
         brands.add(new Brand("uri", "curie"));
@@ -40,14 +48,14 @@ public class QueueingContentListenerTest extends MockObjectTestCase {
         finalBrands.add(new Brand("uri", "curie"));
         finalBrands.add(new Brand("uri2", "curie2"));
         
-        checking(new Expectations() {{ 
+        context.checking(new Expectations() {{ 
             one(delegate).brandChanged(finalBrands, null);
             one(delegate).itemChanged(Lists.<Item>newArrayList(), null);
         }});
         
         scheduler.tick(60, TimeUnit.SECONDS);
         
-        checking(new Expectations() {{ 
+        context.checking(new Expectations() {{ 
             one(delegate).brandChanged(Lists.<Brand>newArrayList(), null);
             one(delegate).itemChanged(Lists.<Item>newArrayList(), null);
         }});
@@ -55,11 +63,12 @@ public class QueueingContentListenerTest extends MockObjectTestCase {
         scheduler.tick(120, TimeUnit.SECONDS);
     }
     
+    @Test
     public void testBootstrap() throws Exception {
         final List<Item> items = Lists.newArrayList();
         items.add(new Item("uri", "curie"));
         
-        checking(new Expectations() {{ 
+        context.checking(new Expectations() {{ 
             one(delegate).itemChanged(items, ContentListener.changeType.BOOTSTRAP);
         }});
         
