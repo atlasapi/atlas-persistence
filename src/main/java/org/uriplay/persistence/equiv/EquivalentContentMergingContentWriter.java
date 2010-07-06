@@ -2,7 +2,6 @@ package org.uriplay.persistence.equiv;
 
 import java.util.Set;
 
-import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentWriter;
@@ -18,11 +17,6 @@ public class EquivalentContentMergingContentWriter implements ContentWriter {
 	@Override
 	public void addAliases(String uri, Set<String> aliases) {
 		delegate.addAliases(uri, aliases);
-	}
-
-	@Override
-	public void createOrUpdateContent(Content bean, boolean markMissingItemsAsUnavailable) {
-		delegate.createOrUpdateContent(bean, markMissingItemsAsUnavailable);
 	}
 
 	@Override

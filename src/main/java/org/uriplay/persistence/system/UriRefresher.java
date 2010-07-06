@@ -6,6 +6,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Required;
 import org.uriplay.media.entity.Content;
+import org.uriplay.media.entity.Item;
+import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentWriter;
 import org.uriplay.persistence.servlet.ContentNotFoundException;
 
@@ -67,7 +69,7 @@ public class UriRefresher implements Runnable  {
 		}
 
 		try {
-			contentStore.createOrUpdateContent(latestContent, missingContentShouldBeMarkedAsUnavailable);
+			createOrUpdateContent(latestContent, missingContentShouldBeMarkedAsUnavailable);
 		} catch (Exception e) {
 			log.warn(e);
 			return;
@@ -75,6 +77,15 @@ public class UriRefresher implements Runnable  {
 	
 		log.info("Completed update of content in database for: " + uri);
 	}
+	
+	 private void createOrUpdateContent(Content root, boolean markMissingItemsAsUnavailable) {
+	        if (root instanceof Playlist) {
+	        	contentStore.createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
+	        }
+	        if (root instanceof Item) {
+	        	contentStore.createOrUpdateItem((Item) root);
+	        }
+	    }
 	
 	@Required
 	public void setFetcher(Fetcher<Content> fetcher) {

@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.uriplay.media.entity.Brand;
-import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentListener.changeType;
@@ -23,16 +22,6 @@ public class EventFiringContentWriter implements ContentWriter {
 
 	public void addAliases(String uri, Set<String> aliases) {
 		delegate.addAliases(uri, aliases);
-	}
-
-	@Override
-	public void createOrUpdateContent(Content root, boolean markMissingItemsAsUnavailable) {
-        if (root instanceof Playlist) {
-            createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
-        }
-        if (root instanceof Item) {
-            createOrUpdateItem((Item) root);
-        }
 	}
 	
 	@Override

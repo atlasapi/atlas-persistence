@@ -8,7 +8,9 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class DescriptionTranslator implements ModelTranslator<Description> {
-    public static final String CANONICAL_URI = "canonicalUri";
+   
+	public static final String ALIASES = "aliases";
+	public static final String CANONICAL_URI = "canonicalUri";
 
     @Override
     public Description fromDBObject(DBObject dbObject, Description description) {
@@ -18,7 +20,7 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
 
         description.setCanonicalUri((String) dbObject.get(CANONICAL_URI));
         description.setCurie((String) dbObject.get("curie"));
-        description.setAliases(TranslatorUtils.toSet(dbObject, "aliases"));
+        description.setAliases(TranslatorUtils.toSet(dbObject, ALIASES));
         
         return description;
     }
@@ -31,7 +33,7 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
 
         TranslatorUtils.from(dbObject, CANONICAL_URI, entity.getCanonicalUri());
         TranslatorUtils.from(dbObject, "curie", entity.getCurie());
-        TranslatorUtils.fromSet(dbObject, entity.getAliases(), "aliases");
+        TranslatorUtils.fromSet(dbObject, entity.getAliases(), ALIASES);
 
         return dbObject;
     }

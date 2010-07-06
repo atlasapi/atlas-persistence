@@ -66,21 +66,17 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 	@Override
     public void addAliases(String uri, Set<String> aliases) {
         Content desc = findByUri(uri);
+        
         if (desc != null) {
             for (String alias : aliases) {
                 desc.addAlias(alias);
             }
-            createOrUpdateContent(desc, false);
-        }
-    }
-
-    @Override
-    public void createOrUpdateContent(Content root, boolean markMissingItemsAsUnavailable) {
-        if (root instanceof Playlist) {
-            createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
-        }
-        if (root instanceof Item) {
-            createOrUpdateItem((Item) root);
+            if (desc instanceof Playlist) {
+                createOrUpdatePlaylist((Playlist) desc, false);
+            }
+            if (desc instanceof Item) {
+               createOrUpdateItem((Item) desc);
+            }
         }
     }
     
