@@ -4,18 +4,20 @@ import java.util.Collection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Item;
 
-public class AggregateContentListener implements ContentListener {
+import com.google.common.collect.Sets;
+
+public class AggregateContentListener implements ContentListener, ApplicationContextAware {
 
 	private static final Log log = LogFactory.getLog(AggregateContentListener.class);
 
-	private final Collection<? extends ContentListener> listeners;
+	private final Collection<ContentListener> listeners = Sets.newHashSet();
 
-	public AggregateContentListener(Collection<? extends ContentListener> listeners) {
-		this.listeners = listeners;
-	}
 	
 	public void brandChanged(Collection<Brand> brands, changeType changeType) {
 		for (ContentListener listener : listeners) {
@@ -36,5 +38,11 @@ public class AggregateContentListener implements ContentListener {
 			}
 		}
 	}
-	
+
+	@Override
+	public void setApplicationContext(ApplicationContext context) throws BeansException {
+		Collection<ContentListener> inContext = context.getBeansOfType(ContentListener.class).values();
+		inContext.remove(this);
+		listeners.addAll(inContext);
+	}
 }

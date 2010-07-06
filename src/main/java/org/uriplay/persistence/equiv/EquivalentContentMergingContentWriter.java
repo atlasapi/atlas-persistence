@@ -7,29 +7,31 @@ import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentWriter;
 
-public class EquivalentContentMergingContentStore implements ContentWriter {
+public class EquivalentContentMergingContentWriter implements ContentWriter {
+
+	private final ContentWriter delegate;
+
+	public EquivalentContentMergingContentWriter(ContentWriter delegate) {
+		this.delegate = delegate;
+	}
 
 	@Override
 	public void addAliases(String uri, Set<String> aliases) {
-		// TODO Auto-generated method stub
-		
+		delegate.addAliases(uri, aliases);
 	}
 
 	@Override
 	public void createOrUpdateContent(Content bean, boolean markMissingItemsAsUnavailable) {
-		// TODO Auto-generated method stub
-		
+		delegate.createOrUpdateContent(bean, markMissingItemsAsUnavailable);
 	}
 
 	@Override
 	public void createOrUpdateItem(Item item) {
-		// TODO Auto-generated method stub
-		
+		delegate.createOrUpdateItem(item);
 	}
 
 	@Override
 	public void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable) {
-		// TODO Auto-generated method stub
+		delegate.createOrUpdatePlaylist(enclosingList, markMissingItemsAsUnavailable);
 	}
-
 }
