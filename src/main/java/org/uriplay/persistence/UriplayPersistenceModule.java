@@ -4,11 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.uriplay.persistence.content.AggregateContentListener;
-import org.uriplay.persistence.content.ContentListener;
 import org.uriplay.persistence.content.ContentWriter;
 import org.uriplay.persistence.content.EventFiringContentWriter;
 import org.uriplay.persistence.content.MongoDbBackedContentBootstrapper;
-import org.uriplay.persistence.content.QueueingContentListener;
 import org.uriplay.persistence.content.mongo.MongoDbBackedContentStore;
 import org.uriplay.persistence.content.mongo.MongoRoughSearch;
 import org.uriplay.persistence.tracking.ContentMentionStore;
@@ -33,11 +31,6 @@ public class UriplayPersistenceModule {
 		return new MongoRoughSearch(mongoContentStore());
 	}
 	
-	public @Bean(destroyMethod="shutdown") ContentListener contentListener() {
-		return new QueueingContentListener(aggregateListener());
-	}
-	
-	
 	@Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore mongoContentStore() {
 		return new MongoDbBackedContentStore(mongo, "uriplay");
 	}
@@ -45,9 +38,8 @@ public class UriplayPersistenceModule {
 	@Bean MongoDbBackedContentBootstrapper contentBootstrapper() {
 		return new MongoDbBackedContentBootstrapper(contentListener(), mongoContentStore());
 	}
-	
 
-	@Bean AggregateContentListener aggregateListener() {
+	@Bean AggregateContentListener contentListener() {
 		return new AggregateContentListener();
 	}
 }
