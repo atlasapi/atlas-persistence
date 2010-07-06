@@ -11,7 +11,6 @@ import org.uriplay.persistence.content.MongoDbBackedContentBootstrapper;
 import org.uriplay.persistence.content.QueueingContentListener;
 import org.uriplay.persistence.content.mongo.MongoDbBackedContentStore;
 import org.uriplay.persistence.content.mongo.MongoRoughSearch;
-import org.uriplay.persistence.equiv.EquivalentContentMergingContentWriter;
 import org.uriplay.persistence.tracking.ContentMentionStore;
 import org.uriplay.persistence.tracking.MongoDBBackedContentMentionStore;
 
@@ -26,15 +25,20 @@ public class UriplayPersistenceModule {
 		return new MongoDBBackedContentMentionStore(mongo, "uriplay");
 	}
 	
-	public @Bean ContentWriter contentWriter() {
-		return new EquivalentContentMergingContentWriter(new EventFiringContentWriter(mongoContentStore(), contentListener()));
+	public @Bean ContentWriter persistentWriter() {
+		return new EventFiringContentWriter(mongoContentStore(), contentListener());
 	}	
 	
 	public @Bean MongoRoughSearch mongoRoughSearch() {
 		return new MongoRoughSearch(mongoContentStore());
 	}
 	
-	@Bean MongoDbBackedContentStore mongoContentStore() {
+	public @Bean(destroyMethod="shutdown") ContentListener contentListener() {
+		return new QueueingContentListener(aggregateListener());
+	}
+	
+	
+	@Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore mongoContentStore() {
 		return new MongoDbBackedContentStore(mongo, "uriplay");
 	}
 	
@@ -42,10 +46,6 @@ public class UriplayPersistenceModule {
 		return new MongoDbBackedContentBootstrapper(contentListener(), mongoContentStore());
 	}
 	
-	
-	public @Bean(destroyMethod="shutdown") ContentListener contentListener() {
-		return new QueueingContentListener(aggregateListener());
-	}
 
 	@Bean AggregateContentListener aggregateListener() {
 		return new AggregateContentListener();

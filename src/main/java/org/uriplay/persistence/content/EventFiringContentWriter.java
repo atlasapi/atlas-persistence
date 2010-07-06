@@ -19,10 +19,6 @@ public class EventFiringContentWriter implements ContentWriter {
 		this.delegate = delegate;
 		this.listener = listener;
 	}
-
-	public void addAliases(String uri, Set<String> aliases) {
-		delegate.addAliases(uri, aliases);
-	}
 	
 	@Override
 	public void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable) {

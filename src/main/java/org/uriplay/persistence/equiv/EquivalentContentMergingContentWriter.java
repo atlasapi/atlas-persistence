@@ -1,7 +1,5 @@
 package org.uriplay.persistence.equiv;
 
-import java.util.Set;
-
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentWriter;
@@ -9,23 +7,20 @@ import org.uriplay.persistence.content.ContentWriter;
 public class EquivalentContentMergingContentWriter implements ContentWriter {
 
 	private final ContentWriter delegate;
+	private final EquivalentContentMerger merger;
 
-	public EquivalentContentMergingContentWriter(ContentWriter delegate) {
+	public EquivalentContentMergingContentWriter(ContentWriter delegate, EquivalentContentMerger merger) {
 		this.delegate = delegate;
-	}
-
-	@Override
-	public void addAliases(String uri, Set<String> aliases) {
-		delegate.addAliases(uri, aliases);
+		this.merger = merger;
 	}
 
 	@Override
 	public void createOrUpdateItem(Item item) {
-		delegate.createOrUpdateItem(item);
+		delegate.createOrUpdateItem(merger.merge(item));
 	}
 
 	@Override
 	public void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable) {
-		delegate.createOrUpdatePlaylist(enclosingList, markMissingItemsAsUnavailable);
+		delegate.createOrUpdatePlaylist(merger.merge(enclosingList), markMissingItemsAsUnavailable);
 	}
 }

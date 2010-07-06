@@ -14,8 +14,6 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content;
 
-import java.util.Set;
-
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 
@@ -30,7 +28,5 @@ public interface ContentWriter {
 	void createOrUpdateItem(Item item);
 
 	void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable);
-
-	void addAliases(String uri, Set<String> aliases);
 
 }

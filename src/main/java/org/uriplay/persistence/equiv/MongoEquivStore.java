@@ -11,7 +11,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
-public class MongoEquivStore implements EquivStore {
+public class MongoEquivStore implements EquivalentUrlStore {
 
 	// Prevent choking on really long chains of equivalence
 	private static final int MAX_PATH = 5;
