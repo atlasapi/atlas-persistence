@@ -52,11 +52,11 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	
 	private final QuerySplitter splitter = new QuerySplitter();
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
-	private final MongoDbBackedContentStore roughSearch;
+	private final MongoRoughSearch roughSearch;
 	
 	private boolean filterUriQueries = false;
 	
-	public MongoDBQueryExecutor(MongoDbBackedContentStore roughSearch) {
+	public MongoDBQueryExecutor(MongoRoughSearch roughSearch) {
 		this.roughSearch = roughSearch;
 	}
 	

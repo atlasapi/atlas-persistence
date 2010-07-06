@@ -1,7 +1,6 @@
 package org.uriplay.persistence.content;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import org.uriplay.media.entity.Brand;
@@ -11,14 +10,13 @@ import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentListener.changeType;
 
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.query.Selection;
 
-public class EventFiringContentStore implements MutableContentStore {
+public class EventFiringContentWriter implements ContentWriter {
 
-	private final MutableContentStore delegate;
+	private final ContentWriter delegate;
 	private final ContentListener listener;
 	
-	public EventFiringContentStore(MutableContentStore delegate, ContentListener listener) {
+	public EventFiringContentWriter(ContentWriter delegate, ContentListener listener) {
 		this.delegate = delegate;
 		this.listener = listener;
 	}
@@ -60,18 +58,4 @@ public class EventFiringContentStore implements MutableContentStore {
 		delegate.createOrUpdateItem(item);
 		listener.itemChanged(Collections.singletonList(item), changeType.CONTENT_UPDATE);
 	}
-
-	public Content findByUri(String uri) {
-		return delegate.findByUri(uri);
-	}
-
-    @Override
-    public List<Item> listAllItems(Selection selection) {
-        return delegate.listAllItems(selection);
-    }
-
-    @Override
-    public List<Playlist> listAllPlaylists(Selection selection) {
-        return delegate.listAllPlaylists(selection);
-    }
 }

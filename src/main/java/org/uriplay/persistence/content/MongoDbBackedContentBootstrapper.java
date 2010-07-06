@@ -31,12 +31,12 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
     private static final int BATCH_SIZE = 500;
 
     private final ContentListener contentListener;
-    private final ContentStore contentStore;
+    private final RetrospectiveContentLister contentStore;
     private int batchSize = BATCH_SIZE;
 
-    public MongoDbBackedContentBootstrapper(ContentListener contentListener, ContentStore contentStore) {
+    public MongoDbBackedContentBootstrapper(ContentListener contentListener, RetrospectiveContentLister contentLister) {
         this.contentListener = contentListener;
-        this.contentStore = contentStore;
+        this.contentStore = contentLister;
     }
 
     @Override

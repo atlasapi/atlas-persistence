@@ -11,8 +11,8 @@ import org.uriplay.media.entity.Brand;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.persistence.content.ContentListener;
-import org.uriplay.persistence.content.ContentStore;
 import org.uriplay.persistence.content.MongoDbBackedContentBootstrapper;
+import org.uriplay.persistence.content.RetrospectiveContentLister;
 import org.uriplay.persistence.testing.DummyContentData;
 
 import com.google.common.collect.Lists;
@@ -23,7 +23,7 @@ public class MongoDbBackedContentListenerTest  {
    
 	private final Mockery context = new Mockery();
 	
-	private ContentStore store = context.mock(ContentStore.class);
+	private RetrospectiveContentLister store = context.mock(RetrospectiveContentLister.class);
     private ContentListener listener = context.mock(ContentListener.class);
     private MongoDbBackedContentBootstrapper bootstrapper = new MongoDbBackedContentBootstrapper(listener, store);
     private DummyContentData data = new DummyContentData();

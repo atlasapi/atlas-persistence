@@ -240,7 +240,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     }
     
     public void testShouldGetEpisodeThroughAnonymousMethods() throws Exception {
-        store.createOrUpdateContent(data.brainSurgery, false);
+        store.createOrUpdateItem(data.brainSurgery);
         
         Description episode = store.findByUri(data.brainSurgery.getCanonicalUri());
         assertNotNull(episode);

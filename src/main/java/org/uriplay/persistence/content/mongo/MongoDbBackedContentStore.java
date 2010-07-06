@@ -33,7 +33,9 @@ import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Location;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
-import org.uriplay.persistence.content.MutableContentStore;
+import org.uriplay.persistence.content.ContentResolver;
+import org.uriplay.persistence.content.ContentWriter;
+import org.uriplay.persistence.content.RetrospectiveContentLister;
 import org.uriplay.persistence.media.entity.ContentTranslator;
 import org.uriplay.persistence.media.entity.DescriptionTranslator;
 
@@ -47,7 +49,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
-public class MongoDbBackedContentStore extends MongoDBTemplate implements MutableContentStore {
+public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister {
     
 	private final static int DEFAULT_BATCH_SIZE = 50;
 	private final static int MAX_RESULTS = 2000;
@@ -232,7 +234,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         return executeItemQuery(in("aliases", Sets.newHashSet(uris)), null);
     }
 
-    private List<Item> executeItemQuery(DBObject query, Selection selection) {
+    List<Item> executeItemQuery(DBObject query, Selection selection) {
     	
         Iterator<DBObject> cur = cursor(itemCollection, query, selection);
         
@@ -273,7 +275,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Mutabl
         return executePlaylistQuery(in("aliases", Sets.newHashSet(uris)), null, null, true);
     }
 
-	private List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
+	List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
         List<Playlist> playlists = Lists.newArrayList();
         try {
         	

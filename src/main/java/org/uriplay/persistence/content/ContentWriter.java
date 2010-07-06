@@ -14,13 +14,11 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content;
 
-import java.util.List;
+import java.util.Set;
 
 import org.uriplay.media.entity.Content;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
-
-import com.metabroadcast.common.query.Selection;
 
 /**
  * Simple interface to the store of available content.
@@ -28,11 +26,14 @@ import com.metabroadcast.common.query.Selection;
  * @author Robert Chatley (robert@metabroadcast.com)
  * @author John Ayres (john@metabroadcast.com)
  */
-public interface ContentStore {
+public interface ContentWriter {
 
-	Content findByUri(String uri);
+	void createOrUpdateItem(Item item);
 
-	List<Item> listAllItems(Selection selection);
-	
-	List<Playlist> listAllPlaylists(Selection selection);
+	void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable);
+
+	void createOrUpdateContent(Content bean, boolean markMissingItemsAsUnavailable);
+
+	void addAliases(String uri, Set<String> aliases);
+
 }

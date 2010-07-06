@@ -14,11 +14,7 @@ permissions and limitations under the License. */
 
 package org.uriplay.persistence.content;
 
-import java.util.Set;
-
 import org.uriplay.media.entity.Content;
-import org.uriplay.media.entity.Item;
-import org.uriplay.media.entity.Playlist;
 
 /**
  * Simple interface to the store of available content.
@@ -26,14 +22,8 @@ import org.uriplay.media.entity.Playlist;
  * @author Robert Chatley (robert@metabroadcast.com)
  * @author John Ayres (john@metabroadcast.com)
  */
-public interface MutableContentStore extends ContentStore {
+public interface ContentResolver {
 
-	void createOrUpdateItem(Item item);
-
-	void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable);
-
-	void createOrUpdateContent(Content bean, boolean markMissingItemsAsUnavailable);
-
-	void addAliases(String uri, Set<String> aliases);
+	Content findByUri(String uri);
 
 }

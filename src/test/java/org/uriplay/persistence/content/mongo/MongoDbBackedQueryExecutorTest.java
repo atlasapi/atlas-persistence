@@ -68,7 +68,7 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
     	Mongo mongo = MongoTestHelper.anEmptyMongo();
     	
     	store = new MongoDbBackedContentStore(mongo, "uriplay");
-    	queryExecutor = new MongoDBQueryExecutor(store);
+    	queryExecutor = new MongoDBQueryExecutor(new MongoRoughSearch(store));
     	
     	store.createOrUpdatePlaylist(data.eastenders, true);
     	store.createOrUpdatePlaylist(data.apprentice, true);

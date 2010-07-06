@@ -6,7 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Required;
 import org.uriplay.media.entity.Content;
-import org.uriplay.persistence.content.MutableContentStore;
+import org.uriplay.persistence.content.ContentWriter;
 import org.uriplay.persistence.servlet.ContentNotFoundException;
 
 /* Copyright 2009 Meta Broadcast Ltd
@@ -28,7 +28,7 @@ public class UriRefresher implements Runnable  {
 	private static final Log log = LogFactory.getLog(UriRefresher.class);
 	
 	private Fetcher<Content> fetcher;
-	private MutableContentStore contentStore;
+	private ContentWriter contentStore;
 	private Iterable<String> uris;
 	private boolean missingContentShouldBeMarkedAsUnavailable;
 	
@@ -36,7 +36,7 @@ public class UriRefresher implements Runnable  {
 
 	}
 	
-	public UriRefresher(Fetcher<Content> fetcher, MutableContentStore contentStore) {
+	public UriRefresher(Fetcher<Content> fetcher, ContentWriter contentStore) {
 		this.fetcher = fetcher;
 		this.contentStore = contentStore;
 	}
@@ -82,7 +82,7 @@ public class UriRefresher implements Runnable  {
 	}
 
 	@Required
-	public void setContentStore(MutableContentStore contentStore) {
+	public void setContentStore(ContentWriter contentStore) {
 		this.contentStore = contentStore;
 	}
 
