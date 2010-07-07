@@ -1,6 +1,9 @@
 package org.uriplay.persistence.content;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.uriplay.content.criteria.ContentQueryBuilder.query;
 
 import java.util.List;
@@ -13,6 +16,8 @@ import org.junit.runner.RunWith;
 import org.uriplay.content.criteria.ContentQuery;
 import org.uriplay.content.criteria.attribute.Attributes;
 import org.uriplay.media.entity.Brand;
+import org.uriplay.media.entity.Item;
+import org.uriplay.media.entity.Publisher;
 import org.uriplay.persistence.content.query.KnownTypeQueryExecutor;
 import org.uriplay.persistence.content.query.UniqueContentForUriQueryExecutor;
 
@@ -44,6 +49,54 @@ public class UniqueContentForUriQueryExecutorTest {
         assertFalse(results.isEmpty());
         assertEquals(1, results.size());
         assertEquals(brand1, results.get(0));
+    }
+    
+    @Test
+    public void shouldRemoveDuplicateBrandForLocation() {
+        final ContentQuery query = query().equalTo(Attributes.BRAND_URI, "wikipedia:glee").equalTo(Attributes.POLICY_AVAILABLE_COUNTRY, Lists.newArrayList("uk")).build();
+        
+        Brand brand1 = new Brand("http://www.hulu.com/glee", "hulu:glee");
+        brand1.addAlias("wikipedia:glee");
+        brand1.setPublisher(Publisher.HULU.key());
+        Brand brand2 = new Brand("http://channel4.com/glee", "c4:glee");
+        brand2.addAlias("wikipedia:glee");
+        brand2.setPublisher(Publisher.C4.key());
+        
+        final List<Brand> brands = Lists.newArrayList(brand1, brand2);
+        
+        context.checking(new Expectations() {{ 
+            one(delegate).executeBrandQuery(query); will(returnValue(brands));
+        }});
+        
+        List<Brand> results = queryExectuor.executeBrandQuery(query);
+        assertNotNull(results);
+        assertFalse(results.isEmpty());
+        assertEquals(1, results.size());
+        assertEquals(brand2, results.get(0));
+    }
+    
+    @Test
+    public void shouldRemoveDuplicateItemForLocation() {
+        final ContentQuery query = query().equalTo(Attributes.ITEM_URI, "wikipedia:glee").equalTo(Attributes.POLICY_AVAILABLE_COUNTRY, Lists.newArrayList("uk")).build();
+        
+        Item item1 = new Item("http://www.hulu.com/glee", "hulu:glee");
+        item1.addAlias("wikipedia:glee");
+        item1.setPublisher(Publisher.HULU.key());
+        Item item2 = new Item("http://channel4.com/glee", "c4:glee");
+        item2.addAlias("wikipedia:glee");
+        item2.setPublisher(Publisher.C4.key());
+        
+        final List<Item> items = Lists.newArrayList(item1, item2);
+        
+        context.checking(new Expectations() {{ 
+            one(delegate).executeItemQuery(query); will(returnValue(items));
+        }});
+        
+        List<Item> results = queryExectuor.executeItemQuery(query);
+        assertNotNull(results);
+        assertFalse(results.isEmpty());
+        assertEquals(1, results.size());
+        assertEquals(item2, results.get(0));
     }
     
     @Test
