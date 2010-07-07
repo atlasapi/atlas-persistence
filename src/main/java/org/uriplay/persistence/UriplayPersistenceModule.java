@@ -31,7 +31,7 @@ public class UriplayPersistenceModule {
 		return new MongoRoughSearch(mongoContentStore());
 	}
 	
-	@Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore mongoContentStore() {
+	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore mongoContentStore() {
 		return new MongoDbBackedContentStore(mongo, "uriplay");
 	}
 	
