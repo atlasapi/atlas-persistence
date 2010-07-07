@@ -15,7 +15,7 @@ import org.uriplay.persistence.tracking.MongoDBBackedContentMentionStore;
 import com.mongodb.Mongo;
 
 @Configuration
-public class UriplayPersistenceModule {
+public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
 	private @Autowired Mongo mongo;
 	
@@ -24,22 +24,22 @@ public class UriplayPersistenceModule {
 	}
 	
 	public @Bean ContentWriter persistentWriter() {
-		return new EventFiringContentWriter(mongoContentStore(), contentListener());
+		return new EventFiringContentWriter(contentStore(), contentListener());
 	}	
 	
-	public @Bean MongoRoughSearch mongoRoughSearch() {
-		return new MongoRoughSearch(mongoContentStore());
+	public @Bean MongoRoughSearch roughSearch() {
+		return new MongoRoughSearch(contentStore());
 	}
 	
-	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore mongoContentStore() {
+	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore contentStore() {
 		return new MongoDbBackedContentStore(mongo, "uriplay");
 	}
 	
 	@Bean MongoDbBackedContentBootstrapper contentBootstrapper() {
-		return new MongoDbBackedContentBootstrapper(contentListener(), mongoContentStore());
+		return new MongoDbBackedContentBootstrapper(contentListener(), contentStore());
 	}
 
-	@Bean AggregateContentListener contentListener() {
+	public @Bean AggregateContentListener contentListener() {
 		return new AggregateContentListener();
 	}
 }

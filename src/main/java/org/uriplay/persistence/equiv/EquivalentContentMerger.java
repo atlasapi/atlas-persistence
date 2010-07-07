@@ -9,6 +9,7 @@ import org.uriplay.media.entity.Episode;
 import org.uriplay.media.entity.Item;
 import org.uriplay.media.entity.Playlist;
 import org.uriplay.media.entity.Version;
+import org.uriplay.persistence.equiv.EquivalentContentFinder.EquivalentContent;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
@@ -29,25 +30,28 @@ public class EquivalentContentMerger {
 	
 	public Playlist merge(Playlist playlist) {
 		if (playlist instanceof Brand) {
-			return merge((Brand) playlist);
+			merge((Brand) playlist);
 		} else {
 			List<Playlist> mergedPlaylists = Lists.newArrayList();
 			for (Playlist subPlaylist : playlist.getPlaylists()) {
 				mergedPlaylists.add(merge(subPlaylist));
 			}
 			playlist.setPlaylists(mergedPlaylists);
-			return playlist;
 		}
+		return playlist;
 	}
 
-	private Brand merge(Brand brand) {
-		Iterable<? extends Content> equiv = finder.equivalentTo(brand);
-		for (Content content : equiv) {
+	private void merge(Brand brand) {
+		EquivalentContent equiv = finder.equivalentTo(brand);
+		Iterable<? extends Content> equivContent = equiv.equivalent();
+		for (Content content : equivContent) {
 			if (content instanceof Brand) {
 				mergeSubItemsOf(brand, (Brand) content);
 			}
 		}
-		return brand;
+		for (String alias : equiv.probableAliases()) {
+			brand.addAlias(alias);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
