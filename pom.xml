@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.uriplay</groupId>
-    <artifactId>uriplay-persistence</artifactId>
+    <groupId>org.atlasapi</groupId>
+    <artifactId>atlas-persistence</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <build>
         <finalName>uriplay-persistence</finalName>
@@ -30,9 +30,9 @@
     <description></description>
     <dependencies>
         <dependency>
-            <groupId>org.uriplay</groupId>
-            <artifactId>uriplay-media-reference</artifactId>
-            <version>${uriplay.version}</version>
+            <groupId>org.atlasapi</groupId>
+            <artifactId>atlas-model</artifactId>
+            <version>${atlas.version}</version>
         </dependency>
         <dependency>
             <groupId>com.metabroadcast.common.persistence</groupId>
@@ -91,7 +91,7 @@
     </repositories>
     
     <properties>
-        <uriplay.version>${project.version}</uriplay.version>
+        <atlas.version>${project.version}</atlas.version>
         <common.version>1.0-SNAPSHOT</common.version>
         <spring.version>3.0.2.RELEASE</spring.version>
     </properties>
