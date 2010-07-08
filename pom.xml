@@ -63,8 +63,8 @@
     </dependencies>
     
     <scm>
-        <connection>scm:svn:https://uriplay.googlecode.com/svn/uriplay-persistence/trunk/</connection>
-        <developerConnection>scm:svn:http://uriplay.googlecode.com/svn/uriplay-persistence/trunk/</developerConnection>
+        <connection>scm:git:git://github.com/atlas/atlas-persistence.git</connection>
+        <developerConnection>scm:git:git://github.com/atlas/atlas-persistence.git</developerConnection>
     </scm>
 
     <distributionManagement>
