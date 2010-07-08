@@ -14,6 +14,14 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
+
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
@@ -32,10 +40,17 @@ import org.atlasapi.persistence.media.entity.PolicyTranslator;
 import org.atlasapi.persistence.media.entity.VersionTranslator;
 import org.atlasapi.persistence.tracking.ContentMention;
 
+import com.google.common.collect.Lists;
+import com.metabroadcast.common.query.Selection;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
-public class MongoDBTemplate extends com.metabroadcast.common.persistence.MongoDBTemplate {
+public class MongoDBTemplate {
 
     private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final ContentTranslator contentTranslator = new ContentTranslator();
@@ -49,11 +64,6 @@ public class MongoDBTemplate extends com.metabroadcast.common.persistence.MongoD
     private final EpisodeTranslator episodeTranslator = new EpisodeTranslator(itemTranslator, brandTranslator);
     private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();
 
-    public MongoDBTemplate(Mongo mongo, String dbName) {
-        super(mongo, dbName);
-    }
-    
-    @Override
     protected DBObject toDB(Object obj) {
         try {
             if (obj instanceof Brand) {
@@ -75,7 +85,6 @@ public class MongoDBTemplate extends com.metabroadcast.common.persistence.MongoD
     }
 
     @SuppressWarnings("unchecked")
-    @Override
     protected <T> T fromDB(DBObject dbObject, Class<T> clazz) {
         try {
             if (clazz.equals(Item.class)) {
@@ -94,5 +103,76 @@ public class MongoDBTemplate extends com.metabroadcast.common.persistence.MongoD
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    
+	private final static int DEFAULT_BATCH_SIZE = 50;
+    
+    private final DB db;
+
+    public MongoDBTemplate(Mongo mongo, String dbName) {
+        db = mongo.getDB(dbName);
+    }
+
+    protected final DBCollection table(String name) {
+        return db.getCollection(name);
+    }
+    
+    protected final DBObject findById(DBCollection table, String id) {
+		return table.findOne(new BasicDBObject(ID, id));
+	}
+
+    protected final BasicDBObject in(String attribute, Set<?> elems) {
+        return new BasicDBObject(attribute, new BasicDBObject(IN, list(elems)));
+    }
+
+    private BasicDBList list(Set<?> elems) {
+        BasicDBList dbList = new BasicDBList();
+        dbList.addAll(elems);
+        return dbList;
+    }
+
+    protected <T> List<T> toList(DBCursor cursor, Class<T> type) {
+        List<T> asList = Lists.newArrayList();
+        while (cursor.hasNext()) {
+            asList.add(fromDB(cursor.next(), type));
+        }
+        return asList;
+    }
+
+    
+    protected <T> List<T> executeQuery(DBCollection collection, Class<T> clazz, DBObject query, Selection selection) {
+        return elementsFrom(clazz, cursor(collection, query, selection));
+    }
+    
+    protected <T> List<T> executeQuery(DBCollection collection, Class<T> clazz, DBObject query) {
+        return elementsFrom(clazz,  collection.find(query, new BasicDBObject()));
+    }
+    
+    protected <T> List<T> executeQuery(DBCollection collection, Class<T> clazz, DBObject query, DBObject sort) {
+        return elementsFrom(clazz, collection.find(query, new BasicDBObject()).sort(sort));
+    }
+
+	private <T> List<T> elementsFrom(Class<T> clazz, Iterator<DBObject> cur) {
+		if (cur == null) {
+            return Collections.emptyList();
+        }
+        List<T> elements = Lists.newArrayList();
+        while (cur.hasNext()) {
+            DBObject current = cur.next();
+            elements.add(fromDB(current, clazz));
+        }
+        return elements;
+	}
+
+    protected Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection) {
+        if (selection != null && (selection.hasLimit() || selection.hasNonZeroOffset())) {
+            return collection.find(query, new BasicDBObject(), selection.getOffset(), hardLimit(selection));
+        } else {
+            return collection.find(query, new BasicDBObject(), 0, DEFAULT_BATCH_SIZE);
+        }
+    }
+
+    private Integer hardLimit(Selection selection) {
+        return -1 * selection.limitOrDefaultValue(0);
     }
 }
