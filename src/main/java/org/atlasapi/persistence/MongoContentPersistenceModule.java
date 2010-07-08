@@ -17,10 +17,12 @@ import com.mongodb.Mongo;
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
+	private static final String DB_NAME = "atlas";
+	
 	private @Autowired Mongo mongo;
 	
 	public @Bean ContentMentionStore contentMentionStore() {
-		return new MongoDBBackedContentMentionStore(mongo, "uriplay");
+		return new MongoDBBackedContentMentionStore(mongo, DB_NAME);
 	}
 	
 	public @Bean ContentWriter persistentWriter() {
@@ -32,7 +34,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore contentStore() {
-		return new MongoDbBackedContentStore(mongo, "uriplay");
+		return new MongoDbBackedContentStore(mongo, DB_NAME);
 	}
 	
 	@Bean MongoDbBackedContentBootstrapper contentBootstrapper() {

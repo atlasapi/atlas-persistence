@@ -85,7 +85,7 @@ public class DummyContentData {
 		dotCottonsBigAdventure.addAlias("http://dot.cotton");
 		dotCottonsBigAdventure.addVersion(versionWithEmbeddableLocation(april22nd1930, Duration.standardSeconds(30), TransportType.STREAM));
 		dotCottonsBigAdventure.setTags(Sets.newHashSet("soap", "London"));
-		dotCottonsBigAdventure.setGenres(Sets.newHashSet("http://uriplay.org/genres/uriplay/drama"));
+		dotCottonsBigAdventure.setGenres(Sets.newHashSet("http://ref.atlasapi.org/genres/atlas/drama"));
 		dotCottonsBigAdventure.setIsLongForm(true);
 
 		
@@ -95,7 +95,7 @@ public class DummyContentData {
 		peggySlapsFrank.setPublisher("bbc.co.uk");
 		peggySlapsFrank.addVersion(versionWithEmbeddableLocation(april23rd, Duration.standardSeconds(30), TransportType.STREAM));
 		peggySlapsFrank.setTags(Sets.newHashSet("soap", "London"));
-		peggySlapsFrank.setGenres(Sets.newHashSet("http://uriplay.org/genres/uriplay/drama"));
+		peggySlapsFrank.setGenres(Sets.newHashSet("http://ref.atlasapi.org/genres/atlas/drama"));
 		peggySlapsFrank.setIsLongForm(true);
 
 		
@@ -205,7 +205,7 @@ public class DummyContentData {
 		englishForCats.setTitle("English for Cats");
 		englishForCats.setDescription("A wonderful exposition of feline-accessible literature");
 		englishForCats.setPublisher("youtube.com");
-		englishForCats.setGenres(Sets.newHashSet("http://uriplay.org/genres/uriplay/drama"));
+		englishForCats.setGenres(Sets.newHashSet("http://ref.atlasapi.org/genres/atlas/drama"));
 		englishForCats.addVersion(versionWithEmbeddableLocation());
 		englishForCats.setIsLongForm(true);
 		
@@ -217,7 +217,7 @@ public class DummyContentData {
 		eggsForBreakfast.addVersion(versionWithEmbeddableLocation());
 		
 		
-		mentionedOnTwitter = new Playlist("http://uriplay.org/mentions/twitter", "twitter:mentions");
+		mentionedOnTwitter = new Playlist("http://ref.atlasapi.org/mentions/twitter", "twitter:mentions");
 		mentionedOnTwitter.setTitle("Mentioned on twitter");
 		mentionedOnTwitter.addItem(englishForCats);
 		mentionedOnTwitter.addItem(eggsForBreakfast);

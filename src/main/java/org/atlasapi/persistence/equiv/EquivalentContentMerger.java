@@ -57,7 +57,7 @@ public class EquivalentContentMerger {
 	@SuppressWarnings("unchecked")
 	private void mergeSubItemsOf(Brand original, Brand equivTo) {
 		for (Item item : original.getItems()) {
-			Version version = Iterables.get(item.getVersions(), 0, null);
+			Version version = item.getVersions().isEmpty() ? null : Iterables.get(item.getVersions(), 0);
 			if (version == null) {
 				continue;
 			}

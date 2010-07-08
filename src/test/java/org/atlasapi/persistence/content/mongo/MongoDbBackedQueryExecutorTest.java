@@ -70,7 +70,7 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
     	super.setUp();
     	Mongo mongo = MongoTestHelper.anEmptyMongo();
     	
-    	store = new MongoDbBackedContentStore(mongo, "uriplay");
+    	store = new MongoDbBackedContentStore(mongo, "testing");
     	queryExecutor = new MongoDBQueryExecutor(new MongoRoughSearch(store));
     	
     	store.createOrUpdatePlaylist(data.eastenders, true);
@@ -260,7 +260,7 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	}
 		
 	public void testGenreEqualsForItems() throws Exception {
-		checkItemQuery(query().equalTo(ITEM_GENRE, "http://uriplay.org/genres/uriplay/drama"),  data.englishForCats, data.dotCottonsBigAdventure, data.peggySlapsFrank);
+		checkItemQuery(query().equalTo(ITEM_GENRE, "http://ref.atlasapi.org/genres/atlas/drama"),  data.englishForCats, data.dotCottonsBigAdventure, data.peggySlapsFrank);
 		
 		checkItemQuery(query().equalTo(ITEM_GENRE, "eels"),  data.everyoneNeedsAnEel);
 	}

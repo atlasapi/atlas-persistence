@@ -49,7 +49,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-    	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyMongo(), "uriplay");
+    	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyMongo(), "testing");
     	data = new DummyContentData();
     }
 
@@ -77,8 +77,8 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         
         Set<String> containedInUris = items.get(0).getContainedInUris();
         assertEquals(2, containedInUris.size());
-        assertEquals(data.eastenders.getCanonicalUri(), Iterables.get(containedInUris, 0));
-        assertEquals(data.mentionedOnTwitter.getCanonicalUri(), Iterables.get(containedInUris, 1));
+        assertEquals(data.eastenders.getCanonicalUri(), Iterables.get(containedInUris, 1));
+        assertEquals(data.mentionedOnTwitter.getCanonicalUri(), Iterables.get(containedInUris, 0));
         
         
         Set<String> aliases = items.get(0).getAliases();

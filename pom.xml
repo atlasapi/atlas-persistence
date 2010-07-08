@@ -6,7 +6,7 @@
     <artifactId>atlas-persistence</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <build>
-        <finalName>uriplay-persistence</finalName>
+        <finalName>atlas-persistence</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
