@@ -2,8 +2,8 @@ package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Countries;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.persistence.ModelTranslator;
 
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 

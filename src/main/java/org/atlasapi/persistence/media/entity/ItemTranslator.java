@@ -5,9 +5,9 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 

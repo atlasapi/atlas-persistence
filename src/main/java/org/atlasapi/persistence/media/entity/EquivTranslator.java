@@ -1,5 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+
 import java.util.Set;
 
 import org.atlasapi.media.entity.Equiv;
@@ -10,7 +12,6 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 public class EquivTranslator {
 

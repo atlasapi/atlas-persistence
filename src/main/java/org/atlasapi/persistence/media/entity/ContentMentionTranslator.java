@@ -1,9 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
+import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.tracking.ContentMention;
 import org.atlasapi.persistence.tracking.TrackingSource;
 
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;

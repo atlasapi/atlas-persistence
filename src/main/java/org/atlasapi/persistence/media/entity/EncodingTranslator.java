@@ -5,10 +5,10 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.media.MimeType;
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;

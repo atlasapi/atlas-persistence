@@ -1,8 +1,8 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.persistence.ModelTranslator;
 
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.mongodb.DBObject;
 
 public class BrandTranslator implements ModelTranslator<Brand> {

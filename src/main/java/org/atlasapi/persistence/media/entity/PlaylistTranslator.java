@@ -1,8 +1,8 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.persistence.ModelTranslator;
 
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 

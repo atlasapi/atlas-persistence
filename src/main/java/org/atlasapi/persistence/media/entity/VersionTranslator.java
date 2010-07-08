@@ -6,10 +6,10 @@ import java.util.Set;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
 
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
