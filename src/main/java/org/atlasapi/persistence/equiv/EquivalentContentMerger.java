@@ -1,19 +1,23 @@
 package org.atlasapi.persistence.equiv;
 
 import java.util.List;
+import java.util.Set;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.equiv.EquivalentContentFinder.EquivalentContent;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class EquivalentContentMerger {
 
@@ -57,17 +61,25 @@ public class EquivalentContentMerger {
 	@SuppressWarnings("unchecked")
 	private void mergeSubItemsOf(Brand original, Brand equivTo) {
 		for (Item item : original.getItems()) {
-			Version version = item.getVersions().isEmpty() ? null : Iterables.get(item.getVersions(), 0);
-			if (version == null) {
-				continue;
-			}
 			Item sameItem = findSameItem((Episode) item, (List) equivTo.getItems());
-			if (sameItem != null && !sameItem.getVersions().isEmpty()) {
-				for (Encoding encoding : Iterables.get(sameItem.getVersions(), 0).getManifestedAs()) {
-					version.addManifestedAs(encoding);
-				}
+			if (sameItem != null) {
+				// remove previously merged versions
+				Set<Version> versions = Sets.newHashSet(Iterables.filter(item.getVersions(), Predicates.not(isProvidedBy(item.getPublisher()))));
+				versions.addAll(sameItem.getVersions());
+				item.setVersions(versions);
 			}
 		}
+	}
+	
+	private static Predicate<Version> isProvidedBy(final Publisher publisher) {
+		return new Predicate<Version>() {
+	
+			@Override
+			public boolean apply(Version input) {
+				return input.getProvider() != null && input.getProvider().equals(publisher);
+			}
+			
+		};
 	}
 
 	private Item findSameItem(Episode needle, List<Episode> haystack) {

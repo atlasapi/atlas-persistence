@@ -28,6 +28,7 @@ import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
 import org.atlasapi.persistence.testing.DummyContentData;
@@ -125,7 +126,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     
     public void testShouldCreateElementsInPlaylistIfRequested() throws Exception {
 
-    	Playlist beginningWithA = new Playlist("/a", "curie");
+    	Playlist beginningWithA = new Playlist("/a", "curie", Publisher.BBC);
     	beginningWithA.setPlaylists(Lists.<Playlist>newArrayList(data.eastenders));
     	
         store.createOrUpdatePlaylist(beginningWithA, true);
@@ -351,22 +352,22 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	String itemUri = "itemUri";
     	String brandUri = "brandUri";
 
-		Brand brand = new Brand(brandUri, "brand:curie");
-		brand.addItems(new Episode(itemUri, "item:curie"));
+		Brand brand = new Brand(brandUri, "brand:curie", Publisher.BBC);
+		brand.addItems(new Episode(itemUri, "item:curie", Publisher.BBC));
 		
     	store.createOrUpdatePlaylist(brand, true);
     	
     	assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(brandUri)); 
     	assertThat(((Episode) store.findByUri(itemUri)).getBrand(), is(brand)); 
     	
-    	store.createOrUpdateItem((new Item(itemUri, "item:curie")));
+    	store.createOrUpdateItem((new Item(itemUri, "item:curie", Publisher.BBC)));
 
     	assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(brandUri));
     	assertThat(((Episode) store.findByUri(itemUri)).getBrand(), is(brand)); 
     	
     	String playlistUri = "playlistUri";
-		Playlist playlist = new Playlist(playlistUri, "playist:curie");
-    	playlist.addItem(new Item(itemUri, "item:curie"));
+		Playlist playlist = new Playlist(playlistUri, "playist:curie", Publisher.BBC);
+    	playlist.addItem(new Item(itemUri, "item:curie", Publisher.BBC));
     	
     	store.createOrUpdatePlaylist(playlist, false);
     	assertThat(store.findByUri(itemUri).getContainedInUris(), hasItems(playlistUri, brandUri)); 
@@ -376,19 +377,19 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	String itemUri = "itemUri";
     	String playlistUri = "playlistUri";
     	
-		Playlist playlist = new Playlist(playlistUri, "playlist:curie");
-		playlist.addItem(new Item(itemUri, "item:curie"));
+		Playlist playlist = new Playlist(playlistUri, "playlist:curie", Publisher.BBC);
+		playlist.addItem(new Item(itemUri, "item:curie", Publisher.BBC));
 		
 		store.createOrUpdatePlaylist(playlist, false);
 		
 		assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(playlistUri));
 		
-		store.createOrUpdateItem(new Item(itemUri, "item:curie"));
+		store.createOrUpdateItem(new Item(itemUri, "item:curie", Publisher.BBC));
 		
 		// the item should remain in the playlist
 		assertThat(store.findByUri(itemUri).getContainedInUris(), hasItem(playlistUri));
 		
-		store.createOrUpdatePlaylist(new Playlist(playlistUri, "playlist:curie"), false);
+		store.createOrUpdatePlaylist(new Playlist(playlistUri, "playlist:curie", Publisher.BBC), false);
 		
 		// it should now be removed from the playlist
 		assertThat(store.findByUri(itemUri).getContainedInUris(), is(Collections.<String>emptySet()));
@@ -399,18 +400,18 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		String playlistUri = "playlistUri";
     	String brandUri = "brandUri";
     	
-    	Playlist playlist = new Playlist(playlistUri, "playlist:curie");
-		playlist.addPlaylist(new Brand(brandUri, "brand:curie"));
+    	Playlist playlist = new Playlist(playlistUri, "playlist:curie", Publisher.BBC);
+		playlist.addPlaylist(new Brand(brandUri, "brand:curie", Publisher.BBC));
 		
 		store.createOrUpdatePlaylist(playlist, false);
 		
 		assertThat(store.findByUri(brandUri).getContainedInUris(), hasItem(playlistUri));
 
-		store.createOrUpdatePlaylist(new Brand(brandUri, "brand:curie"), true);
+		store.createOrUpdatePlaylist(new Brand(brandUri, "brand:curie", Publisher.BBC), true);
 		
 		assertThat(store.findByUri(brandUri).getContainedInUris(), hasItem(playlistUri));
 		
-		store.createOrUpdatePlaylist(new Playlist(playlistUri, "playlist:curie"), false);
+		store.createOrUpdatePlaylist(new Playlist(playlistUri, "playlist:curie", Publisher.BBC), false);
 		
 		assertThat(store.findByUri(brandUri).getContainedInUris(), is(Collections.<String>emptySet()));
 

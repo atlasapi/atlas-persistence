@@ -6,22 +6,19 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Brand;
-import org.atlasapi.persistence.media.entity.BrandTranslator;
-import org.atlasapi.persistence.media.entity.ContentTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.PlaylistTranslator;
+import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
 public class BrandTranslatorTest extends TestCase {
-    PlaylistTranslator pt = new PlaylistTranslator(new ContentTranslator());
-    BrandTranslator bt = new BrandTranslator(pt);
+
+	BrandTranslator bt = new BrandTranslator();
     
     @SuppressWarnings("unchecked")
     public void testFromBrand() throws Exception {
-        Brand brand = new Brand("canonicalUri", "curie");
+        Brand brand = new Brand("canonicalUri", "curie", Publisher.BBC);
         brand.setFirstSeen(new SystemClock().now());
         
         Set<String> genres = Sets.newHashSet();
@@ -39,7 +36,7 @@ public class BrandTranslatorTest extends TestCase {
     }
     
     public void testToBrand() throws Exception {
-        Brand brand = new Brand("canonicalUri", "curie");
+        Brand brand = new Brand("canonicalUri", "curie", Publisher.BBC);
         brand.setFirstSeen(new SystemClock().now());
         brand.setLastFetched(new SystemClock().now());
         

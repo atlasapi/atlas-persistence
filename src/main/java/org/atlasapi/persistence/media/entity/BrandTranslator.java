@@ -7,11 +7,7 @@ import com.mongodb.DBObject;
 
 public class BrandTranslator implements ModelTranslator<Brand> {
     
-	private final PlaylistTranslator playlistTranslator;
-    
-    public BrandTranslator(PlaylistTranslator playlistTranslator) {
-        this.playlistTranslator = playlistTranslator;
-    }
+	private final PlaylistTranslator playlistTranslator = new PlaylistTranslator();
 
     @Override
     public Brand fromDBObject(DBObject dbObject, Brand entity) {
@@ -33,4 +29,7 @@ public class BrandTranslator implements ModelTranslator<Brand> {
         return dbObject;
     }
 
+	public DBObject toDBObjectForEmbeddedBrand(DBObject dbObject, Brand brand) {
+       return new PlaylistTranslator(new ContentTranslator(new DescriptionTranslator(false))).toDBObject(dbObject, brand);
+	}
 }

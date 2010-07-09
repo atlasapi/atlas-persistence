@@ -36,6 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.media.MimeType;
 
 public class QueryResultCheckerTest {
 
@@ -90,7 +91,7 @@ public class QueryResultCheckerTest {
 		
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	
-		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, "test").build(), true));
+		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.VIDEO_XMATROSKA).build(), true));
 	}
 	
 	@Test
@@ -140,7 +141,7 @@ public class QueryResultCheckerTest {
 		item1.addVersion(shortVersion);
 		item1.addVersion(longVersion);
 		
-		ContentQuery query = query().equalTo(LOCATION_AVAILABLE, true).equalTo(ENCODING_DATA_CONTAINER_FORMAT, "html").build();
+		ContentQuery query = query().equalTo(LOCATION_AVAILABLE, true).equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.TEXT_HTML).build();
 		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item1), query, true));
 		assertEquals(Collections.singletonList(item1), trimmer.trim(Collections.singletonList(item1), query, false));
 	}

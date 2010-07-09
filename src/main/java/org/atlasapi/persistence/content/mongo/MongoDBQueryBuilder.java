@@ -305,12 +305,9 @@ public class MongoDBQueryBuilder {
 		if (Item.class.equals(queryType) && Attributes.ITEM_URI.equals(attribute)) {
 			return "aliases";
 		}
-		if (Brand.class.equals(queryType) && Attributes.BRAND_URI.equals(attribute)) {
+		if (Playlist.class.isAssignableFrom(queryType) && Attributes.BRAND_URI.equals(attribute) || Attributes.PLAYLIST_URI.equals(attribute)) {
 			return "aliases";
 		}
-		if (Playlist.class.equals(queryType) && (Attributes.PLAYLIST_URI.equals(attribute) || Attributes.BRAND_URI.equals(attribute))) {
-            return "aliases";
-        }
 		if (Policy.class.equals(attribute.target())) {
 			return "policy." + attribute.javaAttributeName();
 		}

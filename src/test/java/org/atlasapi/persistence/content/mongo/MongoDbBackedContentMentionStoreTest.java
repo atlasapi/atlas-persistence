@@ -30,7 +30,7 @@ import com.mongodb.Mongo;
 
 public class MongoDbBackedContentMentionStoreTest extends TestCase {
 	
-    private static final String DB_NAME = "uriplay";
+    private static final String DB_NAME = "testing";
     
 	private MongoDBBackedContentMentionStore store;
     

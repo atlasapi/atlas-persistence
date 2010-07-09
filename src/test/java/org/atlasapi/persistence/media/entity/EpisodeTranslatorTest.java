@@ -4,34 +4,16 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
-import org.atlasapi.persistence.media.entity.BrandTranslator;
-import org.atlasapi.persistence.media.entity.BroadcastTranslator;
-import org.atlasapi.persistence.media.entity.ContentTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.EncodingTranslator;
-import org.atlasapi.persistence.media.entity.EpisodeTranslator;
-import org.atlasapi.persistence.media.entity.ItemTranslator;
-import org.atlasapi.persistence.media.entity.LocationTranslator;
-import org.atlasapi.persistence.media.entity.PlaylistTranslator;
-import org.atlasapi.persistence.media.entity.PolicyTranslator;
-import org.atlasapi.persistence.media.entity.VersionTranslator;
+import org.atlasapi.media.entity.Publisher;
 
 import com.mongodb.DBObject;
 
 public class EpisodeTranslatorTest extends TestCase {
-    DescriptionTranslator dt = new DescriptionTranslator();
-    ContentTranslator ct = new ContentTranslator();
-    BroadcastTranslator brt = new BroadcastTranslator();
-    LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
-    EncodingTranslator ent = new EncodingTranslator(dt, lt);
-    VersionTranslator vt = new VersionTranslator(dt, brt, ent);
-    ItemTranslator it = new ItemTranslator(ct, vt);
-    PlaylistTranslator pt = new PlaylistTranslator(ct);
-    BrandTranslator bt = new BrandTranslator(pt);
-    EpisodeTranslator et = new EpisodeTranslator(it, bt);
+
+    EpisodeTranslator et = new EpisodeTranslator();
     
     public void testFromEpisode() throws Exception {
-        Episode episode = new Episode("canonicalUri", "episodeCurie");
+        Episode episode = new Episode("canonicalUri", "episodeCurie", Publisher.BBC);
         episode.setEpisodeNumber(1);
         
         DBObject dbo = et.toDBObject(null, episode);
@@ -40,11 +22,11 @@ public class EpisodeTranslatorTest extends TestCase {
     }
     
     public void testToEpisode() throws Exception {
-        Episode episode = new Episode("canonicalUri", "episodeCurie");
+        Episode episode = new Episode("canonicalUri", "episodeCurie", Publisher.BBC);
         episode.setEpisodeNumber(1);
         episode.setSeriesNumber(1);
         
-        Brand brand = new Brand("uri", "curie");
+        Brand brand = new Brand("uri", "curie", Publisher.BBC);
         episode.setBrand(brand);
         
         DBObject dbo = et.toDBObject(null, episode);

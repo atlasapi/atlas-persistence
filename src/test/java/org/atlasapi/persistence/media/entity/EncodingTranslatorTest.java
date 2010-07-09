@@ -4,20 +4,13 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
-import org.atlasapi.persistence.media.entity.BroadcastTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.EncodingTranslator;
-import org.atlasapi.persistence.media.entity.LocationTranslator;
-import org.atlasapi.persistence.media.entity.PolicyTranslator;
 
 import com.metabroadcast.common.media.MimeType;
 import com.mongodb.DBObject;
 
 public class EncodingTranslatorTest extends TestCase {
-    DescriptionTranslator dt = new DescriptionTranslator();
-    BroadcastTranslator brt = new BroadcastTranslator();
-    LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
-    EncodingTranslator ent = new EncodingTranslator(dt, lt);
+
+	private final EncodingTranslator ent = new EncodingTranslator();
     
     public void testFromEncoding() throws Exception {
         Encoding encoding = new Encoding();

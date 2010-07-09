@@ -7,9 +7,6 @@ import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Countries;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.LocationTranslator;
-import org.atlasapi.persistence.media.entity.PolicyTranslator;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.SystemClock;
@@ -17,8 +14,8 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
 public class LocationTranslatorTest extends TestCase {
-    DescriptionTranslator dt = new DescriptionTranslator();
-    LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
+   
+	private final LocationTranslator lt = new LocationTranslator();
     
     public void testFromLocation() {
         Location location = new Location();

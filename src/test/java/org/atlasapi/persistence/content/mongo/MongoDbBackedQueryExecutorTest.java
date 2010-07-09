@@ -42,6 +42,7 @@ import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Description;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.mongo.MongoDBQueryExecutor;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
@@ -276,10 +277,10 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		
 		DateTime tenAm = new DateTime(2010, 10, 20, 10, 0, 0, 0, DateTimeZones.UTC);
 		
-		Item halfHourShowStartingAt10Am = new Item("item1", "curie:item1");
+		Item halfHourShowStartingAt10Am = new Item("item1", "curie:item1", Publisher.BBC);
 		halfHourShowStartingAt10Am.addVersion(versionWithBroadcast(tenAm, Duration.standardMinutes(30), "channel"));
 		
-		Item halfHourShowStartingAt11Am = new Item("item2", "curie:item2");
+		Item halfHourShowStartingAt11Am = new Item("item2", "curie:item2", Publisher.BBC);
 		halfHourShowStartingAt11Am.addVersion(versionWithBroadcast(tenAm.plusMinutes(30), Duration.standardMinutes(30), "channel"));
 		
 		store.createOrUpdateItem(halfHourShowStartingAt10Am);
@@ -293,7 +294,7 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	
 	public void testMultiLevelQuery() throws Exception {
 		DateTime tenAm = new DateTime(2010, 10, 20, 10, 0, 0, 0, DateTimeZones.UTC);
-		Item showStartingAt10Am = new Item("item1", "curie:item1");
+		Item showStartingAt10Am = new Item("item1", "curie:item1", Publisher.BBC);
 		
 		Version version1 = versionWithBroadcast(tenAm, Duration.standardMinutes(30), "c1");
 		

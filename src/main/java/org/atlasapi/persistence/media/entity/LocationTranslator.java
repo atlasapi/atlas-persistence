@@ -12,14 +12,9 @@ import com.mongodb.DBObject;
 
 public class LocationTranslator implements ModelTranslator<Location> {
 	
-    private final DescriptionTranslator descriptionTranslator;
-	private final PolicyTranslator policyTranslator;
+    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator(false);
+	private final PolicyTranslator policyTranslator = new PolicyTranslator();
     
-    public LocationTranslator(DescriptionTranslator descriptionTranslator, PolicyTranslator policyTranslator) {
-        this.descriptionTranslator = descriptionTranslator;
-		this.policyTranslator = policyTranslator;
-    }
-
     @Override
     public Location fromDBObject(DBObject dbObject, Location entity) {
        

@@ -23,7 +23,7 @@ public class DescriptionTranslatorTest extends TestCase {
         aliases.add("alias2");
         desc.setAliases(aliases);
         
-        DescriptionTranslator translator = new DescriptionTranslator();
+        DescriptionTranslator translator = new DescriptionTranslator(true);
         DBObject dbObj = translator.toDBObject(null, desc);
         
         assertEquals("canonicalUri", dbObj.get(DescriptionTranslator.CANONICAL_URI));
@@ -46,7 +46,7 @@ public class DescriptionTranslatorTest extends TestCase {
         aliases.add("alias2");
         desc.setAliases(aliases);
         
-        DescriptionTranslator translator = new DescriptionTranslator();
+        DescriptionTranslator translator = new DescriptionTranslator(true);
         DBObject dbObj = translator.toDBObject(null, desc);
         Description description = translator.fromDBObject(dbObj, null);
         
@@ -65,7 +65,7 @@ public class DescriptionTranslatorTest extends TestCase {
         aliases.add("alias2");
         desc.setAliases(aliases);
         
-        DescriptionTranslator translator = new DescriptionTranslator();
+        DescriptionTranslator translator = new DescriptionTranslator(true);
         DBObject dbObj = translator.toDBObject(null, desc);
         
         Description description = new Description();

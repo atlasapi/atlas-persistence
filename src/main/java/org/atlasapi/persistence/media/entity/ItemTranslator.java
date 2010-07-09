@@ -12,13 +12,9 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
-    private final ContentTranslator contentTranslator;
-    private final VersionTranslator versionTranslator;
     
-    public ItemTranslator(ContentTranslator descriptionTranslator, VersionTranslator versionTranslator) {
-        this.contentTranslator = descriptionTranslator;
-        this.versionTranslator = versionTranslator;
-    }
+	private final ContentTranslator contentTranslator = new ContentTranslator(new DescriptionTranslator(true));
+    private final VersionTranslator versionTranslator = new VersionTranslator();
     
     @SuppressWarnings("unchecked")
     @Override

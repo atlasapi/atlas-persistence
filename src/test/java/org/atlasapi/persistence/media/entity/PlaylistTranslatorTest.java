@@ -6,9 +6,7 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Playlist;
-import org.atlasapi.persistence.media.entity.ContentTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.PlaylistTranslator;
+import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -17,7 +15,7 @@ import com.mongodb.DBObject;
 
 public class PlaylistTranslatorTest extends TestCase {
 	
-    PlaylistTranslator pt = new PlaylistTranslator(new ContentTranslator());
+    PlaylistTranslator pt = new PlaylistTranslator();
     
     @SuppressWarnings("unchecked")
     public void testFromPlaylist() throws Exception {
@@ -45,7 +43,7 @@ public class PlaylistTranslatorTest extends TestCase {
         playlist.setFirstSeen(new SystemClock().now());
         playlist.setDescription("description");
         playlist.setTitle("title");
-        playlist.setPublisher("publisher");
+        playlist.setPublisher(Publisher.BBC);
         Set<String> containedInUris = Sets.newHashSet("uri");
         playlist.setContainedInUris(containedInUris);
         

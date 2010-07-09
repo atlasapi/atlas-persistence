@@ -27,17 +27,10 @@ import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.persistence.media.entity.BrandTranslator;
-import org.atlasapi.persistence.media.entity.BroadcastTranslator;
 import org.atlasapi.persistence.media.entity.ContentMentionTranslator;
-import org.atlasapi.persistence.media.entity.ContentTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.EncodingTranslator;
 import org.atlasapi.persistence.media.entity.EpisodeTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
-import org.atlasapi.persistence.media.entity.LocationTranslator;
 import org.atlasapi.persistence.media.entity.PlaylistTranslator;
-import org.atlasapi.persistence.media.entity.PolicyTranslator;
-import org.atlasapi.persistence.media.entity.VersionTranslator;
 import org.atlasapi.persistence.tracking.ContentMention;
 
 import com.google.common.collect.Lists;
@@ -52,16 +45,10 @@ import com.mongodb.Mongo;
 
 public class MongoDBTemplate {
 
-    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
-    private final ContentTranslator contentTranslator = new ContentTranslator();
-    private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
-    private final LocationTranslator locationTranslator = new LocationTranslator(descriptionTranslator, new PolicyTranslator());
-    private final EncodingTranslator encodingTranslator = new EncodingTranslator(descriptionTranslator, locationTranslator);
-    private final VersionTranslator versionTranslator = new VersionTranslator(descriptionTranslator, broadcastTranslator, encodingTranslator);
-    private final ItemTranslator itemTranslator = new ItemTranslator(contentTranslator, versionTranslator);
-    private final PlaylistTranslator playlistTranslator = new PlaylistTranslator(contentTranslator);
-    private final BrandTranslator brandTranslator = new BrandTranslator(playlistTranslator);
-    private final EpisodeTranslator episodeTranslator = new EpisodeTranslator(itemTranslator, brandTranslator);
+    private final ItemTranslator itemTranslator = new ItemTranslator();
+    private final PlaylistTranslator playlistTranslator = new PlaylistTranslator();
+    private final BrandTranslator brandTranslator = new BrandTranslator();
+    private final EpisodeTranslator episodeTranslator = new EpisodeTranslator();
     private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();
 
     protected DBObject toDB(Object obj) {

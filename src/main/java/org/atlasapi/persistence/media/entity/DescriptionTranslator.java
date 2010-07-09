@@ -3,23 +3,37 @@ package org.atlasapi.persistence.media.entity;
 import org.atlasapi.media.entity.Description;
 import org.atlasapi.persistence.ModelTranslator;
 
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class DescriptionTranslator implements ModelTranslator<Description> {
    
+	private static final String EMBEDDED_CANONICAL_URI = "canonicalUri";
+	private static final String CURIE = "curie";
 	public static final String ALIASES = "aliases";
-	public static final String CANONICAL_URI = "canonicalUri";
+	public static final String CANONICAL_URI = MongoConstants.ID;
+	
+	private final boolean useId;
 
-    @Override
+    public DescriptionTranslator(boolean useId) {
+		this.useId = useId;
+	}
+    
+	@Override
     public Description fromDBObject(DBObject dbObject, Description description) {
         if (description == null) {
             description = new Description();
         }
 
-        description.setCanonicalUri((String) dbObject.get(CANONICAL_URI));
-        description.setCurie((String) dbObject.get("curie"));
+        if (dbObject.containsField(CANONICAL_URI)) { 
+        	description.setCanonicalUri((String) dbObject.get(CANONICAL_URI));
+        } else {
+        	description.setCanonicalUri((String) dbObject.get(EMBEDDED_CANONICAL_URI));
+        }
+        
+        description.setCurie((String) dbObject.get(CURIE));
         description.setAliases(TranslatorUtils.toSet(dbObject, ALIASES));
         
         return description;
@@ -30,9 +44,17 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
         if (dbObject == null) {
             dbObject = new BasicDBObject();
         }
+        
+        if (useId) {
+        	if (entity.getCanonicalUri() == null) {
+        		throw new IllegalArgumentException("Cannot persist Content without a URI");
+        	}
+        	TranslatorUtils.from(dbObject, CANONICAL_URI, entity.getCanonicalUri());
+        } else {
+        	TranslatorUtils.from(dbObject, EMBEDDED_CANONICAL_URI, entity.getCanonicalUri());
+        }
 
-        TranslatorUtils.from(dbObject, CANONICAL_URI, entity.getCanonicalUri());
-        TranslatorUtils.from(dbObject, "curie", entity.getCurie());
+        TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
         TranslatorUtils.fromSet(dbObject, entity.getAliases(), ALIASES);
 
         return dbObject;

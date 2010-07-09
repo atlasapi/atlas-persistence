@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -11,7 +12,11 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
 	public static final String CONTAINED_IN_URIS_KEY = "containedInUris";
 	
-	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
+	private final DescriptionTranslator descriptionTranslator ;
+
+	public ContentTranslator(DescriptionTranslator descriptionTranslator) {
+		this.descriptionTranslator = descriptionTranslator;
+	}
 	
 	@Override
 	public Content fromDBObject(DBObject dbObject, Content entity) {
@@ -30,7 +35,12 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	        entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
 	        entity.setImage((String) dbObject.get("image"));
 	        entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, "lastFetched"));
-	        entity.setPublisher((String) dbObject.get("publisher"));
+	        
+	        String publisherKey = (String) dbObject.get("publisher");
+	        if (publisherKey != null) {
+	        	entity.setPublisher(Publisher.fromKey(publisherKey).valueOrDefault(null));
+	        }
+	        
 	        entity.setTags(TranslatorUtils.toSet(dbObject, "tags"));
 	        entity.setThumbnail((String) dbObject.get("thumbnail"));
 	        entity.setTitle((String) dbObject.get("title"));
@@ -52,7 +62,11 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	        TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genres");
 	        TranslatorUtils.from(dbObject, "image", entity.getImage());
 	        TranslatorUtils.fromDateTime(dbObject, "lastFetched", entity.getLastFetched());
-	        TranslatorUtils.from(dbObject, "publisher", entity.getPublisher());
+	        
+	        if (entity.getPublisher() != null) {
+	        	TranslatorUtils.from(dbObject, "publisher", entity.getPublisher().key());
+	        }
+	        
 	        TranslatorUtils.fromSet(dbObject, entity.getTags(), "tags");
 	        TranslatorUtils.from(dbObject, "thumbnail", entity.getThumbnail());
 	        TranslatorUtils.from(dbObject, "title", entity.getTitle());

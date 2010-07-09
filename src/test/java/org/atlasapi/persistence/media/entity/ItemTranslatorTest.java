@@ -10,18 +10,8 @@ import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.media.entity.BrandTranslator;
-import org.atlasapi.persistence.media.entity.BroadcastTranslator;
-import org.atlasapi.persistence.media.entity.ContentTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.EncodingTranslator;
-import org.atlasapi.persistence.media.entity.EpisodeTranslator;
-import org.atlasapi.persistence.media.entity.ItemTranslator;
-import org.atlasapi.persistence.media.entity.LocationTranslator;
-import org.atlasapi.persistence.media.entity.PlaylistTranslator;
-import org.atlasapi.persistence.media.entity.PolicyTranslator;
-import org.atlasapi.persistence.media.entity.VersionTranslator;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
@@ -34,21 +24,10 @@ import com.mongodb.DBObject;
 public class ItemTranslatorTest extends TestCase {
 	
 	private final Clock clock = new SystemClock();
-	
-    DescriptionTranslator dt = new DescriptionTranslator();
-    ContentTranslator ct = new ContentTranslator();
-    BroadcastTranslator brt = new BroadcastTranslator();
-    LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
-    EncodingTranslator ent = new EncodingTranslator(dt, lt);
-    VersionTranslator vt = new VersionTranslator(dt, brt, ent);
-    ItemTranslator it = new ItemTranslator(ct, vt);
-    PlaylistTranslator pt = new PlaylistTranslator(ct);
-    BrandTranslator bt = new BrandTranslator(pt);
-    EpisodeTranslator et = new EpisodeTranslator(it, bt);
     
     @SuppressWarnings("unchecked")
     public void testConvertFromItem() throws Exception {
-        Item item = new Item("canonicalUri", "curie");
+        Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
         
         Location loc = new Location();
@@ -73,7 +52,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator(ct, vt);
+        ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
         
         assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
@@ -107,10 +86,10 @@ public class ItemTranslatorTest extends TestCase {
     }
     
     public void testConvertToItem() throws Exception {
-        Item item = new Item("canonicalUri", "curie");
+        Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
         
-        Playlist playlist = new Playlist("uri", "playlist-curie");
+        Playlist playlist = new Playlist("uri", "playlist-curie", Publisher.BBC);
         Set<Playlist> playlists = Sets.newHashSet(playlist);
         item.setContainedIn(playlists);
             
@@ -136,7 +115,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator(ct, vt);
+        ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
         
         Item i = it.fromDBObject(dbObject, null);

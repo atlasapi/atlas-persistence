@@ -8,13 +8,9 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
 public class EpisodeTranslator implements ModelTranslator<Episode> {
-    private final ItemTranslator itemTranslator;
-    private final BrandTranslator brandTranslator;
-    
-    public EpisodeTranslator(ItemTranslator itemTranslator, BrandTranslator brandTranslator) {
-        this.itemTranslator = itemTranslator;
-        this.brandTranslator = brandTranslator;
-    }
+   
+	private final ItemTranslator itemTranslator = new ItemTranslator();
+    private final BrandTranslator brandTranslator = new BrandTranslator();
     
     @Override
     public Episode fromDBObject(DBObject dbObject, Episode entity) {
@@ -43,7 +39,7 @@ public class EpisodeTranslator implements ModelTranslator<Episode> {
         TranslatorUtils.from(dbObject, "seriesNumber", entity.getSeriesNumber());
         
         if (entity.getBrand() != null) {
-            DBObject brand = brandTranslator.toDBObject(null, entity.getBrand());
+            DBObject brand = brandTranslator.toDBObjectForEmbeddedBrand(null, entity.getBrand());
             dbObject.put("brand", brand);
         }
         dbObject.put("type", Episode.class.getSimpleName());

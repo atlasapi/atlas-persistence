@@ -15,15 +15,11 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
 public class VersionTranslator implements ModelTranslator<Version> {
-    private final DescriptionTranslator descriptionTranslator;
-    private final BroadcastTranslator broadcastTranslator;
-    private final EncodingTranslator encodingTranslator;
     
-    public VersionTranslator(DescriptionTranslator descriptionTranslator, BroadcastTranslator broadcastTranslator, EncodingTranslator encodingTranslator) {
-        this.descriptionTranslator = descriptionTranslator;
-        this.broadcastTranslator = broadcastTranslator;
-        this.encodingTranslator = encodingTranslator;
-    }
+	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator(false);
+    private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
+    private final EncodingTranslator encodingTranslator = new EncodingTranslator();
+    
 
     @SuppressWarnings("unchecked")
     @Override

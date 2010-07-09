@@ -3,8 +3,6 @@ package org.atlasapi.persistence.media.entity;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.persistence.media.entity.BroadcastTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
@@ -12,7 +10,6 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
 public class BroadcastTranslatorTest extends TestCase {
-    DescriptionTranslator dt = new DescriptionTranslator();
     BroadcastTranslator brt = new BroadcastTranslator();
     SystemClock clock = new SystemClock();
     

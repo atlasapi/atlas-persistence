@@ -80,8 +80,8 @@ public class UniqueContentForUriQueryExecutor implements KnownTypeQueryExecutor 
         if (withLocation.hasValue()) {
             Set<Country> countries = Countries.fromCodes((List<String>) withLocation.requireValue().getValue());
 
-            Maybe<Publisher> existingPublisher = Publisher.fromKey(existing.getPublisher());
-            Maybe<Publisher> duplicatePublisher = Publisher.fromKey(duplicate.getPublisher());
+            Maybe<Publisher> existingPublisher = Maybe.fromPossibleNullValue(existing.getPublisher());
+            Maybe<Publisher> duplicatePublisher = Maybe.fromPossibleNullValue(duplicate.getPublisher());
 
             if (duplicatePublisher.hasValue() && countries.contains(duplicatePublisher.requireValue().country())
                     && (existingPublisher.isNothing() || !countries.contains(existingPublisher.requireValue().country()))) {

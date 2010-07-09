@@ -5,12 +5,6 @@ import junit.framework.TestCase;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.media.entity.BroadcastTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
-import org.atlasapi.persistence.media.entity.EncodingTranslator;
-import org.atlasapi.persistence.media.entity.LocationTranslator;
-import org.atlasapi.persistence.media.entity.PolicyTranslator;
-import org.atlasapi.persistence.media.entity.VersionTranslator;
 import org.joda.time.Duration;
 
 import com.metabroadcast.common.time.Clock;
@@ -21,11 +15,7 @@ public class VersionTranslatorTest extends TestCase {
 	
 	private final Clock clock = new SystemClock();
 	
-    DescriptionTranslator dt = new DescriptionTranslator();
-    BroadcastTranslator brt = new BroadcastTranslator();
-    LocationTranslator lt = new LocationTranslator(dt, new PolicyTranslator());
-    EncodingTranslator ent = new EncodingTranslator(dt, lt);
-    VersionTranslator vt = new VersionTranslator(dt, brt, ent);
+    VersionTranslator vt = new VersionTranslator();
     
     public void testFromVersion() throws Exception {
         Version version = new Version();

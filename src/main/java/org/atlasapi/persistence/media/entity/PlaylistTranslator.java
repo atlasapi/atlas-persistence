@@ -7,12 +7,17 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
 public class PlaylistTranslator implements ModelTranslator<Playlist> {
-    private final ContentTranslator contentTranslator;
-    
-    public PlaylistTranslator(ContentTranslator descriptionTranslator) {
-        this.contentTranslator = descriptionTranslator;
-    }
 
+	private final ContentTranslator contentTranslator;
+
+	public PlaylistTranslator() {
+		this(new ContentTranslator(new DescriptionTranslator(true)));
+	}
+	
+	public PlaylistTranslator(ContentTranslator contentTranslator) {
+		this.contentTranslator = contentTranslator;
+	}
+	
     @Override
     public Playlist fromDBObject(DBObject dbObject, Playlist entity) {
         if (entity == null) {
@@ -29,6 +34,7 @@ public class PlaylistTranslator implements ModelTranslator<Playlist> {
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Playlist entity) {
+    	
         dbObject = contentTranslator.toDBObject(dbObject, entity);
         
         TranslatorUtils.fromList(dbObject, entity.getItemUris(), "itemUris");

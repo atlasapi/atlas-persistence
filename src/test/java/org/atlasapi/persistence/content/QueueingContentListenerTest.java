@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentListener;
 import org.atlasapi.persistence.content.QueueingContentListener;
 import org.jmock.Expectations;
@@ -22,6 +23,7 @@ public class QueueingContentListenerTest {
     
 	private final Mockery context = new Mockery();
 	
+	private static final Publisher anyPublisher = Publisher.BBC;
     private ContentListener delegate = context.mock(ContentListener.class);
     private DeterministicScheduler scheduler = new DeterministicScheduler();
     
@@ -35,20 +37,20 @@ public class QueueingContentListenerTest {
     @Test
     public void testBrandUpdate() throws Exception {
         List<Brand> brands = Lists.newArrayList();
-        brands.add(new Brand("uri", "curie"));
+		brands.add(new Brand("uri", "curie", anyPublisher));
         
         contentListener.brandChanged(brands, null);
         
         brands = Lists.newArrayList();
-        brands.add(new Brand("uri2", "curie2"));
+        brands.add(new Brand("uri2", "curie2", anyPublisher));
         
         contentListener.brandChanged(brands, null);
         
         scheduler.tick(20, TimeUnit.SECONDS);
         
         final List<Brand> finalBrands = Lists.newArrayList();
-        finalBrands.add(new Brand("uri", "curie"));
-        finalBrands.add(new Brand("uri2", "curie2"));
+        finalBrands.add(new Brand("uri", "curie", anyPublisher));
+        finalBrands.add(new Brand("uri2", "curie2", anyPublisher));
         
         context.checking(new Expectations() {{ 
             one(delegate).brandChanged(finalBrands, null);
@@ -68,7 +70,7 @@ public class QueueingContentListenerTest {
     @Test
     public void testBootstrap() throws Exception {
         final List<Item> items = Lists.newArrayList();
-        items.add(new Item("uri", "curie"));
+        items.add(new Item("uri", "curie", anyPublisher));
         
         context.checking(new Expectations() {{ 
             one(delegate).itemChanged(items, ContentListener.changeType.BOOTSTRAP);

@@ -14,13 +14,9 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
 public class EncodingTranslator implements ModelTranslator<Encoding> {
-    private final DescriptionTranslator descriptionTranslator;
-    private final LocationTranslator locationTranslator;
-    
-    public EncodingTranslator(DescriptionTranslator descriptionTranslator, LocationTranslator locationTranslator) {
-        this.descriptionTranslator = descriptionTranslator;
-        this.locationTranslator = locationTranslator;
-    }
+	
+    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator(false);
+    private final LocationTranslator locationTranslator = new LocationTranslator();
 
     @SuppressWarnings("unchecked")
     @Override
