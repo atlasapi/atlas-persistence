@@ -51,7 +51,8 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
-public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
+public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver,
+                RetrospectiveContentLister, AliasWriter {
 
     private final static int DEFAULT_BATCH_SIZE = 50;
     private final static int MAX_RESULTS = 2000;
@@ -94,7 +95,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             Content content = findByUri(item.getCanonicalUri());
             if (content != null) {
                 if (!(content instanceof Item)) {
-                    throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() + "  since the old entity was not an item");
+                    throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri()
+                                    + "  since the old entity was not an item");
                 }
                 Item oldItem = (Item) content;
 
@@ -133,7 +135,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             }
 
             if (oldPlaylist != null) {
-                Set<String> oldItemUris = Sets.difference(Sets.newHashSet(oldPlaylist.getItemUris()), Sets.newHashSet(playlist.getItemUris()));
+                Set<String> oldItemUris = Sets.difference(Sets.newHashSet(oldPlaylist.getItemUris()), Sets
+                                .newHashSet(playlist.getItemUris()));
                 List<Item> oldItems = findItems(Lists.newArrayList(oldItemUris));
                 if (markMissingItemsAsUnavailable) {
                     for (Item item : oldItems) {
@@ -154,7 +157,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
                 preserveContainedIn(playlist, oldPlaylist);
 
-                Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets.newHashSet(playlist.getPlaylistUris()));
+                Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets
+                                .newHashSet(playlist.getPlaylistUris()));
                 List<Playlist> oldPlaylists = findPlaylists(Lists.newArrayList(oldPlaylistUris));
 
                 for (Playlist oldSubPlaylist : oldPlaylists) {
@@ -186,12 +190,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     }
 
     private void removeContainedIn(DBCollection collection, Content content, String containedInUri) {
-        collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()), new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY,
-                containedInUri)));
+        collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()),
+                        new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY,
+                                        containedInUri)));
     }
 
     private void writeContainedIn(DBCollection collection, Content content, Set<String> containedInUris) {
-        MongoQueryBuilder findByUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri());
+        MongoQueryBuilder findByUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI,
+                        content.getCanonicalUri());
         MongoUpdateBuilder update = update().setField(ContentTranslator.CONTAINED_IN_URIS_KEY, containedInUris);
         collection.update(findByUri.build(), update.build());
     }
@@ -205,7 +211,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     }
 
     private void preserveContainedIn(Content newDesc, Content oldDesc) {
-        newDesc.setContainedInUris(Sets.newHashSet(Sets.union(oldDesc.getContainedInUris(), newDesc.getContainedInUris())));
+        newDesc.setContainedInUris(Sets.newHashSet(Sets.union(oldDesc.getContainedInUris(), newDesc
+                        .getContainedInUris())));
     }
 
     private void addUriAndCurieToAliases(Description desc) {
@@ -244,13 +251,18 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         }
         int loaded = 0;
         List<Item> items = Lists.newArrayList();
-        while (cur.hasNext()) {
-            DBObject current = cur.next();
-            items.add(toItem(current));
-            loaded++;
-            if (loaded > MAX_RESULTS) {
-                throw new IllegalArgumentException("Too many results for query");
+        try {
+            while (cur.hasNext()) {
+                DBObject current = cur.next();
+                items.add(toItem(current));
+                loaded++;
+                if (loaded > MAX_RESULTS) {
+                    throw new IllegalArgumentException("Too many results for query");
+                }
             }
+        } catch (IllegalArgumentException e) {
+            LOG.error("IllegalArguementThrown: " + e.getMessage() + ". Query was: " + query + ", and Selection: " + selection);
+            throw e;
         }
 
         return items;
@@ -264,7 +276,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @SuppressWarnings("unchecked")
     public List<Brand> dehydratedBrandsMatching(ContentQuery query) {
-        return (List) executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), query.getSelection(), false);
+        return (List) executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), query
+                        .getSelection(), false);
     }
 
     @SuppressWarnings("unchecked")
@@ -312,7 +325,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     public List<Item> listAllItems(Selection selection) {
         List<Item> items = Lists.newArrayList();
 
-        Iterator<DBObject> objects = itemCollection.find(null, null, selection.getOffset(), -1 * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
+        Iterator<DBObject> objects = itemCollection.find(null, null, selection.getOffset(), -1
+                        * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
         while (objects != null && objects.hasNext()) {
             DBObject current = objects.next();
             items.add(toItem(current));
@@ -325,7 +339,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     public List<Playlist> listAllPlaylists(Selection selection) {
         List<Playlist> playlists = Lists.newArrayList();
 
-        Iterator<DBObject> objects = playlistCollection.find(null, null, selection.getOffset(), -1 * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
+        Iterator<DBObject> objects = playlistCollection.find(null, null, selection.getOffset(), -1
+                        * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
         while (objects != null && objects.hasNext()) {
             DBObject current = objects.next();
             playlists.add(toPlaylist(current, true));
