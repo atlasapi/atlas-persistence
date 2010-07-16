@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
@@ -50,23 +52,25 @@ import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
-    
-	private final static int DEFAULT_BATCH_SIZE = 50;
-	private final static int MAX_RESULTS = 2000;
-	
+
+    private final static int DEFAULT_BATCH_SIZE = 50;
+    private final static int MAX_RESULTS = 2000;
+
+    private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
+
     private final DBCollection itemCollection;
     private final DBCollection playlistCollection;
 
     public MongoDbBackedContentStore(Mongo mongo, String dbName) {
-    	super(mongo, dbName);
+        super(mongo, dbName);
         itemCollection = table("items");
         playlistCollection = table("playlists");
     }
 
-	@Override
+    @Override
     public void addAliases(String uri, Set<String> aliases) {
         Content desc = findByUri(uri);
-        
+
         if (desc != null) {
             for (String alias : aliases) {
                 desc.addAlias(alias);
@@ -75,35 +79,35 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                 createOrUpdatePlaylist((Playlist) desc, false);
             }
             if (desc instanceof Item) {
-               createOrUpdateItem((Item) desc);
+                createOrUpdateItem((Item) desc);
             }
         }
     }
-    
+
     @Override
     public void createOrUpdateItem(Item item) {
-    	createOrUpdateItem(item, false);
+        createOrUpdateItem(item, false);
     }
 
     private void createOrUpdateItem(Item item, boolean markMissingItemsAsUnavailable) {
         try {
             Content content = findByUri(item.getCanonicalUri());
             if (content != null) {
-            	if (! (content instanceof Item)) {
-            		throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() +  "  since the old entity was not an item");
-            	}
+                if (!(content instanceof Item)) {
+                    throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() + "  since the old entity was not an item");
+                }
                 Item oldItem = (Item) content;
 
                 preserveContainedIn(item, oldItem);
-                
+
                 if (!markMissingItemsAsUnavailable && oldItem instanceof Episode) {
-                	writeContainedIn(itemCollection, item, item.getContainedInUris());
-                	return;
+                    writeContainedIn(itemCollection, item, item.getContainedInUris());
+                    return;
                 }
-                
+
                 preserveAliases(item, oldItem);
             } else {
-            	item.setFirstSeen(new DateTime());
+                item.setFirstSeen(new DateTime());
             }
 
             addUriAndCurieToAliases(item);
@@ -118,7 +122,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         }
     }
 
-	@Override
+    @Override
     public void createOrUpdatePlaylist(Playlist playlist, boolean markMissingItemsAsUnavailable) {
         try {
             Playlist oldPlaylist = null;
@@ -129,33 +133,33 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             }
 
             if (oldPlaylist != null) {
-            	Set<String> oldItemUris = Sets.difference(Sets.newHashSet(oldPlaylist.getItemUris()), Sets.newHashSet(playlist.getItemUris()));
-            	List<Item> oldItems = findItems(Lists.newArrayList(oldItemUris));
-	            if (markMissingItemsAsUnavailable) {
-					for (Item item : oldItems) {
-	                    for (Version version : item.getVersions()) {
-	                        for (Encoding encoding : version.getManifestedAs()) {
-	                            for (Location location : encoding.getAvailableAt()) {
-	                                location.setAvailable(false);
-	                            }
-	                        }
-	                    }
-	                    playlist.addItem(item);
-	                }
-	            } else {
-	            	for (Item item : oldItems) {
-						removeContainedIn(itemCollection, item, playlist.getCanonicalUri());
-					}
-	            }
-	            
-	            preserveContainedIn(playlist, oldPlaylist);
-	            
-            	Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets.newHashSet(playlist.getPlaylistUris()));
-            	List<Playlist> oldPlaylists = findPlaylists(Lists.newArrayList(oldPlaylistUris));
+                Set<String> oldItemUris = Sets.difference(Sets.newHashSet(oldPlaylist.getItemUris()), Sets.newHashSet(playlist.getItemUris()));
+                List<Item> oldItems = findItems(Lists.newArrayList(oldItemUris));
+                if (markMissingItemsAsUnavailable) {
+                    for (Item item : oldItems) {
+                        for (Version version : item.getVersions()) {
+                            for (Encoding encoding : version.getManifestedAs()) {
+                                for (Location location : encoding.getAvailableAt()) {
+                                    location.setAvailable(false);
+                                }
+                            }
+                        }
+                        playlist.addItem(item);
+                    }
+                } else {
+                    for (Item item : oldItems) {
+                        removeContainedIn(itemCollection, item, playlist.getCanonicalUri());
+                    }
+                }
 
-	            for (Playlist oldSubPlaylist : oldPlaylists) {
-					removeContainedIn(playlistCollection, oldSubPlaylist, playlist.getCanonicalUri());
-				}
+                preserveContainedIn(playlist, oldPlaylist);
+
+                Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets.newHashSet(playlist.getPlaylistUris()));
+                List<Playlist> oldPlaylists = findPlaylists(Lists.newArrayList(oldPlaylistUris));
+
+                for (Playlist oldSubPlaylist : oldPlaylists) {
+                    removeContainedIn(playlistCollection, oldSubPlaylist, playlist.getCanonicalUri());
+                }
             }
 
             for (Item item : playlist.getItems()) {
@@ -180,28 +184,29 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             throw new RuntimeException(e);
         }
     }
-	
+
     private void removeContainedIn(DBCollection collection, Content content, String containedInUri) {
-    	collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()), new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY, containedInUri)));
-    }
-    
-    private void writeContainedIn(DBCollection collection, Content content, Set<String> containedInUris) {
-		MongoQueryBuilder findByUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri());
-		MongoUpdateBuilder update = update().setField(ContentTranslator.CONTAINED_IN_URIS_KEY, containedInUris);
-		collection.update(findByUri.build(), update.build());
+        collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()), new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY,
+                containedInUri)));
     }
 
-	private void preserveAliases(Description newDesc, Description oldDesc) {
+    private void writeContainedIn(DBCollection collection, Content content, Set<String> containedInUris) {
+        MongoQueryBuilder findByUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri());
+        MongoUpdateBuilder update = update().setField(ContentTranslator.CONTAINED_IN_URIS_KEY, containedInUris);
+        collection.update(findByUri.build(), update.build());
+    }
+
+    private void preserveAliases(Description newDesc, Description oldDesc) {
         Set<String> oldAliases = Sets.difference(oldDesc.getAliases(), newDesc.getAliases());
 
         for (String alias : oldAliases) {
             newDesc.addAlias(alias);
         }
     }
-	
-	private void preserveContainedIn(Content newDesc, Content oldDesc) {
-		newDesc.setContainedInUris(Sets.newHashSet(Sets.union(oldDesc.getContainedInUris(), newDesc.getContainedInUris())));
-	}
+
+    private void preserveContainedIn(Content newDesc, Content oldDesc) {
+        newDesc.setContainedInUris(Sets.newHashSet(Sets.union(oldDesc.getContainedInUris(), newDesc.getContainedInUris())));
+    }
 
     private void addUriAndCurieToAliases(Description desc) {
         desc.addAlias(desc.getCanonicalUri());
@@ -231,11 +236,11 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     }
 
     List<Item> executeItemQuery(DBObject query, Selection selection) {
-    	
+
         Iterator<DBObject> cur = cursor(itemCollection, query, selection);
-        
+
         if (cur == null) {
-        	return Collections.emptyList();
+            return Collections.emptyList();
         }
         int loaded = 0;
         List<Item> items = Lists.newArrayList();
@@ -244,7 +249,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             items.add(toItem(current));
             loaded++;
             if (loaded > MAX_RESULTS) {
-            	throw new IllegalArgumentException("Too many results for query");
+                throw new IllegalArgumentException("Too many results for query");
             }
         }
 
@@ -256,40 +261,45 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     public List<Item> itemsMatching(ContentQuery query) {
         return executeItemQuery(queryBuilder.buildItemQuery(query), query.getSelection());
     }
-    
-	@SuppressWarnings("unchecked")
-	public List<Brand> dehydratedBrandsMatching(ContentQuery query) {
-		return (List) executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), query.getSelection(), false);
-	}    
-	
-	@SuppressWarnings("unchecked")
-	public List<Playlist> dehydratedPlaylistsMatching(ContentQuery query) {
-		return (List) executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
-	}    
+
+    @SuppressWarnings("unchecked")
+    public List<Brand> dehydratedBrandsMatching(ContentQuery query) {
+        return (List) executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), query.getSelection(), false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Playlist> dehydratedPlaylistsMatching(ContentQuery query) {
+        return (List) executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
+    }
 
     List<Playlist> findPlaylists(Iterable<String> uris) {
         return executePlaylistQuery(in("aliases", Sets.newHashSet(uris)), null, null, true);
     }
 
-	List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
+    List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
         List<Playlist> playlists = Lists.newArrayList();
         try {
-        	
-        	if (type != null) {
-        		query.put("type", type);
-        	}
+
+            if (type != null) {
+                query.put("type", type);
+            }
             Iterator<DBObject> cur = cursor(playlistCollection, query, selection);
             if (cur == null) {
-            	return Collections.emptyList();
+                return Collections.emptyList();
             }
             int loaded = 0;
-            while (cur.hasNext()) {
-                DBObject current = cur.next();
-                playlists.add(toPlaylist(current, hydrate));
-                loaded++;
-                if (loaded > MAX_RESULTS) {
-                	throw new IllegalArgumentException("Too many results for query");
+            try {
+                while (cur.hasNext()) {
+                    DBObject current = cur.next();
+                    playlists.add(toPlaylist(current, hydrate));
+                    loaded++;
+                    if (loaded > MAX_RESULTS) {
+                        throw new IllegalArgumentException("Too many results for query");
+                    }
                 }
+            } catch (IllegalArgumentException e) {
+                LOG.error("IllegalArguementThrown: " + e.getMessage() + ". Query was: " + query + ", and Selection: " + selection);
+                throw e;
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -343,7 +353,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     private Playlist toPlaylist(DBObject object, boolean hydrate) {
         Playlist playlist = null;
-        
+
         try {
             if (object.containsField("type") && Brand.class.getSimpleName().equals(object.get("type"))) {
                 playlist = fromDB(object, Brand.class);
@@ -352,13 +362,13 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             }
 
             if (hydrate) {
-            	List<Item> items = findItems(Lists.newArrayList(playlist.getItemUris()));
-            	playlist.setItems(items);
+                List<Item> items = findItems(Lists.newArrayList(playlist.getItemUris()));
+                playlist.setItems(items);
 
-            	List<Playlist> subPlaylists = findPlaylists(Lists.newArrayList(playlist.getPlaylistUris()));
-            	playlist.setPlaylists(subPlaylists);
+                List<Playlist> subPlaylists = findPlaylists(Lists.newArrayList(playlist.getPlaylistUris()));
+                playlist.setPlaylists(subPlaylists);
             }
-            
+
             removeUriFromAliases(playlist);
         } catch (Exception e) {
             throw new RuntimeException(e);
