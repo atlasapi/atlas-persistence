@@ -10,11 +10,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
-import org.springframework.beans.factory.InitializingBean;
 
 import com.google.common.collect.Lists;
 
-public class QueueingContentListener implements ContentListener, InitializingBean {
+public class QueueingContentListener implements ContentListener {
 
     private final ContentListener delegate;
 
@@ -32,8 +31,7 @@ public class QueueingContentListener implements ContentListener, InitializingBea
         this.delegate = delegate;
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
+    public void start() {
         executor.scheduleAtFixedRate(new BrandChangedJob(), 60, 120, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new ItemChangedJob(), 30, 120, TimeUnit.SECONDS);
     }
