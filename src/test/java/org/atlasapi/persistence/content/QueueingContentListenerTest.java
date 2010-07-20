@@ -31,7 +31,7 @@ public class QueueingContentListenerTest {
     
     @Before
     public void setUp() throws Exception {
-        contentListener.afterPropertiesSet();
+        contentListener.start();
     }
     
     @Test
