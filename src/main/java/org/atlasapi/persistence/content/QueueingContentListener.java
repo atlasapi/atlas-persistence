@@ -34,8 +34,8 @@ public class QueueingContentListener implements ContentListener {
     }
 
     public void start() {
-        executor.scheduleAtFixedRate(new BrandChangedJob(), 6, 12, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new ItemChangedJob(), 3, 12, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new BrandChangedJob(), 60, 120, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new ItemChangedJob(), 30, 120, TimeUnit.SECONDS);
     }
 
     @Override
