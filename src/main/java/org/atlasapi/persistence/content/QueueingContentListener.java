@@ -8,6 +8,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.PreDestroy;
+
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
 
@@ -32,8 +34,8 @@ public class QueueingContentListener implements ContentListener {
     }
 
     public void start() {
-        executor.scheduleAtFixedRate(new BrandChangedJob(), 60, 120, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new ItemChangedJob(), 30, 120, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new BrandChangedJob(), 6, 12, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new ItemChangedJob(), 3, 12, TimeUnit.SECONDS);
     }
 
     @Override
@@ -74,6 +76,7 @@ public class QueueingContentListener implements ContentListener {
         }
     }
 
+    @PreDestroy
     public void shutdown() {
         executor.shutdown();
     }
