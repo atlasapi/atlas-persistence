@@ -8,12 +8,18 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.PreDestroy;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
 
 import com.google.common.collect.Lists;
 
 public class QueueingContentListener implements ContentListener {
+    
+    private static final Log log = LogFactory.getLog(QueueingContentListener.class);
 
     private final ContentListener delegate;
 
@@ -23,7 +29,7 @@ public class QueueingContentListener implements ContentListener {
     private final ScheduledExecutorService executor;
 
     public QueueingContentListener(ContentListener delegate) {
-        this(Executors.newScheduledThreadPool(10), delegate);
+        this(Executors.newScheduledThreadPool(4), delegate);
     }
 
     public QueueingContentListener(ScheduledExecutorService executor, ContentListener delegate) {
@@ -32,8 +38,8 @@ public class QueueingContentListener implements ContentListener {
     }
 
     public void start() {
-        executor.scheduleAtFixedRate(new BrandChangedJob(), 60, 120, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new ItemChangedJob(), 30, 120, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new BrandChangedJob(), 60, 120, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new ItemChangedJob(), 30, 120, TimeUnit.SECONDS);
     }
 
     @Override
@@ -57,23 +63,32 @@ public class QueueingContentListener implements ContentListener {
     class BrandChangedJob implements Runnable {
         @Override
         public void run() {
-            List<Brand> brands = Lists.newArrayList();
-            brandQueue.drainTo(brands);
+            try {
+                List<Brand> brands = Lists.newArrayList();
+                brandQueue.drainTo(brands);
 
-            delegate.brandChanged(brands, null);
+                delegate.brandChanged(brands, null);
+            } catch (Exception e) {
+                log.error("Delgate content listener failed to process brand queue", e);
+            }
         }
     }
 
     class ItemChangedJob implements Runnable {
         @Override
         public void run() {
-            List<Item> items = Lists.newArrayList();
-            itemQueue.drainTo(items);
+            try {
+                List<Item> items = Lists.newArrayList();
+                itemQueue.drainTo(items);
 
-            delegate.itemChanged(items, null);
+                delegate.itemChanged(items, null);
+            } catch (Exception e) {
+                log.error("Delgate content listener failed to process item queue", e);
+            }
         }
     }
 
+    @PreDestroy
     public void shutdown() {
         executor.shutdown();
     }
