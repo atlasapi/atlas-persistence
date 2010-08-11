@@ -26,11 +26,13 @@ import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.media.entity.BrandTranslator;
 import org.atlasapi.persistence.media.entity.ContentMentionTranslator;
 import org.atlasapi.persistence.media.entity.EpisodeTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.media.entity.PlaylistTranslator;
+import org.atlasapi.persistence.media.entity.SeriesTranslator;
 import org.atlasapi.persistence.tracking.ContentMention;
 
 import com.google.common.collect.Lists;
@@ -50,6 +52,7 @@ public class MongoDBTemplate {
     private final BrandTranslator brandTranslator = new BrandTranslator();
     private final EpisodeTranslator episodeTranslator = new EpisodeTranslator();
     private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();
+    private final SeriesTranslator seriesTranslator = new SeriesTranslator();
 
     protected DBObject toDB(Object obj) {
         try {
@@ -59,6 +62,8 @@ public class MongoDBTemplate {
                 return episodeTranslator.toDBObject(null, (Episode) obj);
             } else if (obj instanceof Item) {
                 return itemTranslator.toDBObject(null, (Item) obj);
+            } else if (obj instanceof Series) {
+            	return seriesTranslator.toDBObject((Series) obj);
             } else if (obj instanceof Playlist) {
                 return playlistTranslator.toDBObject(null, (Playlist) obj);
             } else if (obj instanceof ContentMention) {
@@ -80,6 +85,8 @@ public class MongoDBTemplate {
                 return (T) playlistTranslator.fromDBObject(dbObject, null);
             } else if (clazz.equals(Brand.class)) {
                 return (T) brandTranslator.fromDBObject(dbObject, null);
+            } else if (clazz.equals(Series.class)) {
+            	return (T) seriesTranslator.fromDBObject(dbObject);
             } else if (clazz.equals(Episode.class)) {
                 return (T) episodeTranslator.fromDBObject(dbObject, null);
             } else if (clazz.equals(ContentMention.class)) {

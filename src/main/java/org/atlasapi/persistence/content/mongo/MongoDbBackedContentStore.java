@@ -33,6 +33,7 @@ import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
@@ -156,6 +157,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                 }
 
                 preserveContainedIn(playlist, oldPlaylist);
+                
 
                 Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets
                                 .newHashSet(playlist.getPlaylistUris()));
@@ -173,6 +175,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             for (Playlist subPlaylist : playlist.getPlaylists()) {
                 createOrUpdatePlaylist(subPlaylist, markMissingItemsAsUnavailable);
             }
+            
+            if (playlist instanceof Brand) {
+            	Brand brand = (Brand) playlist;
+            	Set<Playlist> series = fullSeriesFrom(brand);
+            	for (Playlist sery : series) {
+            		createOrUpdatePlaylist(sery, false);
+				}
+            }
 
             addUriAndCurieToAliases(playlist);
             if (oldPlaylist == null) {
@@ -189,7 +199,18 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         }
     }
 
-    private void removeContainedIn(DBCollection collection, Content content, String containedInUri) {
+    private Set<Playlist> fullSeriesFrom(Brand brand) {
+    	Set<Playlist> series = Sets.newHashSet();
+    	for (Item item : brand.getItems()) {
+			if (item instanceof Episode) {
+				Episode episode = (Episode) item;
+				series.add(episode.getHydratedSeries());
+			}
+		}
+    	return series;
+    }
+
+	private void removeContainedIn(DBCollection collection, Content content, String containedInUri) {
         collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()),
                         new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY,
                                         containedInUri)));
@@ -372,6 +393,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         try {
             if (object.containsField("type") && Brand.class.getSimpleName().equals(object.get("type"))) {
                 playlist = fromDB(object, Brand.class);
+            } else if (object.containsField("type") && Series.class.getSimpleName().equals(object.get("type"))) {
+                playlist = fromDB(object, Series.class);
             } else {
                 playlist = fromDB(object, Playlist.class);
             }

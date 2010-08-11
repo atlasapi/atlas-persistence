@@ -51,8 +51,9 @@ public class EpisodeTranslator implements ModelTranslator<Episode> {
             dbObject.put("brand", brand);
         }
         
-        if (entity.getSeries() != null) {
-        	DBObject series = seriesTranslator.toDBObjectForSummary(entity.getSeries());
+        Series seriesSummary = entity.getSeriesSummary();
+		if (seriesSummary != null) {
+        	DBObject series = seriesTranslator.toDBObjectForSummary(seriesSummary);
             dbObject.put(EMBEDDED_SERIES_KEY, series);
         }
         

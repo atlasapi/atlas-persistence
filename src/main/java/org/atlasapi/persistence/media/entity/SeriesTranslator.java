@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Series;
 
 import com.mongodb.DBObject;
@@ -30,6 +31,7 @@ public class SeriesTranslator {
         if (entity.getSeriesNumber() != null) {
         	dbObject.put(SERIES_NUMBER_KEY, entity.getSeriesNumber());
         }
+        dbObject.put("type", Series.class.getSimpleName());
         return dbObject;
     }
 
@@ -47,7 +49,9 @@ public class SeriesTranslator {
 		}
 
 		public Series fromDBObject(DBObject dbObject) {
-			return seriesTranslator.fromDBObject(dbObject);
+			Series series = seriesTranslator.fromDBObject(dbObject);
+			series.markAsSummary();
+			return series;
 		}
     }
 }
