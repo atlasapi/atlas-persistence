@@ -204,7 +204,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     	for (Item item : brand.getItems()) {
 			if (item instanceof Episode) {
 				Episode episode = (Episode) item;
-				series.add(episode.getHydratedSeries());
+				Series sery = episode.getHydratedSeries();
+				if (sery != null) {
+					series.add(sery);
+				}
 			}
 		}
     	return series;
