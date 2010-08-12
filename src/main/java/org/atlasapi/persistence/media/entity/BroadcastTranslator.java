@@ -24,6 +24,7 @@ public class BroadcastTranslator  {
         
         broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
         broadcast.setAliases(TranslatorUtils.toSet(dbObject, DescriptionTranslator.ALIASES));
+        broadcast.setLastUpdated(TranslatorUtils.toDateTime(dbObject, DescriptionTranslator.LAST_UPDATED));
         
         return broadcast;
     }
@@ -36,6 +37,7 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_TIME_KEY, entity.getTransmissionTime());
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_END_TIME_KEY, entity.getTransmissionEndTime());
         TranslatorUtils.fromSet(dbObject, entity.getAliases(), DescriptionTranslator.ALIASES);
+        TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
         return dbObject;
     }
 

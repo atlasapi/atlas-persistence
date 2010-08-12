@@ -12,7 +12,7 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
    
 	private static final String EMBEDDED_CANONICAL_URI = "canonicalUri";
 	private static final String CURIE = "curie";
-	private static final String LAST_UPDATED = "lastUpdated";
+	public static final String LAST_UPDATED = "lastUpdated";
 	public static final String ALIASES = "aliases";
 	public static final String CANONICAL_URI = MongoConstants.ID;
 	

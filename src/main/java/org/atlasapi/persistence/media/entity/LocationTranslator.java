@@ -32,6 +32,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         entity.setTransportSubType(readEnum(TransportSubType.class, dbObject, "transportSubType"));
         
         entity.setUri((String) dbObject.get("uri"));
+        entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, DescriptionTranslator.LAST_UPDATED));
         
         DBObject policyObject = (DBObject) dbObject.get("policy");
         if (policyObject != null) {
@@ -65,6 +66,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         }
         
         TranslatorUtils.from(dbObject, "uri", entity.getUri());
+        TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
         
         if (entity.getPolicy() != null) {
         	DBObject policyObject = policyTranslator.toDBObject(new BasicDBObject(), entity.getPolicy());
