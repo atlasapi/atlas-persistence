@@ -12,8 +12,10 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
    
 	private static final String EMBEDDED_CANONICAL_URI = "canonicalUri";
 	private static final String CURIE = "curie";
+	private static final String LAST_UPDATED = "lastUpdated";
 	public static final String ALIASES = "aliases";
 	public static final String CANONICAL_URI = MongoConstants.ID;
+	
 	
 	private final boolean useId;
 
@@ -35,6 +37,7 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
         
         description.setCurie((String) dbObject.get(CURIE));
         description.setAliases(TranslatorUtils.toSet(dbObject, ALIASES));
+        description.setLastUpdated(TranslatorUtils.toDateTime(dbObject, LAST_UPDATED));
         
         return description;
     }
@@ -56,7 +59,8 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
 
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
         TranslatorUtils.fromSet(dbObject, entity.getAliases(), ALIASES);
-
+        TranslatorUtils.fromDateTime(dbObject, LAST_UPDATED, entity.getLastUpdated());
+        
         return dbObject;
     }
 }

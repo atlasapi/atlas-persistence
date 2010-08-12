@@ -7,12 +7,17 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Description;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
+import org.joda.time.DateTime;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBObject;
 
 public class DescriptionTranslatorTest extends TestCase {
-    @SuppressWarnings("unchecked")
+	
+    private DateTime lastUpdated = new DateTime(DateTimeZones.UTC);
+
+	@SuppressWarnings("unchecked")
     public void testShouldConvertFromDescription() throws Exception {
         Description desc = new Description();
         desc.setCanonicalUri("canonicalUri");
@@ -34,6 +39,7 @@ public class DescriptionTranslatorTest extends TestCase {
         for (String alias: a) {
             assertTrue(aliases.contains(alias));
         }
+        
     }
     
     public void testShouldConvertToDescription() throws Exception {
@@ -65,6 +71,8 @@ public class DescriptionTranslatorTest extends TestCase {
         aliases.add("alias2");
         desc.setAliases(aliases);
         
+        desc.setLastUpdated(lastUpdated);
+        
         DescriptionTranslator translator = new DescriptionTranslator(true);
         DBObject dbObj = translator.toDBObject(null, desc);
         
@@ -74,5 +82,6 @@ public class DescriptionTranslatorTest extends TestCase {
         assertEquals(desc.getCanonicalUri(), description.getCanonicalUri());
         assertEquals(desc.getCurie(), description.getCurie());
         assertEquals(desc.getAliases(), description.getAliases());
+        assertEquals(desc.getLastUpdated(), description.getLastUpdated());
     }
 }
