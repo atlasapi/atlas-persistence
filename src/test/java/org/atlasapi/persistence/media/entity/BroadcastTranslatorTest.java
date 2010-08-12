@@ -23,6 +23,7 @@ public class BroadcastTranslatorTest extends TestCase {
     public void testToBroadcast() {
 		Broadcast broadcast = new Broadcast("on", clock.now(), Duration.standardSeconds(1));
         broadcast.setScheduleDate(new LocalDate(2010, 3, 20));
+        broadcast.addAlias("some alias");
         
         DBObject dbObject = brt.toDBObject(broadcast);
         Broadcast b = brt.fromDBObject(dbObject);
@@ -31,5 +32,6 @@ public class BroadcastTranslatorTest extends TestCase {
         assertEquals(broadcast.getTransmissionTime().getMillis(), b.getTransmissionTime().getMillis());
         assertEquals(broadcast.getBroadcastOn(), b.getBroadcastOn());
         assertEquals(broadcast.getScheduleDate(), b.getScheduleDate());
+        assertFalse(b.getAliases().isEmpty());
     }
 }
