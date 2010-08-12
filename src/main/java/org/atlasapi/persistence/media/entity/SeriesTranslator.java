@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Series;
 
 import com.mongodb.DBObject;
