@@ -48,6 +48,7 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -147,6 +148,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                             for (Encoding encoding : version.getManifestedAs()) {
                                 for (Location location : encoding.getAvailableAt()) {
                                     location.setAvailable(false);
+                                    location.setLastUpdated(new DateTime(DateTimeZones.UTC));
                                 }
                             }
                         }
