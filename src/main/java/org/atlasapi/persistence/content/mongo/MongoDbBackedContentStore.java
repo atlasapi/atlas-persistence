@@ -58,7 +58,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                 RetrospectiveContentLister, AliasWriter {
 
     private final static int DEFAULT_BATCH_SIZE = 50;
-    private final static int MAX_RESULTS = 2000;
+    private final static int MAX_RESULTS = 10000;
 
     private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
 
