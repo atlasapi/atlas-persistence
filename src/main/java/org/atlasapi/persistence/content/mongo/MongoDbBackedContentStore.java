@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Description;
 import org.atlasapi.media.entity.Encoding;
@@ -115,6 +116,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
             addUriAndCurieToAliases(item);
             item.setLastFetched(new DateTime());
+            setThisOrChildLastUpdated(item);
 
             DBObject query = new BasicDBObject();
             query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
@@ -189,6 +191,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                 playlist.setFirstSeen(new DateTime());
             }
             playlist.setLastFetched(new DateTime());
+            setThisOrChildLastUpdated(playlist);
 
             DBObject query = new BasicDBObject();
             query.put(DescriptionTranslator.CANONICAL_URI, playlist.getCanonicalUri());
@@ -197,6 +200,48 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    private DateTime setThisOrChildLastUpdated(Playlist playlist) {
+        DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, playlist.getLastUpdated());
+        for (Playlist subPlaylist: playlist.getPlaylists()) {
+            thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, setThisOrChildLastUpdated(subPlaylist));
+        }
+        for (Item item: playlist.getItems()) {
+            thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, setThisOrChildLastUpdated(item));
+        }
+        
+        playlist.setThisOrChildLastUpdated(thisOrChildLastUpdated);
+        return thisOrChildLastUpdated;
+    }
+    
+    private DateTime setThisOrChildLastUpdated(Item item) {
+        DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, item.getLastUpdated());
+        
+        for (Version version: item.getVersions()) {
+            thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, version.getLastUpdated());
+            
+            for (Broadcast broadcast: version.getBroadcasts()) {
+                thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, broadcast.getLastUpdated());
+            }
+            
+            for (Encoding encoding: version.getManifestedAs()) {
+                thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, encoding.getLastUpdated());
+                
+                for (Location location: encoding.getAvailableAt()) {
+                    thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, location.getLastUpdated());
+                }
+            }
+        }
+        
+        return thisOrChildLastUpdated;
+    }
+    
+    private DateTime thisOrChildLastUpdated(DateTime current, DateTime candidate) {
+        if (candidate != null && (current == null || candidate.isAfter(current))) {
+            return candidate;
+        }
+        return current;
     }
 
     private Set<Playlist> fullSeriesFrom(Brand brand) {

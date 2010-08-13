@@ -31,6 +31,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	        entity.setDescription((String) dbObject.get("description"));
 	        
 	        entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
+	        entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, "thisOrChildLastUpdated"));
 	        
 	        entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
 	        entity.setImage((String) dbObject.get("image"));
@@ -59,6 +60,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	        TranslatorUtils.fromSet(dbObject, entity.getContainedInUris(), CONTAINED_IN_URIS_KEY);
 	        TranslatorUtils.from(dbObject, "description", entity.getDescription());
 	        TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
+	        TranslatorUtils.fromDateTime(dbObject, "thisOrChildLastUpdated", entity.getThisOrChildLastUpdated());
 	        TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genres");
 	        TranslatorUtils.from(dbObject, "image", entity.getImage());
 	        TranslatorUtils.fromDateTime(dbObject, "lastFetched", entity.getLastFetched());

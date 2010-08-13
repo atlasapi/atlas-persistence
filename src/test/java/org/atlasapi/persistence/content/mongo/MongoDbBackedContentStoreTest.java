@@ -108,6 +108,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         assertEquals(data.goodEastendersEpisodes.getTitle(), playlists.get(0).getTitle());
         assertEquals(data.goodEastendersEpisodes.getCurie(), playlists.get(0).getCurie());
         assertNotNull(playlists.get(0).getLastFetched());
+        assertEquals(DummyContentData.april23rd, playlists.get(0).getThisOrChildLastUpdated());
         
         Set<String> aliases = playlists.get(0).getAliases();
         for (String alias: aliases) {

@@ -87,6 +87,7 @@ public class DummyContentData {
 		dotCottonsBigAdventure.setTags(Sets.newHashSet("soap", "London"));
 		dotCottonsBigAdventure.setGenres(Sets.newHashSet("http://ref.atlasapi.org/genres/atlas/drama"));
 		dotCottonsBigAdventure.setIsLongForm(true);
+		dotCottonsBigAdventure.setLastUpdated(april23rd);
 
 		
 		peggySlapsFrank = new Episode("http://www.bbc.co.uk/eastenders/2", "bbc:eastenders:2", Publisher.BBC);
