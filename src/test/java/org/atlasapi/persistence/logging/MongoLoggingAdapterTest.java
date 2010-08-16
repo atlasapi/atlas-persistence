@@ -3,6 +3,7 @@ package org.atlasapi.persistence.logging;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import org.atlasapi.persistence.logging.AdapterLogEntry.Severity;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
@@ -23,8 +24,8 @@ public class MongoLoggingAdapterTest {
 		
 		Exception exception = nestedExceptionWithTrace("e1", nestedExceptionWithTrace("e2", nestedExceptionWithTrace("e3")));
 		
-		logger.record(new AdapterLogEntry("1", now).withCause(exception));
-		logger.record(new AdapterLogEntry("2", now).withDescription("d2"));
+		logger.record(new AdapterLogEntry("1",Severity.ERROR,  now).withCause(exception));
+		logger.record(new AdapterLogEntry("2", Severity.DEBUG, now).withDescription("d2").withSource(String.class).withUri("uri1"));
 		
 		ImmutableList<AdapterLogEntry> found = ImmutableList.copyOf(logger.read());
 		
@@ -33,6 +34,8 @@ public class MongoLoggingAdapterTest {
 		assertThat(latest.id(), is("2"));
 		assertThat(latest.timestamp(), is(now));
 		assertThat(latest.description(), is("d2"));
+		assertThat(latest.classNameOfSource(), is("java.lang.String"));
+		assertThat(latest.uri(), is("uri1"));
 		
 		AdapterLogEntry oldest = found.get(1);
 		assertThat(oldest.exceptionSummary().className(), is("java.lang.IllegalStateException"));

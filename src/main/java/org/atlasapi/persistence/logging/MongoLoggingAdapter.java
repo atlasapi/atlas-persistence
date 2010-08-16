@@ -1,14 +1,17 @@
 package org.atlasapi.persistence.logging;
 
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.NATURAL;
 
 import java.util.List;
 
 import org.atlasapi.persistence.logging.AdapterLogEntry.ExceptionSummary;
+import org.atlasapi.persistence.logging.AdapterLogEntry.Severity;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
@@ -20,12 +23,15 @@ public class MongoLoggingAdapter implements AdapterLog, LogReader {
 
 	private static final String DESCRIPTION_KEY = "description";
 	private static final String TIMESTAMP_KEY = "timestamp";
+	private static final String SOURCE_KEY = "source";
+	private static final String URI_KEY = "uri";
 
 	private static final String EXCEPTION_KEY = "exception";
 	private static final String CAUSE_TRACE = "trace";
 	private static final String CAUSE_MESSAGE = "message";
 	private static final String CAUSE_CLASS_NAME = "className";
 	private static final String CAUSE_PARENT = "cause";
+	private static final String SEVERITY_KEY = "severity";
 	
 	private final DBCollection log;
 
@@ -51,6 +57,10 @@ public class MongoLoggingAdapter implements AdapterLog, LogReader {
 		DBObject dbo = new BasicDBObject();
 		dbo.put(ID, entry.id());
 		dbo.put(DESCRIPTION_KEY, entry.description());
+		dbo.put(URI_KEY, entry.uri());
+		dbo.put(SEVERITY_KEY, entry.severity().toString());
+		dbo.put(SOURCE_KEY, entry.classNameOfSource());
+		
 		TranslatorUtils.fromDateTime(dbo, TIMESTAMP_KEY, entry.timestamp());
 		if (entry.exceptionSummary() != null) {
 			dbo.put(EXCEPTION_KEY, toDbObject(entry.exceptionSummary()));
@@ -63,7 +73,6 @@ public class MongoLoggingAdapter implements AdapterLog, LogReader {
 		dbo.put(CAUSE_CLASS_NAME, summary.className());
 		dbo.put(CAUSE_MESSAGE, summary.message());
 		TranslatorUtils.fromList(dbo, summary.trace(), CAUSE_TRACE);
-		
 		
 		ExceptionSummary current = summary.cause();
 		DBObject parentDbo = dbo;
@@ -92,12 +101,24 @@ public class MongoLoggingAdapter implements AdapterLog, LogReader {
 	}
 
 	private AdapterLogEntry fromDbObject(DBObject dbo) {
-		AdapterLogEntry logEntry = new AdapterLogEntry((String) dbo.get(ID), TranslatorUtils.toDateTime(dbo, TIMESTAMP_KEY))
-			.withDescription((String) dbo.get(DESCRIPTION_KEY));
+		Severity severity = Severity.valueOf((String) dbo.get(SEVERITY_KEY));
+		AdapterLogEntry logEntry = new AdapterLogEntry((String) dbo.get(ID), severity, TranslatorUtils.toDateTime(dbo, TIMESTAMP_KEY))
+			.withDescription((String) dbo.get(DESCRIPTION_KEY))
+			.withUri((String) dbo.get(URI_KEY))
+			.withSourceClassName((String) dbo.get(SOURCE_KEY));
 		
 		if (dbo.containsField(EXCEPTION_KEY)) {
 			logEntry.withException(exceptionSummaryfromDbObject((DBObject) dbo.get(EXCEPTION_KEY)));
 		}
 		return logEntry;
+	}
+
+	@Override
+	public AdapterLogEntry requireById(String id) {
+		Maybe<DBObject> found = Maybe.firstElementOrNothing(where().idEquals(id).find(log));
+		if (found.hasValue()) {
+			return fromDbObject(found.requireValue());
+		}
+		throw new EntryExpiredException(id);
 	}
 }

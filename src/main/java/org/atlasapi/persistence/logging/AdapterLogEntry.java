@@ -16,21 +16,30 @@ import com.metabroadcast.common.time.DateTimeZones;
 
 public final class AdapterLogEntry {
 
-	private final DateTime reportedAt;
+	private final DateTime timestamp;
 	private final String id;
+	private final Severity severity;
 	
 	private String uri;
 	private ExceptionSummary e;
 	private String description;
-	private Class<?> clazz;
+	private String sourceClassName;
 	
-	public AdapterLogEntry(String id, DateTime timestamp) {
-		this.id = checkNotNull(id);
-		this.reportedAt = checkNotNull(timestamp);
+	public enum Severity {
+		ERROR,
+		WARN,
+		INFO,
+		DEBUG
 	}
 	
-	public AdapterLogEntry() {
-		this(UUID.randomUUID().toString(), new DateTime(DateTimeZones.UTC));
+	public AdapterLogEntry(String id, Severity severity, DateTime timestamp) {
+		this.severity = severity;
+		this.id = checkNotNull(id);
+		this.timestamp = checkNotNull(timestamp);
+	}
+	
+	public AdapterLogEntry(Severity severity) {
+		this(UUID.randomUUID().toString(), severity, new DateTime(DateTimeZones.UTC));
 	}
 	
 	public AdapterLogEntry withUri(String uri) {
@@ -61,21 +70,18 @@ public final class AdapterLogEntry {
 	}
 	
 	public DateTime timestamp() {
-		return reportedAt;
+		return timestamp;
 	}
 
 	public AdapterLogEntry withSource(Class<?> clazz) {
-		this.clazz = clazz;
+		return withSourceClassName(clazz.getName());
+	}
+	
+	public AdapterLogEntry withSourceClassName(String sourceClassName) {
+		this.sourceClassName = sourceClassName;
 		return this;
 	}
 	
-	public Class<?> sourceOrDefault(Class<?> defaultClass) {
-		if (clazz != null) {
-			return clazz;
-		}
-		return defaultClass;
-	}
-
 	public String id() {
 		return id;
 	}
@@ -98,7 +104,7 @@ public final class AdapterLogEntry {
 		return Objects.toStringHelper(this).add("id", id).toString();
 	}
 
-	static class ExceptionSummary {
+	public static class ExceptionSummary {
 		
 		private final String clazz;
 		private final String message;
@@ -148,9 +154,35 @@ public final class AdapterLogEntry {
 		public ExceptionSummary cause() {
 			return cause;
 		}
+
+		public List<String> fullTrace() {
+			List<String> fullTrace = Lists.newArrayList();
+			for (ExceptionSummary summary : exceptionChain()) {
+				fullTrace.addAll(summary.trace);
+			}
+			return fullTrace;
+		}
+		
+		private List<ExceptionSummary> exceptionChain() {
+			List<ExceptionSummary> chain = Lists.newArrayList();
+			ExceptionSummary current = this;
+			while (current != null) {
+				chain.add(current);
+				current = current.cause;
+			}
+			return chain;
+		}
 	} 
 
 	public ExceptionSummary exceptionSummary() {
 		return e;
+	}
+
+	public String classNameOfSource() {
+		return sourceClassName;
+	}
+
+	public Severity severity() {
+		return severity;
 	}
 }
