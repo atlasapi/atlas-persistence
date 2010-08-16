@@ -16,7 +16,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
 
-public class MongoLoggingAdapter implements AdapterLog {
+public class MongoLoggingAdapter implements AdapterLog, LogReader {
 
 	private static final String DESCRIPTION_KEY = "description";
 	private static final String TIMESTAMP_KEY = "timestamp";
@@ -27,13 +27,10 @@ public class MongoLoggingAdapter implements AdapterLog {
 	private static final String CAUSE_CLASS_NAME = "className";
 	private static final String CAUSE_PARENT = "cause";
 	
-	private static final int LOG_SIZE_BYTES = 10 * 1024 * 1024;
-	private DBCollection log;
+	private final DBCollection log;
 
 	public MongoLoggingAdapter(DatabasedMongo db) {
-		DBObject options = new BasicDBObject("capped", true);
-		options.put("size",  LOG_SIZE_BYTES);
-		log = db.database().createCollection("logging", options);
+		log = db.collection("logging");
 	}
 	
 	@Override
