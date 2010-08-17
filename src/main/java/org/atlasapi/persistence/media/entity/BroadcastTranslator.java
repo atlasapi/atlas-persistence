@@ -19,7 +19,7 @@ public class BroadcastTranslator  {
         DateTime transmissionTime = TranslatorUtils.toDateTime(dbObject, TRANSMISSION_TIME_KEY);
 		
         Integer duration = (Integer) dbObject.get("broadcastDuration");
-        Boolean activelyPublished = (Boolean) dbObject.get("activelyPublished");
+        Boolean activelyPublished = (dbObject.containsField("activelyPublished") ? (Boolean) dbObject.get("activelyPublished") : Boolean.TRUE);
         
         Broadcast broadcast = new Broadcast(broadcastOn, transmissionTime, Duration.standardSeconds(duration), activelyPublished);
         
