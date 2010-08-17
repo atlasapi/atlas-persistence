@@ -19,8 +19,9 @@ public class BroadcastTranslator  {
         DateTime transmissionTime = TranslatorUtils.toDateTime(dbObject, TRANSMISSION_TIME_KEY);
 		
         Integer duration = (Integer) dbObject.get("broadcastDuration");
+        Boolean activelyPublished = (Boolean) dbObject.get("activelyPublished");
         
-        Broadcast broadcast = new Broadcast(broadcastOn, transmissionTime, Duration.standardSeconds(duration));
+        Broadcast broadcast = new Broadcast(broadcastOn, transmissionTime, Duration.standardSeconds(duration), activelyPublished);
         
         broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
         broadcast.setAliases(TranslatorUtils.toSet(dbObject, DescriptionTranslator.ALIASES));
@@ -38,6 +39,7 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_END_TIME_KEY, entity.getTransmissionEndTime());
         TranslatorUtils.fromSet(dbObject, entity.getAliases(), DescriptionTranslator.ALIASES);
         TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
+        TranslatorUtils.from(dbObject, "activelyPublished", entity.isActivelyPublished());
         return dbObject;
     }
 
