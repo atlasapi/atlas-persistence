@@ -14,6 +14,11 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -30,17 +35,13 @@ import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
 import org.atlasapi.persistence.testing.DummyContentData;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.query.Selection;
-
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.MatcherAssert.*;
 
 public class MongoDbBackedContentStoreTest extends TestCase {
 	
@@ -304,49 +305,19 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     public void testShouldListAllItems() throws Exception {
         store.createOrUpdateItem(data.eggsForBreakfast);
         store.createOrUpdateItem(data.englishForCats);
-        store.createOrUpdateItem(data.everyoneNeedsAnEel);
         store.createOrUpdateItem(data.fossils);
         
-        Selection selection = new Selection(0, 2);
-        List<Item> items = store.listAllItems(selection);
-        assertEquals(selection.getLimit().intValue(), items.size());
+        List<Item> items = ImmutableList.copyOf(store.listAllItems());
         
-        selection = new Selection(2, 2);
-        List<Item> nextItems = store.listAllItems(selection);
-        assertEquals(selection.getLimit().intValue(), nextItems.size());
-        
-        for (Item item: items) {
-            for (Item i: nextItems) {
-                assertNotSame(item.getCanonicalUri(), i.getCanonicalUri());
-            }
-        }
-    }
-    
-    public void testShouldNotListItemsAfterOffsex() throws Exception {
-        Selection selection = new Selection(1000000, 2);
-        List<Item> items = store.listAllItems(selection);
-        assertEquals(0, items.size());
+        assertEquals(ImmutableList.of(data.eggsForBreakfast, data.englishForCats, data.fossils), items);
     }
     
     public void testShouldListAllPlaylists() throws Exception {
-        store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
-        store.createOrUpdatePlaylist(data.apprentice, false);
         store.createOrUpdatePlaylist(data.dispatches, false);
         store.createOrUpdatePlaylist(data.eastenders, false);
         
-        Selection selection = new Selection(0, 2);
-        List<Playlist> playlists = store.listAllPlaylists(selection);
-        assertEquals(selection.getLimit().intValue(), playlists.size());
-        
-        selection = new Selection(2, 2);
-        List<Playlist> nextPlaylists = store.listAllPlaylists(selection);
-        assertEquals(selection.getLimit().intValue(), nextPlaylists.size());
-        
-        for (Playlist playlist: playlists) {
-            for (Playlist p: nextPlaylists) {
-                assertNotSame(playlist.getCanonicalUri(), p.getCanonicalUri());
-            }
-        }
+        List<Playlist> items = ImmutableList.copyOf(store.listAllPlaylists());
+        assertEquals(ImmutableList.of(data.dispatches, data.eastenders), items);
     }
     
     public void testThatItemsAreNotRemovedFromTheirBrands() throws Exception {

@@ -2,11 +2,9 @@ package org.atlasapi.persistence.content.mongo;
 
 import java.util.List;
 
-import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.persistence.content.ContentListener;
-import org.atlasapi.persistence.content.MongoDbBackedContentBootstrapper;
 import org.atlasapi.persistence.content.RetrospectiveContentLister;
 import org.atlasapi.persistence.testing.DummyContentData;
 import org.jmock.Expectations;
@@ -15,8 +13,8 @@ import org.jmock.integration.junit4.JMock;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.google.common.collect.Lists;
-import com.metabroadcast.common.query.Selection;
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.MoreExecutors;
 
 @RunWith(JMock.class)
 public class MongoDbBackedContentListenerTest  {
@@ -25,35 +23,22 @@ public class MongoDbBackedContentListenerTest  {
 	
 	private RetrospectiveContentLister store = context.mock(RetrospectiveContentLister.class);
     private ContentListener listener = context.mock(ContentListener.class);
-    private MongoDbBackedContentBootstrapper bootstrapper = new MongoDbBackedContentBootstrapper(listener, store);
+    private MongoDbBackedContentBootstrapper bootstrapper = new MongoDbBackedContentBootstrapper(listener, store, MoreExecutors.sameThreadExecutor());
     private DummyContentData data = new DummyContentData();
-    
-    private final List<Item> items1 = Lists.newArrayList();
-    private final List<Item> items2 = Lists.newArrayList();
-    
-    private final List<Playlist> playlists1 = Lists.newArrayList();
-    private final List<Playlist> playlists2 = Lists.newArrayList();
-    
-    private final List<Brand> brands1 = Lists.newArrayList();
-    private final List<Brand> brands2 = Lists.newArrayList();
     
     @Test
     public void testShouldLoadItems() throws Exception {
         bootstrapper.setBatchSize(2);
         
-        items1.add(data.eggsForBreakfast);
-        items1.add(data.englishForCats);
-
-        items2.add(data.everyoneNeedsAnEel);
+        final List<Item> items = ImmutableList.of(data.eggsForBreakfast, data.englishForCats, data.everyoneNeedsAnEel);
         
         context.checking(new Expectations() {{
-            one(store).listAllItems(new Selection(0, 2)); will(returnValue(items1));
-            one(store).listAllItems(new Selection(2, 2)); will(returnValue(items2));
+            one(store).listAllItems(); will(returnValue(items.iterator()));
         }});
         
         context.checking(new Expectations() {{
-            one(listener).itemChanged(items1, ContentListener.changeType.BOOTSTRAP);
-            one(listener).itemChanged(items2, ContentListener.changeType.BOOTSTRAP);
+            one(listener).itemChanged(ImmutableList.of(data.eggsForBreakfast, data.englishForCats), ContentListener.changeType.BOOTSTRAP);
+            one(listener).itemChanged(ImmutableList.of(data.everyoneNeedsAnEel), ContentListener.changeType.BOOTSTRAP);
         }});
         
         bootstrapper.loadAllItems();
@@ -61,23 +46,17 @@ public class MongoDbBackedContentListenerTest  {
     
     @Test
     public void testShouldLoadBrands() throws Exception {
-        bootstrapper.setBatchSize(2);
+
+    	bootstrapper.setBatchSize(2);
         
-        playlists1.add(data.apprentice);
-        playlists1.add(data.goodEastendersEpisodes);
-        brands1.add(data.apprentice);
-        
-        playlists2.add(data.timeTeam);
-        brands2.add(data.timeTeam);
+        final List<Playlist> playlists = ImmutableList.of(data.eastenders, data.goodEastendersEpisodes, data.dispatches);
         
         context.checking(new Expectations() {{
-            one(store).listAllPlaylists(new Selection(0, 2)); will(returnValue(playlists1));
-            one(store).listAllPlaylists(new Selection(2, 2)); will(returnValue(playlists2));
+            one(store).listAllPlaylists(); will(returnValue(playlists.iterator()));
         }});
         
         context.checking(new Expectations() {{
-            one(listener).brandChanged(brands1, ContentListener.changeType.BOOTSTRAP);
-            one(listener).brandChanged(brands2, ContentListener.changeType.BOOTSTRAP);
+            one(listener).brandChanged(ImmutableList.of(data.eastenders, data.dispatches), ContentListener.changeType.BOOTSTRAP);
         }});
         
         bootstrapper.loadAllBrands();

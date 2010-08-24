@@ -3,7 +3,7 @@ package org.atlasapi.persistence;
 import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
-import org.atlasapi.persistence.content.MongoDbBackedContentBootstrapper;
+import org.atlasapi.persistence.content.mongo.MongoDbBackedContentBootstrapper;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
 import org.atlasapi.persistence.content.mongo.MongoRoughSearch;
 import org.atlasapi.persistence.tracking.ContentMentionStore;

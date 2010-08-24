@@ -43,6 +43,8 @@ import org.atlasapi.persistence.media.entity.ContentTranslator;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.joda.time.DateTime;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
@@ -54,10 +56,8 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 
-public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver,
-                RetrospectiveContentLister, AliasWriter {
+public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
-    private final static int DEFAULT_BATCH_SIZE = 50;
     private final static int MAX_RESULTS = 10000;
 
     private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
@@ -393,31 +393,29 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     }
 
     @Override
-    public List<Item> listAllItems(Selection selection) {
-        List<Item> items = Lists.newArrayList();
-
-        Iterator<DBObject> objects = itemCollection.find(null, null, selection.getOffset(), -1
-                        * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
-        while (objects != null && objects.hasNext()) {
-            DBObject current = objects.next();
-            items.add(toItem(current));
-        }
-
-        return items;
+    public Iterator<Item> listAllItems() {
+    	return Iterators.transform(itemCollection.find(), TO_ITEM);
     }
 
+	private final Function<DBObject, Playlist> TO_PLAYIST = new Function<DBObject, Playlist>() {
+
+		@Override
+		public Playlist apply(DBObject dbo) {
+			return toPlaylist(dbo, true);
+		}
+	};
+	
+	private final Function<DBObject, Item> TO_ITEM = new Function<DBObject, Item>() {
+
+		@Override
+		public Item apply(DBObject dbo) {
+			return toItem(dbo);
+		}
+	};
+    
     @Override
-    public List<Playlist> listAllPlaylists(Selection selection) {
-        List<Playlist> playlists = Lists.newArrayList();
-
-        Iterator<DBObject> objects = playlistCollection.find(null, null, selection.getOffset(), -1
-                        * selection.limitOrDefaultValue(DEFAULT_BATCH_SIZE));
-        while (objects != null && objects.hasNext()) {
-            DBObject current = objects.next();
-            playlists.add(toPlaylist(current, true));
-        }
-
-        return playlists;
+    public Iterator<Playlist> listAllPlaylists() {
+        return Iterators.transform(playlistCollection.find(), TO_PLAYIST);
     }
 
     private Item toItem(DBObject object) {
