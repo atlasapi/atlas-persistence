@@ -161,7 +161,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                 }
 
                 preserveContainedIn(playlist, oldPlaylist);
-                
 
                 Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets
                                 .newHashSet(playlist.getPlaylistUris()));
