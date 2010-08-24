@@ -100,20 +100,17 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
 			inform(handler, contentInBatch);
     	}
 	}
-	
-	
 
 	private <T> void inform(final Function<List<T>, Void> handler, List<T> contentInBatch) {
 		final ImmutableList<T> batch = ImmutableList.copyOf(contentInBatch);
-		executor.submit(new Runnable() {
-			@Override
-			public void run() {
-				handler.apply(batch);
-			}
-		});
+		handler.apply(batch);
+//		executor.submit(new Runnable() {
+//			@Override
+//			public void run() {
+//				handler.apply(batch);
+//			}
+//		});
 	}
-
-	
 
     public void loadAllBrands() {
     	load(Iterators.filter(contentStore.listAllPlaylists(), Brand.class), new Function<List<Brand>, Void>() {
