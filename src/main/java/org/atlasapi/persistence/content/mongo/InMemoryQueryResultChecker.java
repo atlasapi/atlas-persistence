@@ -77,6 +77,11 @@ class InMemoryQueryResultChecker  {
 						public Boolean visit(After after) {
 							return lhs.isAfter(value);
 						}
+
+						@Override
+						public Boolean visit(Equals equals) {
+							throw new UnsupportedOperationException();
+						}
 					});
 					if (result) {
 						return true;

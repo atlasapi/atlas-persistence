@@ -263,6 +263,11 @@ public class MongoDBQueryBuilder {
 					public BasicDBObject visit(After after) {
 						return new BasicDBObject(GREATER_THAN, Collections.min(values));
 					}
+
+					@Override
+					public BasicDBObject visit(Equals equals) {
+						throw new UnsupportedOperationException();
+					}
 				});
 				return new ConstrainedAttribute(query.getAttribute(), rhs);
 			}
