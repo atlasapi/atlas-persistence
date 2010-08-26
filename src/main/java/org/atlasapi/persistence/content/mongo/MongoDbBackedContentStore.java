@@ -44,6 +44,7 @@ import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -90,10 +91,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public void createOrUpdateItem(Item item) {
-        createOrUpdateItem(item, false);
+        createOrUpdateItem(item, null, false);
     }
 
-    private void createOrUpdateItem(Item item, boolean markMissingItemsAsUnavailable) {
+    private void createOrUpdateItem(Item item, Playlist parent, boolean markMissingItemsAsUnavailable) {
         try {
             Content content = findByUri(item.getCanonicalUri());
             if (content != null) {
@@ -122,7 +123,24 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             DBObject query = new BasicDBObject();
             query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
 
+            
+            if (parent == null && item instanceof Episode) {
+            	Episode episode = (Episode) item;
+            	Brand brand = episode.getBrand();
+				if (brand != null) {
+            		Content dbContent = findByUri(brand.getCanonicalUri());
+            		if (dbContent instanceof Brand) {
+            			Brand dbBrand = (Brand) dbContent;
+            			
+            			if (!dbBrand.getItemUris().contains(item.getCanonicalUri())) {
+            				dbBrand.addItem(item);
+            				updateBasicPlaylistDetails(dbBrand);
+            			}
+            		} 
+            	}
+            }
             itemCollection.update(query, toDB(item), true, false);
+            
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -139,8 +157,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             }
 
             if (oldPlaylist != null) {
-                Set<String> oldItemUris = Sets.difference(Sets.newHashSet(oldPlaylist.getItemUris()), Sets
-                                .newHashSet(playlist.getItemUris()));
+            	Set<String> oldItemUris = Sets.difference(ImmutableSet.copyOf(oldPlaylist.getItemUris()), ImmutableSet.copyOf(playlist.getItemUris()));
                 List<Item> oldItems = findItems(Lists.newArrayList(oldItemUris));
                 if (markMissingItemsAsUnavailable) {
                     for (Item item : oldItems) {
@@ -154,7 +171,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                         }
                         playlist.addItem(item);
                     }
-                } else {
+                } else if (!(playlist instanceof Brand)) {
                     for (Item item : oldItems) {
                         removeContainedIn(itemCollection, item, playlist.getCanonicalUri());
                     }
@@ -172,7 +189,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             }
 
             for (Item item : playlist.getItems()) {
-                createOrUpdateItem(item, markMissingItemsAsUnavailable);
+                createOrUpdateItem(item, playlist, markMissingItemsAsUnavailable);
             }
 
             for (Playlist subPlaylist : playlist.getPlaylists()) {
@@ -187,21 +204,24 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 				}
             }
 
-            addUriAndCurieToAliases(playlist);
             if (oldPlaylist == null) {
                 playlist.setFirstSeen(new DateTime());
             }
             playlist.setLastFetched(new DateTime());
             setThisOrChildLastUpdated(playlist);
 
-            DBObject query = new BasicDBObject();
-            query.put(DescriptionTranslator.CANONICAL_URI, playlist.getCanonicalUri());
-
-            playlistCollection.update(query, toDB(playlist), true, false);
+            updateBasicPlaylistDetails(playlist);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+	private void updateBasicPlaylistDetails(Playlist playlist) {
+        addUriAndCurieToAliases(playlist);
+		DBObject query = new BasicDBObject();
+		query.put(DescriptionTranslator.CANONICAL_URI, playlist.getCanonicalUri());
+		playlistCollection.update(query, toDB(playlist), true, false);
+	}
     
     private DateTime setThisOrChildLastUpdated(Playlist playlist) {
         DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, playlist.getLastUpdated());

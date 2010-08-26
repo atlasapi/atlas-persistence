@@ -88,6 +88,23 @@ public class MongoDbBackedContentStoreTest extends TestCase {
             assertNotSame(items.get(0).getCanonicalUri(), alias);
         }
     }
+    
+    public void testEpisodesAreAddedToBrands() throws Exception {
+       
+    	store.createOrUpdatePlaylist(data.eastenders, false);
+
+        Episode nextWeeksEastenders = new Episode("next-week", "bbc:next-week", Publisher.BBC);
+        nextWeeksEastenders.setBrand(new Brand(data.eastenders.getCanonicalUri(), "wrong curie", Publisher.BBC));
+       
+        store.createOrUpdateItem(nextWeeksEastenders);
+        
+        Brand brand = (Brand) store.findByUri(data.eastenders.getCanonicalUri());
+
+        assertEquals(data.eastenders.getCurie(), brand.getCurie());
+
+        assertEquals(data.eastenders.getItems().size() + 1, brand.getItems().size());
+        assertTrue(brand.getItems().contains(nextWeeksEastenders)); 
+	}
 
     public void testShouldCreateAndRetrievePlaylist() throws Exception {
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
