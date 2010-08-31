@@ -26,7 +26,7 @@ import org.atlasapi.media.entity.Playlist;
 public interface ContentWriter {
 
 	void createOrUpdateItem(Item item);
-
+	
 	void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable);
 
 }
