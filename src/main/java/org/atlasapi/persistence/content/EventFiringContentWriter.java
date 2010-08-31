@@ -10,37 +10,58 @@ import org.atlasapi.persistence.content.ContentListener.changeType;
 
 import com.google.common.collect.Sets;
 
-public class EventFiringContentWriter implements ContentWriter {
+public class EventFiringContentWriter implements ContentWriter, DefinitiveContentWriter {
 
 	private final ContentWriter delegate;
 	private final ContentListener listener;
+    private final DefinitiveContentWriter definitiveDelgate;
 	
-	public EventFiringContentWriter(ContentWriter delegate, ContentListener listener) {
+	public EventFiringContentWriter(ContentWriter delegate, DefinitiveContentWriter definitiveDelgate, ContentListener listener) {
 		this.delegate = delegate;
+        this.definitiveDelgate = definitiveDelgate;
 		this.listener = listener;
 	}
 	
 	@Override
 	public void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable) {
 		delegate.createOrUpdatePlaylist(enclosingList, markMissingItemsAsUnavailable);
-		
-		for (Playlist playlist : enclosingList.getPlaylists()) {
-			listener.itemChanged(playlist.getItems(), changeType.CONTENT_UPDATE);
-		}
-		listener.itemChanged(enclosingList.getItems(), changeType.CONTENT_UPDATE);
-		
-		Set<Brand> brands = Sets.newHashSet();
-		for (Playlist playlist : enclosingList.getPlaylists()) {
-			if (playlist instanceof Brand) {
-				brands.add((Brand) playlist);
-			}
-		}
-		listener.brandChanged(brands, changeType.CONTENT_UPDATE);
+		notifyListener(enclosingList);
 	}
 	
 	@Override
 	public void createOrUpdateItem(Item item) {
 		delegate.createOrUpdateItem(item);
-		listener.itemChanged(Collections.singletonList(item), changeType.CONTENT_UPDATE);
+		notifyListener(item);
 	}
+
+    @Override
+    public void createOrUpdateDefinitiveItem(Item item) {
+        definitiveDelgate.createOrUpdateDefinitiveItem(item);
+        notifyListener(item);
+    }
+
+    @Override
+    public void createOrUpdateDefinitivePlaylist(Playlist playlist) {
+        definitiveDelgate.createOrUpdateDefinitivePlaylist(playlist);
+        notifyListener(playlist);
+    }
+    
+    private void notifyListener(Playlist enclosingList) {
+        for (Playlist playlist : enclosingList.getPlaylists()) {
+            listener.itemChanged(playlist.getItems(), changeType.CONTENT_UPDATE);
+        }
+        listener.itemChanged(enclosingList.getItems(), changeType.CONTENT_UPDATE);
+        
+        Set<Brand> brands = Sets.newHashSet();
+        for (Playlist playlist : enclosingList.getPlaylists()) {
+            if (playlist instanceof Brand) {
+                brands.add((Brand) playlist);
+            }
+        }
+        listener.brandChanged(brands, changeType.CONTENT_UPDATE);
+    }
+    
+    private void notifyListener(Item item) {
+        listener.itemChanged(Collections.singletonList(item), changeType.CONTENT_UPDATE);
+    }
 }

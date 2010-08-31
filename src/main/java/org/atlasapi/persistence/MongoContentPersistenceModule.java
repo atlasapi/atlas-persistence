@@ -26,7 +26,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean ContentWriter persistentWriter() {
-		return new EventFiringContentWriter(contentStore(), contentListener());
+		return new EventFiringContentWriter(contentStore(), contentStore(), contentListener());
 	}	
 	
 	public @Bean MongoRoughSearch roughSearch() {
