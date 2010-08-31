@@ -2,6 +2,7 @@ package org.atlasapi.persistence;
 
 import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.DefinitiveContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentBootstrapper;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
@@ -26,8 +27,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean ContentWriter persistentWriter() {
-		return new EventFiringContentWriter(contentStore(), contentStore(), contentListener());
-	}	
+		return eventFiringContentWriter();
+	}
+	
+	public @Bean DefinitiveContentWriter definitiveWriter() {
+	    return eventFiringContentWriter();
+	}
 	
 	public @Bean MongoRoughSearch roughSearch() {
 		return new MongoRoughSearch(contentStore());
@@ -35,6 +40,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore contentStore() {
 		return new MongoDbBackedContentStore(mongo, DB_NAME);
+	}
+	
+	@Bean EventFiringContentWriter eventFiringContentWriter() {
+	    return new EventFiringContentWriter(contentStore(), contentStore(), contentListener());
 	}
 	
 	@Bean MongoDbBackedContentBootstrapper contentBootstrapper() {
