@@ -24,8 +24,8 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         entity.setDrmPlayableFrom(TranslatorUtils.toDateTime(dbObject, "drmPlayableFrom"));
         
         entity.setRevenueContract(RevenueContract.fromKey(TranslatorUtils.toString(dbObject, "revenueContract")));
-        if (dbObject.containsField("currency") && dbObject.containsField("amount")) {
-            entity.setPrice(new Price(Currency.getInstance(TranslatorUtils.toString(dbObject, "currency")), TranslatorUtils.toInteger(dbObject, "amount")));
+        if (dbObject.containsField("currency") && dbObject.containsField("price")) {
+            entity.setPrice(new Price(Currency.getInstance(TranslatorUtils.toString(dbObject, "currency")), TranslatorUtils.toInteger(dbObject, "price")));
         }
         
         if (dbObject.containsField("availableCountries")) {
