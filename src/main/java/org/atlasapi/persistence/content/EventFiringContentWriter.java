@@ -53,6 +53,9 @@ public class EventFiringContentWriter implements ContentWriter, DefinitiveConten
         listener.itemChanged(enclosingList.getItems(), changeType.CONTENT_UPDATE);
         
         Set<Brand> brands = Sets.newHashSet();
+        if (enclosingList instanceof Brand) {
+            brands.add((Brand) enclosingList);
+        }
         for (Playlist playlist : enclosingList.getPlaylists()) {
             if (playlist instanceof Brand) {
                 brands.add((Brand) playlist);
