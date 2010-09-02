@@ -1,9 +1,13 @@
 package org.atlasapi.persistence.media.entity;
 
+import java.util.Currency;
+
 import org.atlasapi.media.entity.Countries;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Policy.RevenueContract;
 import org.atlasapi.persistence.ModelTranslator;
 
+import com.metabroadcast.common.currency.Price;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
@@ -19,6 +23,11 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         entity.setAvailabilityEnd(TranslatorUtils.toDateTime(dbObject, "availabilityEnd"));
         entity.setDrmPlayableFrom(TranslatorUtils.toDateTime(dbObject, "drmPlayableFrom"));
         
+        entity.setRevenueContract(RevenueContract.fromKey(TranslatorUtils.toString(dbObject, "revenueContract")));
+        if (dbObject.containsField("currency") && dbObject.containsField("amount")) {
+            entity.setPrice(new Price(Currency.getInstance(TranslatorUtils.toString(dbObject, "currency")), TranslatorUtils.toInteger(dbObject, "amount")));
+        }
+        
         if (dbObject.containsField("availableCountries")) {
         	TranslatorUtils.toList(dbObject, "availableCountries");
         	entity.setAvailableCountries(Countries.fromCodes(TranslatorUtils.toList(dbObject, "availableCountries")));
@@ -33,6 +42,14 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         TranslatorUtils.fromDateTime(dbObject, "availabilityStart", entity.getAvailabilityStart());
         TranslatorUtils.fromDateTime(dbObject, "availabilityEnd", entity.getAvailabilityEnd());
         TranslatorUtils.fromDateTime(dbObject, "drmPlayableFrom", entity.getDrmPlayableFrom());
+        
+        if (entity.getRevenueContract() != null) {
+            TranslatorUtils.from(dbObject, "revenueContract", entity.getRevenueContract().key());
+        }
+        if (entity.getPrice() != null) {
+            TranslatorUtils.from(dbObject, "currency", entity.getPrice().getCurrency().getCurrencyCode());
+            TranslatorUtils.from(dbObject, "price", entity.getPrice().getAmount());
+        }
 
         if (entity.getAvailableCountries() != null) {
         	TranslatorUtils.fromList(dbObject, Countries.toCodes(entity.getAvailableCountries()), "availableCountries");
