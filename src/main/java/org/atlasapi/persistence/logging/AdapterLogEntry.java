@@ -11,6 +11,7 @@ import org.joda.time.DateTime;
 import com.google.common.base.Functions;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.time.DateTimeZones;
 
@@ -150,6 +151,10 @@ public final class AdapterLogEntry {
 		public Collection<String> trace() {
 			return trace;
 		}
+		
+		public ImmutableList<String> traceAndMessage() {
+			return ImmutableList.copyOf(Iterables.concat(ImmutableList.of(message), trace));
+		}
 
 		public ExceptionSummary cause() {
 			return cause;
@@ -158,7 +163,7 @@ public final class AdapterLogEntry {
 		public List<String> fullTrace() {
 			List<String> fullTrace = Lists.newArrayList();
 			for (ExceptionSummary summary : exceptionChain()) {
-				fullTrace.addAll(summary.trace);
+				fullTrace.addAll(summary.traceAndMessage());
 			}
 			return fullTrace;
 		}
