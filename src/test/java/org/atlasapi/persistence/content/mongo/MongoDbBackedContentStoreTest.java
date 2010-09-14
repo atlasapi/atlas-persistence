@@ -38,6 +38,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.testing.DummyContentData;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -53,6 +54,29 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	super.setUp();
     	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyMongo(), "testing");
     	data = new DummyContentData();
+    }
+    
+    public void testSavesAliasesForItems() throws Exception {
+    	
+    	data.englishForCats.addAlias("c");
+    	
+        store.createOrUpdateItem(data.englishForCats);
+        
+        store.addAliases(data.englishForCats.getCanonicalUri(), ImmutableSet.of("a", "b"));
+        
+        assertEquals(data.englishForCats, store.findByUri("a")); 
+        assertEquals(data.englishForCats, store.findByUri("b")); 
+        assertEquals(data.englishForCats, store.findByUri("c")); 
+        assertEquals(data.englishForCats, store.findByUri(data.englishForCats.getCurie())); 
+        
+        assertEquals(ImmutableSet.of("a", "b", "c"), store.findByUri(data.englishForCats.getCanonicalUri()).getAliases()); 
+	}
+    
+    public void testSavesAliasesForPlaylists() throws Exception {
+        store.createOrUpdatePlaylist(data.eastenders, true);
+        store.addAliases(data.eastenders.getCanonicalUri(), ImmutableSet.of("a", "b"));
+        assertEquals(data.eastenders, store.findByUri("a")); 
+        assertEquals(data.eastenders, store.findByUri("b"));
     }
 
     public void testShouldCreateAndRetrieveItem() throws Exception {

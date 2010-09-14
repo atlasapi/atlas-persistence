@@ -46,6 +46,7 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -75,20 +76,24 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public void addAliases(String uri, Set<String> aliases) {
-        Content desc = findByUri(uri);
-
-        if (desc != null) {
-            for (String alias : aliases) {
-                desc.addAlias(alias);
-            }
-            if (desc instanceof Playlist) {
-                createOrUpdatePlaylist((Playlist) desc, false);
-            }
-            if (desc instanceof Item) {
-                createOrUpdateItem((Item) desc);
-            }
-        }
+    	boolean wasItem = addAliasesTo(uri, aliases, itemCollection);
+		if (!wasItem) {
+			addAliasesTo(uri, aliases, playlistCollection);
+		}
     }
+
+	@SuppressWarnings("unchecked")
+	private boolean addAliasesTo(String uri, Set<String> aliases, DBCollection collection) {
+		MongoQueryBuilder findByCanonicalUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, uri);
+		Iterable<DBObject> found = findByCanonicalUri.find(collection);
+		if (!Iterables.isEmpty(found)) {
+			DBObject dbo = Iterables.getOnlyElement(found);
+			Set<String> oldAliases = ImmutableSet.copyOf(((Iterable<String>) dbo.get(DescriptionTranslator.ALIASES)));
+			collection.update(findByCanonicalUri.build(), update().setField(DescriptionTranslator.ALIASES, Sets.union(aliases, oldAliases)).build(), false, false);
+			return true;
+		}
+		return false;
+	}
 
     @Override
     public void createOrUpdateItem(Item item) {
