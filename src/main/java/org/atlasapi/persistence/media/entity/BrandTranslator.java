@@ -30,6 +30,6 @@ public class BrandTranslator implements ModelTranslator<Brand> {
     }
 
 	public DBObject toDBObjectForEmbeddedBrand(DBObject dbObject, Brand brand) {
-       return new PlaylistTranslator(new ContentTranslator(new DescriptionTranslator(false))).toDBObject(dbObject, brand);
+       return new PlaylistTranslator(new ContentTranslator(new DescriptionTranslator(false), new ClipTranslator())).toDBObject(dbObject, brand);
 	}
 }

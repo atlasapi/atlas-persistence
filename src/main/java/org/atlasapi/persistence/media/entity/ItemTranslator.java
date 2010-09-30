@@ -13,8 +13,17 @@ import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
     
-	private final ContentTranslator contentTranslator = new ContentTranslator(new DescriptionTranslator(true));
+	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator = new VersionTranslator();
+    
+    public ItemTranslator(ContentTranslator contentTranslator) {
+		this.contentTranslator = contentTranslator;
+    }
+    
+    public ItemTranslator() {
+    	this(new ContentTranslator(new DescriptionTranslator(true), new ClipTranslator()));
+    }
+    
     
     @SuppressWarnings("unchecked")
     @Override
