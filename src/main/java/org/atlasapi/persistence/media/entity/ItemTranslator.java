@@ -21,7 +21,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     }
     
     public ItemTranslator() {
-    	this(new ContentTranslator(new DescriptionTranslator(true), new ClipTranslator()));
+    	this(new ContentTranslator(new DescriptionTranslator(true), new ClipTranslator(false)));
     }
     
     

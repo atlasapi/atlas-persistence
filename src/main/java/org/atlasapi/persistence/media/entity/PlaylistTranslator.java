@@ -11,7 +11,7 @@ public class PlaylistTranslator implements ModelTranslator<Playlist> {
 	private final ContentTranslator contentTranslator;
 
 	public PlaylistTranslator() {
-		this(new ContentTranslator(new DescriptionTranslator(true), new ClipTranslator()));
+		this(new ContentTranslator(new DescriptionTranslator(true), new ClipTranslator(false)));
 	}
 	
 	public PlaylistTranslator(ContentTranslator contentTranslator) {

@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.media.entity.BrandTranslator;
+import org.atlasapi.persistence.media.entity.ClipTranslator;
 import org.atlasapi.persistence.media.entity.ContentMentionTranslator;
 import org.atlasapi.persistence.media.entity.EpisodeTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
@@ -48,6 +50,7 @@ import com.mongodb.Mongo;
 public class MongoDBTemplate {
 
     private final ItemTranslator itemTranslator = new ItemTranslator();
+    private final ClipTranslator clipTranslator = new ClipTranslator(true);
     private final PlaylistTranslator playlistTranslator = new PlaylistTranslator();
     private final BrandTranslator brandTranslator = new BrandTranslator();
     private final EpisodeTranslator episodeTranslator = new EpisodeTranslator();
@@ -60,6 +63,8 @@ public class MongoDBTemplate {
                 return brandTranslator.toDBObject(null, (Brand) obj);
             } else if (obj instanceof Episode) {
                 return episodeTranslator.toDBObject(null, (Episode) obj);
+            } else if (obj instanceof Clip) {
+            	return clipTranslator.toDBObject(null, (Clip) obj);
             } else if (obj instanceof Item) {
                 return itemTranslator.toDBObject(null, (Item) obj);
             } else if (obj instanceof Series) {
@@ -89,6 +94,8 @@ public class MongoDBTemplate {
             	return (T) seriesTranslator.fromDBObject(dbObject);
             } else if (clazz.equals(Episode.class)) {
                 return (T) episodeTranslator.fromDBObject(dbObject, null);
+            } else if (clazz.equals(Clip.class)) {
+            	return (T) clipTranslator.fromDBObject(dbObject, null);
             } else if (clazz.equals(ContentMention.class)) {
                 return (T) contentMentionTranslator.fromDBObject(dbObject, null);
             } else {

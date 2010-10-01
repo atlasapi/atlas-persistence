@@ -7,7 +7,11 @@ import com.mongodb.DBObject;
 
 public class ClipTranslator implements ModelTranslator<Clip> {
    
-	private final ItemTranslator itemTranslator = new ItemTranslator(new ContentTranslator(new DescriptionTranslator(false), this));;
+	private final ItemTranslator itemTranslator;
+	
+	public ClipTranslator(boolean includeId) {
+		itemTranslator = new ItemTranslator(new ContentTranslator(new DescriptionTranslator(includeId), this));
+	}
     
     @Override
     public Clip fromDBObject(DBObject dbObject, Clip clip) {

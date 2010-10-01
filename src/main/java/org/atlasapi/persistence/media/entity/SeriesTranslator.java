@@ -40,7 +40,7 @@ public class SeriesTranslator {
     	private final SeriesTranslator seriesTranslator;
 
 		public SeriesSummaryTranslator() {
-    		this.seriesTranslator = new SeriesTranslator(new PlaylistTranslator(new ContentTranslator(new DescriptionTranslator(false), new ClipTranslator())));
+    		this.seriesTranslator = new SeriesTranslator(new PlaylistTranslator(new ContentTranslator(new DescriptionTranslator(false), new ClipTranslator(false))));
     	}
 		
 		public DBObject toDBObjectForSummary(Series series) {

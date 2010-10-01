@@ -27,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Description;
 import org.atlasapi.media.entity.Encoding;
@@ -151,7 +152,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             	}
             }
             itemCollection.update(query, toDB(item), true, false);
-            
+            saveClipsFrom(item);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -227,10 +228,19 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             setThisOrChildLastUpdated(playlist);
 
             updateBasicPlaylistDetails(playlist);
+            
+            saveClipsFrom(playlist);
+            
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+	private void saveClipsFrom(Content content) {
+		for (Clip clip : content.getClips()) {
+			createOrUpdateItem(clip, null, true);
+		}
+	}
 
 	private void updateBasicPlaylistDetails(Playlist playlist) {
         addUriAndCurieToAliases(playlist);
@@ -455,14 +465,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     private Item toItem(DBObject object) {
         Item item = null;
-
         try {
             if (object.containsField("type") && Episode.class.getSimpleName().equals(object.get("type"))) {
                 item = fromDB(object, Episode.class);
+            } else if (object.containsField("type") && Clip.class.getSimpleName().equals(object.get("type"))) {
+            	item = fromDB(object, Clip.class);
             } else {
-                item = fromDB(object, Item.class);
+            	item = fromDB(object, Item.class);
             }
-
             removeUriFromAliases(item);
         } catch (Exception e) {
             throw new RuntimeException(e);
