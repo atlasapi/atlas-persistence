@@ -72,6 +72,29 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         assertEquals(ImmutableSet.of("a", "b", "c"), store.findByUri(data.englishForCats.getCanonicalUri()).getAliases()); 
 	}
     
+    public void testThatWhenFindingByUriContentThatIsACanonicalUriMatchIsPreferred() throws Exception {
+        
+    	Item a = new Item("a", "curie:a", Publisher.BBC);
+    	a.addAlias("b");
+    	Item b = new Item("b", "curie:b", Publisher.C4);
+    	b.addAlias("a");
+    	
+    	store.createOrUpdateItem(a);
+    	store.createOrUpdateItem(b);
+    	
+    	assertEquals("a", store.findByUri("a").getCanonicalUri());
+    	assertEquals("b", store.findByUri("b").getCanonicalUri());
+    	
+    	a.addAlias("c");
+    	b.addAlias("c");
+    	
+    	store.createOrUpdateItem(a);
+    	store.createOrUpdateItem(b);
+    	
+    	// 'c' is not found because it matches two items
+    	assertNull(store.findByUri("c"));
+	}
+    
     public void testSavesAliasesForPlaylists() throws Exception {
         store.createOrUpdatePlaylist(data.eastenders, true);
         store.addAliases(data.eastenders.getCanonicalUri(), ImmutableSet.of("a", "b"));

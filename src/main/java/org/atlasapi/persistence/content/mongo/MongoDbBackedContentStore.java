@@ -343,18 +343,33 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public Content findByUri(String uri) {
-        List<Item> items = findItems(Lists.newArrayList(uri));
-        if (!items.isEmpty()) {
-            return items.get(0);
+        Item item = bestMatch(uri, findItems(Lists.newArrayList(uri)));
+        if (item != null) {
+            return item;
         }
-        List<Playlist> playlists = findPlaylists(Lists.newArrayList(uri));
-        if (!playlists.isEmpty()) {
-            return playlists.get(0);
-        }
-        return null;
+        return bestMatch(uri, findPlaylists(Lists.newArrayList(uri)));
+    }
+    
+    private <T extends Content> T bestMatch(String uri, List<T> elems) {
+    	if (elems.isEmpty()) {
+    		return null;
+    	}
+    	if (elems.size() == 1) {
+    		return elems.get(0);
+    	}
+    	return extractCanonical(uri, elems);
     }
 
-    List<Item> findItems(Iterable<String> uris) {
+    private <T extends Content> T extractCanonical(String uri, Iterable<T> elems) {
+    	for (T t : elems) {
+			if (uri.equals(t.getCanonicalUri()) || uri.equals(t.getCurie())) {
+				return t;
+			}
+		}
+    	return null;
+    }
+
+	List<Item> findItems(Iterable<String> uris) {
         return executeItemQuery(in("aliases", Sets.newHashSet(uris)), null);
     }
 
