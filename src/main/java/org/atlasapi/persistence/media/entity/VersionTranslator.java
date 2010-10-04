@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
@@ -16,6 +17,8 @@ import com.mongodb.DBObject;
 
 public class VersionTranslator implements ModelTranslator<Version> {
     
+	private static final String PROVIDER_KEY = "provider";
+	
 	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator(false);
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
     private final EncodingTranslator encodingTranslator = new EncodingTranslator();
@@ -32,6 +35,10 @@ public class VersionTranslator implements ModelTranslator<Version> {
         Integer durationInSeconds = (Integer) dbObject.get("duration");
 		if (durationInSeconds != null) {
 			entity.setDuration(Duration.standardSeconds(durationInSeconds));
+		}
+		
+		if (dbObject.containsField(PROVIDER_KEY)) {
+			entity.setProvider(Publisher.fromKey((String) dbObject.get(PROVIDER_KEY)).requireValue());
 		}
 		
         entity.setPublishedDuration((Integer) dbObject.get("publishedDuration"));
@@ -69,6 +76,10 @@ public class VersionTranslator implements ModelTranslator<Version> {
         TranslatorUtils.from(dbObject, "publishedDuration", entity.getPublishedDuration());
         TranslatorUtils.from(dbObject, "rating", entity.getRating());
         TranslatorUtils.from(dbObject, "ratingText", entity.getRatingText());
+        
+        if (entity.getProvider() != null) {
+        	dbObject.put(PROVIDER_KEY, entity.getProvider().key());
+        }
         
         if (! entity.getBroadcasts().isEmpty()) {
             BasicDBList list = new BasicDBList();

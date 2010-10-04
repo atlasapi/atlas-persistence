@@ -4,6 +4,7 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
 
@@ -21,11 +22,13 @@ public class VersionTranslatorTest extends TestCase {
         Version version = new Version();
         version.setDuration(Duration.standardSeconds(2));
         version.setRating("rating");
+        version.setProvider(Publisher.C4);
         
         DBObject dbObject = vt.toDBObject(null, version);
         
         assertEquals(version.getDuration(), dbObject.get("duration"));
         assertEquals(version.getRating(), dbObject.get("rating"));
+        assertEquals(version.getProvider().key(), dbObject.get("provider"));
     }
     
     public void testToVersion() throws Exception {
@@ -34,6 +37,7 @@ public class VersionTranslatorTest extends TestCase {
         version.setRating("rating");
         version.setPublishedDuration(1);
         version.setRatingText("text");
+        version.setProvider(Publisher.BBC);
         
         Broadcast broadcast = new Broadcast("channel", clock.now(), Duration.standardSeconds(1));
         broadcast.setCanonicalUri("uri");
@@ -51,6 +55,7 @@ public class VersionTranslatorTest extends TestCase {
         assertEquals(version.getRating(), v.getRating());
         assertEquals(version.getRatingText(), v.getRatingText());
         assertEquals(version.getPublishedDuration(), v.getPublishedDuration());
+        assertEquals(version.getProvider(), v.getProvider());
         
         Broadcast b = v.getBroadcasts().iterator().next();
         assertEquals(broadcast.getBroadcastDuration(), b.getBroadcastDuration());
