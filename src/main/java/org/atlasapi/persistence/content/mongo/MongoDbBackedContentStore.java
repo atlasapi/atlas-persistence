@@ -62,7 +62,7 @@ import com.mongodb.Mongo;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, DefinitiveContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
-    private final static int MAX_RESULTS = 10000;
+    private final static int MAX_RESULTS = 20000;
 
     private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
 
