@@ -152,8 +152,12 @@ public final class AdapterLogEntry {
 			return trace;
 		}
 		
-		public ImmutableList<String> traceAndMessage() {
-			return ImmutableList.copyOf(Iterables.concat(ImmutableList.of(message), trace));
+		public List<String> traceAndMessage() {
+			if (message != null) {
+				return ImmutableList.copyOf(Iterables.concat(ImmutableList.of(message), trace));
+			} else {
+				return trace;
+			}
 		}
 
 		public ExceptionSummary cause() {
