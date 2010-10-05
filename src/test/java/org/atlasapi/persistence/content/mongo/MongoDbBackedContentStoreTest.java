@@ -52,7 +52,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-    	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyMongo(), "testing");
+    	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyTestDatabase());
     	data = new DummyContentData();
     }
     

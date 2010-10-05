@@ -44,9 +44,6 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.mongo.MongoDBQueryExecutor;
-import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
-import org.atlasapi.persistence.content.mongo.MongoRoughSearch;
 import org.atlasapi.persistence.testing.DummyContentData;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -56,7 +53,6 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.DateTimeZones;
-import com.mongodb.Mongo;
 
 public class MongoDbBackedQueryExecutorTest extends TestCase {
 	
@@ -69,9 +65,8 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-    	Mongo mongo = MongoTestHelper.anEmptyMongo();
     	
-    	store = new MongoDbBackedContentStore(mongo, "testing");
+    	store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyTestDatabase());
     	queryExecutor = new MongoDBQueryExecutor(new MongoRoughSearch(store));
     	
     	store.createOrUpdatePlaylist(data.eastenders, true);

@@ -13,17 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.mongodb.Mongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
-	private static final String DB_NAME = "atlas";
-	
-	private @Autowired Mongo mongo;
+	private @Autowired DatabasedMongo db;
 	
 	public @Bean ContentMentionStore contentMentionStore() {
-		return new MongoDBBackedContentMentionStore(mongo, DB_NAME);
+		return new MongoDBBackedContentMentionStore(db);
 	}
 	
 	public @Bean ContentWriter persistentWriter() {
@@ -39,7 +37,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore contentStore() {
-		return new MongoDbBackedContentStore(mongo, DB_NAME);
+		return new MongoDbBackedContentStore(db);
 	}
 	
 	@Bean EventFiringContentWriter eventFiringContentWriter() {

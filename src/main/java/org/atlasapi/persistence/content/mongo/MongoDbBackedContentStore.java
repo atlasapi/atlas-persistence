@@ -51,6 +51,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
 import com.metabroadcast.common.query.Selection;
@@ -58,7 +59,6 @@ import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.Mongo;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, DefinitiveContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
@@ -69,8 +69,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     private final DBCollection itemCollection;
     private final DBCollection playlistCollection;
 
-    public MongoDbBackedContentStore(Mongo mongo, String dbName) {
-        super(mongo, dbName);
+    public MongoDbBackedContentStore(DatabasedMongo mongo) {
+        super(mongo);
         itemCollection = table("items");
         playlistCollection = table("playlists");
     }

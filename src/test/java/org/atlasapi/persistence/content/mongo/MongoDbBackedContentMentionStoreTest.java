@@ -25,22 +25,20 @@ import org.joda.time.DateTime;
 
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.mongodb.Mongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
 
 public class MongoDbBackedContentMentionStoreTest extends TestCase {
 	
-    private static final String DB_NAME = "testing";
-    
 	private MongoDBBackedContentMentionStore store;
     
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-    	Mongo mongo = MongoTestHelper.anEmptyMongo();
-    	store = new MongoDBBackedContentMentionStore(mongo, DB_NAME);
-    	mongo.getDB(DB_NAME).eval("db.contentMentions.ensureIndex({uri:1, externalRef:1, source: 1}, {unique : true, dropDups : true})");
-    	mongo.getDB(DB_NAME).eval("db.contentMentions.ensureIndex({mentionedAt:-1})");
+    	DatabasedMongo db = MongoTestHelper.anEmptyTestDatabase();
+    	store = new MongoDBBackedContentMentionStore(db);
+    	db.database().eval("db.contentMentions.ensureIndex({uri:1, externalRef:1, source: 1}, {unique : true, dropDups : true})");
+    	db.database().eval("db.contentMentions.ensureIndex({mentionedAt:-1})");
     }
 
 	public void testSavingAMention() throws Exception {

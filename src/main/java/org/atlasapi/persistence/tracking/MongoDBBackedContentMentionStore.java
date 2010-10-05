@@ -18,17 +18,17 @@ import java.util.List;
 
 import org.atlasapi.persistence.content.mongo.MongoDBTemplate;
 
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
-import com.mongodb.Mongo;
 
 public class MongoDBBackedContentMentionStore extends MongoDBTemplate implements PossibleContentUriMentionListener, ContentMentionStore {
 
 	private final DBCollection contentMentions;
 
-	public MongoDBBackedContentMentionStore(Mongo mongo, String dbName) {
-		super(mongo, dbName);
+	public MongoDBBackedContentMentionStore(DatabasedMongo db) {
+		super(db);
 		this.contentMentions = table("contentMentions");
 	}
 	

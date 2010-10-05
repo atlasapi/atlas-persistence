@@ -7,9 +7,9 @@ import org.atlasapi.persistence.media.entity.EquivTranslator;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.Mongo;
 
 public class MongoEquivStore implements EquivalentUrlStore {
 
@@ -19,8 +19,8 @@ public class MongoEquivStore implements EquivalentUrlStore {
 	private DBCollection equivCollection;
 	private final EquivTranslator equivTranslator = new EquivTranslator();
 
-	public MongoEquivStore(Mongo mongo, String dbName) {
-		this.equivCollection = mongo.getDB(dbName).getCollection("equiv");
+	public MongoEquivStore(DatabasedMongo db) {
+		this.equivCollection = db.collection("equiv");
 	}
 
 	@Override

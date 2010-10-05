@@ -38,6 +38,7 @@ import org.atlasapi.persistence.media.entity.SeriesTranslator;
 import org.atlasapi.persistence.tracking.ContentMention;
 
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -45,7 +46,6 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
-import com.mongodb.Mongo;
 
 public class MongoDBTemplate {
 
@@ -110,8 +110,8 @@ public class MongoDBTemplate {
     
     private final DB db;
 
-    public MongoDBTemplate(Mongo mongo, String dbName) {
-        db = mongo.getDB(dbName);
+    public MongoDBTemplate(DatabasedMongo databasedMongo) {
+        db = databasedMongo.database();
     }
 
     protected final DBCollection table(String name) {

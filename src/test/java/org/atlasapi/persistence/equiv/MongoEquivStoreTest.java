@@ -7,19 +7,16 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Equiv;
-import org.atlasapi.persistence.equiv.MongoEquivStore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.mongodb.Mongo;
 
 @SuppressWarnings("unchecked")
 public class MongoEquivStoreTest {
 	
-	private final Mongo mongo = MongoTestHelper.anEmptyMongo();
-	private final MongoEquivStore store = new MongoEquivStore(mongo, "testing");
+	private final MongoEquivStore store = new MongoEquivStore(MongoTestHelper.anEmptyTestDatabase());
 	
 	@Test
 	public void testAnEmptyStore() throws Exception {
