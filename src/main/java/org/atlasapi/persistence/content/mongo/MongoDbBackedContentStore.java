@@ -46,6 +46,7 @@ import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -343,21 +344,11 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public Content findByUri(String uri) {
-        Item item = bestMatch(uri, findItems(Lists.newArrayList(uri)));
+        Item item = extractCanonical(uri, findItems(ImmutableList.of(uri)));
         if (item != null) {
             return item;
         }
-        return bestMatch(uri, findPlaylists(Lists.newArrayList(uri)));
-    }
-    
-    private <T extends Content> T bestMatch(String uri, List<T> elems) {
-    	if (elems.isEmpty()) {
-    		return null;
-    	}
-    	if (elems.size() == 1) {
-    		return elems.get(0);
-    	}
-    	return extractCanonical(uri, elems);
+        return extractCanonical(uri, findPlaylists(ImmutableList.of(uri)));
     }
 
     private <T extends Content> T extractCanonical(String uri, Iterable<T> elems) {

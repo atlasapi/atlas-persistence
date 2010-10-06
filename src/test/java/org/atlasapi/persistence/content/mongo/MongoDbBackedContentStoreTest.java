@@ -64,15 +64,10 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         
         store.addAliases(data.englishForCats.getCanonicalUri(), ImmutableSet.of("a", "b"));
         
-        assertEquals(data.englishForCats, store.findByUri("a")); 
-        assertEquals(data.englishForCats, store.findByUri("b")); 
-        assertEquals(data.englishForCats, store.findByUri("c")); 
-        assertEquals(data.englishForCats, store.findByUri(data.englishForCats.getCurie())); 
-        
         assertEquals(ImmutableSet.of("a", "b", "c"), store.findByUri(data.englishForCats.getCanonicalUri()).getAliases()); 
 	}
     
-    public void testThatWhenFindingByUriContentThatIsACanonicalUriMatchIsPreferred() throws Exception {
+    public void testThatWhenFindingByUriContentThatIsACanonicalUriMatchIsUsed() throws Exception {
         
     	Item a = new Item("a", "curie:a", Publisher.BBC);
     	a.addAlias("b");
@@ -84,22 +79,12 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	
     	assertEquals("a", store.findByUri("a").getCanonicalUri());
     	assertEquals("b", store.findByUri("b").getCanonicalUri());
-    	
-    	a.addAlias("c");
-    	b.addAlias("c");
-    	
-    	store.createOrUpdateItem(a);
-    	store.createOrUpdateItem(b);
-    	
-    	// 'c' is not found because it matches two items
-    	assertNull(store.findByUri("c"));
 	}
     
     public void testSavesAliasesForPlaylists() throws Exception {
         store.createOrUpdatePlaylist(data.eastenders, true);
         store.addAliases(data.eastenders.getCanonicalUri(), ImmutableSet.of("a", "b"));
-        assertEquals(data.eastenders, store.findByUri("a")); 
-        assertEquals(data.eastenders, store.findByUri("b"));
+        assertTrue(store.findByUri(data.eastenders.getCanonicalUri()).getAliases().containsAll(ImmutableSet.of("a", "b"))); 
     }
 
     public void testShouldCreateAndRetrieveItem() throws Exception {
