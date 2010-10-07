@@ -14,6 +14,7 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
@@ -167,16 +168,18 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     @Override
     public void createOrUpdatePlaylist(Playlist playlist, boolean markMissingItemsAsUnavailable) {
         try {
-            Playlist oldPlaylist = null;
-            List<Playlist> playlists = findPlaylists(Lists.newArrayList(playlist.getCanonicalUri()));
-            if (!playlists.isEmpty()) {
-                oldPlaylist = playlists.get(0);
-                preserveAliases(playlist, oldPlaylist);
-            }
+			Content oldContent = findByUri(playlist.getCanonicalUri());
 
-            if (oldPlaylist != null) {
+			if (oldContent != null) {
+				if (!(oldContent instanceof Playlist)) {
+					throw new IllegalStateException("Cannon saved playlist " + playlist.getCanonicalUri() + " because there's already an item with that uri");
+				}
+				Playlist oldPlaylist = (Playlist) oldContent;
+
+				preserveAliases(playlist, oldPlaylist);
+            	
             	Set<String> oldItemUris = Sets.difference(ImmutableSet.copyOf(oldPlaylist.getItemUris()), ImmutableSet.copyOf(playlist.getItemUris()));
-                List<Item> oldItems = findItems(Lists.newArrayList(oldItemUris));
+                List<Item> oldItems = findItemsByCanonicalUri(Lists.newArrayList(oldItemUris));
                 if (markMissingItemsAsUnavailable) {
                     for (Item item : oldItems) {
                         for (Version version : item.getVersions()) {
@@ -197,9 +200,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
                 preserveContainedIn(playlist, oldPlaylist);
 
-                Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets
-                                .newHashSet(playlist.getPlaylistUris()));
-                List<Playlist> oldPlaylists = findPlaylists(Lists.newArrayList(oldPlaylistUris));
+                Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets.newHashSet(playlist.getPlaylistUris()));
+                List<Playlist> oldPlaylists = findHydratedPlaylistsByCanonicalUri(oldPlaylistUris);
 
                 for (Playlist oldSubPlaylist : oldPlaylists) {
                     removeContainedIn(playlistCollection, oldSubPlaylist, playlist.getCanonicalUri());
@@ -222,9 +224,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 				}
             }
 
-            if (oldPlaylist == null) {
+            if (oldContent == null) {
                 playlist.setFirstSeen(new DateTime());
             }
+            
             playlist.setLastFetched(new DateTime());
             setThisOrChildLastUpdated(playlist);
 
@@ -236,6 +239,16 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             throw new RuntimeException(e);
         }
     }
+    
+	public void createOrUpdatePlaylistSkeleton(Playlist playlist) {
+    	checkArgument(checkThatSubElementsExist(playlist.getItems(), itemCollection), "Not all items exist in the database for playlist: " + playlist.getCanonicalUri());
+    	checkArgument(checkThatSubElementsExist(playlist.getPlaylists(), playlistCollection), "Not all sub-playlists exist in the database for playlist: " + playlist.getCanonicalUri());
+	}
+
+	private boolean checkThatSubElementsExist(List<? extends Content> content, DBCollection collection) {
+		ImmutableSet<String> uris = ImmutableSet.copyOf(Iterables.transform(content, Description.TO_URI));
+		return uris.size() == collection.count(where().idIn(uris).build());
+	}
 
 	private void saveClipsFrom(Content content) {
 		for (Clip clip : content.getClips()) {
@@ -344,11 +357,11 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public Content findByUri(String uri) {
-        Item item = extractCanonical(uri, findItems(ImmutableList.of(uri)));
+        Item item = extractCanonical(uri, findItemsByCanonicalUri(ImmutableList.of(uri)));
         if (item != null) {
             return item;
         }
-        return extractCanonical(uri, findPlaylists(ImmutableList.of(uri)));
+        return extractCanonical(uri, findHydratedPlaylistsByCanonicalUri(ImmutableList.of(uri)));
     }
 
     private <T extends Content> T extractCanonical(String uri, Iterable<T> elems) {
@@ -360,8 +373,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     	return null;
     }
 
-	List<Item> findItems(Iterable<String> uris) {
-        return executeItemQuery(in("aliases", Sets.newHashSet(uris)), null);
+	List<Item> findItemsByCanonicalUri(Iterable<String> uris) {
+        return executeItemQuery(where().fieldIn(DescriptionTranslator.CANONICAL_URI, ImmutableSet.copyOf(uris)).build(), null);
     }
 
     List<Item> executeItemQuery(DBObject query, Selection selection) {
@@ -407,8 +420,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         return (List) executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
     }
 
-    List<Playlist> findPlaylists(Iterable<String> uris) {
-        return executePlaylistQuery(in("aliases", Sets.newHashSet(uris)), null, null, true);
+    List<Playlist> findHydratedPlaylistsByCanonicalUri(Iterable<String> uris) {
+        return executePlaylistQuery(where().fieldIn(DescriptionTranslator.CANONICAL_URI, ImmutableSet.copyOf(uris)).build(), null, null, true);
     }
 
     List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
@@ -499,13 +512,12 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             }
 
             if (hydrate) {
-                List<Item> items = findItems(Lists.newArrayList(playlist.getItemUris()));
+                List<Item> items = findItemsByCanonicalUri(playlist.getItemUris());
                 playlist.setItems(items);
 
-                List<Playlist> subPlaylists = findPlaylists(Lists.newArrayList(playlist.getPlaylistUris()));
+                List<Playlist> subPlaylists = findHydratedPlaylistsByCanonicalUri(playlist.getPlaylistUris());
                 playlist.setPlaylists(subPlaylists);
             }
-
             removeUriFromAliases(playlist);
         } catch (Exception e) {
             throw new RuntimeException(e);

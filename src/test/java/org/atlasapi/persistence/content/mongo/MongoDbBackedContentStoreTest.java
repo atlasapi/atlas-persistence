@@ -92,18 +92,18 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         store.createOrUpdateItem(data.eggsForBreakfast);
         store.createOrUpdateItem(data.englishForCats);
 
-        List<Item> items = store.findItems(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri()));
+        List<Item> items = store.findItemsByCanonicalUri(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri()));
         assertNotNull(items);
         assertEquals(1, items.size());
         assertEquals(data.eggsForBreakfast.getTitle(), items.get(0).getTitle());
         assertNotNull(items.get(0).getLastFetched());
 
-        items = store.findItems(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri(), data.englishForCats.getCanonicalUri()));
+        items = store.findItemsByCanonicalUri(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri(), data.englishForCats.getCanonicalUri()));
         assertEquals(2, items.size());
 
         store.createOrUpdateItem(data.eggsForBreakfast);
 
-        items = store.findItems(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri()));
+        items = store.findItemsByCanonicalUri(Lists.newArrayList(data.eggsForBreakfast.getCanonicalUri()));
         assertNotNull(items);
         assertEquals(1, items.size());
         assertEquals(data.eggsForBreakfast.getTitle(), items.get(0).getTitle());
@@ -145,14 +145,14 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         for (Item item : data.goodEastendersEpisodes.getItems()) {
             itemUris.add(item.getCanonicalUri());
         }
-        List<Item> items = store.findItems(itemUris);
+        List<Item> items = store.findItemsByCanonicalUri(itemUris);
         assertNotNull(items);
         assertEquals(1, items.size());
         assertEquals(data.dotCottonsBigAdventure.getTitle(), items.get(0).getTitle());
 
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
 
-        List<Playlist> playlists = store.findPlaylists(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
+        List<Playlist> playlists = store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
         assertNotNull(playlists);
         assertEquals(1, playlists.size());
         assertEquals(data.goodEastendersEpisodes.getTitle(), playlists.get(0).getTitle());
@@ -182,14 +182,14 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	
         store.createOrUpdatePlaylist(beginningWithA, true);
     	
-        assertTrue(store.findPlaylists(Lists.newArrayList(data.eastenders.getCanonicalUri())).get(0).getContainedInUris().contains("/a"));
+        assertTrue(store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.eastenders.getCanonicalUri())).get(0).getContainedInUris().contains("/a"));
 	}
 
     public void testShouldMarkUnavailableItemsAsUnavailable() throws Exception {
         data.goodEastendersEpisodes.addItem(data.eggsForBreakfast);
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
 
-        List<Playlist> playlists = store.findPlaylists(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
+        List<Playlist> playlists = store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
         assertEquals(1, playlists.size());
         assertEquals(2, playlists.get(0).getItems().size());
 
@@ -202,7 +202,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, true);
 
-        playlists = store.findPlaylists(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
+        playlists = store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
         assertEquals(1, playlists.size());
         List<Item> items = playlists.get(0).getItems();
         assertEquals(3, items.size());
@@ -224,7 +224,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, true);
 
-        playlists = store.findPlaylists(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
+        playlists = store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
         assertEquals(1, playlists.size());
         items = playlists.get(0).getItems();
         assertEquals(4, items.size());
@@ -255,7 +255,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     public void testShouldIncludeEpisodeBrandSummary() throws Exception {
         store.createOrUpdateItem(data.theCreditCrunch);
 
-        List<Item> items = store.findItems(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
+        List<Item> items = store.findItemsByCanonicalUri(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
         assertNotNull(items);
         assertEquals(1, items.size());
         assertTrue(items.get(0) instanceof Episode);
@@ -270,24 +270,24 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     
     public void testShouldGetBrandOrPlaylist() throws Exception {
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
-        List<Playlist> playlists = store.findPlaylists(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
+        List<Playlist> playlists = store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
         assertEquals(1, playlists.size());
         assertFalse(playlists.get(0) instanceof Brand);
         
         store.createOrUpdatePlaylist(data.dispatches, false);
-        playlists = store.findPlaylists(Lists.newArrayList(data.dispatches.getCanonicalUri()));
+        playlists = store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.dispatches.getCanonicalUri()));
         assertEquals(1, playlists.size());
         assertTrue(playlists.get(0) instanceof Brand);
     }
     
     public void testShouldGetEpisodeOrItem() throws Exception {
         store.createOrUpdateItem(data.englishForCats);
-        List<Item> items = store.findItems(Lists.newArrayList(data.englishForCats.getCanonicalUri()));
+        List<Item> items = store.findItemsByCanonicalUri(Lists.newArrayList(data.englishForCats.getCanonicalUri()));
         assertEquals(1, items.size());
         assertFalse(items.get(0) instanceof Episode);
         
         store.createOrUpdateItem(data.brainSurgery);
-        items = store.findItems(Lists.newArrayList(data.brainSurgery.getCanonicalUri()));
+        items = store.findItemsByCanonicalUri(Lists.newArrayList(data.brainSurgery.getCanonicalUri()));
         assertEquals(1, items.size());
         assertTrue(items.get(0) instanceof Episode);
     }
@@ -307,7 +307,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         data.theCreditCrunch.setAliases(Sets.newHashSet("anotheralias", "blah"));
         store.createOrUpdateItem(data.theCreditCrunch);
         
-        List<Item> items = store.findItems(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
+        List<Item> items = store.findItemsByCanonicalUri(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
         assertNotNull(items);
         assertEquals(1, items.size());
         assertEquals(3, items.get(0).getAliases().size());
@@ -319,7 +319,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         
         store.addAliases(data.theCreditCrunch.getCanonicalUri(), Sets.newHashSet("anotherAlias"));
         
-        List<Item> items = store.findItems(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
+        List<Item> items = store.findItemsByCanonicalUri(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
         assertNotNull(items);
         assertEquals(1, items.size());
         assertEquals(2, items.get(0).getAliases().size());
@@ -332,7 +332,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         
         store.createOrUpdateItem(data.theCreditCrunch);
         
-        List<Item> items = store.findItems(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
+        List<Item> items = store.findItemsByCanonicalUri(Lists.newArrayList(data.theCreditCrunch.getCanonicalUri()));
         assertNotNull(items);
         assertEquals(1, items.size());
         assertEquals(2, items.get(0).getContainedInUris().size());
@@ -344,7 +344,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         data.goodEastendersEpisodes.addPlaylist(data.neighbours);
         store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
         
-        List<Playlist> playlists = store.findPlaylists(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
+        List<Playlist> playlists = store.findHydratedPlaylistsByCanonicalUri(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
         assertEquals(1, playlists.size());
         Collection<Playlist> subPlaylists = playlists.get(0).getPlaylists();
         assertEquals(1, subPlaylists.size());
