@@ -36,4 +36,9 @@ public class EquivalentContentMergingContentWriter implements ContentWriter, Def
     public void createOrUpdateDefinitivePlaylist(Playlist playlist) {
         definitiveWriter.createOrUpdateDefinitivePlaylist(merger.merge(playlist));
     }
+
+	@Override
+	public void createOrUpdatePlaylistSkeleton(Playlist playlist) {
+		delegate.createOrUpdatePlaylistSkeleton(playlist);
+	}
 }

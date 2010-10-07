@@ -15,12 +15,10 @@ permissions and limitations under the License. */
 package org.atlasapi.persistence.content.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Clip;
@@ -40,7 +38,6 @@ import org.atlasapi.persistence.tracking.ContentMention;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.query.Selection;
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -121,16 +118,6 @@ public class MongoDBTemplate {
     protected final DBObject findById(DBCollection table, String id) {
 		return table.findOne(new BasicDBObject(ID, id));
 	}
-
-    protected final BasicDBObject in(String attribute, Set<?> elems) {
-        return new BasicDBObject(attribute, new BasicDBObject(IN, list(elems)));
-    }
-
-    private BasicDBList list(Set<?> elems) {
-        BasicDBList dbList = new BasicDBList();
-        dbList.addAll(elems);
-        return dbList;
-    }
 
     protected <T> List<T> toList(DBCursor cursor, Class<T> type) {
         List<T> asList = Lists.newArrayList();

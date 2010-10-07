@@ -27,6 +27,8 @@ public interface ContentWriter {
 
 	void createOrUpdateItem(Item item);
 	
-	void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable);
+	void createOrUpdatePlaylist(Playlist playlist, boolean markMissingItemsAsUnavailable);
+
+	void createOrUpdatePlaylistSkeleton(Playlist playlist);
 
 }

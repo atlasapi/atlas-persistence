@@ -43,8 +43,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.time.TimeMachine;
 
 public class MongoDbBackedContentStoreTest extends TestCase {
+	
+	private final TimeMachine clock = new TimeMachine();
 	
 	private MongoDbBackedContentStore store;
 	private DummyContentData data ;
@@ -52,7 +55,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
-    	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyTestDatabase());
+    	this.store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyTestDatabase(), clock);
     	data = new DummyContentData();
     }
     
@@ -436,5 +439,69 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		
 		assertThat(store.findByUri(brandUri).getContainedInUris(), is(Collections.<String>emptySet()));
 
+	}
+    
+    public void testThatSavingASkeletalPlaylistThatContainsSubElementsThatArentInTheDBThrowsAnException() throws Exception {
+    	Item item = new Item("1", "1", Publisher.BLIP);
+    	Item item2 = new Item("2", "2", Publisher.BLIP);
+
+    	Playlist playlist = new Playlist();
+		playlist.setCanonicalUri("playlist");
+		playlist.addItems(item, item2, item2);
+		
+		try { 
+			store.createOrUpdatePlaylistSkeleton(playlist);
+			fail();
+		} catch (IllegalArgumentException e) {
+			// expected
+		}
+		
+		store.createOrUpdateItem(item);
+		store.createOrUpdateItem(item2);
+		
+		// should be ok now because the items are in the db
+		store.createOrUpdatePlaylistSkeleton(playlist);
+		
+    	Playlist subplaylist = new Playlist("3", "3");
+
+		playlist.addPlaylist(subplaylist);
+		
+		try { 
+			store.createOrUpdatePlaylistSkeleton(playlist);
+			fail();
+		} catch (IllegalArgumentException e) {
+			// expected
+		}
+	}
+    
+    public void testPersistingASkeletalPlaylist() throws Exception {
+    	
+    	Item item1 = new Item("i1", "1", Publisher.BLIP);
+    	Item item2 = new Item("i2", "2", Publisher.BLIP);
+    	Playlist subplaylist = new Playlist("subplaylist", "subplaylist");
+
+    	store.createOrUpdateItem(item1);
+		store.createOrUpdateItem(item2);
+		store.createOrUpdatePlaylist(subplaylist, false);
+    	
+    	Playlist playlist = new Playlist();
+		playlist.setCanonicalUri("playlist");
+		playlist.addItems(item1, item2, item2);
+		playlist.addPlaylist(subplaylist);
+		
+		store.createOrUpdatePlaylistSkeleton(playlist);
+		
+		Playlist found = (Playlist) store.findByUri("playlist");
+		
+		assertEquals(clock.now(), found.getLastFetched());
+		assertEquals(clock.now(), found.getFirstSeen());
+		
+		assertEquals(2, found.getItems().size());
+		assertEquals(1, found.getPlaylists().size());
+		
+		assertEquals(ImmutableSet.of("playlist"), store.findByUri("i1").getContainedInUris());
+		assertEquals(ImmutableSet.of("playlist"), store.findByUri("i2").getContainedInUris());
+
+		assertEquals(ImmutableSet.of("playlist"), store.findByUri("subplaylist").getContainedInUris());
 	}
 }

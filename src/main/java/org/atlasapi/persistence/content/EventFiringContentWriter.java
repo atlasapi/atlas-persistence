@@ -39,6 +39,11 @@ public class EventFiringContentWriter implements ContentWriter, DefinitiveConten
         definitiveDelgate.createOrUpdateDefinitiveItem(item);
         notifyListener(item);
     }
+    
+	@Override
+	public void createOrUpdatePlaylistSkeleton(Playlist playlist) {
+		delegate.createOrUpdatePlaylistSkeleton(playlist);
+	}
 
     @Override
     public void createOrUpdateDefinitivePlaylist(Playlist playlist) {
@@ -67,4 +72,6 @@ public class EventFiringContentWriter implements ContentWriter, DefinitiveConten
     private void notifyListener(Item item) {
         listener.itemChanged(Collections.singletonList(item), changeType.CONTENT_UPDATE);
     }
+
+
 }

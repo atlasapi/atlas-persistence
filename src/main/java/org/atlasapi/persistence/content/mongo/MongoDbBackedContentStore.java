@@ -15,6 +15,8 @@ permissions and limitations under the License. */
 package org.atlasapi.persistence.content.mongo;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
@@ -54,10 +56,13 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
+import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -68,16 +73,22 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
 
+    private final Clock clock;
     private final DBCollection itemCollection;
     private final DBCollection playlistCollection;
 
-    public MongoDbBackedContentStore(DatabasedMongo mongo) {
+    public MongoDbBackedContentStore(DatabasedMongo mongo, Clock clock) {
         super(mongo);
+		this.clock = clock;
         itemCollection = table("items");
         playlistCollection = table("playlists");
     }
 
-    @Override
+    public MongoDbBackedContentStore(DatabasedMongo mongo) {
+    	this(mongo, new SystemClock());
+	}
+
+	@Override
     public void addAliases(String uri, Set<String> aliases) {
     	boolean wasItem = addAliasesTo(uri, aliases, itemCollection);
 		if (!wasItem) {
@@ -87,7 +98,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
 	@SuppressWarnings("unchecked")
 	private boolean addAliasesTo(String uri, Set<String> aliases, DBCollection collection) {
-		MongoQueryBuilder findByCanonicalUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, uri);
+		MongoQueryBuilder findByCanonicalUri = findByCanonicalUriQuery(uri);
 		Iterable<DBObject> found = findByCanonicalUri.find(collection);
 		if (!Iterables.isEmpty(found)) {
 			DBObject dbo = Iterables.getOnlyElement(found);
@@ -96,6 +107,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			return true;
 		}
 		return false;
+	}
+
+	private MongoQueryBuilder findByCanonicalUriQuery(String uri) {
+		return where().fieldEquals(DescriptionTranslator.CANONICAL_URI, uri);
 	}
 
     @Override
@@ -127,7 +142,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
                 preserveAliases(item, oldItem);
             } else {
-                item.setFirstSeen(new DateTime());
+                item.setFirstSeen(clock.now());
             }
 
             addUriAndCurieToAliases(item);
@@ -176,7 +191,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 				}
 				Playlist oldPlaylist = (Playlist) oldContent;
 
-				preserveAliases(playlist, oldPlaylist);
             	
             	Set<String> oldItemUris = Sets.difference(ImmutableSet.copyOf(oldPlaylist.getItemUris()), ImmutableSet.copyOf(playlist.getItemUris()));
                 List<Item> oldItems = findItemsByCanonicalUri(Lists.newArrayList(oldItemUris));
@@ -192,20 +206,9 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                         }
                         playlist.addItem(item);
                     }
-                } else if (!(playlist instanceof Brand)) {
-                    for (Item item : oldItems) {
-                        removeContainedIn(itemCollection, item, playlist.getCanonicalUri());
-                    }
-                }
-
-                preserveContainedIn(playlist, oldPlaylist);
-
-                Set<String> oldPlaylistUris = Sets.difference(Sets.newHashSet(oldPlaylist.getPlaylistUris()), Sets.newHashSet(playlist.getPlaylistUris()));
-                List<Playlist> oldPlaylists = findHydratedPlaylistsByCanonicalUri(oldPlaylistUris);
-
-                for (Playlist oldSubPlaylist : oldPlaylists) {
-                    removeContainedIn(playlistCollection, oldSubPlaylist, playlist.getCanonicalUri());
-                }
+                } 
+                
+            	preservePlaylistAttributes(playlist, oldPlaylist);
             }
 
             for (Item item : playlist.getItems()) {
@@ -239,10 +242,52 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             throw new RuntimeException(e);
         }
     }
+
+	private void preservePlaylistAttributes(Playlist playlist, Playlist oldPlaylist) {
+		Set<String> oldItemUris = Sets.difference(ImmutableSet.copyOf(oldPlaylist.getItemUris()), ImmutableSet.copyOf(playlist.getItemUris()));
+		
+		if (!(playlist instanceof Brand)) {
+		    for (String itemUri : oldItemUris) {
+		        removeContainedIn(itemCollection, itemUri, playlist.getCanonicalUri());
+		    }
+		}
+
+		Set<String> oldPlaylistUris = Sets.difference(ImmutableSet.copyOf(oldPlaylist.getPlaylistUris()), ImmutableSet.copyOf(playlist.getPlaylistUris()));
+		for (String oldSubPlaylistUri : oldPlaylistUris) {
+			removeContainedIn(playlistCollection, oldSubPlaylistUri, playlist.getCanonicalUri());
+		}
+		
+		preserveAliases(playlist, oldPlaylist);
+		preserveContainedIn(playlist, oldPlaylist);
+	}
     
+    @Override
 	public void createOrUpdatePlaylistSkeleton(Playlist playlist) {
+    	checkNotNull(playlist.getCanonicalUri(), "Cannot persist a playlist without a canonical uri");
+
     	checkArgument(checkThatSubElementsExist(playlist.getItems(), itemCollection), "Not all items exist in the database for playlist: " + playlist.getCanonicalUri());
     	checkArgument(checkThatSubElementsExist(playlist.getPlaylists(), playlistCollection), "Not all sub-playlists exist in the database for playlist: " + playlist.getCanonicalUri());
+    	
+    	Content previousValue = findByUri(playlist.getCanonicalUri());
+    	
+    	// subclasses (such as brands) should not use this method since they have more complex semantics
+    	checkState(Playlist.class.equals(playlist.getClass()), "Can only persist Playlists (not subclasses)");
+    	
+    	if (previousValue != null) {
+    		preservePlaylistAttributes(playlist, (Playlist) previousValue);
+    	}
+    	
+    	addContainedIn(itemCollection, playlist.getItemUris(), playlist);
+    	addContainedIn(playlistCollection, playlist.getPlaylistUris(), playlist);
+    	
+    	DateTime now = clock.now();
+    	
+        if (previousValue == null) {
+            playlist.setFirstSeen(now);
+        }
+        
+        playlist.setLastFetched(now);
+        updateBasicPlaylistDetails(playlist);
 	}
 
 	private boolean checkThatSubElementsExist(List<? extends Content> content, DBCollection collection) {
@@ -319,11 +364,15 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     	return series;
     }
 
-	private void removeContainedIn(DBCollection collection, Content content, String containedInUri) {
-        collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, content.getCanonicalUri()),
+	private void removeContainedIn(DBCollection collection, String contentUri, String containedInUri) {
+        collection.update(new BasicDBObject(DescriptionTranslator.CANONICAL_URI, contentUri),
                         new BasicDBObject("$pull", new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY,
                                         containedInUri)));
     }
+
+	private void addContainedIn(DBCollection collection, Iterable<String> uris, Playlist container) {
+		collection.update(where().fieldIn(DescriptionTranslator.CANONICAL_URI, uris).build(), new BasicDBObject(MongoConstants.ADD_TO_SET, new BasicDBObject(ContentTranslator.CONTAINED_IN_URIS_KEY, container.getCanonicalUri())), false, true);
+	}
 
     private void writeContainedIn(DBCollection collection, Content content, Set<String> containedInUris) {
         MongoQueryBuilder findByUri = where().fieldEquals(DescriptionTranslator.CANONICAL_URI,
@@ -341,8 +390,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     }
 
     private void preserveContainedIn(Content newDesc, Content oldDesc) {
-        newDesc.setContainedInUris(Sets.newHashSet(Sets.union(oldDesc.getContainedInUris(), newDesc
-                        .getContainedInUris())));
+        newDesc.setContainedInUris(Sets.newHashSet(Sets.union(oldDesc.getContainedInUris(), newDesc.getContainedInUris())));
     }
 
     private void addUriAndCurieToAliases(Description desc) {
