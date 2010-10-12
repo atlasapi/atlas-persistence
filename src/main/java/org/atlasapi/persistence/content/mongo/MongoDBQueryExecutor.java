@@ -95,10 +95,10 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			// Preserve any 'contained in' constraints
 			Maybe<AttributeQuery<?>> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
 			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ContentQuery(ImmutableList.<AtomicQuery>of(byUriOrCurie.requireValue(), containedIn.requireValue())) : new ContentQuery(byUriOrCurie.requireValue()); 
-			List<Item> filtered = filter(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
+			List<Item> filtered = filterItems(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
 			return sort(filtered, (List<String>) byUriOrCurie.requireValue().getValue());
 		}
-		return filter(query, roughSearch.itemsMatching(query), true);
+		return filterItems(query, roughSearch.itemsMatching(query), true);
 	}
 	
 	private  <T extends Content> List<T> sort(List<T> content, final List<String> order) {
@@ -170,6 +170,8 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		
 		Maybe<AttributeQuery<?>> brandUriQuery = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI));
 		
+		brands = filterBrands(query, brands, !(brandUriQuery.hasValue() && !filterUriQueries));
+		
 		// Filter out subplaylists that don't match if the query was not by uri or curie
 		if (itemQuery.hasValue() && (brandUriQuery.isNothing() || filterUriQueries)) {
 			return filterEmpty(brands);
@@ -239,8 +241,9 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		
 		hydratePlaylists(playlists, items, brands);
 		
+		Maybe<AttributeQuery<?>> playlistUriQuery = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI));
 		
-		return playlists;
+		return filterPlaylists(query, playlists, !(playlistUriQuery.hasValue() && !filterUriQueries));
 	}
 
 	private List<Brand> filterEmpty(List<Brand> brands) {
@@ -310,8 +313,16 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		return itemLookup;
 	}
 	
-	private List<Item> filter(ContentQuery query, List<Item> items, boolean removeItemsThatDontMatch) {
-		return trimmer.trim(items, query, removeItemsThatDontMatch);
+	private List<Item> filterItems(ContentQuery query, List<Item> items, boolean removeItemsThatDontMatch) {
+		return trimmer.trimItems(items, query, removeItemsThatDontMatch);
+	}
+	
+	private List<Brand> filterBrands(ContentQuery query, List<Brand> brands, boolean removeItemsThatDontMatch) {
+		return trimmer.trimBrands(brands, query, removeItemsThatDontMatch);
+	}
+	
+	private List<Playlist> filterPlaylists(ContentQuery query, List<Playlist> playlists, boolean removeItemsThatDontMatch) {
+		return trimmer.trimPlaylists(playlists, query, removeItemsThatDontMatch);
 	}
 	
 	public void setFilterUriQueries(boolean filterUriQueries) {

@@ -208,6 +208,7 @@ public class DummyContentData {
 		
 		
 		mentionedOnTwitter = new Playlist("http://ref.atlasapi.org/mentions/twitter", "twitter:mentions");
+		mentionedOnTwitter.setPublisher(Publisher.DAILYMOTION);
 		mentionedOnTwitter.setTitle("Mentioned on twitter");
 		mentionedOnTwitter.addItem(englishForCats);
 		mentionedOnTwitter.addItem(eggsForBreakfast);

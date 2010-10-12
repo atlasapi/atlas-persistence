@@ -76,7 +76,7 @@ public class QueryResultCheckerTest {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trim(Collections.singletonList(item), query().equalTo(BRAND_TITLE, "test").build(), true);
+		trimmer.trimItems(Collections.singletonList(item), query().equalTo(BRAND_TITLE, "test").build(), true);
 		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 	}
 	
@@ -87,11 +87,11 @@ public class QueryResultCheckerTest {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trim(Collections.singletonList(item), query().equalTo(VERSION_DURATION, 10).build(), true);
+		trimmer.trimItems(Collections.singletonList(item), query().equalTo(VERSION_DURATION, 10).build(), true);
 		
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	
-		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.VIDEO_XMATROSKA).build(), true));
+		assertEquals(Collections.emptyList(), trimmer.trimItems(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.VIDEO_XMATROSKA).build(), true));
 	}
 	
 	@Test
@@ -105,11 +105,11 @@ public class QueryResultCheckerTest {
 		item.addVersion(longVersion);
 
 		// should match both
-		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true, false).build(), true);
+		trimmer.trimItems(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true, false).build(), true);
 		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 		
 		// should match one
-		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true).build(), true);
+		trimmer.trimItems(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true).build(), true);
 		assertEquals(Sets.newHashSet(shortVersion), item.getVersions());
 	
 	}
@@ -124,7 +124,7 @@ public class QueryResultCheckerTest {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM).build(), true);
+		trimmer.trimItems(Collections.singletonList(item), query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM).build(), true);
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	}
 	
@@ -142,8 +142,8 @@ public class QueryResultCheckerTest {
 		item1.addVersion(longVersion);
 		
 		ContentQuery query = query().equalTo(LOCATION_AVAILABLE, true).equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.TEXT_HTML).build();
-		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item1), query, true));
-		assertEquals(Collections.singletonList(item1), trimmer.trim(Collections.singletonList(item1), query, false));
+		assertEquals(Collections.emptyList(), trimmer.trimItems(Collections.singletonList(item1), query, true));
+		assertEquals(Collections.singletonList(item1), trimmer.trimItems(Collections.singletonList(item1), query, false));
 	}
 
 	private Encoding encodingWithLocation(Location location) {

@@ -25,15 +25,37 @@ import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
 import org.atlasapi.content.criteria.QueryVisitor;
 import org.atlasapi.content.criteria.StringAttributeQuery;
+import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Version;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 public class QueryConcernsTypeDecider {
+	
+	@SuppressWarnings("unchecked")
+	public static boolean concernsVersionOrBelow(final ContentQuery query){
+		return concernsType(query, Version.class, Location.class, Broadcast.class, Encoding.class, Policy.class);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static boolean concernsItemOrBelow(final ContentQuery query){
+		return concernsType(query, Item.class, Version.class, Location.class, Broadcast.class, Encoding.class);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static boolean concernsBrandOrBelow(final ContentQuery query){
+		return concernsType(query, Brand.class, Item.class, Version.class, Location.class, Broadcast.class, Encoding.class);
+	}
 
 	public static boolean concernsType(final ContentQuery query, final Class<? extends Description>... type) {
 		
-		final Set<Class<? extends Description>> typeLookup = Sets.newHashSet(type);
+		final Set<Class<? extends Description>> typeLookup = ImmutableSet.copyOf(type);
 		
 		 List<Boolean> found = query.accept(new QueryVisitor<Boolean>() {
 

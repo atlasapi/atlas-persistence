@@ -39,6 +39,7 @@ import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
 import org.atlasapi.content.criteria.operator.Operators.Search;
 import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.Playlist;
 import org.joda.time.DateTime;
 
 class InMemoryQueryResultChecker  {
@@ -153,6 +154,10 @@ class InMemoryQueryResultChecker  {
 				if (!shouldApplyTo(query)) {
 					return true;
 				}
+				//don't check genres
+				if (query.getAttribute().isCollectionOfValues()) {
+					return true;
+				}
 				final String lhs = (String) valueOfBean(query);
 				final List<String> values = (List<String>) query.getValue();
 
@@ -235,7 +240,10 @@ class InMemoryQueryResultChecker  {
 			}
 
 			private boolean shouldApplyTo(AttributeQuery<?> query) {
-				return target.getClass().isAssignableFrom(query.getAttribute().target());
+				if (query.getAttribute().target().equals(Playlist.class)) {
+					return query.getAttribute().target().equals(target.getClass());
+				}
+				return target.getClass().isAssignableFrom(query.getAttribute().target()) || query.getAttribute().target().isAssignableFrom(target.getClass());
 			}
 			
 			@Override

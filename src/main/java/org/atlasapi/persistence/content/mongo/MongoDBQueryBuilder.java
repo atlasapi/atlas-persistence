@@ -24,8 +24,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.atlasapi.content.criteria.BooleanAttributeQuery;
@@ -42,7 +42,6 @@ import org.atlasapi.content.criteria.operator.BooleanOperatorVisitor;
 import org.atlasapi.content.criteria.operator.DateTimeOperatorVisitor;
 import org.atlasapi.content.criteria.operator.EnumOperatorVisitor;
 import org.atlasapi.content.criteria.operator.IntegerOperatorVisitor;
-import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.content.criteria.operator.Operators.After;
 import org.atlasapi.content.criteria.operator.Operators.Before;
 import org.atlasapi.content.criteria.operator.Operators.Beginning;
@@ -50,6 +49,7 @@ import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
 import org.atlasapi.content.criteria.operator.Operators.Search;
+import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Description;
@@ -103,7 +103,7 @@ public class MongoDBQueryBuilder {
 		map.putAll(attributeConstraints.asMap());
 		
 		DBObject finalQuery = new BasicDBObject();
-		
+
 		Map<List<String>, DBObject> queries = Maps.newHashMap();
 		for (Entry<List<String>, Collection<ConstrainedAttribute>> entry : map.entrySet()) {
 			
@@ -143,10 +143,16 @@ public class MongoDBQueryBuilder {
 					rhs.put(name, constrainedAttribute.queryOrValue());
 				}
 			}
-			parentDbObject.put(Joiner.on(".").join(entityPath.subList(parentPath.size(), entityPath.size())), new BasicDBObject("$elemMatch",  rhs));
+			String key = Joiner.on(".").join(entityPath.subList(parentPath.size(), entityPath.size()));
+			DBObject attrObj = new BasicDBObject(key, new BasicDBObject("$elemMatch",  rhs));
+//			if (!QueryConcernsTypeDecider.concernsVersionOrBelow(query)) {
+//				parentDbObject.putAll((DBObject)new BasicDBObject(MongoConstants.OR, ImmutableList.of(attrObj, new BasicDBObject(key,new BasicDBObject("size",0)))));
+//			} else {				
+				parentDbObject.putAll(attrObj);
+//			}
 			queries.put(entityPath, rhs);
 		}
-
+		System.out.println("query:" + finalQuery);
 		return finalQuery;
 	}
 
