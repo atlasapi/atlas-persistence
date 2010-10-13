@@ -152,7 +152,7 @@ public class MongoDBQueryBuilder {
 //			}
 			queries.put(entityPath, rhs);
 		}
-		System.out.println("query:" + finalQuery);
+
 		return finalQuery;
 	}
 
