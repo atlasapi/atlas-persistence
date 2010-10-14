@@ -37,6 +37,7 @@ import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
 import org.atlasapi.persistence.content.query.QueryFragmentExtractor;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -94,7 +95,8 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		if (byUriOrCurie.hasValue() && !filterUriQueries) {
 			// Preserve any 'contained in' constraints
 			Maybe<AttributeQuery<?>> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
-			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? new ContentQuery(ImmutableList.<AtomicQuery>of(byUriOrCurie.requireValue(), containedIn.requireValue())) : new ContentQuery(byUriOrCurie.requireValue()); 
+			ContentQuery itemQuery = splitter.retain(query, ImmutableSet.<Class<? extends Description>>of(Item.class)).requireValue();
+			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? ContentQuery.joinTo(itemQuery, new ContentQuery(ImmutableList.<AtomicQuery>of(containedIn.requireValue()))) : itemQuery; 
 			List<Item> filtered = filterItems(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
 			return sort(filtered, (List<String>) byUriOrCurie.requireValue().getValue());
 		}
