@@ -52,6 +52,7 @@ public class EquivalentContentMerger {
 			if (content instanceof Brand) {
 				mergeSubItemsOf(brand, (Brand) content);
 			}
+			brand.addEquivalentTo(content);
 		}
 		for (String alias : equiv.probableAliases()) {
 			brand.addAlias(alias);

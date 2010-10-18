@@ -14,6 +14,7 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
 	private static final String CURIE = "curie";
 	public static final String LAST_UPDATED = "lastUpdated";
 	public static final String ALIASES = "aliases";
+	public static final String EQUIVALENT_TO = "equivalent";
 	public static final String CANONICAL_URI = MongoConstants.ID;
 	
 	
@@ -37,8 +38,8 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
         
         description.setCurie((String) dbObject.get(CURIE));
         description.setAliases(TranslatorUtils.toSet(dbObject, ALIASES));
+        description.setEquivalentTo(TranslatorUtils.toSet(dbObject, EQUIVALENT_TO));
         description.setLastUpdated(TranslatorUtils.toDateTime(dbObject, LAST_UPDATED));
-        
         return description;
     }
 
@@ -59,6 +60,7 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
 
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
         TranslatorUtils.fromSet(dbObject, entity.getAliases(), ALIASES);
+        TranslatorUtils.fromSet(dbObject, entity.getEquivalentTo(), EQUIVALENT_TO);
         TranslatorUtils.fromDateTime(dbObject, LAST_UPDATED, entity.getLastUpdated());
         
         return dbObject;
