@@ -46,7 +46,9 @@ import com.mongodb.DBObject;
 
 public class MongoDBTemplate {
 
-    private final ItemTranslator itemTranslator = new ItemTranslator();
+    private static final int MAX_SCAN = 500;
+    
+	private final ItemTranslator itemTranslator = new ItemTranslator();
     private final ClipTranslator clipTranslator = new ClipTranslator(true);
     private final PlaylistTranslator playlistTranslator = new PlaylistTranslator();
     private final BrandTranslator brandTranslator = new BrandTranslator();
@@ -152,11 +154,11 @@ public class MongoDBTemplate {
         return elements;
 	}
 
-    protected Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection) {
+    protected Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection                                                                                                                                                                                                                                                                    ) {
         if (selection != null && (selection.hasLimit() || selection.hasNonZeroOffset())) {
-            return collection.find(query, new BasicDBObject(), selection.getOffset(), hardLimit(selection));
+            return collection.find(query, new BasicDBObject(), selection.getOffset(), hardLimit(selection)).addSpecial("$maxScan" , MAX_SCAN);
         } else {
-            return collection.find(query, new BasicDBObject(), 0, DEFAULT_BATCH_SIZE);
+            return collection.find(query, new BasicDBObject(), 0, DEFAULT_BATCH_SIZE).addSpecial("$maxScan" , MAX_SCAN);
         }
     }
 
