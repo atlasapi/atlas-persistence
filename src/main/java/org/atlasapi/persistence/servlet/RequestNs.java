@@ -29,6 +29,7 @@ public class RequestNs {
 	public static final String ALLOW_CONTENT_TYPES = "allowContentTypes";
 
 	public static final String GRAPH = "graph";
+	public static final String ERROR = "error";
 
 	/** The key that should be used to map the current request to a handler. */
 	public static final String RESOURCE_URI = "resourceUri";
