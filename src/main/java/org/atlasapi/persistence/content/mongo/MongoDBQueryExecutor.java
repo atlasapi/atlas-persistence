@@ -51,6 +51,14 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	private static final Set<Class<? extends Description>> playlistAttributes = (Set) Sets.newHashSet(Playlist.class);
 	private static final Set<Class<? extends Description>> brandAndPlaylistAttributes = (Set) Sets.newHashSet(Brand.class, Playlist.class);
 	
+	/**
+	 * If the query has brand and item constraints then we first find the 
+	 * Brands that match, then search for items contained within those brands.  If the 
+	 * first query (the brand query) returns too many Brands it generates a large
+	 * and inefficient query.
+	 */
+	private static final int MAX_INTERMEDIATE_BRANDS = 2000;
+	
 	private final QuerySplitter splitter = new QuerySplitter();
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
 	private final MongoRoughSearch roughSearch;
@@ -190,6 +198,9 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		List<Brand> brands = roughSearch.dehydratedBrandsMatching(brandQuery.requireValue());
 		if (brands.isEmpty()) {
 			return Lists.newArrayList();
+		}
+		if (brands.size() > MAX_INTERMEDIATE_BRANDS) {
+			throw new IllegalStateException("Query matched too many brands");
 		}
 		List<Item> items = executeItemQueryInternal(createContainedInPlaylistQuery(itemQuery, brands, Attributes.BRAND_URI, null));
 		hydratePlaylists(brands, items, null);
