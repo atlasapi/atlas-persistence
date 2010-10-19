@@ -14,7 +14,7 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
-import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.concernsType;
+import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -182,6 +182,9 @@ public class QueryResultTrimmer {
 	}
 
 	private boolean trimPlaylist(Playlist playlist, final ContentQuery query) {
+		if (playlist instanceof Brand) {
+			return trimBrand((Brand)playlist, query);
+		}
 		Maybe<List<Playlist>> subLists;
 		if (!playlist.getPlaylists().isEmpty()) {
 			subLists = trimSubPlaylists(playlist.getPlaylists(), query);
@@ -198,10 +201,14 @@ public class QueryResultTrimmer {
 		playlist.setItems((items.valueOrDefault(ImmutableList.<Item>of())));
 		playlist.setPlaylists(subLists.valueOrDefault(ImmutableList.<Playlist>of()));
 		
-		if (items.isNothing() && subLists.isNothing()) {
-			return false;
-		} else {
+		if (!concernsBrandOrBelow(query)) {
 			return true;
+		} else if (!concernsType(query, Brand.class) && concernsItemOrBelow(query) && (items.hasValue() || subLists.hasValue())) { 
+			return true;
+		} else if (concernsType(query, Brand.class) && subLists.hasValue()) {
+			return true;
+		} else {
+			return false;
 		}
 	}
 	
@@ -214,7 +221,7 @@ public class QueryResultTrimmer {
 				return check(softQuery, item);
 			}
 		});
-		if (Iterables.isEmpty(playlists) && !concernsType(query, Item.class, Version.class, Encoding.class, Location.class)) {
+		if (Iterables.isEmpty(playlists) && !concernsType(query, Brand.class, Item.class, Version.class, Encoding.class, Location.class)) {
 			return Maybe.just(Collections.<Playlist>emptyList());
 		}
 		List<Playlist> trimmedPlaylists = Lists.newArrayListWithExpectedSize(Iterables.size(playlists));
