@@ -40,8 +40,7 @@ public class MongoRoughSearch {
 		return (List) store.executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), query.getSelection(), false);
 	}    
 	
-	@SuppressWarnings("unchecked")
 	public List<Playlist> dehydratedPlaylistsMatching(ContentQuery query) {
-		return (List) store.executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
+		return store.executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
 	}    
 }

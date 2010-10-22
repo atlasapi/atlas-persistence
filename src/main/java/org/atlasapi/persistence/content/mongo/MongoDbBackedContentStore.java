@@ -463,9 +463,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
                         .getSelection(), false);
     }
 
-    @SuppressWarnings("unchecked")
     public List<Playlist> dehydratedPlaylistsMatching(ContentQuery query) {
-        return (List) executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
+        return executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
     }
 
     List<Playlist> findHydratedPlaylistsByCanonicalUri(Iterable<String> uris) {
