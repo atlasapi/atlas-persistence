@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.ContentType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -71,6 +72,12 @@ public class ContentTranslator implements ModelTranslator<Content> {
         	});
         	entity.setClips(clips);
         }
+        
+        String cType = (String)dbObject.get("contentType");
+        if (cType != null) {
+        	entity.setContentType(ContentType.valueOf(cType.toUpperCase()));
+        }
+        
        return entity;
 	}
 
@@ -109,6 +116,11 @@ public class ContentTranslator implements ModelTranslator<Content> {
 			});
 			dbObject.put(CLIPS_KEY, clipDbos);
         }
+        
+        if (entity.getContentType() != null) {
+        	TranslatorUtils.from(dbObject, "contentType", entity.getContentType().toString().toLowerCase());
+        }
+        
         return dbObject;
 	}
 
