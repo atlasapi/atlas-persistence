@@ -154,11 +154,11 @@ public class MongoDBTemplate {
         return elements;
 	}
 
-    protected Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection                                                                                                                                                                                                                                                                    ) {
+    protected Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection) {
         if (selection != null && (selection.hasLimit() || selection.hasNonZeroOffset())) {
-            return collection.find(query, new BasicDBObject(), selection.getOffset(), hardLimit(selection)).addSpecial("$maxScan" , MAX_SCAN);
+            return collection.find(query, new BasicDBObject(), selection.getOffset(), hardLimit(selection));
         } else {
-            return collection.find(query, new BasicDBObject(), 0, DEFAULT_BATCH_SIZE).addSpecial("$maxScan" , MAX_SCAN);
+            return collection.find(query, new BasicDBObject(), 0, DEFAULT_BATCH_SIZE);
         }
     }
 
