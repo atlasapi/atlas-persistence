@@ -19,6 +19,7 @@ public class ClipTranslator implements ModelTranslator<Clip> {
             clip = new Clip();
         }
         itemTranslator.fromDBObject(dbObject, clip);
+        clip.setClipOf((String)dbObject.get("clipOfUri"));
         return clip;
     }
 
@@ -27,7 +28,7 @@ public class ClipTranslator implements ModelTranslator<Clip> {
         dbObject = itemTranslator.toDBObject(dbObject, clip);
         
         dbObject.put("type", Clip.class.getSimpleName());
-        dbObject.put("clipOfUri", clip.getClipOf().getCanonicalUri());
+        dbObject.put("clipOfUri", clip.getClipOf());
         
         return dbObject;
     }
