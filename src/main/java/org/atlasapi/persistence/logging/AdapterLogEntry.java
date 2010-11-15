@@ -145,7 +145,7 @@ public final class AdapterLogEntry {
 		
 		@Override
 		public String toString() {
-			return clazz + ":" + message;
+			return classAndMessage();
 		}
 
 		public Collection<String> trace() {
@@ -153,11 +153,11 @@ public final class AdapterLogEntry {
 		}
 		
 		public List<String> traceAndMessage() {
-			if (message != null) {
-				return ImmutableList.copyOf(Iterables.concat(ImmutableList.of(message, clazz), trace));
-			} else {
-				return trace;
-			}
+			return ImmutableList.copyOf(Iterables.concat(ImmutableList.of(classAndMessage()), trace));
+		}
+
+		private String classAndMessage() {
+			return clazz + (message == null ? "" : " :" +  message);
 		}
 
 		public ExceptionSummary cause() {
