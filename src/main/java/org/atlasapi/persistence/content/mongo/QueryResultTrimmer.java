@@ -14,7 +14,9 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
-import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.*;
+import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.concernsBrandOrBelow;
+import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.concernsItemOrBelow;
+import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.concernsType;
 
 import java.util.Collections;
 import java.util.List;
@@ -126,9 +128,15 @@ public class QueryResultTrimmer {
 		return nothingIfEmpty((Iterable)trimmedLocations);
 	}
 
-	public List<Brand> trimBrands(Iterable<Brand> brands, ContentQuery query, boolean removeItemsThatDontMatch) {
+	public List<Brand> trimBrands(Iterable<Brand> brands, final ContentQuery query, boolean removeItemsThatDontMatch) {
 		List<Brand> trimmed = Lists.newArrayListWithCapacity(Iterables.size(brands));
-		for (Brand brand : brands) {
+		Iterable<Brand> filteredBrands = Iterables.filter(brands, new Predicate<Brand>() {
+			@Override
+			public boolean apply(Brand brand) {
+				return check(new ContentQuery(query.getSoftConstraints()), brand);
+			}
+		});
+		for (Brand brand : filteredBrands) {
 			if (trimBrand(brand, query) || !removeItemsThatDontMatch) {
 				trimmed.add(brand);
 			}
