@@ -10,7 +10,7 @@ import org.atlasapi.persistence.content.ContentListener.changeType;
 
 import com.google.common.collect.Sets;
 
-public class EventFiringContentWriter implements ContentWriter, DefinitiveContentWriter {
+public class EventFiringContentWriter implements DefinitiveContentWriter {
 
 	private final ContentWriter delegate;
 	private final ContentListener listener;

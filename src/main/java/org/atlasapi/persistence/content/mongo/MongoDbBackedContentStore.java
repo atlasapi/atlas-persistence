@@ -41,7 +41,6 @@ import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentResolver;
-import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.DefinitiveContentWriter;
 import org.atlasapi.persistence.content.RetrospectiveContentLister;
 import org.atlasapi.persistence.media.entity.ContentTranslator;
@@ -67,7 +66,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, DefinitiveContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
+public class MongoDbBackedContentStore extends MongoDBTemplate implements DefinitiveContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
     private final static int MAX_RESULTS = 20000;
 

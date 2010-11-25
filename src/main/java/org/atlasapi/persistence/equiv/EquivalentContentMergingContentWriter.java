@@ -5,7 +5,7 @@ import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.DefinitiveContentWriter;
 
-public class EquivalentContentMergingContentWriter implements ContentWriter, DefinitiveContentWriter {
+public class EquivalentContentMergingContentWriter implements DefinitiveContentWriter {
 
 	private final ContentWriter delegate;
 	private final EquivalentContentMerger merger;
