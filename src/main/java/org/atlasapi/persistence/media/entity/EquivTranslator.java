@@ -39,20 +39,7 @@ public class EquivTranslator {
         return dbObject;
     }
     
-    /**
-     * Use this method when we move to mongo 1.5
-     */
     public MongoQueryBuilder findPathLengthOne(Set<String> ids) {
     	return where().or(where().fieldIn(LEFT_KEY, ids), where().fieldIn(RIGHT_KEY, ids));
-    }
-    
-    @Deprecated
-    public MongoQueryBuilder findPathLengthOneLeft(Set<String> ids) {
-    	return where().fieldIn(LEFT_KEY, ids);
-    }
-    
-    @Deprecated
-    public MongoQueryBuilder findPathLengthOneRight(Set<String> ids) {
-    	return where().fieldIn(RIGHT_KEY, ids);
     }
 }

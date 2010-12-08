@@ -37,15 +37,12 @@ public class MongoEquivStore implements EquivalentUrlStore {
 				 break;
 			 }
 	     }
-		 urls.removeAll(Sets.newHashSet(ids));
+		 urls.removeAll(ImmutableSet.copyOf(ids));
 		 return urls;
 	}
 	
 	private Set<String> getSinglePath(Set<String> ids) {
-		 Set<String> urls = Sets.newHashSet();
-		 urls.addAll(urlsFrom(equivTranslator.findPathLengthOneLeft(ids).find(equivCollection)));
-		 urls.addAll(urlsFrom(equivTranslator.findPathLengthOneRight(ids).find(equivCollection)));
-		 return urls;
+		 return urlsFrom(equivTranslator.findPathLengthOne(ids).find(equivCollection));
 	}
 
 	@Override
