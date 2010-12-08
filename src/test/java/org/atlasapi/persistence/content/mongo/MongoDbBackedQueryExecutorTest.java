@@ -48,6 +48,7 @@ import org.atlasapi.persistence.testing.DummyContentData;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
@@ -237,7 +238,7 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		
 		checkItemQuery(query().equalTo(ITEM_PUBLISHER, Publisher.YOUTUBE), data.englishForCats, data.eggsForBreakfast); 
 
-		checkItemQuery(query().equalTo(ITEM_PUBLISHER, Publisher.C4, Publisher.YOUTUBE), data.englishForCats, data.eggsForBreakfast,  data.brainSurgery);
+		checkItemQuery(query().isAnEnumIn(ITEM_PUBLISHER, ImmutableList.<Enum<Publisher>>of(Publisher.C4, Publisher.YOUTUBE)), data.englishForCats, data.eggsForBreakfast,  data.brainSurgery);
 	}
 	
 	

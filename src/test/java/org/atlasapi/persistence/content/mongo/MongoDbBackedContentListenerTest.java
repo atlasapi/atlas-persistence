@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.MoreExecutors;
 
 @RunWith(JMock.class)
 public class MongoDbBackedContentListenerTest  {
@@ -23,7 +22,7 @@ public class MongoDbBackedContentListenerTest  {
 	
 	private RetrospectiveContentLister store = context.mock(RetrospectiveContentLister.class);
     private ContentListener listener = context.mock(ContentListener.class);
-    private MongoDbBackedContentBootstrapper bootstrapper = new MongoDbBackedContentBootstrapper(listener, store, MoreExecutors.sameThreadExecutor());
+    private MongoDbBackedContentBootstrapper bootstrapper = new MongoDbBackedContentBootstrapper(listener, store);
     private DummyContentData data = new DummyContentData();
     
     @Test

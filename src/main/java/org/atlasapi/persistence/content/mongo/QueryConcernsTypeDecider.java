@@ -38,22 +38,23 @@ import com.google.common.collect.ImmutableSet;
 
 public class QueryConcernsTypeDecider {
 	
-	@SuppressWarnings("unchecked")
 	public static boolean concernsVersionOrBelow(final ContentQuery query){
-		return concernsType(query, Version.class, Location.class, Broadcast.class, Encoding.class, Policy.class);
+		return concernsType(query, ImmutableSet.of(Version.class, Location.class, Broadcast.class, Encoding.class, Policy.class));
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static boolean concernsItemOrBelow(final ContentQuery query){
-		return concernsType(query, Item.class, Version.class, Location.class, Broadcast.class, Encoding.class);
+		return concernsType(query, ImmutableSet.of(Item.class, Version.class, Location.class, Broadcast.class, Encoding.class));
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static boolean concernsBrandOrBelow(final ContentQuery query){
-		return concernsType(query, Brand.class, Item.class, Version.class, Location.class, Broadcast.class, Encoding.class);
+		return concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Location.class, Broadcast.class, Encoding.class));
 	}
 
-	public static boolean concernsType(final ContentQuery query, final Class<? extends Description>... type) {
+	public static boolean concernsType(final ContentQuery query, Class<? extends Description> type) {
+		return concernsType(query, ImmutableSet.<Class<? extends Description>>of(type));
+	}
+	
+	public static boolean concernsType(final ContentQuery query, final Iterable<Class<? extends Description>> type) {
 		
 		final Set<Class<? extends Description>> typeLookup = ImmutableSet.copyOf(type);
 		

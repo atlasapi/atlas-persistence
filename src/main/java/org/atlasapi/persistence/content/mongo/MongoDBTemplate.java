@@ -46,8 +46,6 @@ import com.mongodb.DBObject;
 
 public class MongoDBTemplate {
 
-    private static final int MAX_SCAN = 500;
-    
 	private final ItemTranslator itemTranslator = new ItemTranslator();
     private final ClipTranslator clipTranslator = new ClipTranslator(true);
     private final PlaylistTranslator playlistTranslator = new PlaylistTranslator();

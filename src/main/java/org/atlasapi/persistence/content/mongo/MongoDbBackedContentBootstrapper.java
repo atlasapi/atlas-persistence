@@ -16,8 +16,6 @@ package org.atlasapi.persistence.content.mongo;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,16 +40,9 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
     private final RetrospectiveContentLister contentStore;
     private int batchSize = BATCH_SIZE;
 
-    private final ExecutorService executor;
-    
-    MongoDbBackedContentBootstrapper(ContentListener contentListener, RetrospectiveContentLister contentLister, ExecutorService executor) {
+    public MongoDbBackedContentBootstrapper(ContentListener contentListener, RetrospectiveContentLister contentLister) {
         this.contentListener = contentListener;
         this.contentStore = contentLister;
-		this.executor = executor;
-    }
-    
-    public MongoDbBackedContentBootstrapper(ContentListener contentListener, RetrospectiveContentLister contentLister) {
-    	this(contentListener, contentLister,  Executors.newFixedThreadPool(1));
     }
 
     @Override
@@ -104,12 +95,6 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
 	private <T> void inform(final Function<List<T>, Void> handler, List<T> contentInBatch) {
 		final ImmutableList<T> batch = ImmutableList.copyOf(contentInBatch);
 		handler.apply(batch);
-//		executor.submit(new Runnable() {
-//			@Override
-//			public void run() {
-//				handler.apply(batch);
-//			}
-//		});
 	}
 
     public void loadAllBrands() {

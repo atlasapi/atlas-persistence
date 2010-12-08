@@ -80,7 +80,7 @@ public class QueryResultTrimmer {
 				return check(softQuery, version);
 			}
 		});
-		if (Iterables.isEmpty(versions) && !concernsType(query, Version.class, Encoding.class, Location.class)) {
+		if (Iterables.isEmpty(versions) && !concernsType(query, ImmutableSet.of(Version.class, Encoding.class, Location.class))) {
 			return Maybe.just(Collections.<Version>emptySet());
 		}
 		Set<Version> trimmedVersions = Sets.newHashSet();
@@ -98,7 +98,7 @@ public class QueryResultTrimmer {
 
 	@SuppressWarnings("unchecked")
 	private Maybe<Set<Encoding>> trimEncodings(Set<Encoding> encodings, ContentQuery query) {
-		if (encodings.isEmpty() && !concernsType(query, Encoding.class, Location.class)) {
+		if (encodings.isEmpty() && !concernsType(query, ImmutableSet.of(Encoding.class, Location.class))) {
 			return Maybe.just(Collections.<Encoding>emptySet());
 		}
 		Set<Encoding> trimmedEncodings = Sets.newHashSetWithExpectedSize(encodings.size());
@@ -163,7 +163,7 @@ public class QueryResultTrimmer {
 				return check(softQuery, item);
 			}
 		});
-		if (Iterables.isEmpty(items) && !concernsType(query, Item.class, Version.class, Encoding.class, Location.class)) {
+		if (Iterables.isEmpty(items) && !concernsType(query, ImmutableSet.of(Item.class, Version.class, Encoding.class, Location.class))) {
 			return Maybe.just(Collections.<Item>emptyList());
 		}
 		List<Item> trimmedItems = Lists.newArrayListWithExpectedSize(Iterables.size(items));
@@ -197,7 +197,7 @@ public class QueryResultTrimmer {
 		if (!playlist.getPlaylists().isEmpty()) {
 			subLists = trimSubPlaylists(playlist.getPlaylists(), query);
 		} else {
-			if (concernsType(query, Brand.class, Item.class, Version.class, Encoding.class, Location.class)){
+			if (concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Encoding.class, Location.class))){
 				subLists = Maybe.nothing();
 			} else {
 				subLists = Maybe.just(Collections.<Playlist>emptyList());
@@ -229,7 +229,7 @@ public class QueryResultTrimmer {
 				return check(softQuery, item);
 			}
 		});
-		if (Iterables.isEmpty(playlists) && !concernsType(query, Brand.class, Item.class, Version.class, Encoding.class, Location.class)) {
+		if (Iterables.isEmpty(playlists) && !concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Encoding.class, Location.class))) {
 			return Maybe.just(Collections.<Playlist>emptyList());
 		}
 		List<Playlist> trimmedPlaylists = Lists.newArrayListWithExpectedSize(Iterables.size(playlists));
