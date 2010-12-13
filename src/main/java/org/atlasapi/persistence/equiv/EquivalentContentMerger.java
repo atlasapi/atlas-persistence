@@ -65,9 +65,10 @@ public class EquivalentContentMerger {
 			Item sameItem = findSameItem((Episode) item, (List) equivTo.getItems());
 			if (sameItem != null) {
 				// remove previously merged versions
-				Set<Version> versions = Sets.newHashSet(Iterables.filter(item.getVersions(), Predicates.not(isProvidedBy(item.getPublisher()))));
-				versions.addAll(sameItem.getVersions());
+				Set<Version> versions = Sets.newHashSet(Iterables.filter(item.getVersions(), Predicates.not(isProvidedBy(sameItem.getPublisher()))));
+				versions.addAll(sameItem.nativeVersions());
 				item.setVersions(versions);
+				item.addEquivalentTo(sameItem);
 			}
 		}
 	}
