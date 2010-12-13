@@ -62,7 +62,7 @@ public class EquivalentContentMerger {
 	@SuppressWarnings("unchecked")
 	private void mergeSubItemsOf(Brand original, Brand equivTo) {
 		for (Item item : original.getItems()) {
-			Item sameItem = findSameItem((Episode) item, (List) equivTo.getItems());
+			Item sameItem = findSameItem(item, (List) equivTo.getItems());
 			if (sameItem != null) {
 				// remove previously merged versions
 				Set<Version> versions = Sets.newHashSet(Iterables.filter(item.getVersions(), Predicates.not(isProvidedBy(sameItem.getPublisher()))));
@@ -84,12 +84,14 @@ public class EquivalentContentMerger {
 		};
 	}
 
-	private Item findSameItem(Episode needle, List<Episode> haystack) {
-		for (Episode item : haystack) {
-			if (areSame(needle, item)) {
-				return item;
-			}
-		}
+	private Item findSameItem(Item needle, List<Item> haystack) {
+	    if (needle instanceof Episode) {
+    		for (Item item : haystack) {
+    			if (item instanceof Episode && areSame((Episode) needle, (Episode) item)) {
+    				return item;
+    			}
+    		}
+	    }
 		return null;
 	}
 
