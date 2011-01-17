@@ -163,6 +163,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Defini
             			if (!dbBrand.getItemUris().contains(item.getCanonicalUri())) {
             				dbBrand.addItem(item);
             				updateBasicPlaylistDetails(dbBrand);
+            			} else {
+            				dbBrand.addItem(item);
             			}
             		} 
             	}
