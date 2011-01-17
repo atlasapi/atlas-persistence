@@ -6,6 +6,10 @@ import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
 
 import com.metabroadcast.common.media.MimeType;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
 public class EncodingTranslatorTest extends TestCase {
@@ -26,6 +30,10 @@ public class EncodingTranslatorTest extends TestCase {
     }
     
     public void testToEncoding() throws Exception {
+        
+        MongoTestHelper.ensureMongoIsRunning();
+        DBCollection collection = MongoTestHelper.anEmptyTestDatabase().collection("test");
+        
         Encoding encoding = new Encoding();
         encoding.setAudioBitRate(1);
         encoding.setContainsAdvertising(true);
@@ -54,7 +62,11 @@ public class EncodingTranslatorTest extends TestCase {
         
         DBObject dbObject = ent.toDBObject(null, encoding);
         
-        Encoding enc = ent.fromDBObject(dbObject, null);
+        dbObject.put(MongoConstants.ID, "test");
+        
+        collection.save(dbObject);
+        
+        Encoding enc = ent.fromDBObject(collection.findOne(new MongoQueryBuilder().idEquals("test").build()), null);
         
         assertEquals(encoding.getAudioBitRate(), enc.getAudioBitRate());
         assertEquals(encoding.getContainsAdvertising(), enc.getContainsAdvertising());
