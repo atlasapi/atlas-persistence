@@ -27,7 +27,7 @@ import org.atlasapi.content.criteria.QueryVisitor;
 import org.atlasapi.content.criteria.StringAttributeQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
@@ -50,13 +50,13 @@ public class QueryConcernsTypeDecider {
 		return concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Location.class, Broadcast.class, Encoding.class));
 	}
 
-	public static boolean concernsType(final ContentQuery query, Class<? extends Description> type) {
-		return concernsType(query, ImmutableSet.<Class<? extends Description>>of(type));
+	public static boolean concernsType(final ContentQuery query, Class<? extends Identified> type) {
+		return concernsType(query, ImmutableSet.<Class<? extends Identified>>of(type));
 	}
 	
-	public static boolean concernsType(final ContentQuery query, final Iterable<Class<? extends Description>> type) {
+	public static boolean concernsType(final ContentQuery query, final Iterable<Class<? extends Identified>> type) {
 		
-		final Set<Class<? extends Description>> typeLookup = ImmutableSet.copyOf(type);
+		final Set<Class<? extends Identified>> typeLookup = ImmutableSet.copyOf(type);
 		
 		 List<Boolean> found = query.accept(new QueryVisitor<Boolean>() {
 

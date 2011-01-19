@@ -9,8 +9,8 @@ public class ClipTranslator implements ModelTranslator<Clip> {
    
 	private final ItemTranslator itemTranslator;
 	
-	public ClipTranslator(boolean includeId) {
-		itemTranslator = new ItemTranslator(new ContentTranslator(new DescriptionTranslator(includeId), this));
+	public ClipTranslator() {
+		itemTranslator = new ItemTranslator(new ContentTranslator(new DescribedTranslator(new DescriptionTranslator(false)), this));
 	}
     
     @Override
@@ -19,7 +19,7 @@ public class ClipTranslator implements ModelTranslator<Clip> {
             clip = new Clip();
         }
         itemTranslator.fromDBObject(dbObject, clip);
-        clip.setClipOf((String)dbObject.get("clipOfUri"));
+        clip.setClipOf((String) dbObject.get("clipOfUri"));
         return clip;
     }
 
@@ -32,5 +32,4 @@ public class ClipTranslator implements ModelTranslator<Clip> {
         
         return dbObject;
     }
-
 }

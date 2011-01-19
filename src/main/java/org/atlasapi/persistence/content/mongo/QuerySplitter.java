@@ -27,22 +27,22 @@ import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
 import org.atlasapi.content.criteria.QueryVisitor;
 import org.atlasapi.content.criteria.StringAttributeQuery;
-import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.Identified;
 
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 
 public class QuerySplitter {
 
-	public Maybe<ContentQuery> retain(ContentQuery query,  Set<Class<? extends Description>> allowedTypes) {
+	public Maybe<ContentQuery> retain(ContentQuery query,  Set<Class<? extends Identified>> allowedTypes) {
 		return split(query, allowedTypes, true);
 	}
 	
-	public Maybe<ContentQuery> discard(ContentQuery query, Set<Class<? extends Description>> allowedTypes) {
+	public Maybe<ContentQuery> discard(ContentQuery query, Set<Class<? extends Identified>> allowedTypes) {
 		return split(query, allowedTypes, false);
 	}
 	
-	private Maybe<ContentQuery> split(ContentQuery query, final Set<Class<? extends Description>> allowedTypes, final boolean retain) {
+	private Maybe<ContentQuery> split(ContentQuery query, final Set<Class<? extends Identified>> allowedTypes, final boolean retain) {
 		
 		List<Maybe<AtomicQuery>> extracted = query.accept(new QueryVisitor<Maybe<AtomicQuery>>() {
 

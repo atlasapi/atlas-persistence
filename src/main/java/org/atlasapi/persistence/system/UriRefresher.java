@@ -4,9 +4,9 @@ import java.util.Collections;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.servlet.ContentNotFoundException;
 import org.springframework.beans.factory.annotation.Required;
@@ -79,13 +79,14 @@ public class UriRefresher implements Runnable  {
 	}
 	
 	 private void createOrUpdateContent(Content root, boolean markMissingItemsAsUnavailable) {
-	        if (root instanceof Playlist) {
-	        	contentStore.createOrUpdatePlaylist((Playlist) root, markMissingItemsAsUnavailable);
-	        }
-	        if (root instanceof Item) {
-	        	contentStore.createOrUpdateItem((Item) root);
-	        }
-	    }
+        if (root instanceof Container<?>) {
+        	contentStore.createOrUpdate((Container<?>) root, markMissingItemsAsUnavailable);
+        } else if (root instanceof Item) {
+        	contentStore.createOrUpdate((Item) root);
+        } else {
+        	throw new IllegalArgumentException("Cannot refresh  " + root.getCanonicalUri() + " because it is not an item or a container");
+        }
+    }
 	
 	@Required
 	public void setFetcher(Fetcher<Content> fetcher) {

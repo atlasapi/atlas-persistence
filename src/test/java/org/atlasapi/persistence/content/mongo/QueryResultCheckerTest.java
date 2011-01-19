@@ -15,7 +15,6 @@ permissions and limitations under the License. */
 package org.atlasapi.persistence.content.mongo;
 
 import static org.atlasapi.content.criteria.ContentQueryBuilder.query;
-import static org.atlasapi.content.criteria.attribute.Attributes.BRAND_TITLE;
 import static org.atlasapi.content.criteria.attribute.Attributes.ENCODING_DATA_CONTAINER_FORMAT;
 import static org.atlasapi.content.criteria.attribute.Attributes.LOCATION_AVAILABLE;
 import static org.atlasapi.content.criteria.attribute.Attributes.LOCATION_TRANSPORT_TYPE;
@@ -23,9 +22,12 @@ import static org.atlasapi.content.criteria.attribute.Attributes.VERSION_DURATIO
 import static org.junit.Assert.assertEquals;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.atlasapi.content.criteria.ContentQuery;
+import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.media.TransportType;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
@@ -35,6 +37,7 @@ import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.media.MimeType;
 
@@ -76,7 +79,7 @@ public class QueryResultCheckerTest {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trimItems(Collections.singletonList(item), query().equalTo(BRAND_TITLE, "test").build(), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(Attributes.DESCRIPTION_TITLE, "test").build(), true);
 		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 	}
 	
@@ -87,11 +90,30 @@ public class QueryResultCheckerTest {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trimItems(Collections.singletonList(item), query().equalTo(VERSION_DURATION, 10).build(), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(VERSION_DURATION, 10).build(), true);
 		
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	
-		assertEquals(Collections.emptyList(), trimmer.trimItems(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.VIDEO_XMATROSKA).build(), true));
+		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.VIDEO_XMATROSKA).build(), true));
+	}
+	
+	@Test
+	public void testTrimmingContainers() throws Exception {
+		Item item = new Item();
+		
+		item.addVersion(shortVersion);
+		item.addVersion(longVersion);
+		
+		Container<Item> container = new Container<Item>();
+		container.setContents(item);
+		
+		List<Container<Item>> found = trimmer.trim(Collections.singletonList(container), query().equalTo(VERSION_DURATION, 10).build(), true);
+		
+		assertEquals(ImmutableList.of(container), found);
+		
+		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
+		
+		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item), query().equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.VIDEO_XMATROSKA).build(), true));
 	}
 	
 	@Test
@@ -105,11 +127,11 @@ public class QueryResultCheckerTest {
 		item.addVersion(longVersion);
 
 		// should match both
-		trimmer.trimItems(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true, false).build(), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true, false).build(), true);
 		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 		
 		// should match one
-		trimmer.trimItems(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true).build(), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_AVAILABLE, true).build(), true);
 		assertEquals(Sets.newHashSet(shortVersion), item.getVersions());
 	
 	}
@@ -124,7 +146,7 @@ public class QueryResultCheckerTest {
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		trimmer.trimItems(Collections.singletonList(item), query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM).build(), true);
+		trimmer.trim(Collections.singletonList(item), query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM).build(), true);
 		assertEquals(Sets.newHashSet(longVersion), item.getVersions());
 	}
 	
@@ -142,8 +164,8 @@ public class QueryResultCheckerTest {
 		item1.addVersion(longVersion);
 		
 		ContentQuery query = query().equalTo(LOCATION_AVAILABLE, true).equalTo(ENCODING_DATA_CONTAINER_FORMAT, MimeType.TEXT_HTML).build();
-		assertEquals(Collections.emptyList(), trimmer.trimItems(Collections.singletonList(item1), query, true));
-		assertEquals(Collections.singletonList(item1), trimmer.trimItems(Collections.singletonList(item1), query, false));
+		assertEquals(Collections.emptyList(), trimmer.trim(Collections.singletonList(item1), query, true));
+		assertEquals(Collections.singletonList(item1), trimmer.trim(Collections.singletonList(item1), query, false));
 	}
 
 	private Encoding encodingWithLocation(Location location) {

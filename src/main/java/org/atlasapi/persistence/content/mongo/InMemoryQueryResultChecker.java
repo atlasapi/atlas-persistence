@@ -38,15 +38,14 @@ import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
 import org.atlasapi.content.criteria.operator.Operators.Search;
-import org.atlasapi.media.entity.Description;
-import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Identified;
 import org.joda.time.DateTime;
 
 class InMemoryQueryResultChecker  {
 
-	private final Description target;
+	private final Identified target;
 
-	public InMemoryQueryResultChecker(Description target) {
+	public InMemoryQueryResultChecker(Identified target) {
 		this.target = target;
 	}
 	
@@ -240,9 +239,6 @@ class InMemoryQueryResultChecker  {
 			}
 
 			private boolean shouldApplyTo(AttributeQuery<?> query) {
-				if (query.getAttribute().target().equals(Playlist.class)) {
-					return query.getAttribute().target().equals(target.getClass());
-				}
 				return target.getClass().isAssignableFrom(query.getAttribute().target()) || query.getAttribute().target().isAssignableFrom(target.getClass());
 			}
 			

@@ -18,30 +18,30 @@ import static org.atlasapi.content.criteria.ContentQueryBuilder.query;
 import static org.atlasapi.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_END_TIME;
 import static org.atlasapi.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_TIME;
 import static org.atlasapi.content.criteria.attribute.Attributes.EPISODE_POSITION;
-import static org.atlasapi.content.criteria.attribute.Attributes.ITEM_GENRE;
-import static org.atlasapi.content.criteria.attribute.Attributes.ITEM_PUBLISHER;
-import static org.atlasapi.content.criteria.attribute.Attributes.ITEM_TITLE;
 import static org.atlasapi.content.criteria.attribute.Attributes.LOCATION_TRANSPORT_TYPE;
 import static org.atlasapi.content.criteria.attribute.Attributes.VERSION_DURATION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.ContentQueryBuilder;
 import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.ContentGroup;
+import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.testing.DummyContentData;
@@ -70,203 +70,112 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
     	store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyTestDatabase());
     	queryExecutor = new MongoDBQueryExecutor(new MongoRoughSearch(store));
     	
-    	store.createOrUpdatePlaylist(data.eastenders, true);
-    	store.createOrUpdatePlaylist(data.apprentice, true);
-    	store.createOrUpdatePlaylist(data.newsNight, true);
-    	store.createOrUpdatePlaylist(data.ER, true);
+    	store.createOrUpdate(data.eastenders, true);
+    	store.createOrUpdate(data.apprentice, true);
+    	store.createOrUpdate(data.newsNight, true);
+    	store.createOrUpdate(data.ER, true);
     	
-    	store.createOrUpdateItem(data.englishForCats);
-    	store.createOrUpdateItem(data.eggsForBreakfast);
-    	store.createOrUpdateItem(data.everyoneNeedsAnEel);
+    	store.createOrUpdate(data.englishForCats);
+    	store.createOrUpdate(data.eggsForBreakfast);
+    	store.createOrUpdate(data.everyoneNeedsAnEel);
     	
-    	store.createOrUpdatePlaylist(data.goodEastendersEpisodes, false);
-    	store.createOrUpdatePlaylist(data.mentionedOnTwitter, false);
+    	store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+    	store.createOrUpdateSkeleton(data.mentionedOnTwitter);
     }
 
-    public void testFindingItemsByUri() throws Exception {
-		checkItemQuery(query().equalTo(Attributes.ITEM_URI, data.englishForCats.getCanonicalUri()), data.englishForCats);
-		
-		// NewsNight is not an item, so this query should match no items
-		checkItemQueryMatchesNothing(query().equalTo(Attributes.ITEM_URI, data.newsNight.getCanonicalUri()));
-		
-		// check an alias
-		checkItemQuery(query().equalTo(Attributes.ITEM_URI, "http://dot.cotton"), data.dotCottonsBigAdventure);
+    public void testFindingContentByUri() throws Exception {
+    	assertEquals(ImmutableList.of(data.englishForCats), queryExecutor.executeUriQuery(ImmutableList.of(data.englishForCats.getCanonicalUri()), ContentQuery.MATCHES_EVERYTHING));
+    	assertEquals(ImmutableList.of(data.dotCottonsBigAdventure), queryExecutor.executeUriQuery(ImmutableList.of(data.dotCottonsBigAdventure.getCanonicalUri()), ContentQuery.MATCHES_EVERYTHING));
+    	assertEquals(ImmutableList.of(data.dotCottonsBigAdventure), queryExecutor.executeUriQuery(ImmutableList.of("http://dot.cotton"), ContentQuery.MATCHES_EVERYTHING));
+    	assertEquals(ImmutableList.of(data.eastenders), queryExecutor.executeUriQuery(ImmutableList.of(data.eastenders.getCanonicalUri()), ContentQuery.MATCHES_EVERYTHING));
 	}
     
     public void testThatIfAnItemIsFoundItIsNotFilteredOut() throws Exception {
-		ContentQueryBuilder matchesNoSubElements = query().equalTo(Attributes.ITEM_URI, data.englishForCats.getCanonicalUri()).equalTo(Attributes.LOCATION_URI, "nothing here");
-		Item item = Iterables.getOnlyElement(queryExecutor.executeItemQuery(matchesNoSubElements.build()));
+		ContentQueryBuilder matchesNoSubElements = query().equalTo(Attributes.VERSION_DURATION, 100);
+		
+    	List<Identified> found = queryExecutor.executeUriQuery(ImmutableList.of(data.englishForCats.getCanonicalUri()), matchesNoSubElements.build());
+    	Item item = (Item) Iterables.getOnlyElement(found);
+    	
+    	assertEquals(data.englishForCats, item);
 		assertThat(item.getCanonicalUri(), is(data.englishForCats.getCanonicalUri()));
 		assertThat(item.getVersions(), is(Collections.<Version>emptySet()));
 	}
-	
-	public void testFindingBrandsByUri() throws Exception {
-		checkBrandQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCanonicalUri()), data.eastenders);
 
-		// Eastenders is not an item
-		checkBrandQueryMatchesNothing(query().equalTo(Attributes.ITEM_URI, data.eastenders.getCanonicalUri()));
-
-		// Eastenders shoudn't be treated like a playlist
-		checkBrandQueryMatchesNothing(query().equalTo(Attributes.PLAYLIST_URI, data.eastenders.getCanonicalUri()));
-	
-		// check an alias
-		checkBrandQuery(query().equalTo(Attributes.BRAND_URI, "http://eastenders.bbc"), data.eastenders);
-	}
-	
 	public void testFindingMultipleBrandsByUriReturnsTheResultsInTheRightOrder() throws Exception {
+    	List<Identified> brands = queryExecutor.executeUriQuery(ImmutableList.of(data.eastenders.getCanonicalUri(), data.apprentice.getCanonicalUri()), ContentQuery.MATCHES_EVERYTHING);
+		assertEquals(ImmutableList.of(data.eastenders, data.apprentice), brands);
 		
-		List<Brand> brands = queryExecutor.executeBrandQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCanonicalUri(), data.apprentice.getCanonicalUri()).build());
-		
-		assertThat(brands, is(Arrays.asList(data.eastenders, data.apprentice)));
-		
-		brands = queryExecutor.executeBrandQuery(query().equalTo(Attributes.BRAND_URI, data.apprentice.getCanonicalUri(), data.eastenders.getCanonicalUri()).build());
-		assertThat(brands, is(Arrays.asList(data.apprentice, data.eastenders)));
-
-		
-	}
-	
-	public void testFindingBrandsItemsWithinThem() throws Exception {
-		checkBrandQuery(query().equalTo(Attributes.ITEM_URI, data.dotCottonsBigAdventure.getCanonicalUri()), data.eastenders);
+		brands = queryExecutor.executeUriQuery(ImmutableList.of(data.apprentice.getCanonicalUri(), data.eastenders.getCanonicalUri()), ContentQuery.MATCHES_EVERYTHING);
+		assertEquals(ImmutableList.of(data.apprentice, data.eastenders), brands);
 	}
 	
 	public void testSelections() throws Exception {
-		checkBrandQuery(query().equalTo(Attributes.BRAND_PUBLISHER, Publisher.BBC).withSelection(new Selection(0, 3)), data.eastenders, data.apprentice, data.newsNight);
-		checkBrandQuery(query().equalTo(Attributes.BRAND_PUBLISHER, Publisher.BBC).withSelection(new Selection(1, 3)), data.apprentice, data.newsNight);
-		checkBrandQuery(query().equalTo(Attributes.BRAND_PUBLISHER, Publisher.BBC).withSelection(new Selection(0, 1)), data.eastenders);
-		checkBrandQuery(query().equalTo(Attributes.BRAND_PUBLISHER, Publisher.BBC).withSelection(new Selection(1, 2)), data.apprentice, data.newsNight);
-
-		checkItemQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCanonicalUri()).withSelection(new Selection(0, 1)), data.dotCottonsBigAdventure);
-		checkBrandQuery(query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCanonicalUri()).withSelection(new Selection(0, 1)), data.eastenders);
-	}
-	
-	public void testThatIfAnBrandIsFoundByUriOrCurieItIsNotFilteredOut() throws Exception {
-		ContentQueryBuilder matchesNoSubElements = query().equalTo(Attributes.BRAND_URI, data.eastenders.getCanonicalUri()).equalTo(Attributes.LOCATION_URI, "nothing here");
-		Brand brand = Iterables.getOnlyElement(queryExecutor.executeBrandQuery(matchesNoSubElements.build()));
-		assertThat(brand.getCanonicalUri(), is(data.eastenders.getCanonicalUri()));
-		assertThat(brand.getItems(), is(Collections.<Item>emptyList()));
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(0, 3)), data.eastenders, data.apprentice, data.newsNight);
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(1, 3)), data.apprentice, data.newsNight);
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(0, 1)), data.eastenders);
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(1, 2)), data.apprentice, data.newsNight);
 	}
 	
 	public void testFindingPlaylistsByUri() throws Exception {
-
-		ContentQueryBuilder playlistByUri = query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCanonicalUri());
-		Playlist found = Iterables.getOnlyElement(queryExecutor.executePlaylistQuery(playlistByUri.build()));
+		
+		ContentGroup found = (ContentGroup) Iterables.getOnlyElement(queryExecutor.executeUriQuery(ImmutableList.of(data.mentionedOnTwitter.getCanonicalUri()), ContentQuery.MATCHES_EVERYTHING));
 		assertThat(found.getCanonicalUri(), is(data.mentionedOnTwitter.getCanonicalUri()));
-		assertThat(found.getItems(), is(Arrays.asList(data.englishForCats, data.eggsForBreakfast)));
-		assertThat(found.getPlaylists(), is(Arrays.<Playlist>asList(data.eastenders, data.newsNight)));
-		assertThat(Iterables.get(found.getPlaylists(), 0).getItems(), is(Arrays.<Item>asList(data.dotCottonsBigAdventure, data.peggySlapsFrank)));
-		assertThat(Iterables.get(found.getPlaylists(), 1).getItems(), is(Arrays.<Item>asList(data.interviewWithMp)));
-
+		
+		assertThat(found.getContents(), is(ImmutableList.of(data.englishForCats, data.eggsForBreakfast, data.eastenders, data.newsNight)));
+		
+		assertThat(((Brand) Iterables.get(found.getContents(), 2)).getContents(), is(Arrays.<Episode>asList(data.dotCottonsBigAdventure, data.peggySlapsFrank)));
+		assertThat(((Brand) Iterables.get(found.getContents(), 3)).getContents(), is(Arrays.<Episode>asList(data.interviewWithMp)));
+		
 		// check that when a playlist is mentioned by uri and sub-query (e.g. item.publisher) doesn't match the playlist is still returned but with empty sublists
-		ContentQueryBuilder matchesNoSubElements = query().equalTo(Attributes.PLAYLIST_URI, data.goodEastendersEpisodes.getCanonicalUri()).equalTo(Attributes.ITEM_PUBLISHER, Publisher.TVBLOB);
-		Playlist emptyPlaylist = Iterables.getOnlyElement(queryExecutor.executePlaylistQuery(matchesNoSubElements.build()));
+		ContentGroup emptyPlaylist = (ContentGroup) Iterables.getOnlyElement(queryExecutor.executeUriQuery(ImmutableList.of(data.goodEastendersEpisodes.getCanonicalUri()), query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.TVBLOB).build()));
 		assertThat(emptyPlaylist.getCanonicalUri(), is(data.goodEastendersEpisodes.getCanonicalUri()));
-		assertThat(emptyPlaylist.getItems(), is(Collections.<Item>emptyList()));
-		assertThat(emptyPlaylist.getPlaylists(), is(Collections.<Playlist>emptyList()));
-	}
-	
-	
-//	public void testFilteringPlaylistsSubItems() throws Exception {
-//		ContentQueryBuilder query = query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCanonicalUri()).equalTo(Attributes.ITEM_IS_LONG_FORM, true);
-//		Playlist found = Iterables.getOnlyElement(queryExecutor.executePlaylistQuery(query.build()));
-//		assertThat(found.getCanonicalUri(), is(data.mentionedOnTwitter.getCanonicalUri()));
-//		assertThat(found.getItems(), is(Arrays.asList(data.englishForCats)));
-//		assertThat(found.getPlaylists(), is(Arrays.<Playlist>asList(data.eastenders, data.newsNight)));
-//		
-//		
-//		query = query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCanonicalUri()).equalTo(Attributes.ITEM_URI, data.englishForCats.getCanonicalUri()).equalTo(Attributes.LOCATION_URI, "made up uri");
-//		found = Iterables.getOnlyElement(queryExecutor.executePlaylistQuery(query.build()));
-//		assertThat(found.getCanonicalUri(), is(data.mentionedOnTwitter.getCanonicalUri()));
-//		Item item = Iterables.getOnlyElement(found.getItems());
-//		assertThat(item.getVersions(), is(Collections.<Version>emptySet()));
-//		assertThat(found.getPlaylists(), is(Collections.<Playlist>emptyList()));
-//	}
-	
-	/**
-	 * {@link Playlist}s may contain brands that may contain items.  Item filters should be 
-	 * applied to the items in the brands.  
-	 */
-	public void testFilteringAPlaylistsSubBrands() throws Exception {
-		ContentQueryBuilder query = query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCanonicalUri()).equalTo(Attributes.ITEM_URI, data.dotCottonsBigAdventure.getCanonicalUri());
-		Playlist found = Iterables.getOnlyElement(queryExecutor.executePlaylistQuery(query.build()));
-		assertThat(found.getCanonicalUri(), is(data.mentionedOnTwitter.getCanonicalUri()));
-		assertThat(found.getItems(), is(Arrays.<Item>asList()));
-
-		// 1) Newsnight should have been filtered since it does not contain 'dotCottonsBigAdventure'
-		// 2) Eastenders be present but should only contain one item: 'dotCottonsBigAdventure'
-		Brand eastenders = (Brand) Iterables.getOnlyElement(found.getPlaylists());
-		assertThat(eastenders.getCanonicalUri(), is(data.eastenders.getCanonicalUri()));
-		assertThat(Iterables.getOnlyElement(eastenders.getItems()).getCanonicalUri(), is(data.dotCottonsBigAdventure.getCanonicalUri()));
+		assertThat(emptyPlaylist.getContents(), is(Collections.<Content>emptyList()));
 	}
 	
 	public void testFindingItemsByCurie() throws Exception {
-		checkItemQuery(query().equalTo(Attributes.ITEM_URI, data.englishForCats.getCurie()), data.englishForCats);
-	}
-	
-	public void testBrandTitleStartsWith() throws Exception {
-		checkBrandQuery(query().beginning(Attributes.BRAND_TITLE, "e"), data.eastenders, data.ER);
+    	assertEquals(ImmutableList.of(data.englishForCats), queryExecutor.executeUriQuery(ImmutableList.of(data.englishForCats.getCurie()), ContentQuery.MATCHES_EVERYTHING));
 	}
 	
 	public void testFindingBrandsByCurie() throws Exception {
-		checkBrandQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCurie()), data.eastenders);
-	}
-	
-	public void testFindingItemsInABrand() throws Exception {
-		checkItemQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCanonicalUri()), data.peggySlapsFrank, data.dotCottonsBigAdventure);
-		checkItemQuery(query().equalTo(Attributes.BRAND_URI, data.eastenders.getCurie()), data.peggySlapsFrank, data.dotCottonsBigAdventure);
-	}
-	
-	public void testFindingBrandsInAPlaylist() throws Exception {
-		checkBrandQuery(query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCanonicalUri()), data.eastenders, data.newsNight);
-		checkBrandQuery(query().equalTo(Attributes.PLAYLIST_URI, data.mentionedOnTwitter.getCurie()), data.eastenders, data.newsNight);
-	}
-	
-	public void testFindingItemsInAPlaylist() throws Exception {
-		checkItemQuery(query().equalTo(Attributes.PLAYLIST_URI, data.goodEastendersEpisodes.getCanonicalUri()), data.dotCottonsBigAdventure);
-		checkItemQuery(query().equalTo(Attributes.PLAYLIST_URI, data.goodEastendersEpisodes.getCurie()), data.dotCottonsBigAdventure);
+    	assertEquals(ImmutableList.of(data.eastenders), queryExecutor.executeUriQuery(ImmutableList.of(data.eastenders.getCurie()), ContentQuery.MATCHES_EVERYTHING));
 	}
 	
 	public void testFindingAvailableItems() throws Exception {
-		checkItemQuery(query().equalTo(Attributes.LOCATION_AVAILABLE, true), data.brainSurgery, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.peggySlapsFrank, data.dotCottonsBigAdventure, data.sellingStuff);
+		checkDiscover(query().equalTo(Attributes.LOCATION_AVAILABLE, true), data.brainSurgery, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.eastenders, data.eastenders);
 	}
 	
-	public void testFindingAvailableAndLongFromItems() throws Exception {
-		checkItemQuery(query().equalTo(Attributes.LOCATION_AVAILABLE, true).equalTo(Attributes.ITEM_IS_LONG_FORM, true), data.englishForCats, data.dotCottonsBigAdventure, data.peggySlapsFrank, data.interviewWithMp);
+	public void testFindingAvailableAndLongFormContent() throws Exception {
+		checkDiscover(query().equalTo(Attributes.LOCATION_AVAILABLE, true).equalTo(Attributes.ITEM_IS_LONG_FORM, true), data.englishForCats, data.dotCottonsBigAdventure, data.peggySlapsFrank, data.interviewWithMp);
 	}
 
-	public void testItemPublisherEqualsForItems() throws Exception {
-		checkItemQuery(query().equalTo(ITEM_PUBLISHER, Publisher.YOUTUBE), data.englishForCats, data.eggsForBreakfast);
+	public void testItemPublisherEquality() throws Exception {
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.YOUTUBE), data.englishForCats, data.eggsForBreakfast);
 		
-		checkItemQuery(query().equalTo(ITEM_PUBLISHER, Publisher.YOUTUBE), data.englishForCats, data.eggsForBreakfast); 
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.YOUTUBE), data.englishForCats, data.eggsForBreakfast); 
 
-		checkItemQuery(query().isAnEnumIn(ITEM_PUBLISHER, ImmutableList.<Enum<Publisher>>of(Publisher.C4, Publisher.YOUTUBE)), data.englishForCats, data.eggsForBreakfast,  data.brainSurgery);
+		checkDiscover(query().isAnEnumIn(Attributes.DESCRIPTION_PUBLISHER, ImmutableList.<Enum<Publisher>>of(Publisher.C4, Publisher.YOUTUBE)), data.englishForCats, data.eggsForBreakfast,  data.ER);
 	}
 	
 	
 	public void testEpisodeNumberForItems() throws Exception {
-		checkItemQuery(query().equalTo(EPISODE_POSITION, 2), data.peggySlapsFrank);
+		checkDiscover(query().equalTo(EPISODE_POSITION, 2), data.peggySlapsFrank);
 		
-		checkItemQuery(query().lessThan(EPISODE_POSITION, 2), data.dotCottonsBigAdventure);
-	}
-	
-	public void testTitleEqualsForItems() throws Exception {
-		checkItemQuery(query().equalTo(ITEM_TITLE, "English for Cats"), data.englishForCats);
+		checkDiscover(query().lessThan(EPISODE_POSITION, 2), data.dotCottonsBigAdventure);
 	}
 	
 	public void testTransportTypeEqualsForItems() throws Exception {
-		checkItemQuery(query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM), data.dotCottonsBigAdventure, data.peggySlapsFrank);
+		checkDiscover(query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM), data.dotCottonsBigAdventure, data.peggySlapsFrank);
 	}
 		
 	public void testGenreEqualsForItems() throws Exception {
-		checkItemQuery(query().equalTo(ITEM_GENRE, "http://ref.atlasapi.org/genres/atlas/drama"),  data.englishForCats, data.dotCottonsBigAdventure, data.peggySlapsFrank);
-		
-		checkItemQuery(query().equalTo(ITEM_GENRE, "eels"),  data.everyoneNeedsAnEel);
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_GENRE, "http://ref.atlasapi.org/genres/atlas/drama"),  data.englishForCats, data.eastenders);
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_GENRE, "eels"),  data.everyoneNeedsAnEel);
 	}
-	
 
 	public void testDurationGreaterThanForItems() throws Exception {
-		checkItemQuery(query().greaterThan(VERSION_DURATION, 20),   data.dotCottonsBigAdventure, data.peggySlapsFrank, data.interviewWithMp);
+		checkDiscover(query().greaterThan(VERSION_DURATION, 20),   data.dotCottonsBigAdventure, data.peggySlapsFrank, data.interviewWithMp);
 		
-		checkItemQuery(query().greaterThan(VERSION_DURATION, 30), data.interviewWithMp);
+		checkDiscover(query().greaterThan(VERSION_DURATION, 30), data.interviewWithMp);
 	}
 	
 	public void testTransmittedNowForItems() throws Exception {
@@ -279,13 +188,12 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		Item halfHourShowStartingAt11Am = new Item("item2", "curie:item2", Publisher.BBC);
 		halfHourShowStartingAt11Am.addVersion(versionWithBroadcast(tenAm.plusMinutes(30), Duration.standardMinutes(30), "channel"));
 		
-		store.createOrUpdateItem(halfHourShowStartingAt10Am);
-		store.createOrUpdateItem(halfHourShowStartingAt11Am);
+		store.createOrUpdate(halfHourShowStartingAt10Am);
+		store.createOrUpdate(halfHourShowStartingAt11Am);
 		
-		checkItemQuery(transmissionTimeQuery(tenAm), halfHourShowStartingAt10Am);
-		checkItemQuery(transmissionTimeQuery(tenAm.plusMinutes(25)), halfHourShowStartingAt10Am);
-		checkItemQuery(transmissionTimeQuery(tenAm.plusMinutes(30)), halfHourShowStartingAt11Am);
-		
+		checkDiscover(transmissionTimeQuery(tenAm), halfHourShowStartingAt10Am);
+		checkDiscover(transmissionTimeQuery(tenAm.plusMinutes(25)), halfHourShowStartingAt10Am);
+		checkDiscover(transmissionTimeQuery(tenAm.plusMinutes(30)), halfHourShowStartingAt11Am);
 	}
 	
 	public void testMultiLevelQuery() throws Exception {
@@ -299,12 +207,12 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		showStartingAt10Am.addVersion(version1);
 		showStartingAt10Am.addVersion(version2);
 		
-		store.createOrUpdateItem(showStartingAt10Am);
+		store.createOrUpdate(showStartingAt10Am);
 		
-		checkItemQuery(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(30).getStandardSeconds()), showStartingAt10Am);
-		checkItemQuery(query().equalTo(Attributes.BROADCAST_ON, "c2").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()), showStartingAt10Am);
+		checkDiscover(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(30).getStandardSeconds()), showStartingAt10Am);
+		checkDiscover(query().equalTo(Attributes.BROADCAST_ON, "c2").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()), showStartingAt10Am);
 		
-		checkItemQueryMatchesNothing(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()));
+		checkDiscoverMatchesNothing(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()));
 		
 	}
 
@@ -320,38 +228,35 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	}
 	
 	public void testTransmittedBeforeForItems() throws Exception {
-		checkItemQueryMatchesNothing(query().before(BROADCAST_TRANSMISSION_TIME, DummyContentData.april22nd1930));
+		checkDiscoverMatchesNothing(query().before(BROADCAST_TRANSMISSION_TIME, DummyContentData.april22nd1930));
 		
-		checkItemQuery(query().before(BROADCAST_TRANSMISSION_TIME, DummyContentData.april23rd), data.dotCottonsBigAdventure);
+		List<Content> found = queryExecutor.discover(query().before(BROADCAST_TRANSMISSION_TIME, DummyContentData.april23rd).build());
+		
+		Container<?> container = (Container<?>) Iterables.getOnlyElement(found);
+		
+		assertEquals(data.eastenders, container);
+		assertEquals(ImmutableList.of(data.dotCottonsBigAdventure), container.getContents());
 	}
 	
 	public void testTransmittedAfterForItems() throws Exception {
 		ContentQueryBuilder query = query().after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april22nd1930); 
-		checkItemQuery(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.peggySlapsFrank, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
+		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.peggySlapsFrank, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
 		
 		query = query().after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april23rd); 
-		checkItemQuery(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
+		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
 	}
 	
-	private void checkItemQueryMatchesNothing(ContentQueryBuilder query) {
-		checkItemQuery(query);
-	}
-	
-	private void checkBrandQueryMatchesNothing(ContentQueryBuilder query) {
-		checkBrandQuery(query);
+	private void checkDiscoverMatchesNothing(ContentQueryBuilder query) {
+		checkDiscover(query);
 	}
 
-	private void checkItemQuery(ContentQueryBuilder query, Item... content) {
-		assertThat(toUris(queryExecutor.executeItemQuery(query.build())), is(toUris(Arrays.asList(content))));
-	}
-	
-	private void checkBrandQuery(ContentQueryBuilder query, Brand... content) {
-		assertThat(toUris(queryExecutor.executeBrandQuery(query.build())), is(toUris(Arrays.asList(content))));
+	private void checkDiscover(ContentQueryBuilder query, Content... content) {
+		assertThat(toUris(queryExecutor.discover(query.build())), is(toUris(Arrays.asList(content))));
 	}
 
-	private Set<String> toUris(Collection<? extends Description> content) {
+	private Set<String> toUris(Iterable<? extends Identified> content) {
 		Set<String> uris = Sets.newHashSet();
-		for (Description description : content) {
+		for (Identified description : content) {
 			uris.add(description.getCanonicalUri());
 		}
 		return uris;

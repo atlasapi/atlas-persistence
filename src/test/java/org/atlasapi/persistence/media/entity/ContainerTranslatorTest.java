@@ -6,15 +6,16 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
-public class BrandTranslatorTest extends TestCase {
+public class ContainerTranslatorTest extends TestCase {
 
-	BrandTranslator bt = new BrandTranslator();
+	ContainerTranslator bt = new ContainerTranslator(true);
     
     @SuppressWarnings("unchecked")
     public void testFromBrand() throws Exception {
@@ -46,7 +47,7 @@ public class BrandTranslatorTest extends TestCase {
         
         DBObject obj = bt.toDBObject(null, brand);
         
-        Brand b = bt.fromDBObject(obj, null);
+        Container<?> b = bt.fromDBObject(obj, null);
         assertEquals(brand.getCanonicalUri(), b.getCanonicalUri());
         assertEquals(brand.getFirstSeen(), b.getFirstSeen());
         assertEquals(brand.getLastFetched(), b.getLastFetched());

@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.content;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -12,9 +11,10 @@ import javax.annotation.PreDestroy;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 public class QueueingContentListener implements ContentListener {
@@ -23,7 +23,7 @@ public class QueueingContentListener implements ContentListener {
 
     private final ContentListener delegate;
 
-    private final BlockingQueue<Brand> brandQueue = new LinkedBlockingQueue<Brand>();
+    private final BlockingQueue<Container<?>> brandQueue = new LinkedBlockingQueue<Container<?>>();
     private final BlockingQueue<Item> itemQueue = new LinkedBlockingQueue<Item>();
 
     private final ScheduledExecutorService executor;
@@ -43,20 +43,20 @@ public class QueueingContentListener implements ContentListener {
     }
 
     @Override
-    public void brandChanged(Collection<Brand> brands, changeType changeType) {
-        if (changeType == ContentListener.changeType.BOOTSTRAP) {
+    public void brandChanged(Iterable<? extends Container<?>> brands, ChangeType changeType) {
+        if (changeType == ContentListener.ChangeType.BOOTSTRAP) {
             delegate.brandChanged(brands, changeType);
         } else {
-            brandQueue.addAll(brands);
+        	Iterables.addAll(brandQueue, brands);
         }
     }
 
     @Override
-    public void itemChanged(Collection<Item> items, changeType changeType) {
-        if (changeType == ContentListener.changeType.BOOTSTRAP) {
+    public void itemChanged(Iterable<? extends Item> items, ChangeType changeType) {
+        if (changeType == ContentListener.ChangeType.BOOTSTRAP) {
             delegate.itemChanged(items, changeType);
         } else {
-            itemQueue.addAll(items);
+        	Iterables.addAll(itemQueue, items);
         }
     }
 
@@ -64,7 +64,7 @@ public class QueueingContentListener implements ContentListener {
         @Override
         public void run() {
             try {
-                List<Brand> brands = Lists.newArrayList();
+                List<Container<?>> brands = Lists.newArrayList();
                 brandQueue.drainTo(brands);
 
                 delegate.brandChanged(brands, null);

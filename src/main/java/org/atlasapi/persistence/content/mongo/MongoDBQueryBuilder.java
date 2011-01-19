@@ -24,9 +24,10 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
+
 
 import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
@@ -37,11 +38,11 @@ import org.atlasapi.content.criteria.MatchesNothing;
 import org.atlasapi.content.criteria.QueryVisitor;
 import org.atlasapi.content.criteria.StringAttributeQuery;
 import org.atlasapi.content.criteria.attribute.Attribute;
-import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.content.criteria.operator.BooleanOperatorVisitor;
 import org.atlasapi.content.criteria.operator.DateTimeOperatorVisitor;
 import org.atlasapi.content.criteria.operator.EnumOperatorVisitor;
 import org.atlasapi.content.criteria.operator.IntegerOperatorVisitor;
+import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.content.criteria.operator.Operators.After;
 import org.atlasapi.content.criteria.operator.Operators.Before;
 import org.atlasapi.content.criteria.operator.Operators.Beginning;
@@ -49,14 +50,13 @@ import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
 import org.atlasapi.content.criteria.operator.Operators.Search;
-import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
-import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.DateTime;
@@ -73,21 +73,9 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class MongoDBQueryBuilder {
+class MongoDBQueryBuilder {
 
-	public DBObject buildPlaylistQuery(ContentQuery query) {
-		return buildQuery(query, Playlist.class);
-	}
-	
-	public DBObject buildBrandQuery(ContentQuery query) {
-		return buildQuery(query, Brand.class);
-	}
-	
-	public DBObject buildItemQuery(ContentQuery query) {
-		return buildQuery(query, Item.class);
-	}
-
-	private DBObject buildQuery(ContentQuery query, final Class<? extends Description> queryType) {
+	DBObject buildQuery(ContentQuery query) {
 		
 		// handle attributes that are not part of a list structure
 		Multimap<List<String>, ConstrainedAttribute> attributeConstraints = HashMultimap.create();
@@ -95,7 +83,7 @@ public class MongoDBQueryBuilder {
 			if (constraint == null) {
 				continue;
 			}
-			attributeConstraints.put(entityPath(queryType, constraint.attribute), constraint);
+			attributeConstraints.put(entityPath(constraint.attribute), constraint);
 		}
 
 		// sort the keys by length so that versions are dealt with before broadcasts etc.
@@ -113,7 +101,7 @@ public class MongoDBQueryBuilder {
 			
 			if (entityPath.isEmpty()) {
 				for (ConstrainedAttribute constrainedAttribute : contraints) {
-					String fqn = fullyQualifiedPath(queryType, constrainedAttribute.attribute);
+					String fqn = fullyQualifiedPath(constrainedAttribute.attribute);
 					finalQuery.put(fqn, constrainedAttribute.queryOrValue());
 				}
 				continue;
@@ -136,7 +124,7 @@ public class MongoDBQueryBuilder {
 			
 			DBObject rhs = new BasicDBObject();
 			for (ConstrainedAttribute constrainedAttribute : contraints) {
-				String name = attributeName(queryType, constrainedAttribute.attribute);
+				String name = attributeName(constrainedAttribute.attribute);
 				if (rhs.containsField(name)) {
 					((DBObject) rhs.get(name)).putAll((DBObject) constrainedAttribute.queryOrValue());
 				} else {
@@ -145,11 +133,7 @@ public class MongoDBQueryBuilder {
 			}
 			String key = Joiner.on(".").join(entityPath.subList(parentPath.size(), entityPath.size()));
 			DBObject attrObj = new BasicDBObject(key, new BasicDBObject("$elemMatch",  rhs));
-//			if (!QueryConcernsTypeDecider.concernsVersionOrBelow(query)) {
-//				parentDbObject.putAll((DBObject)new BasicDBObject(MongoConstants.OR, ImmutableList.of(attrObj, new BasicDBObject(key,new BasicDBObject("size",0)))));
-//			} else {				
-				parentDbObject.putAll(attrObj);
-//			}
+			parentDbObject.putAll(attrObj);
 			queries.put(entityPath, rhs);
 		}
 
@@ -300,59 +284,47 @@ public class MongoDBQueryBuilder {
 		return list;
 	}
 	
-	private static String fullyQualifiedPath(Class<? extends Description> queryType, Attribute<?> attribute) {
-		String entityPath = entityPathAsString(queryType, attribute); 
-		return entityPath + (entityPath.length() > 0 ? "." : "") +  attributeName(queryType, attribute);
+	private static String fullyQualifiedPath(Attribute<?> attribute) {
+		String entityPath = entityPathAsString(attribute); 
+		return entityPath + (entityPath.length() > 0 ? "." : "") +  attributeName(attribute);
 	}
 
-	private static String entityPathAsString(Class<? extends Description> queryType, Attribute<?> attribute) {
-		return Joiner.on(".").join(entityPath(queryType, attribute));
+	private static String entityPathAsString(Attribute<?> attribute) {
+		return Joiner.on(".").join(entityPath(attribute));
 	}
 
-	private static String attributeName(Class<? extends Description> queryType, Attribute<?> attribute) {
-		if  (!Playlist.class.equals(queryType) && Attributes.PLAYLIST_URI.equals(attribute)) {
-			return "containedInUris";
-		}
-		if (Item.class.equals(queryType) && Attributes.ITEM_URI.equals(attribute)) {
-			return "aliases";
-		}
-		if (Playlist.class.isAssignableFrom(queryType) && Attributes.BRAND_URI.equals(attribute) || Attributes.PLAYLIST_URI.equals(attribute)) {
-			return "aliases";
-		}
+	private static String attributeName(Attribute<?> attribute) {
 		if (Policy.class.equals(attribute.target())) {
 			return "policy." + attribute.javaAttributeName();
 		}
-		
-		String brand = Brand.class.equals(attribute.target()) && Item.class.equals(queryType) ? "brand." : "";
-		
-		return brand + attribute.javaAttributeName() + ((attribute.isCollectionOfValues()  && !attribute.javaAttributeName().endsWith("s")) ? "s" : "");
+		return attribute.javaAttributeName() + ((attribute.isCollectionOfValues()  && !attribute.javaAttributeName().endsWith("s")) ? "s" : "");
 	}
 
-	private static List<String> entityPath(Class<? extends Description> queryType, Attribute<?> attribute) {
-		Class<? extends Description> entity = attribute.target();
+	private static List<String> entityPath(Attribute<?> attribute) {
+		Class<? extends Identified> entity = attribute.target();
 		if (Item.class.isAssignableFrom(entity)) {
-			return ImmutableList.of();
+			return ImmutableList.of("contents");
 		}
-		if (Playlist.class.equals(entity)) {
-			return ImmutableList.of();
-		}
-		if (Brand.class.equals(entity)) {
+		if (Container.class.equals(entity)) {
 			return ImmutableList.of();
 		}
 		if (Version.class.equals(entity)) {
-			return ImmutableList.of("versions");
+			return ImmutableList.of("contents", "versions");
 		}
 		if (Broadcast.class.equals(entity)) {
-			return ImmutableList.of("versions", "broadcasts");
+			return ImmutableList.of("contents", "versions", "broadcasts");
 		}
 		if (Encoding.class.equals(entity)) {
-			return ImmutableList.of("versions", "manifestedAs");
+			return ImmutableList.of("contents", "versions", "manifestedAs");
 		}
 		if (Location.class.equals(entity)) {
-			return ImmutableList.of("versions", "manifestedAs", "availableAt");
+			return ImmutableList.of("contents", "versions", "manifestedAs", "availableAt");
 		}
 		if (Policy.class.equals(entity)) {
-			return ImmutableList.of("versions", "manifestedAs", "availableAt");
+			return ImmutableList.of("contents", "versions", "manifestedAs", "availableAt");
+		}
+		if (Content.class.equals(entity)) {
+			return ImmutableList.of();
 		}
 		throw new UnsupportedOperationException();
 	}

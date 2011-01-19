@@ -2,8 +2,8 @@ package org.atlasapi.persistence.content.mongo;
 
 import java.util.List;
 
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.persistence.content.ContentListener;
 import org.atlasapi.persistence.content.RetrospectiveContentLister;
 import org.atlasapi.persistence.testing.DummyContentData;
@@ -32,12 +32,12 @@ public class MongoDbBackedContentListenerTest  {
         final List<Item> items = ImmutableList.of(data.eggsForBreakfast, data.englishForCats, data.everyoneNeedsAnEel);
         
         context.checking(new Expectations() {{
-            one(store).listAllItems(); will(returnValue(items.iterator()));
+            one(store).listAllRoots(); will(returnValue(items.iterator()));
         }});
         
         context.checking(new Expectations() {{
-            one(listener).itemChanged(ImmutableList.of(data.eggsForBreakfast, data.englishForCats), ContentListener.changeType.BOOTSTRAP);
-            one(listener).itemChanged(ImmutableList.of(data.everyoneNeedsAnEel), ContentListener.changeType.BOOTSTRAP);
+            one(listener).itemChanged(ImmutableList.of(data.eggsForBreakfast, data.englishForCats), ContentListener.ChangeType.BOOTSTRAP);
+            one(listener).itemChanged(ImmutableList.of(data.everyoneNeedsAnEel), ContentListener.ChangeType.BOOTSTRAP);
         }});
         
         bootstrapper.loadAllItems();
@@ -48,14 +48,14 @@ public class MongoDbBackedContentListenerTest  {
 
     	bootstrapper.setBatchSize(2);
         
-        final List<Playlist> playlists = ImmutableList.of(data.eastenders, data.goodEastendersEpisodes, data.dispatches);
+        final List<Brand> playlists = ImmutableList.of(data.eastenders, data.dispatches);
         
         context.checking(new Expectations() {{
-            one(store).listAllPlaylists(); will(returnValue(playlists.iterator()));
+            one(store).listAllRoots(); will(returnValue(playlists.iterator()));
         }});
         
         context.checking(new Expectations() {{
-            one(listener).brandChanged(ImmutableList.of(data.eastenders, data.dispatches), ContentListener.changeType.BOOTSTRAP);
+            one(listener).brandChanged(ImmutableList.of(data.eastenders, data.dispatches), ContentListener.ChangeType.BOOTSTRAP);
         }});
         
         bootstrapper.loadAllBrands();

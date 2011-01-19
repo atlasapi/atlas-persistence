@@ -73,9 +73,9 @@ public class QueueingContentListenerTest {
         items.add(new Item("uri", "curie", anyPublisher));
         
         context.checking(new Expectations() {{ 
-            one(delegate).itemChanged(items, ContentListener.changeType.BOOTSTRAP);
+            one(delegate).itemChanged(items, ContentListener.ChangeType.BOOTSTRAP);
         }});
         
-        contentListener.itemChanged(items, ContentListener.changeType.BOOTSTRAP);
+        contentListener.itemChanged(items, ContentListener.ChangeType.BOOTSTRAP);
     }
 }

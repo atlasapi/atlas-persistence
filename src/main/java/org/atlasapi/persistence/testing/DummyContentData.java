@@ -17,12 +17,12 @@ package org.atlasapi.persistence.testing;
 import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.DateTime;
@@ -43,35 +43,35 @@ public class DummyContentData {
 	public Episode dotCottonsBigAdventure;
 	public Episode peggySlapsFrank;
 	
-	public Playlist goodEastendersEpisodes;
+	public ContentGroup goodEastendersEpisodes;
 	
-	public Playlist mentionedOnTwitter;
+	public ContentGroup mentionedOnTwitter;
 	
 	public Brand apprentice;
-	public Item sellingStuff;
+	public Episode sellingStuff;
 
 	public Brand thickOfIt;
-	public Item mpSaysSomethingFunny;
+	public Episode mpSaysSomethingFunny;
 
 	
 	public Brand timeTeam;
-	public Item fossils;
+	public Episode fossils;
 	
 	public Brand ER;
 	public Episode brainSurgery;
 
 	
 	public Brand newsNight;
-	public Item interviewWithMp;
+	public Episode interviewWithMp;
 	
 	public Brand neighbours;
-	public Item susanAndCarlGoFishing;
+	public Episode susanAndCarlGoFishing;
 	
 	public Brand dispatches;
-	public Item theCreditCrunch;
+	public Episode theCreditCrunch;
 	
 	public Brand eelFishing;
-	public Item everyoneNeedsAnEel;
+	public Episode everyoneNeedsAnEel;
 
 	public Item englishForCats;
 	public Item eggsForBreakfast;
@@ -102,36 +102,36 @@ public class DummyContentData {
 		eastenders = new Brand("http://www.bbc.co.uk/eastenders", "bbc:eastenders", Publisher.BBC);
 		eastenders.setDescription("Gritty drama etc.");
 		eastenders.setTitle("Eastenders");
-		eastenders.addItems(dotCottonsBigAdventure, peggySlapsFrank);
+		eastenders.setContents(dotCottonsBigAdventure, peggySlapsFrank);
 		eastenders.addAlias("http://eastenders.bbc");
 		
-		goodEastendersEpisodes = new Playlist("http://www.bbc.co.uk/eastenders/good", "bbc:east-good", Publisher.BBC);
+		goodEastendersEpisodes = new ContentGroup("http://www.bbc.co.uk/eastenders/good", "bbc:east-good", Publisher.BBC);
 		goodEastendersEpisodes.setTitle("EastEnders: the best bits");
-		goodEastendersEpisodes.addItem(dotCottonsBigAdventure);
+		goodEastendersEpisodes.setContents(dotCottonsBigAdventure);
 		
-		sellingStuff = new Item("http://www.bbc.co.uk/apprentice/1", "bbc:apprentice:1", Publisher.BBC);
+		sellingStuff = new Episode("http://www.bbc.co.uk/apprentice/1", "bbc:apprentice:1", Publisher.BBC);
 		sellingStuff.addVersion(versionWithEmbeddableLocation());
 		
 		apprentice = new Brand("http://www.bbc.co.uk/apprentice", "bbc:apprentice", Publisher.BBC);
 		apprentice.setDescription("With Sir Alan Sugar");
 		apprentice.setTitle("The Apprentice");
-		apprentice.addItem(sellingStuff);
+		apprentice.setContents(sellingStuff);
 		
-		mpSaysSomethingFunny = new Item("http://www.bbc.co.uk/thethickofit/1", "bbc:political:1", Publisher.BBC);
+		mpSaysSomethingFunny = new Episode("http://www.bbc.co.uk/thethickofit/1", "bbc:political:1", Publisher.BBC);
 		mpSaysSomethingFunny.addVersion(versionWithEmbeddableLocation());
 		
 		thickOfIt = new Brand("http://www.bbc.co.uk/thethickofit", "bbc:political:1", Publisher.BBC);
 		thickOfIt.setDescription("political comedy");
 		thickOfIt.setTitle("The Thick of It");
-		thickOfIt.addItem(mpSaysSomethingFunny);
+		thickOfIt.setContents(mpSaysSomethingFunny);
 		
-		fossils = new Item("http://www.channel4.com/timeteam/fossil", "c4:timeteam:1", Publisher.C4);
+		fossils = new Episode("http://www.channel4.com/timeteam/fossil", "c4:timeteam:1", Publisher.C4);
 		fossils.addVersion(versionWithEmbeddableLocation());
 		
 		timeTeam = new Brand("http://www.channel4.com/timeteam", "c4:timeteam", Publisher.C4);
 		timeTeam.setDescription("archealogical comedy");
 		timeTeam.setTitle("Time Team");
-		timeTeam.addItem(fossils);
+		timeTeam.setContents(fossils);
 		
 		brainSurgery = new Episode("http://www.channel4.com/surgery", "c4:surgery", Publisher.C4);
 		brainSurgery.addVersion(versionWithEmbeddableLocation());
@@ -140,7 +140,7 @@ public class DummyContentData {
 		ER = new Brand("http://www.channel4.com/er", "c4:er", Publisher.C4);
 		ER.setDescription("medical drama");
 		ER.setTitle("ER");
-		ER.addItem(brainSurgery);
+		ER.setContents(brainSurgery);
 		
 		/* Newsnight */
 		
@@ -148,12 +148,11 @@ public class DummyContentData {
 		interviewWithMp.setTitle("Interview with MP");
 		interviewWithMp.addVersion(versionWithEmbeddableLocation(now, Duration.standardSeconds(60), TransportType.LINK));
 		interviewWithMp.setIsLongForm(true);
-
 		
 		newsNight = new Brand("http://www.bbc.co.uk/newsnight", "bbc:newsnight", Publisher.BBC);
 		newsNight.setDescription("Interviews");
 		newsNight.setTitle("Newsnight");
-		newsNight.addItems( interviewWithMp);
+		newsNight.setContents(interviewWithMp);
 		
 		/* Neighbours */
 		susanAndCarlGoFishing = new Episode("http://www.five.tv/neighbours/82883883", "c5:82883883", Publisher.FIVE);
@@ -165,7 +164,7 @@ public class DummyContentData {
 		neighbours = new Brand("http://www.five.tv/neighbours", "c5:neighbours", Publisher.FIVE);
 		neighbours.setDescription("Teatime favourite");
 		neighbours.setTitle("Neighbours");
-		neighbours.addItems(susanAndCarlGoFishing);
+		neighbours.setContents(susanAndCarlGoFishing);
 		
 		/* Eel fishing */
 		everyoneNeedsAnEel = new Episode("http://www.bbc.co.uk/eels", "bbc:eels", Publisher.BBC);
@@ -177,7 +176,7 @@ public class DummyContentData {
 		eelFishing = new Brand("http://www.bbc.co.uk/eels/1", "bbc:eels:1", Publisher.BBC);
 		eelFishing.setDescription("Classic marine drama");
 		eelFishing.setTitle("eel Fishing");
-		eelFishing.addItems(everyoneNeedsAnEel);
+		eelFishing.setContents(everyoneNeedsAnEel);
 		
 		/* Dispatches */
 		theCreditCrunch = new Episode("http://www.channel4.com/dispatches/25", "c4:dispatches:25", Publisher.C4);
@@ -190,7 +189,7 @@ public class DummyContentData {
 		dispatches = new Brand("http://www.channel4.com/dispatches", "c4:dispatches", Publisher.C4);
 		dispatches.setDescription("Hard-hitting investigative show");
 		dispatches.setTitle("Dispatches");
-		dispatches.addItems(theCreditCrunch);
+		dispatches.setContents(theCreditCrunch);
 		
 		/* A user-generated video */
 		englishForCats = new Item("http://www.youtube.co.uk/watch?v=1234", "yt:1234", Publisher.YOUTUBE);
@@ -207,13 +206,10 @@ public class DummyContentData {
 		eggsForBreakfast.addVersion(versionWithEmbeddableLocation());
 		
 		
-		mentionedOnTwitter = new Playlist("http://ref.atlasapi.org/mentions/twitter", "twitter:mentions");
+		mentionedOnTwitter = new ContentGroup("http://ref.atlasapi.org/mentions/twitter", "twitter:mentions");
 		mentionedOnTwitter.setPublisher(Publisher.DAILYMOTION);
 		mentionedOnTwitter.setTitle("Mentioned on twitter");
-		mentionedOnTwitter.addItem(englishForCats);
-		mentionedOnTwitter.addItem(eggsForBreakfast);
-		mentionedOnTwitter.addPlaylist(eastenders);
-		mentionedOnTwitter.addPlaylist(newsNight);
+		mentionedOnTwitter.setContents(englishForCats, eggsForBreakfast, eastenders, newsNight);
 	}
 	
 	public Version versionWithEmbeddableLocation() {
@@ -233,7 +229,7 @@ public class DummyContentData {
 		return v;
 	}
 
-	public static String uriOf(Description brand) {
+	public static String uriOf(Identified brand) {
 		return brand.getCanonicalUri();
 	}
 }

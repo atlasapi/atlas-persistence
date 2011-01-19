@@ -1,46 +1,39 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
-public class PlaylistTranslator implements ModelTranslator<Playlist> {
+public class PlaylistTranslator implements ModelTranslator<ContentGroup> {
 
-	private final ContentTranslator contentTranslator;
+	private static final String CONTENT_URIS_KEY = "contentUris";
+	
+	private final DescribedTranslator contentTranslator;
 
-	public PlaylistTranslator() {
-		this(new ContentTranslator(new DescriptionTranslator(true), new ClipTranslator(false)));
+	public PlaylistTranslator(boolean useId) {
+		this(new DescribedTranslator(new DescriptionTranslator(useId)));
 	}
 	
-	public PlaylistTranslator(ContentTranslator contentTranslator) {
+	public PlaylistTranslator(DescribedTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
 	}
 	
     @Override
-    public Playlist fromDBObject(DBObject dbObject, Playlist entity) {
+    public ContentGroup fromDBObject(DBObject dbObject, ContentGroup entity) {
         if (entity == null) {
-            entity = new Playlist();
+            entity = new ContentGroup();
         }
-        
         contentTranslator.fromDBObject(dbObject, entity);
-        
-        entity.setPlaylistUris(TranslatorUtils.toList(dbObject, "playlistUris"));
-        entity.setItemUris(TranslatorUtils.toList(dbObject, "itemUris"));
-        
+        entity.setContentUris(TranslatorUtils.toList(dbObject, CONTENT_URIS_KEY));
         return entity;
     }
 
     @Override
-    public DBObject toDBObject(DBObject dbObject, Playlist entity) {
-    	
-        dbObject = contentTranslator.toDBObject(dbObject, entity);
-        
-        TranslatorUtils.fromList(dbObject, entity.getItemUris(), "itemUris");
-        TranslatorUtils.fromList(dbObject, entity.getPlaylistUris(), "playlistUris");
-        
-        return dbObject;
+    public DBObject toDBObject(DBObject dbObject, ContentGroup entity) {
+    	dbObject = contentTranslator.toDBObject(dbObject, entity);
+    	TranslatorUtils.fromList(dbObject, entity.getContentUris(), CONTENT_URIS_KEY);
+    	return dbObject;
     }
-
 }

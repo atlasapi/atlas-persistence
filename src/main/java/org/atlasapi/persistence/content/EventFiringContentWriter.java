@@ -1,77 +1,47 @@
 package org.atlasapi.persistence.content;
 
 import java.util.Collections;
-import java.util.Set;
 
-import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
-import org.atlasapi.persistence.content.ContentListener.changeType;
+import org.atlasapi.persistence.content.ContentListener.ChangeType;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableList;
 
-public class EventFiringContentWriter implements DefinitiveContentWriter {
+public class EventFiringContentWriter implements ContentWriter {
 
 	private final ContentWriter delegate;
 	private final ContentListener listener;
-    private final DefinitiveContentWriter definitiveDelgate;
 	
-	public EventFiringContentWriter(ContentWriter delegate, DefinitiveContentWriter definitiveDelgate, ContentListener listener) {
+	public EventFiringContentWriter(ContentWriter delegate, ContentListener listener) {
 		this.delegate = delegate;
-        this.definitiveDelgate = definitiveDelgate;
 		this.listener = listener;
 	}
 	
 	@Override
-	public void createOrUpdatePlaylist(Playlist enclosingList, boolean markMissingItemsAsUnavailable) {
-		delegate.createOrUpdatePlaylist(enclosingList, markMissingItemsAsUnavailable);
-		notifyListener(enclosingList);
+	public void createOrUpdate(Container<?> container, boolean markMissingItemsAsUnavailable) {
+		delegate.createOrUpdate(container, markMissingItemsAsUnavailable);
+		notifyListener(container);
 	}
 	
 	@Override
-	public void createOrUpdateItem(Item item) {
-		delegate.createOrUpdateItem(item);
+	public void createOrUpdate(Item item) {
+		delegate.createOrUpdate(item);
 		notifyListener(item);
 	}
-
-    @Override
-    public void createOrUpdateDefinitiveItem(Item item) {
-        definitiveDelgate.createOrUpdateDefinitiveItem(item);
-        notifyListener(item);
-    }
     
 	@Override
-	public void createOrUpdatePlaylistSkeleton(Playlist playlist) {
-		delegate.createOrUpdatePlaylistSkeleton(playlist);
+	public void createOrUpdateSkeleton(ContentGroup group) {
+		delegate.createOrUpdateSkeleton(group);
 	}
-
-    @Override
-    public void createOrUpdateDefinitivePlaylist(Playlist playlist) {
-        definitiveDelgate.createOrUpdateDefinitivePlaylist(playlist);
-        notifyListener(playlist);
-    }
     
-    private void notifyListener(Playlist enclosingList) {
-        for (Playlist playlist : enclosingList.getPlaylists()) {
-            listener.itemChanged(playlist.getItems(), changeType.CONTENT_UPDATE);
-        }
-        listener.itemChanged(enclosingList.getItems(), changeType.CONTENT_UPDATE);
-        
-        Set<Brand> brands = Sets.newHashSet();
-        if (enclosingList instanceof Brand) {
-            brands.add((Brand) enclosingList);
-        }
-        for (Playlist playlist : enclosingList.getPlaylists()) {
-            if (playlist instanceof Brand) {
-                brands.add((Brand) playlist);
-            }
-        }
-        listener.brandChanged(brands, changeType.CONTENT_UPDATE);
+    private void notifyListener(Container<?> container) {
+    	listener.brandChanged(ImmutableList.<Container<?>>of(container), ChangeType.CONTENT_UPDATE);
+        listener.itemChanged(container.getContents(), ChangeType.CONTENT_UPDATE);
     }
     
     private void notifyListener(Item item) {
-        listener.itemChanged(Collections.singletonList(item), changeType.CONTENT_UPDATE);
+        listener.itemChanged(Collections.singletonList(item), ChangeType.CONTENT_UPDATE);
     }
-
-
 }

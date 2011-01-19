@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.content.ContentListener;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.InitializingBean;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -67,10 +69,13 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
     }
 
     public void loadAllItems() {
-    	load(contentStore.listAllItems(), new Function<List<Item>, Void>() {
-			@Override
-			public Void apply(List<Item> batch) {
-				contentListener.itemChanged(batch, ContentListener.changeType.BOOTSTRAP);
+    	load(contentStore.listAllRoots(), new Function<List<Content>, Void>() {
+
+    		@Override
+			@SuppressWarnings("unchecked")
+			public Void apply(List<Content> batch) {
+				contentListener.itemChanged(Iterables.filter(batch, Item.class), ContentListener.ChangeType.BOOTSTRAP);
+				contentListener.brandChanged((Iterable<? extends Container<?>>) Iterables.filter(batch, Container.class), ContentListener.ChangeType.BOOTSTRAP);
 				return null;
 			}
     	});
@@ -98,10 +103,10 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
 	}
 
     public void loadAllBrands() {
-    	load(Iterators.filter(contentStore.listAllPlaylists(), Brand.class), new Function<List<Brand>, Void>() {
+    	load(Iterators.filter(contentStore.listAllRoots(), Brand.class), new Function<List<Brand>, Void>() {
 			@Override
 			public Void apply(List<Brand> batch) {
-				contentListener.brandChanged(batch, ContentListener.changeType.BOOTSTRAP);
+				contentListener.brandChanged(batch, ContentListener.ChangeType.BOOTSTRAP);
 				return null;
 			}
     	});

@@ -14,9 +14,7 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content;
 
-import java.util.Collection;
-
-import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 
 public interface ContentListener {
@@ -28,12 +26,12 @@ public interface ContentListener {
 	 * <li>CONTENT_UPDATE: Standard Content data update</li>
 	 * </ul>
 	 */
-	public enum changeType {
+	public enum ChangeType {
 		BOOTSTRAP,
 		CONTENT_UPDATE;
 	}
 	
-	void itemChanged(Collection<Item> item, changeType changeType);
+	void itemChanged(Iterable<? extends Item> item, ChangeType changeType);
 	
-	void brandChanged(Collection<Brand> brand, changeType changeType);
+	void brandChanged(Iterable<? extends Container<?>> container, ChangeType changeType);
 }

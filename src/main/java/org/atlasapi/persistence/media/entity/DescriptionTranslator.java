@@ -1,22 +1,26 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Description;
+import java.util.Set;
+
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.persistence.ModelTranslator;
 
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class DescriptionTranslator implements ModelTranslator<Description> {
+public class DescriptionTranslator implements ModelTranslator<Identified> {
    
 	private static final String EMBEDDED_CANONICAL_URI = "canonicalUri";
 	private static final String CURIE = "curie";
-	public static final String LAST_UPDATED = "lastUpdated";
+	
 	public static final String ALIASES = "aliases";
+	public static final String LOOKUP = "lookup";
+	public static final String LAST_UPDATED = "lastUpdated";
 	public static final String EQUIVALENT_TO = "equivalent";
 	public static final String CANONICAL_URI = MongoConstants.ID;
-	
 	
 	private final boolean useId;
 
@@ -25,9 +29,9 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
 	}
     
 	@Override
-    public Description fromDBObject(DBObject dbObject, Description description) {
+    public Identified fromDBObject(DBObject dbObject, Identified description) {
         if (description == null) {
-            description = new Description();
+            description = new Identified();
         }
 
         if (dbObject.containsField(CANONICAL_URI)) { 
@@ -44,7 +48,7 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
     }
 
     @Override
-    public DBObject toDBObject(DBObject dbObject, Description entity) {
+    public DBObject toDBObject(DBObject dbObject, Identified entity) {
         if (dbObject == null) {
             dbObject = new BasicDBObject();
         }
@@ -63,6 +67,18 @@ public class DescriptionTranslator implements ModelTranslator<Description> {
         TranslatorUtils.fromSet(dbObject, entity.getEquivalentTo(), EQUIVALENT_TO);
         TranslatorUtils.fromDateTime(dbObject, LAST_UPDATED, entity.getLastUpdated());
         
+        // write a lookup field, used only for queries
+        TranslatorUtils.fromSet(dbObject, lookupElemsFor(entity), LOOKUP);
+        
         return dbObject;
     }
+
+	public static Set<String> lookupElemsFor(Identified entity) {
+		Set<String> lookupElems = Sets.newHashSet(entity.getCanonicalUri());
+        if (entity.getCurie() != null) {
+        	lookupElems.add(entity.getCurie());
+        }
+        lookupElems.addAll(entity.getAliases());
+        return lookupElems;
+	}
 }

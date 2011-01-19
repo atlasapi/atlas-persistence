@@ -9,7 +9,6 @@ import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
@@ -52,7 +51,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator();
+        ItemTranslator it = new ItemTranslator(true);
         DBObject dbObject = it.toDBObject(null, item);
         
         assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
@@ -89,10 +88,6 @@ public class ItemTranslatorTest extends TestCase {
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
         
-        Playlist playlist = new Playlist("uri", "playlist-curie", Publisher.BBC);
-        Set<Playlist> playlists = Sets.newHashSet(playlist);
-        item.setContainedIn(playlists);
-            
         Location loc = new Location();
         loc.setAvailable(true);
         
@@ -115,7 +110,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator();
+        ItemTranslator it = new ItemTranslator(true);
         DBObject dbObject = it.toDBObject(null, item);
         
         Item i = it.fromDBObject(dbObject, null);
@@ -123,7 +118,6 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals(i.getCurie(), item.getCurie());
         Set<String> cUris = i.getContainedInUris();
         assertEquals(1, cUris.size());
-        assertEquals(playlist.getCanonicalUri(), cUris.iterator().next());
         
         Set<String> t = i.getTags();
         for (String tag: t) {

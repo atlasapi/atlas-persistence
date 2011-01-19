@@ -18,48 +18,22 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.atlasapi.content.criteria.AtomicQuery;
-import org.atlasapi.content.criteria.AttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
-import org.atlasapi.content.criteria.attribute.Attribute;
-import org.atlasapi.content.criteria.attribute.Attributes;
-import org.atlasapi.content.criteria.operator.Operators;
-import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Description;
-import org.atlasapi.media.entity.Episode;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
-import org.atlasapi.persistence.content.query.QueryFragmentExtractor;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.query.Selection;
 
 @SuppressWarnings("unchecked")
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
-
-	private static final Set<Class<? extends Description>> playlistAttributes = (Set) Sets.newHashSet(Playlist.class);
-	private static final Set<Class<? extends Description>> brandAndPlaylistAttributes = (Set) Sets.newHashSet(Brand.class, Playlist.class);
 	
-	/**
-	 * If the query has brand and item constraints then we first find the 
-	 * Brands that match, then search for items contained within those brands.  If the 
-	 * first query (the brand query) returns too many Brands it generates a large
-	 * and inefficient query.
-	 */
-	private static final int MAX_INTERMEDIATE_BRANDS = 2000;
-	
-	private final QuerySplitter splitter = new QuerySplitter();
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
 	private final MongoRoughSearch roughSearch;
 	
@@ -69,58 +43,18 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		this.roughSearch = roughSearch;
 	}
 	
-	@Override
-	public List<Item> executeItemQuery(ContentQuery query) {
-
-		if (MatchesNothing.isEquivalentTo(query)) {
-			return Collections.emptyList();
-		}
+	private <T extends Identified> List<T> sort(List<T> content, final Iterable<String> orderIterable) {
 		
-		Maybe<ContentQuery> playlistQuery = splitter.retain(query, brandAndPlaylistAttributes);
-
-		// The query doesn't make any playlist or brand constraints: just perform a standard item query
-		if (playlistQuery.isNothing()) {
-			return executeItemQueryInternal(query);		
-		}
+		final ImmutableList<String> order = ImmutableList.copyOf(orderIterable);
 		
-		// Find the playlists
-		List<Playlist> playlists = roughSearch.dehydratedPlaylistsMatching(playlistQuery.requireValue());
-		
-		if (playlists.isEmpty()) {
-			return Collections.emptyList();
-		}
-		
-		Maybe<ContentQuery> everythingElse = splitter.discard(query, brandAndPlaylistAttributes);
-		
-		// Execute the item query but constrain results to the playlists found
-		return executeItemQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI, query.getSelection()));
-	}
-
-	private List<Item> executeItemQueryInternal(ContentQuery query) {
-		// Extract exact item match query fragments (item by uri or curie)
-		Maybe<AttributeQuery<?>> byUriOrCurie = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.ITEM_URI));
-		// If the request is for an exact match query then query for the item by uri or curie and filter the result
-		if (byUriOrCurie.hasValue() && !filterUriQueries) {
-			// Preserve any 'contained in' constraints
-			Maybe<AttributeQuery<?>> containedIn = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI, Attributes.BRAND_URI));
-			ContentQuery itemQuery = splitter.retain(query, ImmutableSet.<Class<? extends Description>>of(Item.class)).requireValue();
-			ContentQuery unfilteredItemQuery = containedIn.hasValue() ? ContentQuery.joinTo(itemQuery, new ContentQuery(ImmutableList.<AtomicQuery>of(containedIn.requireValue()))) : itemQuery; 
-			List<Item> filtered = filterItems(query, roughSearch.itemsMatching(unfilteredItemQuery), false);
-			return sort(filtered, (List<String>) byUriOrCurie.requireValue().getValue());
-		}
-		return filterItems(query, roughSearch.itemsMatching(query), true);
-	}
-	
-	private  <T extends Content> List<T> sort(List<T> content, final List<String> order) {
-		
-		Comparator<Content> byPositionInList = new Comparator<Content>() {
+		Comparator<Identified> byPositionInList = new Comparator<Identified>() {
 
 			@Override
-			public int compare(Content c1, Content c2) {
+			public int compare(Identified c1, Identified c2) {
 				return Ints.compare(indexOf(c1), indexOf(c2));
 			}
 
-			private int indexOf(Content content) {
+			private int indexOf(Identified content) {
 				for (String uri : content.getAllUris()) {
 					int idx = order.indexOf(uri);
 					if (idx != -1) {
@@ -140,205 +74,95 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	}
 	
 	@Override
-	public List<Brand> executeBrandQuery(ContentQuery query) {
-		
+	public List<Content> discover(ContentQuery query) {
 		if (MatchesNothing.isEquivalentTo(query)) {
 			return Collections.emptyList();
 		}
-		
-		Maybe<ContentQuery> playlistQuery = splitter.retain(query, playlistAttributes);
-		
-		if (playlistQuery.isNothing()) {
-			return executeBrandQueryInternal(query);
-		}
-		
-		List<Playlist> playlists = roughSearch.dehydratedPlaylistsMatching(playlistQuery.requireValue());
-		
-		if (playlists.isEmpty()) {
-			return Collections.emptyList();
-		}
-		
-		Maybe<ContentQuery> everythingElse = splitter.discard(query, playlistAttributes);
-
-		return executeBrandQueryInternal(createContainedInPlaylistQuery(everythingElse, playlists, Attributes.PLAYLIST_URI, query.getSelection()));
+		return executeDiscoverQuery(query);
 	}
 
-	private List<Brand> executeBrandQueryInternal(ContentQuery query) {
+	private List<Content> executeDiscoverQuery(ContentQuery query) {
+		List<? extends Content> contents = roughSearch.discover(query);
 		
-		Maybe<ContentQuery> brandQuery = splitter.retain(query, (Set) Sets.newHashSet(Brand.class, Playlist.class));
-		Maybe<ContentQuery> itemQuery = splitter.discard(query, (Set) Sets.newHashSet(Brand.class, Playlist.class));
+		if (contents.isEmpty()) {
+			return ImmutableList.of();
+		}
 
-		if (brandQuery.isNothing() && itemQuery.isNothing()) {
-			throw new IllegalArgumentException("Query is too broad");
-		}
-		
-		List<Brand> brands = brandQuery.isNothing() ? loadBrandsFromItems(itemQuery) : loadBrandsAndFilterItems(brandQuery, itemQuery);
-		
-		if (brands.isEmpty()) {
-			return Collections.emptyList();
-		}
-		
-		Maybe<AttributeQuery<?>> brandUriQuery = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.BRAND_URI));
-		
-		brands = filterBrands(query, brands, !(brandUriQuery.hasValue() && !filterUriQueries));
-		
-		// Filter out subplaylists that don't match if the query was not by uri or curie
-		if (itemQuery.hasValue() && (brandUriQuery.isNothing() || filterUriQueries)) {
-			return filterEmpty(brands);
-		}
-		
-		if (brandUriQuery.hasValue()) {
-			return sort(brands, (List<String>) brandUriQuery.requireValue().getValue());
-		}
-		
-		return brands;
+		return (List<Content>) filter(query, contents, true);
 	}
-
-	private List<Brand> loadBrandsAndFilterItems(Maybe<ContentQuery> brandQuery, Maybe<ContentQuery> itemQuery) {
-		List<Brand> brands = roughSearch.dehydratedBrandsMatching(brandQuery.requireValue());
-		if (brands.isEmpty()) {
-			return Lists.newArrayList();
-		}
-		if (brands.size() > MAX_INTERMEDIATE_BRANDS) {
-			throw new IllegalStateException("Query matched too many brands");
-		}
-		List<Item> items = executeItemQueryInternal(createContainedInPlaylistQuery(itemQuery, brands, Attributes.BRAND_URI, null));
-		hydratePlaylists(brands, items, null);
-		return brands;
-	}
-
-	private List<Brand> loadBrandsFromItems(Maybe<ContentQuery> itemQuery) {
-		List<Item> items = executeItemQueryInternal(itemQuery.requireValue());
-		if (items.isEmpty()) {
-			return Lists.newArrayList();
-		}
-		List<String> brandUris = Lists.newArrayList();
-		for (Item item : items) {
-			if (item instanceof Episode) {
-				Episode episode = (Episode) item;
-				if (episode.getBrand() != null) {
-					brandUris.add(episode.getBrand().getCanonicalUri());
-				}
-			}
-		}
-		List<Brand> brands = roughSearch.dehydratedBrandsMatching(new ContentQuery(Attributes.BRAND_URI.createQuery(Operators.EQUALS, brandUris)));
-		hydratePlaylists(brands, items, null);
-		return brands;
-	}
-
 
 	@Override
-	public List<Playlist> executePlaylistQuery(ContentQuery query) {
+	public List<Identified> executeUriQuery(Iterable<String> uris, ContentQuery query) {
 		if (MatchesNothing.isEquivalentTo(query)) {
 			return Collections.emptyList();
 		}
-		
-		Maybe<ContentQuery> playlistQuery = splitter.retain(query, playlistAttributes);
-		Maybe<ContentQuery> subElementQuery = splitter.discard(query, playlistAttributes);
-		
-		if (playlistQuery.isNothing()) {
-			throw new IllegalArgumentException("Query is too broad");
-		}
-		
-		List<Playlist> playlists = roughSearch.dehydratedPlaylistsMatching(playlistQuery.requireValue());
+		List<? extends Identified> content = roughSearch.findByUriOrAlias(uris);
 
-		if (playlists.isEmpty()) {
+		if (content.isEmpty()) {
 			return Collections.emptyList();
 		}
 		
-		ContentQuery subElementsContainedIn = createContainedInPlaylistQuery(subElementQuery, playlists, Attributes.PLAYLIST_URI, null);
-		
-		
-		List<Item> items = executeItemQueryInternal(subElementsContainedIn);
-		List<Brand> brands = executeBrandQueryInternal(subElementsContainedIn);
-		
-		hydratePlaylists(playlists, items, brands);
-		
-		Maybe<AttributeQuery<?>> playlistUriQuery = QueryFragmentExtractor.extract(query, Sets.<Attribute<?>>newHashSet(Attributes.PLAYLIST_URI));
-		
-		return filterPlaylists(query, playlists, !(playlistUriQuery.hasValue() && !filterUriQueries));
+		return sort((List<Identified>) filter(query, content, filterUriQueries), uris);
 	}
 
-	private List<Brand> filterEmpty(List<Brand> brands) {
-		List<Brand> filtered = Lists.newArrayList();
-		for (Brand brand : brands) {
-			if (!brand.getPlaylists().isEmpty() || !brand.getItems().isEmpty()) {
-				filtered.add(brand);
-			}
-		}
-		return filtered;
-	}
+//	private List<Brand> filterEmpty(List<Brand> brands) {
+//		List<Brand> filtered = Lists.newArrayList();
+//		for (Brand brand : brands) {
+//			if (!brand.getContents().isEmpty()) {
+//				filtered.add(brand);
+//			}
+//		}
+//		return filtered;
+//	}
 
-	private void hydratePlaylists(List<? extends Playlist> playlists, List<Item> subItems, List<? extends Playlist> subPlaylists) {
-		Map<String, Item> itemLookup = toMapByUri(subItems);
-		
-		Map<String, ? extends Playlist> playlistLookup = null;
-		if (subPlaylists != null) {
-			 playlistLookup = toMapByUri(subPlaylists);
-		}
-		
-		for (Playlist playlist : playlists) {
-			List<String> itemUris = Lists.newArrayList(playlist.getItemUris());
-			playlist.setItems(Lists.<Item>newArrayList());
-			for (String itemUri : itemUris) {
-				Item item = itemLookup.get(itemUri);
-				if (item != null) {
-					playlist.addItem(item);
-				}
-			}
-			
-			if (subPlaylists != null) {
-				List<String> subPlaylistUris = Lists.newArrayList(playlist.getPlaylistUris());
-				playlist.setPlaylists(Lists.<Playlist>newArrayList());
-				for (String subPlaylistUri : subPlaylistUris) {
-					Playlist subPlaylist = playlistLookup.get(subPlaylistUri);
-					if (subPlaylist != null) {
-						playlist.addPlaylist(subPlaylist);
-					}
-				}
-			}
-		}
-	}
-
-	private ContentQuery createContainedInPlaylistQuery(Maybe<ContentQuery> subElementQuery, List<? extends Playlist> playlists, Attribute<String> attribute, Selection selection) {
-		List<AtomicQuery> operands = Lists.newArrayListWithCapacity(playlists.size());
-		Set<String> playlistUris = Sets.newHashSet();
-		for (Playlist playlist : playlists) {
-			playlistUris.add(playlist.getCanonicalUri());
-		}
-		operands.add(attribute.createQuery(Operators.EQUALS, playlistUris));
-		
-		if (subElementQuery.hasValue()) {
-			operands.addAll(subElementQuery.requireValue().operands());
-		}
-		return new ContentQuery(operands, selection);
-	}
-	
+//	private void hydratePlaylists(List<? extends Playlist> playlists, List<Item> subItems, List<? extends Playlist> subPlaylists) {
+//		Map<String, Item> itemLookup = toMapByUri(subItems);
+//		
+//		Map<String, ? extends Playlist> playlistLookup = null;
+//		if (subPlaylists != null) {
+//			 playlistLookup = toMapByUri(subPlaylists);
+//		}
+//		
+//		for (Playlist playlist : playlists) {
+//			List<String> itemUris = Lists.newArrayList(playlist.getItemUris());
+//			playlist.setItems(Lists.<Item>newArrayList());
+//			for (String itemUri : itemUris) {
+//				Item item = itemLookup.get(itemUri);
+//				if (item != null) {
+//					playlist.addItem(item);
+//				}
+//			}
+//			
+//			if (subPlaylists != null) {
+//				List<String> subPlaylistUris = Lists.newArrayList(playlist.getPlaylistUris());
+//				playlist.setPlaylists(Lists.<Playlist>newArrayList());
+//				for (String subPlaylistUri : subPlaylistUris) {
+//					Playlist subPlaylist = playlistLookup.get(subPlaylistUri);
+//					if (subPlaylist != null) {
+//						playlist.addPlaylist(subPlaylist);
+//					}
+//				}
+//			}
+//		}
+//	}
 		
 	/** 
 	 * Util method for converting a list of Descriptions into a lookup-by-uri map.
 	 */
-	private <T extends Description> Map<String, T> toMapByUri(List<T> elems) {
-		Map<String, T> itemLookup = Maps.newHashMap();
-		for (T elem : elems) {
-			itemLookup.put(elem.getCanonicalUri(), elem);
-		}
-		return itemLookup;
+	private <T extends Identified> Map<String, T> toMapByUri(List<T> elems) {
+		return Maps.uniqueIndex(elems, Identified.TO_URI);
 	}
 	
-	private List<Item> filterItems(ContentQuery query, List<Item> items, boolean removeItemsThatDontMatch) {
-		return trimmer.trimItems(items, query, removeItemsThatDontMatch);
+	private <T  extends Identified> List<T> filter(ContentQuery query, List<T> brands, boolean removeItemsThatDontMatch) {
+		return trimmer.trim(brands, query, removeItemsThatDontMatch);
 	}
-	
-	private List<Brand> filterBrands(ContentQuery query, List<Brand> brands, boolean removeItemsThatDontMatch) {
-		return trimmer.trimBrands(brands, query, removeItemsThatDontMatch);
-	}
-	
-	private List<Playlist> filterPlaylists(ContentQuery query, List<Playlist> playlists, boolean removeItemsThatDontMatch) {
-		return trimmer.trimPlaylists(playlists, query, removeItemsThatDontMatch);
-	}
-	
+
 	public void setFilterUriQueries(boolean filterUriQueries) {
 		this.filterUriQueries = filterUriQueries;
+	}
+
+	@Override
+	public Schedule schedule(ContentQuery query) {
+		throw new UnsupportedOperationException("TODO");
 	}
 }

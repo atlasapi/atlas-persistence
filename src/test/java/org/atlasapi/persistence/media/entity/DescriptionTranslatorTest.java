@@ -5,7 +5,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
-import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.joda.time.DateTime;
 
@@ -19,7 +19,7 @@ public class DescriptionTranslatorTest extends TestCase {
 
 	@SuppressWarnings("unchecked")
     public void testShouldConvertFromDescription() throws Exception {
-        Description desc = new Description();
+        Identified desc = new Identified();
         desc.setCanonicalUri("canonicalUri");
         desc.setCurie("curie");
         
@@ -43,7 +43,7 @@ public class DescriptionTranslatorTest extends TestCase {
     }
     
     public void testShouldConvertToDescription() throws Exception {
-        Description desc = new Description();
+        Identified desc = new Identified();
         desc.setCanonicalUri("canonicalUri");
         desc.setCurie("curie");
         
@@ -54,7 +54,7 @@ public class DescriptionTranslatorTest extends TestCase {
         
         DescriptionTranslator translator = new DescriptionTranslator(true);
         DBObject dbObj = translator.toDBObject(null, desc);
-        Description description = translator.fromDBObject(dbObj, null);
+        Identified description = translator.fromDBObject(dbObj, null);
         
         assertEquals(desc.getCanonicalUri(), description.getCanonicalUri());
         assertEquals(desc.getCurie(), description.getCurie());
@@ -62,7 +62,7 @@ public class DescriptionTranslatorTest extends TestCase {
     }
     
     public void testShouldConvertToDescriptionByRef() throws Exception {
-        Description desc = new Description();
+        Identified desc = new Identified();
         desc.setCanonicalUri("canonicalUri");
         desc.setCurie("curie");
         
@@ -76,7 +76,7 @@ public class DescriptionTranslatorTest extends TestCase {
         DescriptionTranslator translator = new DescriptionTranslator(true);
         DBObject dbObj = translator.toDBObject(null, desc);
         
-        Description description = new Description();
+        Identified description = new Identified();
         translator.fromDBObject(dbObj, description);
         
         assertEquals(desc.getCanonicalUri(), description.getCanonicalUri());

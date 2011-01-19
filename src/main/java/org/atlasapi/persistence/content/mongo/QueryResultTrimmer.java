@@ -14,8 +14,6 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
-import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.concernsBrandOrBelow;
-import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.concernsItemOrBelow;
 import static org.atlasapi.persistence.content.mongo.QueryConcernsTypeDecider.concernsType;
 
 import java.util.Collections;
@@ -23,11 +21,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.content.criteria.ContentQuery;
-import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Version;
 
 import com.google.common.base.Predicate;
@@ -47,16 +47,27 @@ import com.metabroadcast.common.base.Maybe;
  */
 public class QueryResultTrimmer {
 	
-	public List<Item> trimItems(Iterable<Item> items, ContentQuery query, boolean removeItemsThatDontMatch) {
-		List<Item> trimmed = Lists.newArrayListWithCapacity(Iterables.size(items));
-		for (Item item : items) {
-			if (trimItem(item, query) || !removeItemsThatDontMatch) {
-				trimmed.add(item);
+	public <T extends Identified> List<T> trim(Iterable<T> contents, ContentQuery query, boolean removeItemsThatDontMatch) {
+		List<T> trimmed = Lists.newArrayListWithCapacity(Iterables.size(contents));
+		for (T content : contents) {
+			if (trim(content, query) || !removeItemsThatDontMatch) {
+				trimmed.add(content);
 			}
 		}
 		return trimmed;
 	}
 	
+	private boolean trim(Identified content, ContentQuery filter) {
+		if (content instanceof Item) {
+			return trimItem((Item) content, filter);
+		} else if (content instanceof Container<?>) {
+			return trimContainer((Container<?>) content, filter);
+		} else if (content instanceof ContentGroup) {
+			throw new UnsupportedOperationException("TODO");
+		} else {
+			throw new IllegalArgumentException("Cannot trim content with type " + content.getClass().getSimpleName() + " as I don't know about it");
+		}
+	}
 	/**
 	 * Trims associations that don't match the query
 	 * @return true if the item matches, false if the item should not be included in the result set 
@@ -127,26 +138,10 @@ public class QueryResultTrimmer {
 		}
 		return nothingIfEmpty((Iterable)trimmedLocations);
 	}
-
-	public List<Brand> trimBrands(Iterable<Brand> brands, final ContentQuery query, boolean removeItemsThatDontMatch) {
-		List<Brand> trimmed = Lists.newArrayListWithCapacity(Iterables.size(brands));
-		Iterable<Brand> filteredBrands = Iterables.filter(brands, new Predicate<Brand>() {
-			@Override
-			public boolean apply(Brand brand) {
-				return check(new ContentQuery(query.getSoftConstraints()), brand);
-			}
-		});
-		for (Brand brand : filteredBrands) {
-			if (trimBrand(brand, query) || !removeItemsThatDontMatch) {
-				trimmed.add(brand);
-			}
-		}
-		return trimmed;
-	}
 	
-	private boolean trimBrand(Playlist brand, ContentQuery query) {
-		Maybe<List<Item>> items = trimBrandItems(brand.getItems(), query);
-		brand.setItems(items.valueOrDefault(ImmutableList.<Item>of()));
+	public <T extends Item> boolean trimContainer(Container<T> brand, ContentQuery query) {
+		Maybe<List<T>> items = trimContainerSubItems(brand.getContents(), query);
+		brand.setContents(items.valueOrDefault(ImmutableList.<T>of()));
 		if (items.isNothing()) {
 			return false;
 		} else {
@@ -155,7 +150,7 @@ public class QueryResultTrimmer {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private Maybe<List<Item>> trimBrandItems(Iterable<Item> items, ContentQuery query) {
+	private <T extends Item> Maybe<List<T>> trimContainerSubItems(Iterable<T> items, ContentQuery query) {
 		final ContentQuery softQuery = new ContentQuery(query.getSoftConstraints());
 		items = Iterables.filter(items, new Predicate<Item>() {
 			@Override
@@ -164,7 +159,7 @@ public class QueryResultTrimmer {
 			}
 		});
 		if (Iterables.isEmpty(items) && !concernsType(query, ImmutableSet.of(Item.class, Version.class, Encoding.class, Location.class))) {
-			return Maybe.just(Collections.<Item>emptyList());
+			return Maybe.just(Collections.<T>emptyList());
 		}
 		List<Item> trimmedItems = Lists.newArrayListWithExpectedSize(Iterables.size(items));
 		for (Item item : items) {
@@ -179,71 +174,68 @@ public class QueryResultTrimmer {
 		return nothingIfEmpty((Iterable)trimmedItems);
 	}
 
-	public List<Playlist> trimPlaylists(Iterable<Playlist> playlists,ContentQuery query, boolean removeItemsThatDontMatch) {
-		List<Playlist> trimmed = Lists.newArrayListWithCapacity(Iterables.size(playlists));
-		for (Playlist playlist : playlists) {
-			if (trimPlaylist(playlist, query) || !removeItemsThatDontMatch) {
-				trimmed.add(playlist);
-			}
-		}
-		return trimmed;
-	}
+//	public List<Playlist> trimPlaylists(Iterable<Playlist> playlists,ContentQuery query, boolean removeItemsThatDontMatch) {
+//		List<Playlist> trimmed = Lists.newArrayListWithCapacity(Iterables.size(playlists));
+//		for (Playlist playlist : playlists) {
+//			if (trimPlaylist(playlist, query) || !removeItemsThatDontMatch) {
+//				trimmed.add(playlist);
+//			}
+//		}
+//		return trimmed;
+//	}
 
-	private boolean trimPlaylist(Playlist playlist, final ContentQuery query) {
-		if (playlist instanceof Brand) {
-			return trimBrand((Brand)playlist, query);
-		}
-		Maybe<List<Playlist>> subLists;
-		if (!playlist.getPlaylists().isEmpty()) {
-			subLists = trimSubPlaylists(playlist.getPlaylists(), query);
-		} else {
-			if (concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Encoding.class, Location.class))){
-				subLists = Maybe.nothing();
-			} else {
-				subLists = Maybe.just(Collections.<Playlist>emptyList());
-			}
-		}
-		
-		Maybe<List<Item>> items = trimBrandItems(playlist.getItems(), query);
-		
-		playlist.setItems((items.valueOrDefault(ImmutableList.<Item>of())));
-		playlist.setPlaylists(subLists.valueOrDefault(ImmutableList.<Playlist>of()));
-		
-		if (!concernsBrandOrBelow(query)) {
-			return true;
-		} else if (!concernsType(query, Brand.class) && concernsItemOrBelow(query) && (items.hasValue() || subLists.hasValue())) { 
-			return true;
-		} else if (concernsType(query, Brand.class) && subLists.hasValue()) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+//	private boolean trimPlaylist(ContentGroup playlist, final ContentQuery query) {
+//		Maybe<List<Playlist>> subLists;
+//		if (!playlist.getPlaylists().isEmpty()) {
+//			subLists = trimSubPlaylists(playlist.getPlaylists(), query);
+//		} else {
+//			if (concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Encoding.class, Location.class))) {
+//				subLists = Maybe.nothing();
+//			} else {
+//				subLists = Maybe.just(Collections.<Playlist>emptyList());
+//			}
+//		}
+//		
+//		Maybe<List<Item>> items = trimContainerSubItems(playlist.getItems(), query);
+//		
+//		playlist.setItems((items.valueOrDefault(ImmutableList.<Item>of())));
+//		playlist.setPlaylists(subLists.valueOrDefault(ImmutableList.<Playlist>of()));
+//		
+//		if (!concernsBrandOrBelow(query)) {
+//			return true;
+//		} else if (!concernsType(query, Brand.class) && concernsItemOrBelow(query) && (items.hasValue() || subLists.hasValue())) { 
+//			return true;
+//		} else if (concernsType(query, Brand.class) && subLists.hasValue()) {
+//			return true;
+//		} else {
+//			return false;
+//		}
+//	}
 	
-	@SuppressWarnings("unchecked")
-	private Maybe<List<Playlist>> trimSubPlaylists(Iterable<Playlist> playlists, ContentQuery query) {
-		final ContentQuery softQuery = new ContentQuery(query.getSoftConstraints());
-		playlists = Iterables.filter(playlists, new Predicate<Playlist>() {
-			@Override
-			public boolean apply(Playlist item) {
-				return check(softQuery, item);
-			}
-		});
-		if (Iterables.isEmpty(playlists) && !concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Encoding.class, Location.class))) {
-			return Maybe.just(Collections.<Playlist>emptyList());
-		}
-		List<Playlist> trimmedPlaylists = Lists.newArrayListWithExpectedSize(Iterables.size(playlists));
-		for (Playlist playlist : playlists) {
-			if (check(query,playlist) && trimPlaylist(playlist, query)) {
-				Maybe<List<Item>> trimmedItems = trimBrandItems(playlist.getItems(), query);
-				if (trimmedItems.hasValue()) {
-					playlist.setItems(trimmedItems.requireValue());
-					trimmedPlaylists.add(playlist);
-				}
-			}
-		}
-		return nothingIfEmpty((Iterable)trimmedPlaylists);
-	}
+//	@SuppressWarnings("unchecked")
+//	private Maybe<List<Playlist>> trimSubContent(Iterable<Content> playlists, ContentQuery query) {
+//		final ContentQuery softQuery = new ContentQuery(query.getSoftConstraints());
+//		playlists = Iterables.filter(playlists, new Predicate<Playlist>() {
+//			@Override
+//			public boolean apply(Playlist item) {
+//				return check(softQuery, item);
+//			}
+//		});
+//		if (Iterables.isEmpty(playlists) && !concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Encoding.class, Location.class))) {
+//			return Maybe.just(Collections.<Playlist>emptyList());
+//		}
+//		List<Playlist> trimmedPlaylists = Lists.newArrayListWithExpectedSize(Iterables.size(playlists));
+//		for (Playlist playlist : playlists) {
+//			if (check(query,playlist) && trimPlaylist(playlist, query)) {
+//				Maybe<List<Item>> trimmedItems = trimContainerSubItems(playlist.getItems(), query);
+//				if (trimmedItems.hasValue()) {
+//					playlist.setItems(trimmedItems.requireValue());
+//					trimmedPlaylists.add(playlist);
+//				}
+//			}
+//		}
+//		return nothingIfEmpty((Iterable)trimmedPlaylists);
+//	}
 	
 	private boolean check(ContentQuery query, Version version) {
 		return new InMemoryQueryResultChecker(version).check(query);
@@ -257,11 +249,7 @@ public class QueryResultTrimmer {
 		return new InMemoryQueryResultChecker(location).check(query);
 	}
 	
-	private boolean check(ContentQuery query, Item item) {
-		return new InMemoryQueryResultChecker(item).check(query);
-	}
-	
-	private boolean check(ContentQuery query, Playlist playlist) {
+	private boolean check(ContentQuery query, Content playlist) {
 		return new InMemoryQueryResultChecker(playlist).check(query);
 	}
 

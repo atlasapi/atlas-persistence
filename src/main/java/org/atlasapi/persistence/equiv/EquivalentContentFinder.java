@@ -5,6 +5,7 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.persistence.content.ContentResolver;
 
 import com.google.common.collect.Sets;
@@ -29,11 +30,11 @@ public class EquivalentContentFinder {
 		for(String uri: urlFinder.get(content.getAllUris())) {
 			allEquivalentUris.add(uri);
 			try {
-				Content found = resolver.findByUri(uri);
-				if (found != null) {
+				Identified found = resolver.findByCanonicalUri(uri);
+				if (found != null && found instanceof Content) {
 					allEquivalentUris.addAll(found.getAllUris());
 					if (!found.getCanonicalUri().equals(content.getCanonicalUri())) {
-						equivalentContent.add(found);
+						equivalentContent.add((Content) found);
 					}
 				}
 			} catch (Exception e) {

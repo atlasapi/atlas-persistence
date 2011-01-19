@@ -17,30 +17,23 @@ package org.atlasapi.persistence.content.mongo;
 import java.util.List;
 
 import org.atlasapi.content.criteria.ContentQuery;
-import org.atlasapi.media.entity.Brand;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Identified;
 
 public class MongoRoughSearch {
 
-    private final MongoDbBackedContentStore store;
+	private final MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
+	private final MongoDbBackedContentStore store;
 
 	public MongoRoughSearch(MongoDbBackedContentStore store) {
 		this.store = store;
     }
 
-    private MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
-
-    public List<Item> itemsMatching(ContentQuery query) {
-        return store.executeItemQuery(queryBuilder.buildItemQuery(query), query.getSelection());
+    public List<? extends Content> discover(ContentQuery query) {
+        return store.executeDiscoverQuery(queryBuilder.buildQuery(query), query.getSelection());
     }
     
-	@SuppressWarnings("unchecked")
-	public List<Brand> dehydratedBrandsMatching(ContentQuery query) {
-		return (List) store.executePlaylistQuery(queryBuilder.buildBrandQuery(query), Brand.class.getSimpleName(), query.getSelection(), false);
-	}    
-	
-	public List<Playlist> dehydratedPlaylistsMatching(ContentQuery query) {
-		return store.executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
-	}    
+    public List<? extends Identified> findByUriOrAlias(Iterable<String> uris) {
+        return store.findByUriOrAlias(uris);
+    }
 }

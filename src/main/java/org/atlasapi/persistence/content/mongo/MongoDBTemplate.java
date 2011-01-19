@@ -22,14 +22,14 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Clip;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Series;
-import org.atlasapi.persistence.media.entity.BrandTranslator;
-import org.atlasapi.persistence.media.entity.ClipTranslator;
+import org.atlasapi.media.entity.simple.Playlist;
+import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ContentMentionTranslator;
-import org.atlasapi.persistence.media.entity.EpisodeTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.media.entity.PlaylistTranslator;
 import org.atlasapi.persistence.media.entity.SeriesTranslator;
@@ -46,28 +46,26 @@ import com.mongodb.DBObject;
 
 public class MongoDBTemplate {
 
-	private final ItemTranslator itemTranslator = new ItemTranslator();
-    private final ClipTranslator clipTranslator = new ClipTranslator(true);
-    private final PlaylistTranslator playlistTranslator = new PlaylistTranslator();
-    private final BrandTranslator brandTranslator = new BrandTranslator();
-    private final EpisodeTranslator episodeTranslator = new EpisodeTranslator();
+	private final ItemTranslator itemTranslator = new ItemTranslator(true);
+    private final PlaylistTranslator playlistTranslator = new PlaylistTranslator(true);
+    
+    private final ContainerTranslator brandTranslator = new ContainerTranslator(true);
+    
     private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();
-    private final SeriesTranslator seriesTranslator = new SeriesTranslator();
+    private final SeriesTranslator seriesTranslator = new SeriesTranslator(true);
 
     protected DBObject toDB(Object obj) {
         try {
-            if (obj instanceof Brand) {
-                return brandTranslator.toDBObject(null, (Brand) obj);
-            } else if (obj instanceof Episode) {
-                return episodeTranslator.toDBObject(null, (Episode) obj);
+            if (obj instanceof Container<?>) {
+                return brandTranslator.toDBObject(null, (Container<?>) obj);
             } else if (obj instanceof Clip) {
-            	return clipTranslator.toDBObject(null, (Clip) obj);
+            	throw new IllegalArgumentException("Direct-saving of clips is not supported");
             } else if (obj instanceof Item) {
                 return itemTranslator.toDBObject(null, (Item) obj);
             } else if (obj instanceof Series) {
             	return seriesTranslator.toDBObject((Series) obj);
-            } else if (obj instanceof Playlist) {
-                return playlistTranslator.toDBObject(null, (Playlist) obj);
+            } else if (obj instanceof ContentGroup) {
+                return playlistTranslator.toDBObject(null, (ContentGroup) obj);
             } else if (obj instanceof ContentMention) {
                 return contentMentionTranslator.toDBObject(null, (ContentMention) obj);
             } else {
@@ -80,26 +78,18 @@ public class MongoDBTemplate {
 
     @SuppressWarnings("unchecked")
     protected <T> T fromDB(DBObject dbObject, Class<T> clazz) {
-        try {
-            if (clazz.equals(Item.class)) {
-                return (T) itemTranslator.fromDBObject(dbObject, null);
-            } else if (clazz.equals(Playlist.class)) {
-                return (T) playlistTranslator.fromDBObject(dbObject, null);
-            } else if (clazz.equals(Brand.class)) {
-                return (T) brandTranslator.fromDBObject(dbObject, null);
-            } else if (clazz.equals(Series.class)) {
-            	return (T) seriesTranslator.fromDBObject(dbObject);
-            } else if (clazz.equals(Episode.class)) {
-                return (T) episodeTranslator.fromDBObject(dbObject, null);
-            } else if (clazz.equals(Clip.class)) {
-            	return (T) clipTranslator.fromDBObject(dbObject, null);
-            } else if (clazz.equals(ContentMention.class)) {
-                return (T) contentMentionTranslator.fromDBObject(dbObject, null);
-            } else {
-                throw new IllegalArgumentException("Unabled to read "+dbObject+" from db, type: "+clazz.getSimpleName());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (Item.class.isAssignableFrom(clazz)) {
+            return (T) itemTranslator.fromDBObject(dbObject, null);
+        } else if (clazz.equals(Playlist.class)) {
+            return (T) playlistTranslator.fromDBObject(dbObject, null);
+        } else if (clazz.equals(Brand.class)) {
+            return (T) brandTranslator.fromDBObject(dbObject, null);
+        } else if (clazz.equals(Series.class)) {
+        	return (T) seriesTranslator.fromDBObject(dbObject);
+        } else if (clazz.equals(ContentMention.class)) {
+            return (T) contentMentionTranslator.fromDBObject(dbObject, null);
+        } else {
+            throw new IllegalArgumentException("Unabled to read "+dbObject+" from db, type: "+clazz.getSimpleName());
         }
     }
     

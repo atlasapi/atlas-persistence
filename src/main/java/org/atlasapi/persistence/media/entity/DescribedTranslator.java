@@ -1,47 +1,30 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.List;
-
-import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentType;
+import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class ContentTranslator implements ModelTranslator<Content> {
+public class DescribedTranslator implements ModelTranslator<Described> {
 
-	public static final String CONTAINED_IN_URIS_KEY = "containedInUris";
-	private static String CLIPS_KEY = "clips";
-	
 	private final DescriptionTranslator descriptionTranslator;
-	private ClipTranslator clipTranslator;
 
-	public ContentTranslator(DescriptionTranslator descriptionTranslator, ClipTranslator translator) {
+	public DescribedTranslator(DescriptionTranslator descriptionTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
-		this.clipTranslator = translator;
 	}
 	
-	public void setClipTranslator(ClipTranslator clipTranslator) {
-		this.clipTranslator = clipTranslator;
-	}
-	
-	@SuppressWarnings("unchecked")
 	@Override
-	public Content fromDBObject(DBObject dbObject, Content entity) {
-	    if (entity == null) {
-		   entity = new Content();
+	public Described fromDBObject(DBObject dbObject, Described entity) {
+	    
+		if (entity == null) {
+		   entity = new Described();
         }
 	    
 	    descriptionTranslator.fromDBObject(dbObject, entity);
-
-        entity.setContainedInUris(TranslatorUtils.toSet(dbObject, CONTAINED_IN_URIS_KEY));
         
         entity.setDescription((String) dbObject.get("description"));
         
@@ -60,19 +43,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         entity.setTags(TranslatorUtils.toSet(dbObject, "tags"));
         entity.setThumbnail((String) dbObject.get("thumbnail"));
         entity.setTitle((String) dbObject.get("title"));
-        
-        if (dbObject.containsField(CLIPS_KEY)) {
-        	Iterable<DBObject> clipsDbos = (Iterable<DBObject>) dbObject.get(CLIPS_KEY);
-        	Iterable<Clip> clips = Iterables.transform(clipsDbos, new Function<DBObject, Clip>() {
 
-				@Override
-				public Clip apply(DBObject dbo) {
-					return clipTranslator.fromDBObject(dbo, null);
-				}
-        	});
-        	entity.setClips(clips);
-        }
-        
         String cType = (String)dbObject.get("contentType");
         if (cType != null) {
         	entity.setContentType(ContentType.valueOf(cType.toUpperCase()));
@@ -82,14 +53,13 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	}
 
 	@Override
-	public DBObject toDBObject(DBObject dbObject, Content entity) {
+	public DBObject toDBObject(DBObject dbObject, Described entity) {
 		 if (dbObject == null) {
             dbObject = new BasicDBObject();
          }
 		 
 	    descriptionTranslator.toDBObject(dbObject, entity);
 
-        TranslatorUtils.fromSet(dbObject, entity.getContainedInUris(), CONTAINED_IN_URIS_KEY);
         TranslatorUtils.from(dbObject, "description", entity.getDescription());
         TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
         TranslatorUtils.fromDateTime(dbObject, "thisOrChildLastUpdated", entity.getThisOrChildLastUpdated());
@@ -104,24 +74,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
         TranslatorUtils.fromSet(dbObject, entity.getTags(), "tags");
         TranslatorUtils.from(dbObject, "thumbnail", entity.getThumbnail());
         TranslatorUtils.from(dbObject, "title", entity.getTitle());
-
-        
-        if (!entity.getClips().isEmpty()) {
-        	List<DBObject> clipDbos = Lists.transform(entity.getClips(), new Function<Clip, DBObject>() {
-
-				@Override
-				public DBObject apply(Clip clip) {
-					return clipTranslator.toDBObject(new BasicDBObject(), clip);
-				}
-			});
-			dbObject.put(CLIPS_KEY, clipDbos);
-        }
         
         if (entity.getContentType() != null) {
         	TranslatorUtils.from(dbObject, "contentType", entity.getContentType().toString().toLowerCase());
         }
-        
         return dbObject;
 	}
-
 }

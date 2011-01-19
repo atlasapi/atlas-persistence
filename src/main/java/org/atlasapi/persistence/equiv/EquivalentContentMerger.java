@@ -1,13 +1,11 @@
 package org.atlasapi.persistence.equiv;
 
-import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.equiv.EquivalentContentFinder.EquivalentContent;
@@ -16,7 +14,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class EquivalentContentMerger {
@@ -27,42 +24,29 @@ public class EquivalentContentMerger {
 		this.finder = finder;
 	}
 	
-	public Item merge(Item item) {
+	Item merge(Item item) {
 		// for now don't merge items directly
 		return item;
 	}
-	
-	public Playlist merge(Playlist playlist) {
-		if (playlist instanceof Brand) {
-			merge((Brand) playlist);
-		} else {
-			List<Playlist> mergedPlaylists = Lists.newArrayList();
-			for (Playlist subPlaylist : playlist.getPlaylists()) {
-				mergedPlaylists.add(merge(subPlaylist));
-			}
-			playlist.setPlaylists(mergedPlaylists);
-		}
-		return playlist;
-	}
 
-	private void merge(Brand brand) {
-		EquivalentContent equiv = finder.equivalentTo(brand);
+	Container<?> merge(Container<?> container) {
+		EquivalentContent equiv = finder.equivalentTo(container);
 		Iterable<? extends Content> equivContent = equiv.equivalent();
 		for (Content content : equivContent) {
-			if (content instanceof Brand) {
-				mergeSubItemsOf(brand, (Brand) content);
+			if (content instanceof Container<?>) {
+				mergeSubItemsOf(container, (Container<?>) content);
 			}
-			brand.addEquivalentTo(content);
+			container.addEquivalentTo(content);
 		}
 		for (String alias : equiv.probableAliases()) {
-			brand.addAlias(alias);
+			container.addAlias(alias);
 		}
+		return container;
 	}
 
-	@SuppressWarnings("unchecked")
-	private void mergeSubItemsOf(Brand original, Brand equivTo) {
-		for (Item item : original.getItems()) {
-			Item sameItem = findSameItem(item, (List) equivTo.getItems());
+	private void mergeSubItemsOf(Container<?> original, Container<?> equivTo) {
+		for (Item item : original.getContents()) {
+			Item sameItem = findSameItem(item, equivTo.getContents());
 			if (sameItem != null) {
 				// remove previously merged versions
 				Set<Version> versions = Sets.newHashSet(Iterables.filter(item.getVersions(), Predicates.not(isProvidedBy(sameItem.getPublisher()))));
@@ -84,7 +68,7 @@ public class EquivalentContentMerger {
 		};
 	}
 
-	private Item findSameItem(Item needle, List<Item> haystack) {
+	private Item findSameItem(Item needle, Iterable<? extends Item> haystack) {
 	    if (needle instanceof Episode) {
     		for (Item item : haystack) {
     			if (item instanceof Episode && areSame((Episode) needle, (Episode) item)) {
