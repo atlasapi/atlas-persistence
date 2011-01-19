@@ -46,7 +46,8 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         
         entity.setVideoCoding(readVideoCoding(dbObject));
         
-        entity.setVideoFrameRate((Float) dbObject.get("videoFrameRate"));
+        entity.setVideoFrameRate(TranslatorUtils.toFloat(dbObject, "videoFrameRate"));
+        
         entity.setVideoHorizontalSize((Integer) dbObject.get("videoHorizontalSize"));
         entity.setVideoProgressiveScan((Boolean) dbObject.get("videoProgressiveScan"));
         entity.setVideoVerticalSize((Integer) dbObject.get("videoVerticalSize"));

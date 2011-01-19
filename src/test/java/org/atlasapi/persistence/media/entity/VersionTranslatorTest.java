@@ -5,6 +5,7 @@ import junit.framework.TestCase;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
 
@@ -21,22 +22,18 @@ public class VersionTranslatorTest extends TestCase {
     public void testFromVersion() throws Exception {
         Version version = new Version();
         version.setDuration(Duration.standardSeconds(2));
-        version.setRating("rating");
         version.setProvider(Publisher.C4);
         
         DBObject dbObject = vt.toDBObject(null, version);
         
         assertEquals(version.getDuration(), dbObject.get("duration"));
-        assertEquals(version.getRating(), dbObject.get("rating"));
         assertEquals(version.getProvider().key(), dbObject.get("provider"));
     }
     
     public void testToVersion() throws Exception {
         Version version = new Version();
         version.setDuration(Duration.standardSeconds(2));
-        version.setRating("rating");
         version.setPublishedDuration(1);
-        version.setRatingText("text");
         version.setProvider(Publisher.BBC);
         
         Broadcast broadcast = new Broadcast("channel", clock.now(), Duration.standardSeconds(1));
@@ -48,12 +45,16 @@ public class VersionTranslatorTest extends TestCase {
         encoding.setBitRate(2);
         version.addManifestedAs(encoding);
         
+        Restriction restriction = new Restriction();
+        restriction.setRestricted(true);
+        restriction.setMinimumAge(15);
+        restriction.setMessage("text");
+        version.setRestriction(restriction);
+        
         DBObject dbObject = vt.toDBObject(null, version);
         
         Version v = vt.fromDBObject(dbObject, null);
         assertEquals(version.getDuration(), v.getDuration());
-        assertEquals(version.getRating(), v.getRating());
-        assertEquals(version.getRatingText(), v.getRatingText());
         assertEquals(version.getPublishedDuration(), v.getPublishedDuration());
         assertEquals(version.getProvider(), v.getProvider());
         
@@ -63,5 +64,10 @@ public class VersionTranslatorTest extends TestCase {
         Encoding e = v.getManifestedAs().iterator().next();
         assertEquals(encoding.getAudioChannels(), e.getAudioChannels());
         assertEquals(encoding.getBitRate(), e.getBitRate());
+        
+        Restriction r = v.getRestriction();
+        assertEquals(restriction.isRestricted(), r.isRestricted());
+        assertEquals(restriction.getMinimumAge(), r.getMinimumAge());
+        assertEquals(restriction.getMessage(), r.getMessage());
     }
 }

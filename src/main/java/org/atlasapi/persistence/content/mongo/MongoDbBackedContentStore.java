@@ -137,17 +137,17 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
             } else {
                 item.setFirstSeen(clock.now());
             }
-
-            
             if (parent == null) {
             	Container<?> brand = item.getContainer();
 				if (brand != null) {
             		Identified dbContent = findByCanonicalUri(brand.getCanonicalUri());
             		if (dbContent instanceof Container<?>) {
-            			Container<Item> dbContainer = (Container<Item>) dbContent;
-            			if (!dbContainer.getContentUris().contains(item.getCanonicalUri())) {
-            				dbContainer.addContents(item);
-            				updateBasicPlaylistDetails(dbContainer, contentCollection);
+            			Container<Item> dbBrand = (Container<Item>) dbContent;
+            			if (!dbBrand.getContentUris().contains(item.getCanonicalUri())) {
+            				dbBrand.addContents(item);
+            				updateBasicPlaylistDetails(dbBrand, contentCollection);
+            			} else {
+            				dbBrand.addContents(item);
             			}
             		} 
             	}

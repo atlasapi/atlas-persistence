@@ -6,6 +6,7 @@ import java.util.Set;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
@@ -22,7 +23,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
 	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator(false);
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
     private final EncodingTranslator encodingTranslator = new EncodingTranslator();
-    
+    private final RestrictionTranslator restrictionTranslator = new RestrictionTranslator();
 
     @SuppressWarnings("unchecked")
     @Override
@@ -42,8 +43,12 @@ public class VersionTranslator implements ModelTranslator<Version> {
 		}
 		
         entity.setPublishedDuration((Integer) dbObject.get("publishedDuration"));
-        entity.setRating((String) dbObject.get("rating"));
-        entity.setRatingText((String) dbObject.get("ratingText"));
+
+        if(dbObject.get("restriction") != null) {
+        	entity.setRestriction(restrictionTranslator.fromDBObject((DBObject) dbObject.get("restriction"), null));
+        } else {
+        	entity.setRestriction(new Restriction());
+        }
         
         List<DBObject> list = (List) dbObject.get("broadcasts");
         if (list != null && ! list.isEmpty()) {
@@ -74,8 +79,10 @@ public class VersionTranslator implements ModelTranslator<Version> {
         
         TranslatorUtils.from(dbObject, "duration", entity.getDuration());
         TranslatorUtils.from(dbObject, "publishedDuration", entity.getPublishedDuration());
-        TranslatorUtils.from(dbObject, "rating", entity.getRating());
-        TranslatorUtils.from(dbObject, "ratingText", entity.getRatingText());
+
+        if(entity.getRestriction() != null) {
+        	dbObject.put("restriction", restrictionTranslator.toDBObject(null, entity.getRestriction()));
+        }
         
         if (entity.getProvider() != null) {
         	dbObject.put(PROVIDER_KEY, entity.getProvider().key());
