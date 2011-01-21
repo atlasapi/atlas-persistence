@@ -53,11 +53,11 @@ public class QueueingContentListener implements ContentListener {
 
     @Override
     public void itemChanged(Collection<Item> items, changeType changeType) {
-        if (changeType == ContentListener.changeType.BOOTSTRAP) {
-            delegate.itemChanged(items, changeType);
-        } else {
-            itemQueue.addAll(items);
-        }
+//        if (changeType == ContentListener.changeType.BOOTSTRAP) {
+//            delegate.itemChanged(items, changeType);
+//        } else {
+//            itemQueue.addAll(items);
+//        }
     }
 
     class BrandChangedJob implements Runnable {
@@ -81,7 +81,7 @@ public class QueueingContentListener implements ContentListener {
                 List<Item> items = Lists.newArrayList();
                 itemQueue.drainTo(items);
 
-                delegate.itemChanged(items, null);
+//                delegate.itemChanged(items, null);
             } catch (Exception e) {
                 log.error("Delgate content listener failed to process item queue", e);
             }
