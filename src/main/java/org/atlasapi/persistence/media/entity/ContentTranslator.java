@@ -80,7 +80,9 @@ public class ContentTranslator implements ModelTranslator<Content> {
         	entity.setMediaType(MediaType.valueOf(cType.toUpperCase()));
         } else {
             cType = (String)dbObject.get("mediaType");
-            entity.setMediaType(MediaType.valueOf(cType.toUpperCase()));
+            if (cType != null) {
+                entity.setMediaType(MediaType.valueOf(cType.toUpperCase()));
+            }
         }
         
         String specialization = (String) dbObject.get("specialization");
