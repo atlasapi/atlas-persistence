@@ -6,6 +6,7 @@ import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -73,12 +74,18 @@ public class ContentTranslator implements ModelTranslator<Content> {
         	entity.setClips(clips);
         }
         
+        // Hack to transfer from the old name to the new
         String cType = (String)dbObject.get("contentType");
         if (cType != null) {
         	entity.setMediaType(MediaType.valueOf(cType.toUpperCase()));
         } else {
             cType = (String)dbObject.get("mediaType");
             entity.setMediaType(MediaType.valueOf(cType.toUpperCase()));
+        }
+        
+        String specialization = (String) dbObject.get("specialization");
+        if (specialization != null) {
+            entity.setSpecialization(Specialization.valueOf(specialization.toUpperCase()));
         }
         
        return entity;
@@ -122,6 +129,9 @@ public class ContentTranslator implements ModelTranslator<Content> {
         
         if (entity.getMediaType() != null) {
         	TranslatorUtils.from(dbObject, "mediaType", entity.getMediaType().toString().toLowerCase());
+        }
+        if (entity.getSpecialization() != null) {
+            TranslatorUtils.from(dbObject, "specialization", entity.getSpecialization().toString().toLowerCase());
         }
         
         return dbObject;
