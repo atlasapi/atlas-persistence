@@ -51,12 +51,12 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.Clock;
@@ -68,7 +68,8 @@ import com.mongodb.DBObject;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements DefinitiveContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
-    private final static int MAX_RESULTS = 20000;
+    private static final int MAX_RESULTS = 10000;
+    private static final MongoSortBuilder sortIds = new MongoSortBuilder().ascending(MongoConstants.ID); 
 
     private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
 
@@ -505,17 +506,22 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Defini
     }
 
     @Override
-    public Iterator<Item> listAllItems() {
-    	return Iterators.transform(itemCollection.find(), TO_ITEM);
+    public List<Item> listItems(String fromId, int batchSize) {
+        MongoQueryBuilder query = where();
+        if (fromId != null) {
+            query = query.fieldGreaterThan(MongoConstants.ID, fromId);
+        }
+        
+        return ImmutableList.copyOf(Iterables.transform(query.find(itemCollection, sortIds, batchSize), TO_ITEM));
     }
 
-	private final Function<DBObject, Playlist> TO_PLAYIST = new Function<DBObject, Playlist>() {
+    private final Function<DBObject, Playlist> TO_PLAYIST = new Function<DBObject, Playlist>() {
 
-		@Override
-		public Playlist apply(DBObject dbo) {
-			return toPlaylist(dbo, true);
-		}
-	};
+        @Override
+        public Playlist apply(DBObject dbo) {
+            return toPlaylist(dbo, false);
+        }
+    };
 	
 	private final Function<DBObject, Item> TO_ITEM = new Function<DBObject, Item>() {
 
@@ -526,8 +532,13 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Defini
 	};
     
     @Override
-    public Iterator<Playlist> listAllPlaylists() {
-        return Iterators.transform(playlistCollection.find(), TO_PLAYIST);
+    public List<Playlist> listPlaylists(String fromId, int batchSize) {
+        MongoQueryBuilder query = where();
+        if (fromId != null) {
+            query = query.fieldGreaterThan(MongoConstants.ID, fromId);
+        }
+        
+        return ImmutableList.copyOf(Iterables.transform(query.find(playlistCollection, sortIds, batchSize), TO_PLAYIST));
     }
 
     private Item toItem(DBObject object) {

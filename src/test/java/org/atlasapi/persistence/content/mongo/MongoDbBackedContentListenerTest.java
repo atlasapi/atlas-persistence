@@ -29,10 +29,12 @@ public class MongoDbBackedContentListenerTest  {
     public void testShouldLoadItems() throws Exception {
         bootstrapper.setBatchSize(2);
         
-        final List<Item> items = ImmutableList.of(data.eggsForBreakfast, data.englishForCats, data.everyoneNeedsAnEel);
+        final List<Item> items1 = ImmutableList.of(data.eggsForBreakfast, data.englishForCats);
+        final List<Item> items2 = ImmutableList.of(data.everyoneNeedsAnEel);
         
         context.checking(new Expectations() {{
-            one(store).listAllItems(); will(returnValue(items.iterator()));
+            one(store).listItems(null, 2); will(returnValue(items1));
+            one(store).listItems(data.englishForCats.getCanonicalUri(), 2); will(returnValue(items2));
         }});
         
         context.checking(new Expectations() {{
@@ -48,14 +50,17 @@ public class MongoDbBackedContentListenerTest  {
 
     	bootstrapper.setBatchSize(2);
         
-        final List<Playlist> playlists = ImmutableList.of(data.eastenders, data.goodEastendersEpisodes, data.dispatches);
+        final List<Playlist> playlists1 = ImmutableList.of(data.eastenders, data.goodEastendersEpisodes);
+        final List<Playlist> playlists2 = ImmutableList.<Playlist>of(data.dispatches);
         
         context.checking(new Expectations() {{
-            one(store).listAllPlaylists(); will(returnValue(playlists.iterator()));
+            one(store).listPlaylists(null, 2); will(returnValue(playlists1));
+            one(store).listPlaylists(data.goodEastendersEpisodes.getCanonicalUri(), 2); will(returnValue(playlists2));
         }});
         
         context.checking(new Expectations() {{
-            one(listener).brandChanged(ImmutableList.of(data.eastenders, data.dispatches), ContentListener.changeType.BOOTSTRAP);
+            one(listener).brandChanged(ImmutableList.of(data.eastenders), ContentListener.changeType.BOOTSTRAP);
+            one(listener).brandChanged(ImmutableList.of(data.dispatches), ContentListener.changeType.BOOTSTRAP);
         }});
         
         bootstrapper.loadAllBrands();

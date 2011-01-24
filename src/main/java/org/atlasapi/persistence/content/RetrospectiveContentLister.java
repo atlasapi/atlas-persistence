@@ -1,13 +1,13 @@
 package org.atlasapi.persistence.content;
 
-import java.util.Iterator;
+import java.util.List;
 
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Playlist;
 
 public interface RetrospectiveContentLister {
 
-	Iterator<Item> listAllItems();
+	List<Item> listItems(String fromId, int batchSize);
 	
-	Iterator<Playlist> listAllPlaylists();
+	List<Playlist> listPlaylists(String fromId, int batchSize);
 }

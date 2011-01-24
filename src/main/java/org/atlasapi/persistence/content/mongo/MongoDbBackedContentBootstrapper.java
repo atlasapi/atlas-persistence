@@ -14,7 +14,6 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -22,19 +21,19 @@ import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.persistence.content.ContentListener;
 import org.atlasapi.persistence.content.RetrospectiveContentLister;
 import org.springframework.beans.factory.InitializingBean;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Iterables;
 
 public class MongoDbBackedContentBootstrapper implements InitializingBean {
 	
     private static final Log log = LogFactory.getLog(MongoDbBackedContentBootstrapper.class);
-    private static final int BATCH_SIZE = 500;
+    private static final int BATCH_SIZE = 100;
 
     private final ContentListener contentListener;
     private final RetrospectiveContentLister contentStore;
@@ -67,44 +66,41 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
     }
 
     public void loadAllItems() {
-    	load(contentStore.listAllItems(), new Function<List<Item>, Void>() {
-			@Override
-			public Void apply(List<Item> batch) {
-				contentListener.itemChanged(batch, ContentListener.changeType.BOOTSTRAP);
-				return null;
-			}
-    	});
+        List<Item> items = ImmutableList.of();
+        String fromId = null;
+        do {
+            items = contentStore.listItems(fromId, batchSize);
+            load(items, new Function<List<Item>, Void>() {
+                @Override
+                public Void apply(List<Item> batch) {
+                    contentListener.itemChanged(batch, ContentListener.changeType.BOOTSTRAP);
+                    return null;
+                }
+            });
+            Item lastItem = Iterables.getLast(items, null);
+            fromId = lastItem != null ? lastItem.getCanonicalUri() : null;
+        } while (! items.isEmpty() && items.size() >= batchSize);
     }
 
-	private <T extends Content> void load(Iterator<T> content, final Function<List<T>, Void> handler) {
-    	List<T> contentInBatch = Lists.newArrayList();
-    	
-    	while (content.hasNext()) {
-    		contentInBatch.add(content.next());
-    		
-    		if (contentInBatch.size() >= batchSize) {
-    			inform(handler, contentInBatch);
-    			contentInBatch.clear();
-    		}
-    	}
-    	if (!contentInBatch.isEmpty()) {
-			inform(handler, contentInBatch);
-    	}
-	}
-
-	private <T> void inform(final Function<List<T>, Void> handler, List<T> contentInBatch) {
-		final ImmutableList<T> batch = ImmutableList.copyOf(contentInBatch);
-		handler.apply(batch);
+	private <T extends Content> void load(Iterable<T> contents, final Function<List<T>, Void> handler) {
+	    handler.apply(ImmutableList.copyOf(contents));
 	}
 
     public void loadAllBrands() {
-    	load(Iterators.filter(contentStore.listAllPlaylists(), Brand.class), new Function<List<Brand>, Void>() {
-			@Override
-			public Void apply(List<Brand> batch) {
-				contentListener.brandChanged(batch, ContentListener.changeType.BOOTSTRAP);
-				return null;
-			}
-    	});
+        List<Playlist> playlists = ImmutableList.of();
+        String fromId = null;
+        do {
+            playlists = contentStore.listPlaylists(fromId, batchSize);
+            load(Iterables.filter(playlists, Brand.class), new Function<List<Brand>, Void>() {
+                @Override
+                public Void apply(List<Brand> batch) {
+                    contentListener.brandChanged(batch, ContentListener.changeType.BOOTSTRAP);
+                    return null;
+                }
+            });
+            Playlist lastPlaylist = Iterables.getLast(playlists, null);
+            fromId = lastPlaylist != null ? lastPlaylist.getCanonicalUri() : null;
+        } while (! playlists.isEmpty() && playlists.size() >= batchSize);
     }
 
     public int getBatchSize() {
