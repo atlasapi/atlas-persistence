@@ -60,10 +60,10 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
         }
         loadAllBrands();
 
-        if (log.isInfoEnabled()) {
-            log.info("Bootstrapping Brands");
-        }
-        loadAllItems();
+//        if (log.isInfoEnabled()) {
+//            log.info("Bootstrapping Items");
+//        }
+//        loadAllItems();
     }
 
     public void loadAllItems() {
