@@ -18,12 +18,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
@@ -51,25 +48,25 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
-    private final static int MAX_RESULTS = 20000;
-
-    private final Log log = LogFactory.getLog(getClass());
+    private static final int MAX_RESULTS = 10000;
+    private static final MongoSortBuilder sortIds = new MongoSortBuilder().ascending(MongoConstants.ID); 
 
     private final Clock clock;
     private final DBCollection contentCollection;
@@ -401,28 +398,24 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 		throw new IllegalStateException();
 	}
 
-    List<Content> topLevelElements(DBObject query, Selection selection) {
+	@SuppressWarnings("unchecked")
+	List<Content> topLevelElements(DBObject query, Selection selection) {
 
-        DBCursor cur = cursor(contentCollection, query, selection);
+		Iterable<DBObject> cursor = cursor(contentCollection, query, selection);
 
-        if (cur == null) {
-            return ImmutableList.of();
-        }
-        int loaded = 0;
-        List<Content> items = Lists.newArrayList();
-        
-        while (cur.hasNext()) {
-            DBObject current = cur.next();
-            items.add((Content) toModel(current));
-            loaded++;
-            if (loaded > MAX_RESULTS) {
-                throw new IllegalArgumentException("Too many results for query");
-            }
-        }
-        return items;
-    }
+		if (cursor == null) {
+			return ImmutableList.of();
+		}
 
-	
+		List<DBObject> dbos = ImmutableList.copyOf(cursor);
+
+		if (dbos.size() > MAX_RESULTS) {
+			throw new IllegalArgumentException("Too many results for query");
+		}
+		return (List) Lists.transform(dbos, TO_MODEL);
+	}
+
+
 	private final Function<DBObject, Identified> TO_MODEL = new Function<DBObject, Identified>() {
 
 		@Override
@@ -430,13 +423,18 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			return toModel(dbo);
 		}
 	};
-    
+	
+    @SuppressWarnings("unchecked")
 	@Override
-	@SuppressWarnings("unchecked")
-    public Iterator<Content> listAllRoots() {
-        return (Iterator) Iterators.transform(contentCollection.find(), TO_MODEL);
+    public List<Content> listAllRoots(String fromId, int batchSize) {
+        MongoQueryBuilder query = where();
+        if (fromId != null) {
+            query = query.fieldGreaterThan(MongoConstants.ID, fromId);
+        }
+        
+        return (List) ImmutableList.copyOf(Iterables.transform(query.find(contentCollection, sortIds, batchSize), TO_MODEL));
     }
-
+  
 	private final MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
 
     public List<? extends Content> discover(ContentQuery query) {

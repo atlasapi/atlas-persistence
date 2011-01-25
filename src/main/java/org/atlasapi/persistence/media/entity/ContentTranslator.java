@@ -36,18 +36,19 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	@SuppressWarnings("unchecked")
 	public Content fromDBObject(DBObject dbObject, Content entity) {
 		describedTranslator.fromDBObject(dbObject, entity);
-		
+
 		if (dbObject.containsField(CLIPS_KEY)) {
-        	Iterable<DBObject> clipsDbos = (Iterable<DBObject>) dbObject.get(CLIPS_KEY);
-        	Iterable<Clip> clips = Iterables.transform(clipsDbos, new Function<DBObject, Clip>() {
+			Iterable<DBObject> clipsDbos = (Iterable<DBObject>) dbObject.get(CLIPS_KEY);
+			Iterable<Clip> clips = Iterables.transform(clipsDbos, new Function<DBObject, Clip>() {
 
 				@Override
 				public Clip apply(DBObject dbo) {
 					return clipTranslator.fromDBObject(dbo, null);
 				}
-        	});
-        	entity.setClips(clips);
-        }
+			});
+			entity.setClips(clips);
+		}
+
 		return entity;
 	}
 
@@ -64,6 +65,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
 			});
 			dbObject.put(CLIPS_KEY, clipDbos);
 		}
-		return dbObject;
+        return dbObject;
 	}
 }

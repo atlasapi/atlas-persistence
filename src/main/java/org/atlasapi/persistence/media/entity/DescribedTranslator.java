@@ -1,8 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.ContentType;
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -19,37 +20,42 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 	
 	@Override
 	public Described fromDBObject(DBObject dbObject, Described entity) {
-	    
-		if (entity == null) {
-		   entity = new Described();
-        }
-	    
-	    descriptionTranslator.fromDBObject(dbObject, entity);
-        
-        entity.setDescription((String) dbObject.get("description"));
-        
-        entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
-        entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, "thisOrChildLastUpdated"));
-        
-        entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
-        entity.setImage((String) dbObject.get("image"));
-        entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, "lastFetched"));
-        
-        String publisherKey = (String) dbObject.get("publisher");
-        if (publisherKey != null) {
-        	entity.setPublisher(Publisher.fromKey(publisherKey).valueOrDefault(null));
-        }
-        
-        entity.setTags(TranslatorUtils.toSet(dbObject, "tags"));
-        entity.setThumbnail((String) dbObject.get("thumbnail"));
-        entity.setTitle((String) dbObject.get("title"));
 
-        String cType = (String)dbObject.get("contentType");
-        if (cType != null) {
-        	entity.setContentType(ContentType.valueOf(cType.toUpperCase()));
-        }
-        
-       return entity;
+		if (entity == null) {
+			entity = new Described();
+		}
+
+		descriptionTranslator.fromDBObject(dbObject, entity);
+
+		entity.setDescription((String) dbObject.get("description"));
+
+		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
+		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, "thisOrChildLastUpdated"));
+
+		entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
+		entity.setImage((String) dbObject.get("image"));
+		entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, "lastFetched"));
+
+		String publisherKey = (String) dbObject.get("publisher");
+		if (publisherKey != null) {
+			entity.setPublisher(Publisher.fromKey(publisherKey).valueOrDefault(null));
+		}
+
+		entity.setTags(TranslatorUtils.toSet(dbObject, "tags"));
+		entity.setThumbnail((String) dbObject.get("thumbnail"));
+		entity.setTitle((String) dbObject.get("title"));
+
+		String cType = (String) dbObject.get("mediaType");
+		if (cType != null) {
+			entity.setMediaType(MediaType.valueOf(cType.toUpperCase()));
+		}
+
+		String specialization = (String) dbObject.get("specialization");
+		if (specialization != null) {
+			entity.setSpecialization(Specialization.valueOf(specialization.toUpperCase()));
+		}
+
+		return entity;
 	}
 
 	@Override
@@ -75,9 +81,13 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.from(dbObject, "thumbnail", entity.getThumbnail());
         TranslatorUtils.from(dbObject, "title", entity.getTitle());
         
-        if (entity.getContentType() != null) {
-        	TranslatorUtils.from(dbObject, "contentType", entity.getContentType().toString().toLowerCase());
+        if (entity.getMediaType() != null) {
+        	TranslatorUtils.from(dbObject, "mediaType", entity.getMediaType().toString().toLowerCase());
         }
+        if (entity.getSpecialization() != null) {
+            TranslatorUtils.from(dbObject, "specialization", entity.getSpecialization().toString().toLowerCase());
+        }
+        
         return dbObject;
 	}
 }

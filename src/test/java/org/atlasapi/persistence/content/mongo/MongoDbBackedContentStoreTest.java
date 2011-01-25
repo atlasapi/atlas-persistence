@@ -341,13 +341,25 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         assertEquals(ImmutableList.of(data.dotCottonsBigAdventure, data.neighbours), group.getContents());
     }
     
-    public void testShouldListAllRoots() throws Exception {
-        store.createOrUpdate(data.dispatches, true);
-        store.createOrUpdate(data.eastenders, true);
+    public void testShouldListAllItems() throws Exception {
+        store.createOrUpdate(data.eggsForBreakfast);
         store.createOrUpdate(data.englishForCats);
-
-        ImmutableList<Content> items = ImmutableList.copyOf(store.listAllRoots());
-        assertEquals(ImmutableList.of(data.dispatches, data.eastenders, data.englishForCats), items);
+        
+        ImmutableList<Content> items = ImmutableList.copyOf(store.listAllRoots(null, 2));
+        
+        assertEquals(ImmutableList.of(data.fossils, data.englishForCats), items);
+        
+        items = ImmutableList.copyOf(store.listAllRoots(data.englishForCats.getCanonicalUri(), 2));
+        
+        assertEquals(ImmutableList.of(data.eggsForBreakfast), items);
+    }
+    
+    public void testShouldListAllPlaylists() throws Exception {
+        store.createOrUpdate(data.dispatches, false);
+        store.createOrUpdate(data.eastenders, false);
+        
+        List<Content> items = ImmutableList.copyOf(store.listAllRoots(null, 2));
+        assertEquals(ImmutableList.of(data.eastenders, data.dispatches), items);
     }
     
     public void testThatItemsAreNotRemovedFromTheirBrands() throws Exception {

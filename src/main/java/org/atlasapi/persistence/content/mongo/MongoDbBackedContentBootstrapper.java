@@ -14,12 +14,10 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
@@ -27,16 +25,13 @@ import org.atlasapi.persistence.content.ContentListener;
 import org.atlasapi.persistence.content.RetrospectiveContentLister;
 import org.springframework.beans.factory.InitializingBean;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 
 public class MongoDbBackedContentBootstrapper implements InitializingBean {
 	
     private static final Log log = LogFactory.getLog(MongoDbBackedContentBootstrapper.class);
-    private static final int BATCH_SIZE = 500;
+    private static final int BATCH_SIZE = 100;
 
     private final ContentListener contentListener;
     private final RetrospectiveContentLister contentStore;
@@ -60,60 +55,39 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
         if (log.isInfoEnabled()) {
             log.info("Bootstrapping top level content");
         }
-        loadAllRoots();
+        loadAllBrands();
+        loadAllItems();
     }
 
-    public void loadAllRoots() {
-    	load(contentStore.listAllRoots(), new Function<List<Content>, Void>() {
-
-    		@Override
-			@SuppressWarnings("unchecked")
-			public Void apply(List<Content> batch) {
-				contentListener.itemChanged(Iterables.filter(batch, Item.class), ContentListener.ChangeType.BOOTSTRAP);
-				contentListener.brandChanged((Iterable<? extends Container<?>>) Iterables.filter(batch, Container.class), ContentListener.ChangeType.BOOTSTRAP);
-				return null;
-			}
-    	});
+    public void loadAllItems() {
+        loadAll(Item.class);
     }
-
-	private <T extends Content> void load(Iterator<T> content, final Function<List<T>, Void> handler) {
-    	List<T> contentInBatch = Lists.newArrayList();
-    	
-    	while (content.hasNext()) {
-    		contentInBatch.add(content.next());
-    		
-    		if (contentInBatch.size() >= batchSize) {
-    			inform(handler, contentInBatch);
-    			contentInBatch.clear();
-    		}
-    	}
-    	if (!contentInBatch.isEmpty()) {
-			inform(handler, contentInBatch);
-    	}
-	}
-
-	private <T> void inform(final Function<List<T>, Void> handler, List<T> contentInBatch) {
-		final ImmutableList<T> batch = ImmutableList.copyOf(contentInBatch);
-		handler.apply(batch);
-	}
 
     public void loadAllBrands() {
-    	load(Iterators.filter(contentStore.listAllRoots(), Brand.class), new Function<List<Brand>, Void>() {
-			@Override
-			public Void apply(List<Brand> batch) {
-				contentListener.brandChanged(batch, ContentListener.ChangeType.BOOTSTRAP);
-				return null;
-			}
-    	});
+    	loadAll(Container.class);
     }
-    public void loadAllItems() {
-    	load(Iterators.filter(contentStore.listAllRoots(), Item.class), new Function<List<Item>, Void>() {
-    		@Override
-    		public Void apply(List<Item> batch) {
-    			contentListener.itemChanged(batch, ContentListener.ChangeType.BOOTSTRAP);
-    			return null;
-    		}
-    	});
+    
+    @SuppressWarnings("unchecked")
+	private void loadAll(Class<? extends Content> filter) {
+        while(true) {
+        	String fromId = null;
+        	List<Content> roots = contentStore.listAllRoots(fromId, batchSize);
+            
+        	List<? extends Content> batch = ImmutableList.copyOf(Iterables.filter(roots, filter));
+        	
+        	if (Item.class.isAssignableFrom(filter)) {
+        		contentListener.itemChanged((List<Item>) batch, ContentListener.ChangeType.BOOTSTRAP);
+        	}
+        	
+        	if (Container.class.isAssignableFrom(filter)) {
+        		contentListener.brandChanged((List<Container<?>>) batch, ContentListener.ChangeType.BOOTSTRAP);
+        	}
+        	
+            if (roots.isEmpty() || roots.size() < batchSize) {
+            	break;
+            }
+            fromId =  Iterables.getLast(roots).getCanonicalUri();
+        }
     }
 
     public int getBatchSize() {
