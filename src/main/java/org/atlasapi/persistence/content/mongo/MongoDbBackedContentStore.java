@@ -16,19 +16,17 @@ package org.atlasapi.persistence.content.mongo;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentGroup;
@@ -50,38 +48,38 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
     private final static int MAX_RESULTS = 20000;
 
-    private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
-
+    private final Log log = LogFactory.getLog(getClass());
 
     private final Clock clock;
     private final DBCollection contentCollection;
     private final DBCollection contentGroupCollection;
-	private final DBCollection aliasesCollection;
 
     public MongoDbBackedContentStore(DatabasedMongo mongo, Clock clock) {
         super(mongo);
 		this.clock = clock;
         contentCollection = table("content");
         contentGroupCollection = table("groups");
-        aliasesCollection = table("aliases");
     }
 
     public MongoDbBackedContentStore(DatabasedMongo mongo) {
@@ -90,137 +88,131 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
 	@Override
     public void addAliases(String uri, Set<String> aliases) {
-    	boolean wasItem = addAliasesTo(uri, aliases, contentCollection);
-		if (!wasItem) {
-			addAliasesTo(uri, aliases, contentGroupCollection);
+		// TODO, this is a very crass way to edit one piece of data
+		Identified identified = findByCanonicalUri(uri);
+		if (identified == null) {
+			return;
 		}
-    }
-
-	@SuppressWarnings("unchecked")
-	private boolean addAliasesTo(String uri, Set<String> aliases, DBCollection collection) {
-		MongoQueryBuilder findByCanonicalUri = findByCanonicalUriQuery(uri);
-		Iterable<DBObject> found = findByCanonicalUri.find(collection);
-		if (!Iterables.isEmpty(found)) {
-			DBObject dbo = Iterables.getOnlyElement(found);
-			Set<String> oldAliases = ImmutableSet.copyOf(((Iterable<String>) dbo.get(DescriptionTranslator.ALIASES)));
-			collection.update(findByCanonicalUri.build(), update().setField(DescriptionTranslator.ALIASES, Sets.union(aliases, oldAliases)).build(), false, false);
-			return true;
+		identified.addAliases(aliases);
+		if (identified instanceof Item) {
+			createOrUpdate((Item) identified);
+		} 
+		if (identified instanceof Container<?>) {
+			createOrUpdate((Container<?>) identified, false);
 		}
-		return false;
-	}
-
-	private MongoQueryBuilder findByCanonicalUriQuery(String uri) {
-		return where().fieldEquals(DescriptionTranslator.CANONICAL_URI, uri);
 	}
 
     @Override
     public void createOrUpdate(Item item) {
-        createOrUpdateItem(item, null);
+        createOrUpdateItem(item);
     }
 
-    @SuppressWarnings("unchecked")
-	private void createOrUpdateItem(Item item, Container<?> parent) {
-        try {
-            Identified content = findByCanonicalUri(item.getCanonicalUri());
-            if (content != null) {
-                if (!(content instanceof Item)) {
-                    throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri()
-                                    + "  since the old entity was not an item");
-                }
-                Item oldItem = (Item) content;
+	@SuppressWarnings("unchecked")
+	private  void addOrReplace(Item item, Container<?> container) {
+		if (!container.getContents().contains(item)) {
+			((Container<Item>) container).addContents(item);
+		} else { // replace
+			List<Item> currentItems = Lists.newArrayList(container.getContents());
+			currentItems.set(currentItems.indexOf(item), item);
+			((Container<Item>) container).setContents(currentItems);
+		}
+	}
 
-                if (oldItem.getContainer() != null && item.getContainer() == null) {
-                	// don't update the item if doing so would remove it from its container
-                	return;
-                }
-                preserveAliases(item, oldItem);
-            } else {
-                item.setFirstSeen(clock.now());
-            }
-            if (parent == null) {
-            	Container<?> brand = item.getContainer();
-				if (brand != null) {
-            		Identified dbContent = findByCanonicalUri(brand.getCanonicalUri());
-            		if (dbContent instanceof Container<?>) {
-            			Container<Item> dbBrand = (Container<Item>) dbContent;
-            			if (!dbBrand.getContentUris().contains(item.getCanonicalUri())) {
-            				dbBrand.addContents(item);
-            				updateBasicPlaylistDetails(dbBrand, contentCollection);
-            			} else {
-            				dbBrand.addContents(item);
-            			}
-            		} 
-            	}
-            }
+	private void createOrUpdateItem(Item item) {
+		updateFetchData(item);
+		Identified content = findByCanonicalUri(item.getCanonicalUri());
+		if (content == null) {
+			item.setFirstSeen(clock.now());
 
-            item.setLastFetched(new DateTime());
-            setThisOrChildLastUpdated(item);
-            
-            DBObject query = new BasicDBObject();
-            query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
-            contentCollection.update(query, toDB(item), true, false);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+			if (item.getContainer() != null) {
+				Container<?> container = (Container<?>) findByCanonicalUri(item.getContainer().getCanonicalUri());
+				if (container != null) {
+					addOrReplace(item, container);
+					item.setContainer(container);
+				}
+			}
+		} else {
+			if (!(content instanceof Item)) {
+				throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() + "  since the old entity was not an item");
+			}
+			Item oldItem = (Item) content;
+			preserveAliases(item, oldItem);
+
+			if (oldItem.getFullContainer() != null) {
+				addOrReplace(item, oldItem.getFullContainer());
+				item.setContainer(oldItem.getFullContainer());
+			}
+		}
+
+		Container<?> container = item.getFullContainer();
+		if (container != null) {
+			updateBasicPlaylistDetails(container, contentCollection);
+		} else {
+			DBObject query = new BasicDBObject();
+			query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
+			contentCollection.update(query, toDB(item), true, false);
+		}
+	}
+
+	private void updateFetchData(Item item) {
+		item.setLastFetched(new DateTime());
+		setThisOrChildLastUpdated(item);
+	}
     
     @Override
     @SuppressWarnings("unchecked")
     public void createOrUpdate(Container<?> container, boolean markMissingItemsAsUnavailable) {
-        try {
-			Identified oldContent = findByCanonicalUri(container.getCanonicalUri());
+		for (Item item : container.getContents()) {
+			updateFetchData(item);
+		}
+	
+		Identified oldContent = findByCanonicalUri(container.getCanonicalUri());
 
-			if (oldContent != null) {
-				if (!(oldContent instanceof Container<?>)) {
-					throw new IllegalStateException("Cannot save container " + container.getCanonicalUri() + " because there's already an item with that uri");
+		if (oldContent != null) {
+			if (!(oldContent instanceof Container<?>)) {
+				throw new IllegalStateException("Cannot save container " + container.getCanonicalUri() + " because there's already an item with that uri");
+			}
+			Container<? extends Item> oldContainer = (Container<?>) oldContent;
+        	
+        	Set<Item> missingItems = Sets.difference(ImmutableSet.copyOf(oldContainer.getContents()), ImmutableSet.copyOf(container.getContents()));
+
+			for (Item item : missingItems) {
+				if (markMissingItemsAsUnavailable) {
+					markAllNativeVersionsAsUnavailable(item);
 				}
-				Container<?> oldPlaylist = (Container<Item>) oldContent;
-            	
-            	Set<String> oldItemUris = Sets.difference(ImmutableSet.copyOf(oldPlaylist.getContainedInUris()), ImmutableSet.copyOf(container.getContainedInUris()));
-                
-            	List<Item> oldItems = (List) findByCanonicalUri(Lists.newArrayList(oldItemUris));
-                if (markMissingItemsAsUnavailable) {
-                    for (Item item : oldItems) {
-                        for (Version version : item.getVersions()) {
-                            for (Encoding encoding : version.getManifestedAs()) {
-                                for (Location location : encoding.getAvailableAt()) {
-                                    location.setAvailable(false);
-                                    location.setLastUpdated(new DateTime(DateTimeZones.UTC));
-                                }
-                            }
-                        }
-                        ((Container<Item>) container).addContents(item);
-                    }
-                } 
-            	preservePlaylistAttributes(container, oldPlaylist);
-            }
+				((Container<Item>) container).addContents(item);
+			}
+			preservePlaylistAttributes(container, oldContainer);
+        }
 
-            for (Item item : container.getContents()) {
-             //   createOrUpdateItem(item, container);
-            }
+        if (oldContent == null) {
+            container.setFirstSeen(new DateTime());
+        }
+        
+        container.setLastFetched(new DateTime());
+        setThisOrChildLastUpdated(container);
 
-
-            if (oldContent == null) {
-                container.setFirstSeen(new DateTime());
-            }
-            
-            container.setLastFetched(new DateTime());
-            setThisOrChildLastUpdated(container);
-
-            updateBasicPlaylistDetails(container, contentCollection);
-            
-//            if (container instanceof Brand) {
-//            	Brand brand = (Brand) container;
-//            	Set<Series> series = fullSeriesFrom(brand);
-//            	for (Series sery : series) {
-//            		createOrUpdateSkeleton(sery);
-//				}
-//            }
-            
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        updateBasicPlaylistDetails(container, contentCollection);
+        
+        if (container instanceof Brand) {
+        	Brand brand = (Brand) container;
+        	Set<Series> series = fullSeriesFrom(brand);
+        	for (Series sery : series) {
+        		createOrUpdateSkeleton(sery);
+			}
         }
     }
+
+	private void markAllNativeVersionsAsUnavailable(Item item) {
+		for (Version version : item.nativeVersions()) {
+		    for (Encoding encoding : version.getManifestedAs()) {
+		        for (Location location : encoding.getAvailableAt()) {
+		            location.setAvailable(false);
+		            location.setLastUpdated(new DateTime(DateTimeZones.UTC));
+		        }
+		    }
+		}
+	}
 
 	private void preservePlaylistAttributes(Identified playlist, Identified oldPlaylist) {
 		preserveAliases(playlist, oldPlaylist);
@@ -325,6 +317,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     }
     
 	public List<? extends Identified> findByUriOrAlias(Iterable<String> uris) {
+		return findByUriOrAlias(uris, true);
+	}
+
+	private List<? extends Identified> findByUriOrAlias(Iterable<String> uris, boolean includeGroups) {
 		final ImmutableSet<String> uriSet = ImmutableSet.copyOf(uris);
 		
        	Function<Identified, Identified> extractItem = new Function<Identified, Identified>() {
@@ -335,7 +331,39 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			}
        		
        	};
-		return ImmutableList.copyOf(Iterables.transform(where().fieldIn(DescriptionTranslator.LOOKUP, uris).find(contentCollection), Functions.compose(extractItem, TO_MODEL)));
+		Iterable<Identified> foundContent = Iterables.transform(where().fieldIn(DescriptionTranslator.LOOKUP, uris).find(contentCollection), Functions.compose(extractItem, TO_MODEL));
+
+		if (includeGroups) {
+		// TODO, only do this if missing uris
+			Iterable<Identified> foundGroups = findGroupsByCanonicalUri(uris, extractItem);
+			return ImmutableList.copyOf(Iterables.concat(foundContent, foundGroups));
+		}
+		return ImmutableList.copyOf(foundContent);
+	}
+
+	private Iterable<Identified> findGroupsByCanonicalUri(Iterable<String> uris, Function<Identified, Identified> extractItem) {
+		Iterable<Identified> groups = findDehydratedGroupsByCanonicalUri(uris, extractItem);
+		Set<String> itemUris = Sets.newHashSet();
+		for (Identified identified : groups) {
+			ContentGroup group = (ContentGroup) identified;
+			itemUris.addAll(group.getContentUris());
+		}
+		ImmutableMap<String, Content> lookup = Maps.uniqueIndex(findContentByCanonicalUri(itemUris), Identified.TO_URI);
+		for (Identified identified : groups) {
+			ContentGroup group = (ContentGroup) identified;
+			
+			List<Content> content = Lists.newArrayList();
+			for (String itemUri : group.getContentUris()) {
+				content.add(lookup.get(itemUri));
+			}
+			group.setContentUris(ImmutableList.<String>of());
+			group.setContents(content);
+		}
+		return groups;
+	}
+
+	private ImmutableList<Identified> findDehydratedGroupsByCanonicalUri(Iterable<String> uris, Function<Identified, Identified> extractItem) {
+		return ImmutableList.copyOf(Iterables.transform(where().fieldIn(DescriptionTranslator.CANONICAL_URI, uris).find(contentGroupCollection), Functions.compose(extractItem, TO_MODEL)));
 	}
 
 	private <T extends Identified> Iterable<T> extractCanonical(final Set<String> uris, Iterable<T> elems) {
@@ -349,8 +377,13 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 	}
 	
 	public List<Identified> findByCanonicalUri(final Iterable<String> uris) {
-		return ImmutableList.copyOf(extractCanonical(ImmutableSet.copyOf(uris), findByUriOrAlias(uris)));
+		return ImmutableList.copyOf(extractCanonical(ImmutableSet.copyOf(uris), findByUriOrAlias(uris, true)));
     }
+
+	@SuppressWarnings("unchecked")
+	public List<Content> findContentByCanonicalUri(final Iterable<String> uris) {
+		return (List) ImmutableList.copyOf(extractCanonical(ImmutableSet.copyOf(uris), findByUriOrAlias(uris, false)));
+	}
 	
 	private static Identified extactItemIfInternalUrl(Identified content, Set<String> uris) {
 		if (!(content instanceof Container<?>)) {
@@ -368,74 +401,26 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 		throw new IllegalStateException();
 	}
 
-    List<Content> executeDiscoverQuery(DBObject query, Selection selection) {
+    List<Content> topLevelElements(DBObject query, Selection selection) {
 
-        Iterator<DBObject> cur = cursor(contentCollection, query, selection);
+        DBCursor cur = cursor(contentCollection, query, selection);
 
         if (cur == null) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         int loaded = 0;
         List<Content> items = Lists.newArrayList();
-        try {
-            while (cur.hasNext()) {
-                DBObject current = cur.next();
-                items.add((Content) toModel(current));
-                loaded++;
-                if (loaded > MAX_RESULTS) {
-                    throw new IllegalArgumentException("Too many results for query");
-                }
+        
+        while (cur.hasNext()) {
+            DBObject current = cur.next();
+            items.add((Content) toModel(current));
+            loaded++;
+            if (loaded > MAX_RESULTS) {
+                throw new IllegalArgumentException("Too many results for query");
             }
-        } catch (IllegalArgumentException e) {
-            LOG.error("IllegalArguementThrown: " + e.getMessage() + ". Query was: " + query + ", and Selection: " + selection);
-            throw e;
         }
-
         return items;
     }
-
-    private MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
-
-//    public List<Playlist> dehydratedPlaylistsMatching(ContentQuery query) {
-//        return executePlaylistQuery(queryBuilder.buildPlaylistQuery(query), null, query.getSelection(), false);
-//    }
-
-//    List<Playlist> findHydratedPlaylistsByCanonicalUri(Iterable<String> uris) {
-//        return executePlaylistQuery(where().fieldIn(DescriptionTranslator.CANONICAL_URI, ImmutableSet.copyOf(uris)).build(), null, null, true);
-//    }
-//
-//    List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
-//        List<Playlist> playlists = Lists.newArrayList();
-//        try {
-//
-//            if (type != null) {
-//                query.put("type", type);
-//            }
-//            Iterator<DBObject> cur = cursor(contentGroupCollection, query, selection);
-//            if (cur == null) {
-//                return Collections.emptyList();
-//            }
-//            int loaded = 0;
-//            try {
-//                while (cur.hasNext()) {
-//                    DBObject current = cur.next();
-//                    playlists.add(toPlaylist(current, hydrate));
-//                    loaded++;
-//                    if (loaded > MAX_RESULTS) {
-//                        throw new IllegalArgumentException("Too many results for query");
-//                    }
-//                }
-//            } catch (IllegalArgumentException e) {
-//                LOG.error("IllegalArgumentThrown: " + e.getMessage() + ". Query was: " + query + ", and Selection: " + selection);
-//                throw e;
-//            }
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//        return playlists;
-//    }
-//
 
 	
 	private final Function<DBObject, Identified> TO_MODEL = new Function<DBObject, Identified>() {
@@ -446,61 +431,15 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 		}
 	};
     
-    @Override
+	@Override
+	@SuppressWarnings("unchecked")
     public Iterator<Content> listAllRoots() {
-        throw new UnsupportedOperationException("TODO");
-        //return Iterators.transform(contentGroupCollection.find(), TO_PLAYIST);
+        return (Iterator) Iterators.transform(contentCollection.find(), TO_MODEL);
     }
 
-	private Identified toModel(DBObject object) {
-		Identified item = null;
-		if (!object.containsField("type")) {
-			throw new IllegalStateException("Missing type field");
-		}
-		String type = (String) object.get("type");
-		if (Brand.class.getSimpleName().equals(type)) {
-			item = fromDB(object, Brand.class);
-		} else if (Series.class.getSimpleName().equals(type)) {
-			item = fromDB(object, Series.class);
-		} else if (Container.class.getSimpleName().equals(type)) {
-			item = fromDB(object, Container.class);
-		} else if (Episode.class.getSimpleName().equals(type)) {
-			item = fromDB(object, Episode.class);
-		} else if (Clip.class.getSimpleName().equals(type)) {
-			item = fromDB(object, Clip.class);
-		} else if (Item.class.getSimpleName().equals(type)) {
-			item = fromDB(object, Item.class);
-		} else {
-			throw new IllegalArgumentException("Unknown type: " + type);
-		}
-		return item;
-	}
+	private final MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
 
-
-
-//    private Playlist toPlaylist(DBObject object, boolean hydrate) {
-//        Playlist playlist = null;
-//
-//        try {
-//            if (object.containsField("type") && Brand.class.getSimpleName().equals(object.get("type"))) {
-//                playlist = fromDB(object, Brand.class);
-//            } else if (object.containsField("type") && Series.class.getSimpleName().equals(object.get("type"))) {
-//                playlist = fromDB(object, Series.class);
-//            } else {
-//                playlist = fromDB(object, Playlist.class);
-//            }
-//
-//            if (hydrate) {
-//                List<Item> items = findItemsByCanonicalUri(playlist.getItemUris());
-//                playlist.setItems(items);
-//
-//                List<Playlist> subPlaylists = findHydratedPlaylistsByCanonicalUri(playlist.getPlaylistUris());
-//                playlist.setPlaylists(subPlaylists);
-//            }
-//            removeUriFromAliases(playlist);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//        return playlist;
-//    }
+    public List<? extends Content> discover(ContentQuery query) {
+        return topLevelElements(queryBuilder.buildQuery(query), query.getSelection());
+    }
 }

@@ -8,13 +8,13 @@ public class SeriesTranslator {
     
 	private static final String SERIES_NUMBER_KEY = "seriesNumber";
 	
-	private final PlaylistTranslator playlistTranslator ;
+	private final ContentGroupTranslator playlistTranslator ;
 
 	public SeriesTranslator(boolean useId) {
-		this(new PlaylistTranslator(useId));
+		this(new ContentGroupTranslator(useId));
 	}
 	
-	public SeriesTranslator(PlaylistTranslator playlistTranslator) {
+	public SeriesTranslator(ContentGroupTranslator playlistTranslator) {
 		this.playlistTranslator = playlistTranslator;
 	}
 	

@@ -6,17 +6,17 @@ import org.atlasapi.persistence.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
-public class PlaylistTranslator implements ModelTranslator<ContentGroup> {
+public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 
 	private static final String CONTENT_URIS_KEY = "contentUris";
 	
 	private final DescribedTranslator contentTranslator;
 
-	public PlaylistTranslator(boolean useId) {
+	public ContentGroupTranslator(boolean useId) {
 		this(new DescribedTranslator(new DescriptionTranslator(useId)));
 	}
 	
-	public PlaylistTranslator(DescribedTranslator contentTranslator) {
+	public ContentGroupTranslator(DescribedTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
 	}
 	
@@ -34,6 +34,7 @@ public class PlaylistTranslator implements ModelTranslator<ContentGroup> {
     public DBObject toDBObject(DBObject dbObject, ContentGroup entity) {
     	dbObject = contentTranslator.toDBObject(dbObject, entity);
     	TranslatorUtils.fromList(dbObject, entity.getContentUris(), CONTENT_URIS_KEY);
+    	dbObject.put("type", ContentGroup.class.getSimpleName());
     	return dbObject;
     }
 }

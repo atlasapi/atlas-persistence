@@ -23,6 +23,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
@@ -35,6 +36,8 @@ import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.testing.DummyContentData;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -58,13 +61,16 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     }
     
     public void testSavesAliasesForItems() throws Exception {
-    	data.englishForCats.addAlias("c");
     	
-        store.createOrUpdate(data.englishForCats);
+    	Item item = new Item("item", "item", Publisher.YOUTUBE);
+    	
+    	item.setAliases(ImmutableSet.of("c"));
+    	
+        store.createOrUpdate(item);
         
-        store.addAliases(data.englishForCats.getCanonicalUri(), ImmutableSet.of("a", "b"));
+        store.addAliases(item.getCanonicalUri(), ImmutableSet.of("a", "b"));
         
-        assertEquals(ImmutableSet.of("a", "b", "c"), store.findByCanonicalUri(data.englishForCats.getCanonicalUri()).getAliases()); 
+        assertEquals(ImmutableSet.of("a", "b", "c"), store.findByCanonicalUri(item.getCanonicalUri()).getAliases()); 
 	}
     
     public void testThatWhenFindingByUriContentThatIsACanonicalUriMatchIsUsed() throws Exception {
@@ -125,16 +131,17 @@ public class MongoDbBackedContentStoreTest extends TestCase {
        
         store.createOrUpdate(nextWeeksEastenders);
         
-        Brand brand = (Brand) store.findByCanonicalUri(data.eastenders.getCanonicalUri());
+        Brand foundBrand = (Brand) store.findByCanonicalUri(data.eastenders.getCanonicalUri());
 
-        assertEquals(data.eastenders.getCurie(), brand.getCurie());
+        assertEquals(data.eastenders.getCurie(), foundBrand.getCurie());
 
-        assertEquals(data.eastenders.getContents().size() + 1, brand.getContents().size());
-        assertTrue(brand.getContents().contains(nextWeeksEastenders)); 
+        assertEquals(data.eastenders.getContents().size() + 1, foundBrand.getContents().size());
+        assertTrue(foundBrand.getContents().contains(nextWeeksEastenders)); 
 	}
 
     public void testShouldCreateAndRetrievePlaylist() throws Exception {
-        store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+        store.createOrUpdate(data.eastenders, true);
+    	store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
 
         List<String> itemUris = Lists.newArrayList();
         for (Content item : data.goodEastendersEpisodes.getContents()) {
@@ -156,7 +163,6 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		assertEquals(data.goodEastendersEpisodes.getTitle(), groupFound.getTitle());
         assertEquals(data.goodEastendersEpisodes.getCurie(), groupFound.getCurie());
         assertNotNull(groupFound.getLastFetched());
-        assertEquals(DummyContentData.april23rd, groupFound.getThisOrChildLastUpdated());
         
         Set<String> aliases = groupFound.getAliases();
         for (String alias: aliases) {
@@ -173,61 +179,61 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         assertEquals(firstItem.getTitle(), playlistItems.iterator().next().getTitle());
     }
 
-    public void testShouldMarkUnavailableItemsAsUnavailable() throws Exception {
-        data.goodEastendersEpisodes.setContents(data.eggsForBreakfast);
-        
-        store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+	public void testShouldMarkUnavailableItemsAsUnavailable() throws Exception {
 
-        List<Identified> playlists = store.findByCanonicalUri(Lists.newArrayList(data.goodEastendersEpisodes.getCanonicalUri()));
-        assertEquals(1, playlists.size());
+		Episode eggs = new Episode("eggs", "eggs", Publisher.C4);
+		eggs.addVersion(DummyContentData.versionWithEmbeddableLocation(new DateTime(), Duration.standardDays(1), TransportType.LINK));
+		
+		Episode eel = new Episode("eel", "eel", Publisher.C4);
+		eel.addVersion(DummyContentData.versionWithEmbeddableLocation(new DateTime(), Duration.standardDays(1), TransportType.LINK));
+		
+		Episode english = new Episode("english", "english", Publisher.C4);
+		english.addVersion(DummyContentData.versionWithEmbeddableLocation(new DateTime(), Duration.standardDays(1), TransportType.LINK));
+		
+		data.eastenders.addContents(eggs);
 
-        ContentGroup groupFound = (ContentGroup) playlists.get(0);
-		assertEquals(2, groupFound.getContents().size());
+		store.createOrUpdate(data.eastenders, false);
 
-        List<Item> newItems = Lists.newArrayList();
-        newItems.add(data.eggsForBreakfast);
-        newItems.add(data.englishForCats);
-        data.goodEastendersEpisodes.setContents(newItems);
-        assertEquals(2, data.goodEastendersEpisodes.getContents().size());
-        assertEquals(2, data.goodEastendersEpisodes.getContentUris().size());
+		List<Identified> playlists = store.findByCanonicalUri(Lists.newArrayList(data.eastenders.getCanonicalUri()));
+		
+		assertEquals(1, playlists.size());
+		assertEquals(3, ((Container<?>) playlists.get(0)).getContents().size());
 
-        store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+		data.eastenders.setContents(ImmutableList.of(eggs, english));
 
-        playlists = store.findByCanonicalUri(ImmutableList.of(data.goodEastendersEpisodes.getCanonicalUri()));
-        assertEquals(1, playlists.size());
-        List<Content> items = groupFound.getContents();
-        assertEquals(3, items.size());
+		store.createOrUpdate(data.eastenders, true);
 
-        for (Content item : items) {
-            if (item.getCanonicalUri().equals(data.dotCottonsBigAdventure.getCanonicalUri())) {
-                assertFalse(isAvailable((Item) item));
-            } else {
-                assertTrue(isAvailable((Item) item));
-            }
-        }
+		playlists = store.findByCanonicalUri(Lists.newArrayList(data.eastenders.getCanonicalUri()));
+		assertEquals(1, playlists.size());
+		List<? extends Item> items = ((Container<?>) playlists.get(0)).getContents();
+		assertEquals(4, items.size());
 
-        newItems = Lists.newArrayList();
-        newItems.add(data.everyoneNeedsAnEel);
-        newItems.add(data.englishForCats);
-        data.goodEastendersEpisodes.setContents(newItems);
-        assertEquals(2, data.goodEastendersEpisodes.getContents().size());
-        assertEquals(2, data.goodEastendersEpisodes.getContentUris().size());
+		for (Item item : items) {
+			if (item.equals(eggs) || item.equals(english)) {
+				assertTrue(isAvailable(item));
+			} else {
+				assertFalse(isAvailable(item));
+			}
+		}
 
-        store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+		data.eastenders.setContents(ImmutableList.of(eel, english));
 
-        playlists = store.findByCanonicalUri(ImmutableList.of(data.goodEastendersEpisodes.getCanonicalUri()));
-        assertEquals(1, playlists.size());
-        items = groupFound.getContents();
-        assertEquals(4, items.size());
+		store.createOrUpdate(data.eastenders, true);
 
-        for (Content item : items) {
-            if (item.getCanonicalUri().equals(data.dotCottonsBigAdventure.getCanonicalUri()) || item.getCanonicalUri().equals(data.eggsForBreakfast.getCanonicalUri())) {
-                assertFalse(isAvailable((Item) item));
-            } else {
-                assertTrue(isAvailable((Item) item));
-            }
-        }
-    }
+		playlists = store.findByCanonicalUri(ImmutableList.of(data.eastenders.getCanonicalUri()));
+		assertEquals(1, playlists.size());
+		
+		items = ((Container<?>) playlists.get(0)).getContents();
+		assertEquals(5, items.size());
+
+		for (Item item : items) {
+			if (item.equals(eel) || item.equals(english)) {
+				assertTrue(isAvailable(item));
+			} else {
+				assertFalse(isAvailable(item));
+			}
+		}
+	}
 
     private boolean isAvailable(Item item) {
         assertFalse(item.getVersions().isEmpty());
@@ -260,7 +266,9 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     }
     
     public void testShouldGetBrandOrPlaylist() throws Exception {
+    	store.createOrUpdate(data.eastenders, true);
         store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+        
         List<Identified> playlists = store.findByCanonicalUri(ImmutableList.of(data.goodEastendersEpisodes.getCanonicalUri()));
         assertEquals(1, playlists.size());
         assertFalse(playlists.get(0) instanceof Brand);
@@ -273,6 +281,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     
     public void testShouldGetEpisodeOrItem() throws Exception {
         store.createOrUpdate(data.englishForCats);
+        
         List<Identified> items = store.findByCanonicalUri(ImmutableList.of(data.englishForCats.getCanonicalUri()));
         assertEquals(1, items.size());
         assertFalse(items.get(0) instanceof Episode);
@@ -317,36 +326,28 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     }
     
     public void testShouldProcessSubPlaylists() throws Exception {
-        store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+    	store.createOrUpdate(data.eastenders, true);
+    	store.createOrUpdate(data.neighbours, true);
+
+    	store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
         
         data.goodEastendersEpisodes.addContents(ImmutableList.of(data.neighbours));
         store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
         
         List<Identified> playlists = store.findByCanonicalUri(ImmutableList.of(data.goodEastendersEpisodes.getCanonicalUri()));
         assertEquals(1, playlists.size());
+        
         ContentGroup group = (ContentGroup) playlists.get(0);
-		ImmutableList<Content> subPlaylists = group.getContents();
-        assertEquals(1, subPlaylists.size());
-        assertTrue(subPlaylists.iterator().next() instanceof Brand);
+        assertEquals(ImmutableList.of(data.dotCottonsBigAdventure, data.neighbours), group.getContents());
     }
     
-    public void testShouldListAllItems() throws Exception {
-    	
-        store.createOrUpdate(data.eggsForBreakfast);
-        store.createOrUpdate(data.englishForCats);
-        store.createOrUpdate(data.fossils);
-        
-        List<Content> items = ImmutableList.copyOf(store.listAllRoots());
-        
-        assertEquals(ImmutableList.of(data.eggsForBreakfast, data.englishForCats, data.fossils), items);
-    }
-    
-    public void testShouldListAllPlaylists() throws Exception {
+    public void testShouldListAllRoots() throws Exception {
         store.createOrUpdate(data.dispatches, true);
         store.createOrUpdate(data.eastenders, true);
-        
+        store.createOrUpdate(data.englishForCats);
+
         ImmutableList<Content> items = ImmutableList.copyOf(store.listAllRoots());
-        assertEquals(ImmutableList.of(data.dispatches, data.eastenders), items);
+        assertEquals(ImmutableList.of(data.dispatches, data.eastenders, data.englishForCats), items);
     }
     
     public void testThatItemsAreNotRemovedFromTheirBrands() throws Exception {
@@ -362,7 +363,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	
     	store.createOrUpdate((new Item(itemUri, "item:curie", Publisher.BBC)));
 
-    	assertThat((Brand) ((Episode) store.findByCanonicalUri(itemUri)).getContainer(), is(brand)); 
+    	assertThat((Brand) ((Item) store.findByCanonicalUri(itemUri)).getContainer(), is(brand)); 
 	}
     
     public void testThatSavingASkeletalPlaylistThatContainsSubElementsThatArentInTheDBThrowsAnException() throws Exception {
@@ -420,10 +421,5 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		assertEquals(clock.now(), found.getFirstSeen());
 		
 		assertEquals(3, found.getContents().size());
-		
-		assertEquals(ImmutableSet.of("playlist"), ((Item) store.findByCanonicalUri("i1")).getContainedInUris());
-		assertEquals(ImmutableSet.of("playlist"), ((Item) store.findByCanonicalUri("i2")).getContainedInUris());
-
-		assertEquals(ImmutableSet.of("playlist"), ((Container<?>) store.findByCanonicalUri("subplaylist")).getContainedInUris());
 	}
 }

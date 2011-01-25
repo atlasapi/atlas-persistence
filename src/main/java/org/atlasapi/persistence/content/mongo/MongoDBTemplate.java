@@ -16,26 +16,19 @@ package org.atlasapi.persistence.content.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
-import org.atlasapi.media.entity.simple.Playlist;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
-import org.atlasapi.persistence.media.entity.ContentMentionTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
-import org.atlasapi.persistence.media.entity.PlaylistTranslator;
+import org.atlasapi.persistence.media.entity.ContentGroupTranslator;
 import org.atlasapi.persistence.media.entity.SeriesTranslator;
-import org.atlasapi.persistence.tracking.ContentMention;
 
-import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
@@ -47,11 +40,8 @@ import com.mongodb.DBObject;
 public class MongoDBTemplate {
 
 	private final ItemTranslator itemTranslator = new ItemTranslator(true);
-    private final PlaylistTranslator playlistTranslator = new PlaylistTranslator(true);
-    
+    private final ContentGroupTranslator playlistTranslator = new ContentGroupTranslator(true);
     private final ContainerTranslator brandTranslator = new ContainerTranslator(true);
-    
-    private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();
     private final SeriesTranslator seriesTranslator = new SeriesTranslator(true);
 
     protected DBObject toDB(Object obj) {
@@ -66,8 +56,6 @@ public class MongoDBTemplate {
             	return seriesTranslator.toDBObject((Series) obj);
             } else if (obj instanceof ContentGroup) {
                 return playlistTranslator.toDBObject(null, (ContentGroup) obj);
-            } else if (obj instanceof ContentMention) {
-                return contentMentionTranslator.toDBObject(null, (ContentMention) obj);
             } else {
                 throw new IllegalArgumentException("Unabled to format "+obj+" for db, type: "+obj.getClass().getSimpleName());
             }
@@ -76,22 +64,34 @@ public class MongoDBTemplate {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    protected <T> T fromDB(DBObject dbObject, Class<T> clazz) {
-        if (Item.class.isAssignableFrom(clazz)) {
-            return (T) itemTranslator.fromDBObject(dbObject, null);
-        } else if (clazz.equals(Playlist.class)) {
-            return (T) playlistTranslator.fromDBObject(dbObject, null);
-        } else if (clazz.equals(Brand.class)) {
-            return (T) brandTranslator.fromDBObject(dbObject, null);
-        } else if (clazz.equals(Series.class)) {
-        	return (T) seriesTranslator.fromDBObject(dbObject);
-        } else if (clazz.equals(ContentMention.class)) {
-            return (T) contentMentionTranslator.fromDBObject(dbObject, null);
-        } else {
-            throw new IllegalArgumentException("Unabled to read "+dbObject+" from db, type: "+clazz.getSimpleName());
-        }
-    }
+    protected Identified toModel(DBObject dbo) {
+		if (!dbo.containsField("type")) {
+			throw new IllegalStateException("Missing type field");
+		}
+		String type = (String) dbo.get("type");
+		if (Brand.class.getSimpleName().equals(type)) {
+			return brandTranslator.fromDBObject(dbo, null);
+		} 
+		if (Series.class.getSimpleName().equals(type)) {
+			return seriesTranslator.fromDBObject(dbo);
+		} 
+		if (Container.class.getSimpleName().equals(type)) {
+			return brandTranslator.fromDBObject(dbo, null);
+		} 
+		if (Episode.class.getSimpleName().equals(type)) {
+			return itemTranslator.fromDBObject(dbo, null);
+		} 
+		if (Clip.class.getSimpleName().equals(type)) {
+			return itemTranslator.fromDBObject(dbo, null);
+		}
+		if (Item.class.getSimpleName().equals(type)) {
+			return itemTranslator.fromDBObject(dbo, null);
+		}
+		if (ContentGroup.class.getSimpleName().equals(type)) {
+			return playlistTranslator.fromDBObject(dbo, null);
+		}
+		throw new IllegalArgumentException("Unknown type: " + type);
+	}
     
 	private final static int DEFAULT_BATCH_SIZE = 50;
     
@@ -109,40 +109,7 @@ public class MongoDBTemplate {
 		return table.findOne(new BasicDBObject(ID, id));
 	}
 
-    protected <T> List<T> toList(DBCursor cursor, Class<T> type) {
-        List<T> asList = Lists.newArrayList();
-        while (cursor.hasNext()) {
-            asList.add(fromDB(cursor.next(), type));
-        }
-        return asList;
-    }
-
-    
-    protected <T> List<T> executeQuery(DBCollection collection, Class<T> clazz, DBObject query, Selection selection) {
-        return elementsFrom(clazz, cursor(collection, query, selection));
-    }
-    
-    protected <T> List<T> executeQuery(DBCollection collection, Class<T> clazz, DBObject query) {
-        return elementsFrom(clazz,  collection.find(query, new BasicDBObject()));
-    }
-    
-    protected <T> List<T> executeQuery(DBCollection collection, Class<T> clazz, DBObject query, DBObject sort) {
-        return elementsFrom(clazz, collection.find(query, new BasicDBObject()).sort(sort));
-    }
-
-	private <T> List<T> elementsFrom(Class<T> clazz, Iterator<DBObject> cur) {
-		if (cur == null) {
-            return Collections.emptyList();
-        }
-        List<T> elements = Lists.newArrayList();
-        while (cur.hasNext()) {
-            DBObject current = cur.next();
-            elements.add(fromDB(current, clazz));
-        }
-        return elements;
-	}
-
-    protected Iterator<DBObject> cursor(DBCollection collection, DBObject query, Selection selection) {
+    protected DBCursor cursor(DBCollection collection, DBObject query, Selection selection) {
         if (selection != null && (selection.hasLimit() || selection.hasNonZeroOffset())) {
             return collection.find(query, new BasicDBObject(), selection.getOffset(), hardLimit(selection));
         } else {

@@ -5,9 +5,6 @@ import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentBootstrapper;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
-import org.atlasapi.persistence.content.mongo.MongoRoughSearch;
-import org.atlasapi.persistence.tracking.ContentMentionStore;
-import org.atlasapi.persistence.tracking.MongoDBBackedContentMentionStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,16 +16,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
 	private @Autowired DatabasedMongo db;
 	
-	public @Bean ContentMentionStore contentMentionStore() {
-		return new MongoDBBackedContentMentionStore(db);
-	}
 	
 	public @Bean ContentWriter persistentWriter() {
 		return eventFiringContentWriter();
-	}
-	
-	public @Bean MongoRoughSearch roughSearch() {
-		return new MongoRoughSearch(contentStore());
 	}
 	
 	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore contentStore() {

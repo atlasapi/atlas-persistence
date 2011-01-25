@@ -104,6 +104,8 @@ public class DummyContentData {
 		eastenders.setTitle("Eastenders");
 		eastenders.setContents(dotCottonsBigAdventure, peggySlapsFrank);
 		eastenders.addAlias("http://eastenders.bbc");
+		eastenders.setGenres(Sets.newHashSet("http://ref.atlasapi.org/genres/atlas/drama"));
+
 		
 		goodEastendersEpisodes = new ContentGroup("http://www.bbc.co.uk/eastenders/good", "bbc:east-good", Publisher.BBC);
 		goodEastendersEpisodes.setTitle("EastEnders: the best bits");
@@ -167,16 +169,18 @@ public class DummyContentData {
 		neighbours.setContents(susanAndCarlGoFishing);
 		
 		/* Eel fishing */
-		everyoneNeedsAnEel = new Episode("http://www.bbc.co.uk/eels", "bbc:eels", Publisher.BBC);
+		everyoneNeedsAnEel = new Episode("http://www.bbc.co.uk/eels/1", "bbc:eels:1", Publisher.BBC);
 		everyoneNeedsAnEel.setTitle("everyone needs an eel");
 		everyoneNeedsAnEel.setTags(Sets.newHashSet("eel"));
 		everyoneNeedsAnEel.setGenres(Sets.newHashSet("nature", "eels"));
 		everyoneNeedsAnEel.addVersion(versionWithEmbeddableLocation());
 		
-		eelFishing = new Brand("http://www.bbc.co.uk/eels/1", "bbc:eels:1", Publisher.BBC);
+		eelFishing = new Brand("http://www.bbc.co.uk/eels", "bbc:eels", Publisher.BBC);
 		eelFishing.setDescription("Classic marine drama");
 		eelFishing.setTitle("eel Fishing");
+		eelFishing.setGenres(Sets.newHashSet("nature", "eels"));
 		eelFishing.setContents(everyoneNeedsAnEel);
+
 		
 		/* Dispatches */
 		theCreditCrunch = new Episode("http://www.channel4.com/dispatches/25", "c4:dispatches:25", Publisher.C4);

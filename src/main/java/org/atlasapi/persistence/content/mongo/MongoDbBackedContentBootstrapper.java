@@ -58,17 +58,12 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
 
     void loadAll() {
         if (log.isInfoEnabled()) {
-            log.info("Bootstrapping Brands");
+            log.info("Bootstrapping top level content");
         }
-        loadAllBrands();
-
-        if (log.isInfoEnabled()) {
-            log.info("Bootstrapping Brands");
-        }
-        loadAllItems();
+        loadAllRoots();
     }
 
-    public void loadAllItems() {
+    public void loadAllRoots() {
     	load(contentStore.listAllRoots(), new Function<List<Content>, Void>() {
 
     		@Override
@@ -109,6 +104,15 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
 				contentListener.brandChanged(batch, ContentListener.ChangeType.BOOTSTRAP);
 				return null;
 			}
+    	});
+    }
+    public void loadAllItems() {
+    	load(Iterators.filter(contentStore.listAllRoots(), Item.class), new Function<List<Item>, Void>() {
+    		@Override
+    		public Void apply(List<Item> batch) {
+    			contentListener.itemChanged(batch, ContentListener.ChangeType.BOOTSTRAP);
+    			return null;
+    		}
     	});
     }
 

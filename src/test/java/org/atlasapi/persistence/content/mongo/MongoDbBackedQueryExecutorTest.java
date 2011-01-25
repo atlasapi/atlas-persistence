@@ -17,7 +17,6 @@ package org.atlasapi.persistence.content.mongo;
 import static org.atlasapi.content.criteria.ContentQueryBuilder.query;
 import static org.atlasapi.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_END_TIME;
 import static org.atlasapi.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_TIME;
-import static org.atlasapi.content.criteria.attribute.Attributes.EPISODE_POSITION;
 import static org.atlasapi.content.criteria.attribute.Attributes.LOCATION_TRANSPORT_TYPE;
 import static org.atlasapi.content.criteria.attribute.Attributes.VERSION_DURATION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,13 +61,12 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
     private MongoDbBackedContentStore store;
     private MongoDBQueryExecutor queryExecutor;
     
-
     @Override
     protected void setUp() throws Exception {
     	super.setUp();
     	
     	store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyTestDatabase());
-    	queryExecutor = new MongoDBQueryExecutor(new MongoRoughSearch(store));
+    	queryExecutor = new MongoDBQueryExecutor(store);
     	
     	store.createOrUpdate(data.eastenders, true);
     	store.createOrUpdate(data.apprentice, true);
@@ -111,7 +109,7 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	
 	public void testSelections() throws Exception {
 		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(0, 3)), data.eastenders, data.apprentice, data.newsNight);
-		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(1, 3)), data.apprentice, data.newsNight);
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(1, 3)), data.apprentice, data.newsNight, data.eelFishing);
 		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(0, 1)), data.eastenders);
 		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.BBC).withSelection(new Selection(1, 2)), data.apprentice, data.newsNight);
 	}
@@ -141,11 +139,11 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	}
 	
 	public void testFindingAvailableItems() throws Exception {
-		checkDiscover(query().equalTo(Attributes.LOCATION_AVAILABLE, true), data.brainSurgery, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.eastenders, data.eastenders);
+		checkDiscover(query().equalTo(Attributes.LOCATION_AVAILABLE, true), data.apprentice, data.englishForCats, data.eggsForBreakfast, data.eelFishing, data.newsNight, data.eastenders);
 	}
 	
 	public void testFindingAvailableAndLongFormContent() throws Exception {
-		checkDiscover(query().equalTo(Attributes.LOCATION_AVAILABLE, true).equalTo(Attributes.ITEM_IS_LONG_FORM, true), data.englishForCats, data.dotCottonsBigAdventure, data.peggySlapsFrank, data.interviewWithMp);
+		checkDiscover(query().equalTo(Attributes.LOCATION_AVAILABLE, true).equalTo(Attributes.ITEM_IS_LONG_FORM, true), data.englishForCats, data.eastenders, data.newsNight);
 	}
 
 	public void testItemPublisherEquality() throws Exception {
@@ -153,29 +151,21 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		
 		checkDiscover(query().equalTo(Attributes.DESCRIPTION_PUBLISHER, Publisher.YOUTUBE), data.englishForCats, data.eggsForBreakfast); 
 
-		checkDiscover(query().isAnEnumIn(Attributes.DESCRIPTION_PUBLISHER, ImmutableList.<Enum<Publisher>>of(Publisher.C4, Publisher.YOUTUBE)), data.englishForCats, data.eggsForBreakfast,  data.ER);
-	}
-	
-	
-	public void testEpisodeNumberForItems() throws Exception {
-		checkDiscover(query().equalTo(EPISODE_POSITION, 2), data.peggySlapsFrank);
-		
-		checkDiscover(query().lessThan(EPISODE_POSITION, 2), data.dotCottonsBigAdventure);
+		checkDiscover(query().isAnEnumIn(Attributes.DESCRIPTION_PUBLISHER, ImmutableList.<Enum<Publisher>>of(Publisher.C4, Publisher.YOUTUBE)), data.englishForCats, data.eggsForBreakfast);
 	}
 	
 	public void testTransportTypeEqualsForItems() throws Exception {
-		checkDiscover(query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM), data.dotCottonsBigAdventure, data.peggySlapsFrank);
+		checkDiscover(query().equalTo(LOCATION_TRANSPORT_TYPE, TransportType.STREAM), data.eastenders);
 	}
 		
 	public void testGenreEqualsForItems() throws Exception {
 		checkDiscover(query().equalTo(Attributes.DESCRIPTION_GENRE, "http://ref.atlasapi.org/genres/atlas/drama"),  data.englishForCats, data.eastenders);
-		checkDiscover(query().equalTo(Attributes.DESCRIPTION_GENRE, "eels"),  data.everyoneNeedsAnEel);
+		checkDiscover(query().equalTo(Attributes.DESCRIPTION_GENRE, "eels"),  data.eelFishing);
 	}
 
 	public void testDurationGreaterThanForItems() throws Exception {
-		checkDiscover(query().greaterThan(VERSION_DURATION, 20),   data.dotCottonsBigAdventure, data.peggySlapsFrank, data.interviewWithMp);
-		
-		checkDiscover(query().greaterThan(VERSION_DURATION, 30), data.interviewWithMp);
+		checkDiscover(query().greaterThan(VERSION_DURATION, 20),   data.eastenders, data.newsNight);
+		checkDiscover(query().greaterThan(VERSION_DURATION, 30), data.newsNight);
 	}
 	
 	public void testTransmittedNowForItems() throws Exception {
@@ -213,7 +203,6 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		checkDiscover(query().equalTo(Attributes.BROADCAST_ON, "c2").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()), showStartingAt10Am);
 		
 		checkDiscoverMatchesNothing(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()));
-		
 	}
 
 	private ContentQueryBuilder transmissionTimeQuery(DateTime when) {
@@ -240,10 +229,10 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 	
 	public void testTransmittedAfterForItems() throws Exception {
 		ContentQueryBuilder query = query().after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april22nd1930); 
-		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.peggySlapsFrank, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
+		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.eelFishing, data.eastenders, data.newsNight, data.apprentice);
 		
 		query = query().after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april23rd); 
-		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.everyoneNeedsAnEel, data.interviewWithMp, data.brainSurgery, data.sellingStuff);
+		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.eelFishing, data.newsNight, data.apprentice);
 	}
 	
 	private void checkDiscoverMatchesNothing(ContentQueryBuilder query) {

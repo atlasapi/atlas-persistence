@@ -13,9 +13,9 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
-public class PlaylistTranslatorTest extends TestCase {
+public class ContentGroupTranslatorTest extends TestCase {
 	
-    PlaylistTranslator pt = new PlaylistTranslator(true);
+    private final ContentGroupTranslator pt = new ContentGroupTranslator(true);
     
     @SuppressWarnings("unchecked")
     public void testFromPlaylist() throws Exception {
@@ -30,7 +30,7 @@ public class PlaylistTranslatorTest extends TestCase {
         DBObject obj = pt.toDBObject(null, playlist);
         assertEquals("uri", obj.get(DescriptionTranslator.CANONICAL_URI));
         
-        List<String> i = (List<String>) obj.get("itemUris");
+        List<String> i = (List<String>) obj.get("contentUris");
         assertEquals(1, i.size());
         for (String item : i) {
             playlist.getContents().contains(item);

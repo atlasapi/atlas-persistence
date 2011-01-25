@@ -17,29 +17,32 @@ package org.atlasapi.persistence.content.mongo;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
+import com.metabroadcast.common.query.Selection;
 
 @SuppressWarnings("unchecked")
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
-	private final MongoRoughSearch roughSearch;
+	private final MongoDbBackedContentStore roughSearch;
 	
 	private boolean filterUriQueries = false;
 	
-	public MongoDBQueryExecutor(MongoRoughSearch roughSearch) {
+	public MongoDBQueryExecutor(MongoDbBackedContentStore roughSearch) {
 		this.roughSearch = roughSearch;
 	}
 	
@@ -105,54 +108,6 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		return sort((List<Identified>) filter(query, content, filterUriQueries), uris);
 	}
 
-//	private List<Brand> filterEmpty(List<Brand> brands) {
-//		List<Brand> filtered = Lists.newArrayList();
-//		for (Brand brand : brands) {
-//			if (!brand.getContents().isEmpty()) {
-//				filtered.add(brand);
-//			}
-//		}
-//		return filtered;
-//	}
-
-//	private void hydratePlaylists(List<? extends Playlist> playlists, List<Item> subItems, List<? extends Playlist> subPlaylists) {
-//		Map<String, Item> itemLookup = toMapByUri(subItems);
-//		
-//		Map<String, ? extends Playlist> playlistLookup = null;
-//		if (subPlaylists != null) {
-//			 playlistLookup = toMapByUri(subPlaylists);
-//		}
-//		
-//		for (Playlist playlist : playlists) {
-//			List<String> itemUris = Lists.newArrayList(playlist.getItemUris());
-//			playlist.setItems(Lists.<Item>newArrayList());
-//			for (String itemUri : itemUris) {
-//				Item item = itemLookup.get(itemUri);
-//				if (item != null) {
-//					playlist.addItem(item);
-//				}
-//			}
-//			
-//			if (subPlaylists != null) {
-//				List<String> subPlaylistUris = Lists.newArrayList(playlist.getPlaylistUris());
-//				playlist.setPlaylists(Lists.<Playlist>newArrayList());
-//				for (String subPlaylistUri : subPlaylistUris) {
-//					Playlist subPlaylist = playlistLookup.get(subPlaylistUri);
-//					if (subPlaylist != null) {
-//						playlist.addPlaylist(subPlaylist);
-//					}
-//				}
-//			}
-//		}
-//	}
-		
-	/** 
-	 * Util method for converting a list of Descriptions into a lookup-by-uri map.
-	 */
-	private <T extends Identified> Map<String, T> toMapByUri(List<T> elems) {
-		return Maps.uniqueIndex(elems, Identified.TO_URI);
-	}
-	
 	private <T  extends Identified> List<T> filter(ContentQuery query, List<T> brands, boolean removeItemsThatDontMatch) {
 		return trimmer.trim(brands, query, removeItemsThatDontMatch);
 	}
@@ -163,6 +118,23 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 
 	@Override
 	public Schedule schedule(ContentQuery query) {
-		throw new UnsupportedOperationException("TODO");
+		if (!Selection.ALL.equals(query.getSelection())) {
+			throw new IllegalArgumentException("Cannot paginate schedule queries using limit and offset, change the transmission window instead");
+		}
+		List<Content> found = discover(query);
+		
+		return Schedule.fromItems(Iterables.concat(Iterables.transform(found, TO_ITEMS)));
 	}
+	
+	private static final Function<Content, List<Item>> TO_ITEMS = new Function<Content, List<Item>>() {
+
+		@Override
+		public List<Item> apply(Content input) {
+			if (input instanceof Item) {
+				return ImmutableList.of((Item) input);
+			} else {
+				return ((Container<Item>) input).getContents();
+			}
+		}
+	};
 }

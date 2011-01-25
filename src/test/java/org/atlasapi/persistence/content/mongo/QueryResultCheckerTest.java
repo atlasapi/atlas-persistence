@@ -31,6 +31,7 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.mongo.QueryResultTrimmer;
 import org.joda.time.Duration;
@@ -74,7 +75,7 @@ public class QueryResultCheckerTest {
 	@Test
 	public void testAQueryThatShouldNotBeTrimmed() throws Exception {
 		
-		Item item = new Item();
+		Item item = publicItem();
 		
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
@@ -85,7 +86,7 @@ public class QueryResultCheckerTest {
 	
 	@Test
 	public void testTrimmingVersions() throws Exception {
-		Item item = new Item();
+		Item item = publicItem();
 		
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
@@ -99,15 +100,15 @@ public class QueryResultCheckerTest {
 	
 	@Test
 	public void testTrimmingContainers() throws Exception {
-		Item item = new Item();
+		Item item = publicItem();
 		
 		item.addVersion(shortVersion);
 		item.addVersion(longVersion);
 		
-		Container<Item> container = new Container<Item>();
+		Container<Item> container = publicContainer();
 		container.setContents(item);
 		
-		List<Container<Item>> found = trimmer.trim(Collections.singletonList(container), query().equalTo(VERSION_DURATION, 10).build(), true);
+		List<Container<Item>> found = trimmer.trim(Collections.singletonList(container), query().equalTo(VERSION_DURATION, 10).build(), false);
 		
 		assertEquals(ImmutableList.of(container), found);
 		
@@ -118,7 +119,7 @@ public class QueryResultCheckerTest {
 	
 	@Test
 	public void testTrimmingALocationByAvailablity() {
-		Item item = new Item();
+		Item item = publicItem();
 		
 		shortVersion.addManifestedAs(encodingWithLocation(availableLocation));
 		longVersion.addManifestedAs(encodingWithLocation(unavailableLocation));
@@ -138,7 +139,7 @@ public class QueryResultCheckerTest {
 	
 	@Test
 	public void testTrimmingALocationByTransportType() {
-		Item item = new Item();
+		Item item = publicItem();
 		
 		shortVersion.addManifestedAs(encodingWithLocation(availableLocation));
 		longVersion.addManifestedAs(encodingWithLocation(streamingLocation));
@@ -152,7 +153,7 @@ public class QueryResultCheckerTest {
 	
 	@Test
 	public void testCompoundQueries() throws Exception {
-		Item item1 = new Item();
+		Item item1 = publicItem();
 		item1.setIsLongForm(true);
 		
 		Encoding encoding = encodingWithLocation(availableLocation);
@@ -172,5 +173,17 @@ public class QueryResultCheckerTest {
 		Encoding encoding = new Encoding();
 		encoding.addAvailableAt(location);
 		return encoding;
+	}
+	
+	private Item publicItem() {
+		Item item = new Item();
+		item.setPublisher(Publisher.YOUTUBE);
+		return item;
+	}
+	
+	private Container<Item> publicContainer() {
+		Container<Item> container = new Container<Item>();
+		container.setPublisher(Publisher.YOUTUBE);
+		return container;
 	}
 }

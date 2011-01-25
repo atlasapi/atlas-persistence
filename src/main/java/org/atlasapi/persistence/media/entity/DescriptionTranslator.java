@@ -79,6 +79,7 @@ public class DescriptionTranslator implements ModelTranslator<Identified> {
         	lookupElems.add(entity.getCurie());
         }
         lookupElems.addAll(entity.getAliases());
+        lookupElems.addAll(entity.getEquivalentTo());
         return lookupElems;
 	}
 }

@@ -14,6 +14,7 @@ import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
@@ -63,7 +64,10 @@ public class ItemTranslatorTest extends TestCase {
             assertTrue(tags.contains(tag));
         }
         
-        BasicDBList vs = (BasicDBList) dbObject.get("versions");
+        Iterable<DBObject> items = (Iterable<DBObject>) dbObject.get("contents");
+        DBObject itemDdbo = Iterables.getOnlyElement(items);
+        
+        BasicDBList vs = (BasicDBList) itemDdbo.get("versions");
         assertEquals(1, vs.size());
         DBObject v = (DBObject) vs.get(0);
         assertEquals(version.getDuration(), v.get("duration"));
@@ -116,8 +120,6 @@ public class ItemTranslatorTest extends TestCase {
         Item i = it.fromDBObject(dbObject, null);
         assertEquals(i.getCanonicalUri(), item.getCanonicalUri());
         assertEquals(i.getCurie(), item.getCurie());
-        Set<String> cUris = i.getContainedInUris();
-        assertEquals(1, cUris.size());
         
         Set<String> t = i.getTags();
         for (String tag: t) {
