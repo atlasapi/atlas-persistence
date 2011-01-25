@@ -53,6 +53,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableList.Builder;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
@@ -428,29 +429,21 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Defini
     }
 
     List<Item> executeItemQuery(DBObject query, Selection selection) {
-
-        Iterator<DBObject> cur = cursor(itemCollection, query, selection);
-
-        if (cur == null) {
-            return Collections.emptyList();
+        Builder<Item> items = ImmutableList.builder();
+        List<DBObject> cur = ImmutableList.copyOf(cursor(itemCollection, query, selection));
+        if (cur == null || cur.isEmpty()) {
+            return items.build();
         }
-        int loaded = 0;
-        List<Item> items = Lists.newArrayList();
-        try {
-            while (cur.hasNext()) {
-                DBObject current = cur.next();
-                items.add(toItem(current));
-                loaded++;
-                if (loaded > MAX_RESULTS) {
-                    throw new IllegalArgumentException("Too many results for query");
-                }
-            }
-        } catch (IllegalArgumentException e) {
-            LOG.error("IllegalArguementThrown: " + e.getMessage() + ". Query was: " + query + ", and Selection: " + selection);
-            throw e;
+        if (cur.size() > MAX_RESULTS) {
+            LOG.error("Too many results returned for item request. Query was: " + query + ", and Selection: " + selection);
+            throw new IllegalArgumentException("Too many results for query");
+        }
+        
+        for (DBObject current: cur) {
+            items.add(toItem(current));
         }
 
-        return items;
+        return items.build();
     }
 
     private MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
@@ -474,35 +467,25 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Defini
     }
 
     List<Playlist> executePlaylistQuery(DBObject query, String type, Selection selection, boolean hydrate) {
-        List<Playlist> playlists = Lists.newArrayList();
-        try {
-
-            if (type != null) {
-                query.put("type", type);
-            }
-            Iterator<DBObject> cur = cursor(playlistCollection, query, selection);
-            if (cur == null) {
-                return Collections.emptyList();
-            }
-            int loaded = 0;
-            try {
-                while (cur.hasNext()) {
-                    DBObject current = cur.next();
-                    playlists.add(toPlaylist(current, hydrate));
-                    loaded++;
-                    if (loaded > MAX_RESULTS) {
-                        throw new IllegalArgumentException("Too many results for query");
-                    }
-                }
-            } catch (IllegalArgumentException e) {
-                LOG.error("IllegalArguementThrown: " + e.getMessage() + ". Query was: " + query + ", and Selection: " + selection);
-                throw e;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        Builder<Playlist> playlists = ImmutableList.builder();
+        if (type != null) {
+            query.put("type", type);
+        }
+        
+        List<DBObject> cur = ImmutableList.copyOf(cursor(playlistCollection, query, selection));
+        if (cur == null || cur.isEmpty()) {
+            return playlists.build();
+        }
+        if (cur.size() > MAX_RESULTS) {
+            LOG.error("Query resulted in too many results. Query was: " + query + ", and Selection: " + selection);
+            throw new IllegalArgumentException("Too many results for query");
+        }
+        
+        for (DBObject current: cur) {
+            playlists.add(toPlaylist(current, hydrate));
         }
 
-        return playlists;
+        return playlists.build();
     }
 
     @Override
