@@ -20,8 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -69,7 +67,7 @@ import com.mongodb.DBObject;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements DefinitiveContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
-    private static final int MAX_RESULTS = 10000;
+    private static final int MAX_RESULTS = 20000;
     private static final MongoSortBuilder sortIds = new MongoSortBuilder().ascending(MongoConstants.ID); 
 
     private static final Log LOG = LogFactory.getLog(MongoDbBackedContentStore.class);
