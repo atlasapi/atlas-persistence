@@ -10,7 +10,7 @@ public class ClipTranslator implements ModelTranslator<Clip> {
 	private final ItemTranslator itemTranslator;
 	
 	public ClipTranslator() {
-		itemTranslator = new ItemTranslator(new ContentTranslator(new DescribedTranslator(new DescriptionTranslator(false)), this));
+		itemTranslator = new ItemTranslator(new ContentTranslator(new DescribedTranslator(new DescriptionTranslator()), this));
 	}
     
     @Override

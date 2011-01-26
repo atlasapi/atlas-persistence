@@ -8,7 +8,6 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
-import org.atlasapi.persistence.media.entity.SeriesTranslator.SeriesSummaryTranslator;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -22,20 +21,19 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String VERSIONS_KEY = "versions";
 	private static final String TYPE_KEY = "type";
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
-	private static final String EMBEDDED_SERIES_KEY = "series";
 	private static final String SYNTHETIC_KEY = "synthetic";
+	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
+
 	
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator = new VersionTranslator();
     
-    private final SeriesSummaryTranslator embeddedSeriesTranslator = new SeriesTranslator.SeriesSummaryTranslator();
-
     ItemTranslator(ContentTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
     }
     
-    public ItemTranslator(boolean useIds) {
-    	this(new ContentTranslator(useIds));
+    public ItemTranslator() {
+    	this(new ContentTranslator());
     }
     
     @SuppressWarnings("unchecked")
@@ -61,25 +59,15 @@ public class ItemTranslator implements ModelTranslator<Item> {
             }
             item.setVersions(versions);
         }
-        
-//        if (dbObject.containsField(EMBEDDED_CONTAINER_KEY)) {
-//            Container<?> brand = embeddedContainerTranslator.fromDBObject((DBObject) dbObject.get(EMBEDDED_CONTAINER_KEY), null);
-//            entity.setContainer(brand);
-//        }
 
         if (item instanceof Episode) {
         	Episode episode = (Episode) item;
-        	if (dbObject.containsField(EMBEDDED_SERIES_KEY)) {
-        		Series series = embeddedSeriesTranslator.fromDBObject((DBObject) dbObject.get(EMBEDDED_SERIES_KEY));
-        		episode.setSeries(series);
-        	}
-
         	episode.setEpisodeNumber((Integer) dbObject.get("episodeNumber"));
         	episode.setSeriesNumber((Integer) dbObject.get("seriesNumber"));
+        	if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
+        		episode.setSeriesUri((String) dbObject.get(EPISODE_SERIES_URI_KEY));
+        	}
         }
-        
-        
-        
         return item;
     }
 
@@ -108,22 +96,14 @@ public class ItemTranslator implements ModelTranslator<Item> {
             }
             itemDbo.put(VERSIONS_KEY, list);
         }
-        
-//        if (entity.getBrand() != null) {
-//            DBObject brand = embeddedContainerTranslator.toDBObject(null, entity.getBrand());
-//            dbObject.put(EMBEDDED_CONTAINER_KEY, brand);
-//        }
-//        
 		
 		if (entity instanceof Episode) {
 			Episode episode = (Episode) entity;
 			TranslatorUtils.from(itemDbo, "episodeNumber", episode.getEpisodeNumber());
 			TranslatorUtils.from(itemDbo, "seriesNumber", episode.getSeriesNumber());
-
-			Series seriesSummary = episode.getSeriesSummary();
-			if (seriesSummary != null) {
-				DBObject series = embeddedSeriesTranslator.toDBObjectForSummary(seriesSummary);
-				itemDbo.put(EMBEDDED_SERIES_KEY, series);
+			Series series = episode.getSeries();
+			if (series != null) {
+				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getCanonicalUri());
 			}
 		}
 		

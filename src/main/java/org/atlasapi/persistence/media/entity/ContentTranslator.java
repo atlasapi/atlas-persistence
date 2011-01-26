@@ -19,8 +19,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	private ClipTranslator clipTranslator;
 	private final DescribedTranslator describedTranslator;
 	
-	public ContentTranslator(boolean useIds) {
-		this(new DescribedTranslator(new DescriptionTranslator(useIds)), new ClipTranslator());
+	public ContentTranslator() {
+		this(new DescribedTranslator(new DescriptionTranslator()), new ClipTranslator());
 	}
 	
 	public ContentTranslator(DescribedTranslator describedTranslator, ClipTranslator clipTranslator) {

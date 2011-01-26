@@ -15,7 +15,7 @@ import com.mongodb.DBObject;
 
 public class ContentGroupTranslatorTest extends TestCase {
 	
-    private final ContentGroupTranslator pt = new ContentGroupTranslator(true);
+    private final ContentGroupTranslator pt = new ContentGroupTranslator();
     
     @SuppressWarnings("unchecked")
     public void testFromPlaylist() throws Exception {

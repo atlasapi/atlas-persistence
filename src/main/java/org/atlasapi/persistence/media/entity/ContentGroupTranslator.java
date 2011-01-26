@@ -12,8 +12,8 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 	
 	private final DescribedTranslator contentTranslator;
 
-	public ContentGroupTranslator(boolean useId) {
-		this(new DescribedTranslator(new DescriptionTranslator(useId)));
+	public ContentGroupTranslator() {
+		this(new DescribedTranslator(new DescriptionTranslator()));
 	}
 	
 	public ContentGroupTranslator(DescribedTranslator contentTranslator) {

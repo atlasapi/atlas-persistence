@@ -23,6 +23,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Container;
@@ -34,6 +35,7 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.testing.DummyContentData;
 import org.joda.time.DateTime;
@@ -342,16 +344,20 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     }
     
     public void testShouldListAllItems() throws Exception {
-        store.createOrUpdate(data.eggsForBreakfast);
-        store.createOrUpdate(data.englishForCats);
+        Item item1 = new Item("1", "1", Publisher.BLIP);
+        Item item2 = new Item("2", "2", Publisher.BLIP);
+        Item item3 = new Item("3", "3", Publisher.BLIP);
+		store.createOrUpdate(item1);
+		store.createOrUpdate(item2);
+		store.createOrUpdate(item3);
         
         ImmutableList<Content> items = ImmutableList.copyOf(store.listAllRoots(null, 2));
         
-        assertEquals(ImmutableList.of(data.fossils, data.englishForCats), items);
+        assertEquals(ImmutableList.of(item1, item2), items);
         
-        items = ImmutableList.copyOf(store.listAllRoots(data.englishForCats.getCanonicalUri(), 2));
+        items = ImmutableList.copyOf(store.listAllRoots(item2.getCanonicalUri(), 2));
         
-        assertEquals(ImmutableList.of(data.eggsForBreakfast), items);
+        assertEquals(ImmutableList.of(item3), items);
     }
     
     public void testShouldListAllPlaylists() throws Exception {
@@ -373,7 +379,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	
     	assertThat((Brand) ((Episode) store.findByCanonicalUri(itemUri)).getContainer(), is(brand)); 
     	
-    	store.createOrUpdate((new Item(itemUri, "item:curie", Publisher.BBC)));
+    	store.createOrUpdate((new Episode(itemUri, "item:curie", Publisher.BBC)));
 
     	assertThat((Brand) ((Item) store.findByCanonicalUri(itemUri)).getContainer(), is(brand)); 
 	}
@@ -433,5 +439,45 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		assertEquals(clock.now(), found.getFirstSeen());
 		
 		assertEquals(3, found.getContents().size());
+	}
+    
+    public void testPersistingTopLevelSeries() throws Exception {
+    	Episode ep2 = new Episode("2", "2", Publisher.BBC);
+
+    	Series series = new Series("1", "1", Publisher.BBC).withSeriesNumber(10);
+		series.addContents(ep2);
+		
+		store.createOrUpdate(series, true);
+    	
+		Series found = (Series) store.findByCanonicalUri(series.getCanonicalUri());
+		
+		assertEquals(10, (int) found.getSeriesNumber());
+		
+		assertEquals(ImmutableList.of(ep2), found.getContents());
+		
+		Episode foundEpisode = (Episode) store.findByCanonicalUri(ep2.getCanonicalUri());
+		assertEquals(series, foundEpisode.getContainer());
+	}
+    
+    public void testPersistingSeriesThatArePartOfABrand() throws Exception {
+    	Episode ep2 = new Episode("2", "2", Publisher.BBC);
+
+    	Brand brand = new Brand("brand", "brand", Publisher.BBC);
+    	brand.setContents(ep2);
+    	
+    	Series series = new Series("series", "series", Publisher.BBC).withSeriesNumber(10);
+    	series.setContents(ep2);
+    	
+		store.createOrUpdate(brand, true);
+		
+		assertEquals(ImmutableList.of(brand), store.discover(ContentQuery.MATCHES_EVERYTHING));
+		
+		Episode foundEpisode = (Episode) store.findByCanonicalUri(ep2.getCanonicalUri());
+		
+		assertEquals(series, foundEpisode.getSeries());
+		assertEquals(brand, foundEpisode.getContainer());
+		
+		Series found = (Series) store.findByCanonicalUri(series.getCanonicalUri());
+		assertEquals(10, (int) found.getSeriesNumber());
 	}
 }

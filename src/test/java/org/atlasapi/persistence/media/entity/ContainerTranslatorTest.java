@@ -15,7 +15,7 @@ import com.mongodb.DBObject;
 
 public class ContainerTranslatorTest extends TestCase {
 
-	ContainerTranslator bt = new ContainerTranslator(true);
+	ContainerTranslator bt = new ContainerTranslator();
     
     @SuppressWarnings("unchecked")
     public void testFromBrand() throws Exception {

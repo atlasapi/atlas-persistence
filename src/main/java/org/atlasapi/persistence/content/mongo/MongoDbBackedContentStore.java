@@ -29,7 +29,6 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Encoding;
-import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
@@ -44,6 +43,7 @@ import org.joda.time.DateTime;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -190,14 +190,19 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         setThisOrChildLastUpdated(container);
 
         updateBasicPlaylistDetails(container, contentCollection);
-        
+
+        // The items and series inside a brand cannot be top level items any more
+        // so we remove them as outer elements
+        Set<String> notTopLevel = Sets.newHashSet(container.getContentUris());
         if (container instanceof Brand) {
         	Brand brand = (Brand) container;
-        	Set<Series> series = fullSeriesFrom(brand);
-        	for (Series sery : series) {
-        		createOrUpdateSkeleton(sery);
-			}
+        	notTopLevel.addAll(Collections2.transform(brand.getSeries(), Identified.TO_URI));
         }
+        removeTopLevelElements(notTopLevel);
+    }
+    
+    private void removeTopLevelElements(Iterable<String> elems) {
+    	contentCollection.remove(where().idIn(elems).build());
     }
 
 	private void markAllNativeVersionsAsUnavailable(Item item) {
@@ -286,20 +291,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         return current;
     }
 
-    private Set<Series> fullSeriesFrom(Container<?> brand) {
-    	Set<Series> series = Sets.newHashSet();
-    	for (Item item : brand.getContents()) {
-			if (item instanceof Episode) {
-				Episode episode = (Episode) item;
-				Series sery = episode.getHydratedSeries();
-				if (sery != null) {
-					series.add(sery);
-				}
-			}
-		}
-    	return series;
-    }
-
     private void preserveAliases(Identified newDesc, Identified oldDesc) {
         Set<String> oldAliases = Sets.difference(oldDesc.getAliases(), newDesc.getAliases());
 
@@ -328,7 +319,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			}
        		
        	};
-		Iterable<Identified> foundContent = Iterables.transform(where().fieldIn(DescriptionTranslator.LOOKUP, uris).find(contentCollection), Functions.compose(extractItem, TO_MODEL));
+		Iterable<Identified> foundContent = Iterables.transform(where().fieldIn(LOOKUP, uris).find(contentCollection), Functions.compose(extractItem, TO_MODEL));
 
 		if (includeGroups) {
 		// TODO, only do this if missing uris
@@ -386,13 +377,20 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 		if (!(content instanceof Container<?>)) {
 			return content; 
 		}
-		if (!Sets.intersection(DescriptionTranslator.lookupElemsFor(content), uris).isEmpty()) {
+		if (!Sets.intersection(directLookupElemsFor(content), uris).isEmpty()) {
 			return content;
 		}
 		Container<?> container = (Container<?>) content;
 		for (Item item : container.getContents()) {
-			if (!Sets.intersection(DescriptionTranslator.lookupElemsFor(item), uris).isEmpty()) {
+			if (!Sets.intersection(directLookupElemsFor(item), uris).isEmpty()) {
 				return item;
+			}
+		}
+		if (container instanceof Brand) {
+			for (Series series : ((Brand) container).getSeries()) {
+				if (!Sets.intersection(directLookupElemsFor(series), uris).isEmpty()) {
+					return series;
+				}
 			}
 		}
 		throw new IllegalStateException();

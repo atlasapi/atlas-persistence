@@ -20,7 +20,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
     
 	private static final String PROVIDER_KEY = "provider";
 	
-	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator(false);
+	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
     private final EncodingTranslator encodingTranslator = new EncodingTranslator();
     private final RestrictionTranslator restrictionTranslator = new RestrictionTranslator();

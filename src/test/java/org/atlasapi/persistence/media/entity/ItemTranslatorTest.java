@@ -52,7 +52,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator(true);
+        ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
         
         assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
@@ -114,7 +114,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator(true);
+        ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
         
         Item i = it.fromDBObject(dbObject, null);

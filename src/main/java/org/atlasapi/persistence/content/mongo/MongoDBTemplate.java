@@ -16,6 +16,8 @@ package org.atlasapi.persistence.content.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
+import java.util.Set;
+
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
@@ -25,11 +27,12 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
-import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.media.entity.ContentGroupTranslator;
-import org.atlasapi.persistence.media.entity.SeriesTranslator;
+import org.atlasapi.persistence.media.entity.ItemTranslator;
 
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -39,30 +42,35 @@ import com.mongodb.DBObject;
 
 public class MongoDBTemplate {
 
-	private final ItemTranslator itemTranslator = new ItemTranslator(true);
-    private final ContentGroupTranslator playlistTranslator = new ContentGroupTranslator(true);
-    private final ContainerTranslator brandTranslator = new ContainerTranslator(true);
-    private final SeriesTranslator seriesTranslator = new SeriesTranslator(true);
+	public static final String LOOKUP = "lookup";
+	
+	private final ItemTranslator itemTranslator = new ItemTranslator();
+    private final ContentGroupTranslator playlistTranslator = new ContentGroupTranslator();
+    private final ContainerTranslator containerTranslator = new ContainerTranslator();
 
-    protected DBObject toDB(Object obj) {
-        try {
-            if (obj instanceof Container<?>) {
-                return brandTranslator.toDBObject(null, (Container<?>) obj);
-            } else if (obj instanceof Clip) {
-            	throw new IllegalArgumentException("Direct-saving of clips is not supported");
-            } else if (obj instanceof Item) {
-                return itemTranslator.toDBObject(null, (Item) obj);
-            } else if (obj instanceof Series) {
-            	return seriesTranslator.toDBObject((Series) obj);
-            } else if (obj instanceof ContentGroup) {
-                return playlistTranslator.toDBObject(null, (ContentGroup) obj);
-            } else {
-                throw new IllegalArgumentException("Unabled to format "+obj+" for db, type: "+obj.getClass().getSimpleName());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    protected DBObject toDB(Identified obj) {
+        DBObject dbo = toDbo(obj);
+        if (!dbo.containsField(ID)) {
+        	throw new IllegalArgumentException("No canonical id for outer element");
         }
+        // write a lookup field, used only for queries
+        TranslatorUtils.fromSet(dbo, lookupFieldFor(obj), LOOKUP);
+        return dbo;
     }
+
+	private DBObject toDbo(Object obj) {
+		if (obj instanceof Container<?>) {
+            return containerTranslator.toDBObject(null, (Container<?>) obj);
+        } else if (obj instanceof Clip) {
+        	throw new IllegalArgumentException("Direct-saving of clips is not supported");
+        } else if (obj instanceof Item) {
+            return itemTranslator.toDBObject(null, (Item) obj);
+        } else if (obj instanceof ContentGroup) {
+            return playlistTranslator.toDBObject(null, (ContentGroup) obj);
+        } else {
+            throw new IllegalArgumentException("Unabled to format "+obj+" for db, type: "+obj.getClass().getSimpleName());
+        }
+	}
 
     protected Identified toModel(DBObject dbo) {
 		if (!dbo.containsField("type")) {
@@ -70,13 +78,13 @@ public class MongoDBTemplate {
 		}
 		String type = (String) dbo.get("type");
 		if (Brand.class.getSimpleName().equals(type)) {
-			return brandTranslator.fromDBObject(dbo, null);
+			return containerTranslator.fromDBObject(dbo, null);
 		} 
 		if (Series.class.getSimpleName().equals(type)) {
-			return seriesTranslator.fromDBObject(dbo);
+			return containerTranslator.fromDBObject(dbo, null);
 		} 
 		if (Container.class.getSimpleName().equals(type)) {
-			return brandTranslator.fromDBObject(dbo, null);
+			return containerTranslator.fromDBObject(dbo, null);
 		} 
 		if (Episode.class.getSimpleName().equals(type)) {
 			return itemTranslator.fromDBObject(dbo, null);
@@ -120,4 +128,29 @@ public class MongoDBTemplate {
     private Integer hardLimit(Selection selection) {
         return -1 * selection.limitOrDefaultValue(0);
     }
+    
+    public static Set<String> lookupFieldFor(Identified entity) {
+		Set<String> lookupElems = directLookupElemsFor(entity);
+        if (entity instanceof Container<?>) {
+	        for (Item item : ((Container<?>) entity).getContents()) {
+	        	lookupElems.addAll(lookupFieldFor(item));
+	        }
+	        if (entity instanceof Brand) {
+	        	for (Series series : ((Brand) entity).getSeries()) {
+	        		lookupElems.addAll(lookupFieldFor(series));
+	        	}
+	        }
+        }
+        return lookupElems;
+	}
+
+	protected static Set<String> directLookupElemsFor(Identified entity) {
+		Set<String> lookupElems = Sets.newHashSet(entity.getCanonicalUri());
+        if (entity.getCurie() != null) {
+        	lookupElems.add(entity.getCurie());
+        }
+        lookupElems.addAll(entity.getAliases());
+        lookupElems.addAll(entity.getEquivalentTo());
+		return lookupElems;
+	}
 }
