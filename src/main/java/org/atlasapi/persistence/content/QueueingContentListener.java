@@ -46,8 +46,8 @@ public class QueueingContentListener implements ContentListener {
     public void brandChanged(Collection<Brand> brands, changeType changeType) {
         if (changeType == ContentListener.changeType.BOOTSTRAP) {
             delegate.brandChanged(brands, changeType);
-        } else {
-            brandQueue.addAll(brands);
+//        } else {
+//            brandQueue.addAll(brands);
         }
     }
 
