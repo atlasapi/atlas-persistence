@@ -14,7 +14,6 @@ import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 public class QueueingContentListener implements ContentListener {
@@ -46,9 +45,10 @@ public class QueueingContentListener implements ContentListener {
     public void brandChanged(Iterable<? extends Container<?>> brands, ChangeType changeType) {
         if (changeType == ContentListener.ChangeType.BOOTSTRAP) {
             delegate.brandChanged(brands, changeType);
-        } else {
-        	Iterables.addAll(brandQueue, brands);
-        }
+        } 
+//        else {
+//        	Iterables.addAll(brandQueue, brands);
+//        }
     }
 
     @Override
