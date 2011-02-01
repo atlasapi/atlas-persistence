@@ -69,8 +69,8 @@ public class MongoDbBackedContentBootstrapper implements InitializingBean {
     
     @SuppressWarnings("unchecked")
 	private void loadAll(Class<? extends Content> filter) {
+        String fromId = null;
         while(true) {
-        	String fromId = null;
         	List<Content> roots = contentStore.listAllRoots(fromId, batchSize);
             
         	List<? extends Content> batch = ImmutableList.copyOf(Iterables.filter(roots, filter));
