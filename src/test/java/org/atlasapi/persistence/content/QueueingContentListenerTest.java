@@ -64,15 +64,44 @@ public class QueueingContentListenerTest {
         scheduler.tick(120, TimeUnit.SECONDS);
     }
     
-//    @Test
-//    public void testBootstrap() throws Exception {
-//        final List<Item> items = Lists.newArrayList();
-//        items.add(new Item("uri", "curie", anyPublisher));
-//        
-//        context.checking(new Expectations() {{ 
+//package org.atlasapi.persistence.content;
+//
+//import java.util.List;
+//import java.util.concurrent.TimeUnit;
+//
+//import org.atlasapi.media.entity.Brand;
+//import org.atlasapi.media.entity.Publisher;
+//import org.jmock.Expectations;
+//import org.jmock.Mockery;
+//import org.jmock.integration.junit4.JMock;
+//import org.jmock.lib.concurrent.DeterministicScheduler;
+//import org.junit.Before;
+//import org.junit.Test;
+//import org.junit.runner.RunWith;
+//
+//import com.google.common.collect.Lists;
+//
+//@RunWith(JMock.class)
+//public class QueueingContentListenerTest {
+//    
+//	private final Mockery context = new Mockery();
+//	
+//	private static final Publisher anyPublisher = Publisher.BBC;
+//    private ContentListener delegate = context.mock(ContentListener.class);
+//    private DeterministicScheduler scheduler = new DeterministicScheduler();
+//    
+//    private QueueingContentListener contentListener = new QueueingContentListener(scheduler, delegate);
+//    
+//    @Before
+//    public void setUp() throws Exception {
+//        contentListener.start();
+//    }
+//    
+
 //            one(delegate).itemChanged(items, ContentListener.ChangeType.BOOTSTRAP);
 //        }});
 //        
 //        contentListener.itemChanged(items, ContentListener.ChangeType.BOOTSTRAP);
 //    }
 }
+

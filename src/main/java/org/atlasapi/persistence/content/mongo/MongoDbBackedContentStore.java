@@ -65,7 +65,7 @@ import com.mongodb.DBObject;
 
 public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
 
-    private static final int MAX_RESULTS = 10000;
+    private static final int MAX_RESULTS = 20000;
     private static final MongoSortBuilder sortIds = new MongoSortBuilder().ascending(MongoConstants.ID); 
 
     private final Clock clock;

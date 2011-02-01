@@ -49,6 +49,7 @@ public class QueueingContentListener implements ContentListener {
 //        else {
 //        	Iterables.addAll(brandQueue, brands);
 //        }
+
     }
 
     @Override
