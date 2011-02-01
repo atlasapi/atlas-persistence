@@ -3,7 +3,6 @@ package org.atlasapi.persistence;
 import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
-import org.atlasapi.persistence.content.mongo.MongoDbBackedContentBootstrapper;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -27,10 +26,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	@Bean EventFiringContentWriter eventFiringContentWriter() {
 	    return new EventFiringContentWriter(contentStore(), contentListener());
-	}
-	
-	@Bean MongoDbBackedContentBootstrapper contentBootstrapper() {
-		return new MongoDbBackedContentBootstrapper(contentListener(), contentStore());
 	}
 
 	public @Bean AggregateContentListener contentListener() {
