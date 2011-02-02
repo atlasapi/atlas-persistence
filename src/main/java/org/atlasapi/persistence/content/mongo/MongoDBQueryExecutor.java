@@ -133,13 +133,13 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		}
 		List<Content> found = discover(query);
 		
-		ScheduleAttributeFInder finder = new ScheduleAttributeFInder();
+		ScheduleAttributeFinder finder = new ScheduleAttributeFinder();
 		query.accept(finder);
 		
 		return Schedule.fromItems(ImmutableList.of(finder.channel), new Interval(finder.start, finder.end), Iterables.concat(Iterables.transform(found, TO_ITEMS)));
 	}
 	
-	private final class ScheduleAttributeFInder implements QueryVisitor<Void> {
+	private final class ScheduleAttributeFinder implements QueryVisitor<Void> {
 		
 		String channel = null;
 		DateTime start = null;
