@@ -4,6 +4,8 @@ import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
+import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
+import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,5 +32,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
 	public @Bean AggregateContentListener contentListener() {
 		return new AggregateContentListener();
+	}
+
+	@Override
+	public @Bean ShortUrlSaver shortUrlSaver() {
+		return new MongoShortUrlSaver(db);
 	}
 }
