@@ -22,7 +22,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 		return eventFiringContentWriter();
 	}
 	
-	public @Bean(name={"mongoContentStore", "aliasWriter"}) MongoDbBackedContentStore contentStore() {
+	public @Bean(name={"mongoContentStore"}) MongoDbBackedContentStore contentStore() {
 		return new MongoDbBackedContentStore(db);
 	}
 	
