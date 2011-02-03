@@ -96,7 +96,7 @@ public class EquivalentContentMerger {
 	}
 
 	private boolean areSame(Episode ep1, Episode ep2) {
-		return sameSeriesAndEpisodeNumber(ep1, ep2) || sameTitle(ep1, ep2);
+		return sameSeriesAndEpisodeNumber(ep1, ep2);
 	}
 
 	private boolean sameTitle(Item ep1, Item ep2) {
