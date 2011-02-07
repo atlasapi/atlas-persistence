@@ -30,7 +30,11 @@ public final class AdapterLogEntry {
 		ERROR,
 		WARN,
 		INFO,
-		DEBUG
+		DEBUG;
+
+		public boolean isMoreSevereOrSameAs(Severity severity) {
+			return this.ordinal() <= severity.ordinal();
+		}
 	}
 	
 	public AdapterLogEntry(String id, Severity severity, DateTime timestamp) {
