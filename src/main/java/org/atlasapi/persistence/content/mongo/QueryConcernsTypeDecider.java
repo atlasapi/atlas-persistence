@@ -27,6 +27,8 @@ import org.atlasapi.content.criteria.QueryVisitor;
 import org.atlasapi.content.criteria.StringAttributeQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
@@ -43,11 +45,12 @@ public class QueryConcernsTypeDecider {
 	}
 	
 	public static boolean concernsItemOrBelow(final ContentQuery query){
-		return concernsType(query, ImmutableSet.of(Item.class, Version.class, Location.class, Broadcast.class, Encoding.class));
+		return concernsType(query, ImmutableSet.of(Item.class, Episode.class, Version.class, Location.class, Broadcast.class, Encoding.class));
 	}
 	
-	public static boolean concernsBrandOrBelow(final ContentQuery query){
-		return concernsType(query, ImmutableSet.of(Brand.class, Item.class, Version.class, Location.class, Broadcast.class, Encoding.class));
+	@SuppressWarnings("unchecked")
+    public static boolean concernsBrandOrBelow(final ContentQuery query){
+		return concernsType(query, ImmutableSet.of(Brand.class, Container.class, Item.class, Episode.class, Version.class, Location.class, Broadcast.class, Encoding.class));
 	}
 
 	public static boolean concernsType(final ContentQuery query, Class<? extends Identified> type) {

@@ -142,8 +142,8 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	private final class ScheduleAttributeFinder implements QueryVisitor<Void> {
 		
 		String channel = null;
-		DateTime start = null;
-		DateTime end = null;
+		DateTime start = new DateTime(0);
+		DateTime end = new DateTime(Long.MAX_VALUE);
 
 		@Override
 		public Void visit(IntegerAttributeQuery query) {
