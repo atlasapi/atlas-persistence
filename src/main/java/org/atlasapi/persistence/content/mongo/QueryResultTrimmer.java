@@ -28,6 +28,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
@@ -182,9 +183,6 @@ public class QueryResultTrimmer {
 				}
 			}
 		});
-		if (Iterables.isEmpty(items) && !concernsType(query, ImmutableSet.of(Item.class, Version.class, Encoding.class, Location.class, Broadcast.class))) {
-			return Maybe.just(Collections.<T>emptyList());
-		}
 		List<T> trimmedItems = Lists.newArrayListWithExpectedSize(Iterables.size(items));
 		for (T content : items) {
 			if (content instanceof Item) {
@@ -196,11 +194,13 @@ public class QueryResultTrimmer {
 						trimmedItems.add(content);
 					}
 				}
-			}
-			if (content instanceof Container<?>) {
+			} else if (content instanceof Container<?>) {
 				trimmedItems.add(content);
 			}
 		}
+		if (Iterables.isEmpty(trimmedItems) && !concernsType(query, ImmutableSet.of(Item.class, Episode.class, Version.class, Encoding.class, Location.class, Broadcast.class))) {
+            return Maybe.just(Collections.<T>emptyList());
+        }
 		return nothingIfEmpty((Iterable) trimmedItems);
 	}
 
