@@ -342,10 +342,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			
 			List<Content> content = Lists.newArrayList();
 			for (String itemUri : group.getContentUris()) {
-				content.add(lookup.get(itemUri));
+				Content item = lookup.get(itemUri);
+				if (item != null) {
+				    content.add(item);
+				}
 			}
-			group.setContentUris(ImmutableList.<String>of());
-			group.setContents(content);
+			
+    		group.setContentUris(ImmutableList.<String>of());
+    		group.setContents(content);
 		}
 		return groups;
 	}
