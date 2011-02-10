@@ -305,7 +305,7 @@ class MongoDBQueryBuilder {
 		if (Item.class.isAssignableFrom(entity)) {
 			return ImmutableList.of("contents");
 		}
-		if (Container.class.equals(entity)) {
+		if (Container.class.isAssignableFrom(entity)) {
 			return ImmutableList.of();
 		}
 		if (Version.class.equals(entity)) {
