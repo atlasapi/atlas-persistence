@@ -301,7 +301,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public Identified findByCanonicalUri(String uri) {
-        return Iterables.getOnlyElement(findByCanonicalUri(ImmutableList.of(uri)), null);
+        return Iterables.getFirst(findByCanonicalUri(ImmutableList.of(uri)), null);
     }
     
 	public List<? extends Identified> findByUriOrAlias(Iterable<String> uris) {
