@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
@@ -27,6 +28,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator = new VersionTranslator();
+    private final PersonTranslator personTranslator = new PersonTranslator();
     
     ItemTranslator(ContentTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
@@ -58,6 +60,16 @@ public class ItemTranslator implements ModelTranslator<Item> {
                 versions.add(version);
             }
             item.setVersions(versions);
+        }
+        
+        list = (List) dbObject.get("people");
+        if (list != null && ! list.isEmpty()) {
+            for (DBObject dbPerson: list) {
+                Person person = personTranslator.fromDBObject(dbPerson, null);
+                if (person != null) {
+                    item.addPerson(person);
+                }
+            }
         }
 
         if (item instanceof Episode) {
@@ -105,6 +117,14 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			if (series != null) {
 				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getCanonicalUri());
 			}
+		}
+		
+		if (! entity.people().isEmpty()) {
+		    BasicDBList list = new BasicDBList();
+            for (Person person: entity.people()) {
+                list.add(personTranslator.toDBObject(null, person));
+            }
+            itemDbo.put("people", list);
 		}
 		
 		if (entity.getContainer() == null) {
