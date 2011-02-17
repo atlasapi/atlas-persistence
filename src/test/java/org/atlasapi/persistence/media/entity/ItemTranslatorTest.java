@@ -5,16 +5,19 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
@@ -111,6 +114,9 @@ public class ItemTranslatorTest extends TestCase {
         version.addBroadcast(br);
         item.addVersion(version);
         
+        Actor actor = Actor.actor("blah", "some guy", Publisher.BBC);
+        item.addPerson(actor);
+        
         Set<String> tags = Sets.newHashSet();
         tags.add("tag");
         item.setTags(tags);
@@ -148,5 +154,9 @@ public class ItemTranslatorTest extends TestCase {
         Set<Location> ls = e.getAvailableAt();
         assertEquals(1, ls.size());
         assertEquals(loc.getAvailable(), ls.iterator().next().getAvailable());
+        
+        Set<Person> people = i.people();
+        assertEquals(1, people.size());
+        assertEquals("some guy", ((Actor) Iterables.getFirst(people, null)).character());
     }
 }

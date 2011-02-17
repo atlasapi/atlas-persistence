@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Item;
+
+import org.atlasapi.media.entity.Person;
+import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -15,6 +18,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator = new VersionTranslator();
+    private final PersonTranslator personTranslator = new PersonTranslator();
     
     public ItemTranslator(ContentTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
@@ -45,6 +49,16 @@ public class ItemTranslator implements ModelTranslator<Item> {
             entity.setVersions(versions);
         }
         
+        list = (List) dbObject.get("people");
+        if (list != null && ! list.isEmpty()) {
+            for (DBObject dbPerson: list) {
+                Person person = personTranslator.fromDBObject(dbPerson, null);
+                if (person != null) {
+                    entity.addPerson(person);
+                }
+            }
+        }
+        
         return entity;
     }
 
@@ -60,6 +74,14 @@ public class ItemTranslator implements ModelTranslator<Item> {
             }
             dbObject.put("versions", list);
         }
+        
+        if (! entity.people().isEmpty()) {
+    		    BasicDBList list = new BasicDBList();
+            for (Person person: entity.people()) {
+                list.add(personTranslator.toDBObject(null, person));
+            }
+            dbObject.put("people", list);
+    		}
         
         return dbObject;
     }
