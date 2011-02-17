@@ -29,6 +29,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
@@ -256,7 +257,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     private DateTime setThisOrChildLastUpdated(Container<?> playlist) {
         DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, playlist.getLastUpdated());
         for (Item item: playlist.getContents()) {
-            thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, setThisOrChildLastUpdated(item));
+            DateTime itemOrChildUpdated = setThisOrChildLastUpdated(item);
+            thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, itemOrChildUpdated);
+            if (item instanceof Episode) {
+                Series series = ((Episode)item).getSeries();
+                if(series != null) {
+                    series.setThisOrChildLastUpdated(thisOrChildLastUpdated(itemOrChildUpdated, series.getThisOrChildLastUpdated()));
+                }
+            }
         }
         playlist.setThisOrChildLastUpdated(thisOrChildLastUpdated);
         return thisOrChildLastUpdated;
@@ -301,7 +309,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public Identified findByCanonicalUri(String uri) {
-        return Iterables.getOnlyElement(findByCanonicalUri(ImmutableList.of(uri)), null);
+        return Iterables.getFirst(findByCanonicalUri(ImmutableList.of(uri)), null);
     }
     
 	public List<? extends Identified> findByUriOrAlias(Iterable<String> uris) {
@@ -342,10 +350,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			
 			List<Content> content = Lists.newArrayList();
 			for (String itemUri : group.getContentUris()) {
-				content.add(lookup.get(itemUri));
+				Content item = lookup.get(itemUri);
+				if (item != null) {
+				    content.add(item);
+				}
 			}
-			group.setContentUris(ImmutableList.<String>of());
-			group.setContents(content);
+			
+    		group.setContentUris(ImmutableList.<String>of());
+    		group.setContents(content);
 		}
 		return groups;
 	}

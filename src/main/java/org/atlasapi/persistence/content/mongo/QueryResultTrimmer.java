@@ -101,9 +101,6 @@ public class QueryResultTrimmer {
 				
 			}
 		});
-		if (Iterables.isEmpty(versions) && !concernsType(query, ImmutableSet.of(Version.class, Encoding.class, Location.class, Broadcast.class))) {
-			return Maybe.just(Collections.<Version>emptySet());
-		}
 		Set<Version> trimmedVersions = Sets.newHashSet();
 		for (Version version : versions) {
 			if (check(query, version)) {
@@ -114,14 +111,14 @@ public class QueryResultTrimmer {
 				}
 			}
 		}
+		if (Iterables.isEmpty(trimmedVersions) && !concernsType(query, ImmutableSet.of(Version.class, Encoding.class, Location.class, Broadcast.class))) {
+		    return Maybe.just(Collections.<Version>emptySet());
+		}
 		return nothingIfEmpty((Iterable)trimmedVersions);
 	}
 
 	@SuppressWarnings("unchecked")
 	private Maybe<Set<Encoding>> trimEncodings(Set<Encoding> encodings, ContentQuery query) {
-		if (encodings.isEmpty() && !concernsType(query, ImmutableSet.of(Encoding.class, Location.class))) {
-			return Maybe.just(Collections.<Encoding>emptySet());
-		}
 		Set<Encoding> trimmedEncodings = Sets.newHashSetWithExpectedSize(encodings.size());
 		for (Encoding encoding : encodings) {
 			if (check(query, encoding)) {
@@ -132,19 +129,22 @@ public class QueryResultTrimmer {
 				}
 			}
 		}
+		if (trimmedEncodings.isEmpty() && !concernsType(query, ImmutableSet.of(Encoding.class, Location.class))) {
+		    return Maybe.just(Collections.<Encoding>emptySet());
+		}
 		return nothingIfEmpty((Iterable)trimmedEncodings);
 	}
 
 	@SuppressWarnings("unchecked")
 	private Maybe<Set<Location>> trimLocations(Set<Location> locations, ContentQuery query) {
-		if (locations.isEmpty() && concernsType(query, Location.class)) {
-			return Maybe.<Set<Location>>just((Set)ImmutableSet.<Location>of());
-		}
 		Set<Location> trimmedLocations = Sets.newHashSetWithExpectedSize(locations.size());
 		for (Location location : locations) {
 			if (check(query, location)) {
 				trimmedLocations.add(location);
 			}
+		}
+		if (trimmedLocations.isEmpty() && !concernsType(query, Location.class)) {
+		    return Maybe.<Set<Location>>just((Set)ImmutableSet.<Location>of());
 		}
 		return nothingIfEmpty((Iterable)trimmedLocations);
 	}
