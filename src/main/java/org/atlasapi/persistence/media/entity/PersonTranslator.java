@@ -12,8 +12,6 @@ import com.mongodb.DBObject;
 
 public class PersonTranslator implements ModelTranslator<Person> {
     
-    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator(false);
-
     @Override
     public Person fromDBObject(DBObject dbObject, Person model) {
         String type = (String) dbObject.get("type");
@@ -29,14 +27,12 @@ public class PersonTranslator implements ModelTranslator<Person> {
             person = new CrewMember(uri, curie, publisher).withRole(role);
         }
         person.withProfileLink((String) dbObject.get("profileLink")).withName((String) dbObject.get("name"));
-        descriptionTranslator.fromDBObject(dbObject, person);
         
         return person;
     }
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Person model) {
-        dbObject = descriptionTranslator.toDBObject(dbObject, model);
         
         dbObject.put("type", model.getClass().getSimpleName());
         TranslatorUtils.from(dbObject, "name", model.name());
