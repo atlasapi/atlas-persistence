@@ -8,6 +8,7 @@ import org.atlasapi.media.entity.CrewMember.Role;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class PersonTranslator implements ModelTranslator<Person> {
@@ -33,6 +34,7 @@ public class PersonTranslator implements ModelTranslator<Person> {
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Person model) {
+        dbObject = new BasicDBObject();
         
         dbObject.put("type", model.getClass().getSimpleName());
         TranslatorUtils.from(dbObject, "name", model.name());
