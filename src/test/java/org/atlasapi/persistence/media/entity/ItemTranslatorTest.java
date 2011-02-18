@@ -7,10 +7,10 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
-import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
@@ -155,7 +155,7 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals(1, ls.size());
         assertEquals(loc.getAvailable(), ls.iterator().next().getAvailable());
         
-        Set<Person> people = i.people();
+        Set<CrewMember> people = i.people();
         assertEquals(1, people.size());
         assertEquals("some guy", ((Actor) Iterables.getFirst(people, null)).character());
     }

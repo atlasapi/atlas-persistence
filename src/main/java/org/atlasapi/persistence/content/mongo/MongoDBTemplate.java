@@ -24,6 +24,7 @@ import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.media.entity.BrandTranslator;
@@ -31,6 +32,7 @@ import org.atlasapi.persistence.media.entity.ClipTranslator;
 import org.atlasapi.persistence.media.entity.ContentMentionTranslator;
 import org.atlasapi.persistence.media.entity.EpisodeTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.atlasapi.persistence.media.entity.PlaylistTranslator;
 import org.atlasapi.persistence.media.entity.SeriesTranslator;
 import org.atlasapi.persistence.tracking.ContentMention;
@@ -53,11 +55,14 @@ public class MongoDBTemplate {
     private final EpisodeTranslator episodeTranslator = new EpisodeTranslator();
     private final ContentMentionTranslator contentMentionTranslator = new ContentMentionTranslator();
     private final SeriesTranslator seriesTranslator = new SeriesTranslator();
+    private final PersonTranslator personTranslator = new PersonTranslator();
 
     protected DBObject toDB(Object obj) {
         try {
             if (obj instanceof Brand) {
                 return brandTranslator.toDBObject(null, (Brand) obj);
+            } else if (obj instanceof Person) {
+                return personTranslator.toDBObject(null, (Person) obj);
             } else if (obj instanceof Episode) {
                 return episodeTranslator.toDBObject(null, (Episode) obj);
             } else if (obj instanceof Clip) {
@@ -87,6 +92,8 @@ public class MongoDBTemplate {
                 return (T) playlistTranslator.fromDBObject(dbObject, null);
             } else if (clazz.equals(Brand.class)) {
                 return (T) brandTranslator.fromDBObject(dbObject, null);
+            } else if (clazz.equals(Person.class)) {
+                return (T) personTranslator.fromDBObject(dbObject, null);
             } else if (clazz.equals(Series.class)) {
             	return (T) seriesTranslator.fromDBObject(dbObject);
             } else if (clazz.equals(Episode.class)) {
