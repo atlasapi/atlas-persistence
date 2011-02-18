@@ -35,6 +35,7 @@ import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Playlist;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
@@ -547,6 +548,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Defini
                 playlist = fromDB(object, Brand.class);
             } else if (object.containsField("type") && Series.class.getSimpleName().equals(object.get("type"))) {
                 playlist = fromDB(object, Series.class);
+            } else if (object.containsField("type") && Person.class.getSimpleName().equals(object.get("type"))) {
+                playlist = fromDB(object, Person.class);
             } else {
                 playlist = fromDB(object, Playlist.class);
             }
