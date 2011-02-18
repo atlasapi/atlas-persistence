@@ -25,10 +25,12 @@ import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ContentGroupTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.atlasapi.persistence.media.entity.PersonTranslator;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -47,6 +49,7 @@ public class MongoDBTemplate {
 	private final ItemTranslator itemTranslator = new ItemTranslator();
     private final ContentGroupTranslator playlistTranslator = new ContentGroupTranslator();
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final PersonTranslator personTranslator = new PersonTranslator();
 
     protected DBObject toDB(Identified obj) {
         DBObject dbo = toDbo(obj);
@@ -65,6 +68,8 @@ public class MongoDBTemplate {
         	throw new IllegalArgumentException("Direct-saving of clips is not supported");
         } else if (obj instanceof Item) {
             return itemTranslator.toDBObject(null, (Item) obj);
+        } else if (obj instanceof Person) {
+            return personTranslator.toDBObject(null, (Person) obj);
         } else if (obj instanceof ContentGroup) {
             return playlistTranslator.toDBObject(null, (ContentGroup) obj);
         } else {
@@ -94,6 +99,9 @@ public class MongoDBTemplate {
 		}
 		if (Item.class.getSimpleName().equals(type)) {
 			return itemTranslator.fromDBObject(dbo, null);
+		}
+		if (Person.class.getSimpleName().equals(type)) {
+		    return personTranslator.fromDBObject(dbo, null);
 		}
 		if (ContentGroup.class.getSimpleName().equals(type)) {
 			return playlistTranslator.fromDBObject(dbo, null);

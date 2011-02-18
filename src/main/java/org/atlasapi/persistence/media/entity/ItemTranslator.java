@@ -3,9 +3,9 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
@@ -28,7 +28,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator = new VersionTranslator();
-    private final PersonTranslator personTranslator = new PersonTranslator();
+    private final CrewMemberTranslator crewMemberTranslator = new CrewMemberTranslator();
     
     ItemTranslator(ContentTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
@@ -65,9 +65,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
         list = (List) dbObject.get("people");
         if (list != null && ! list.isEmpty()) {
             for (DBObject dbPerson: list) {
-                Person person = personTranslator.fromDBObject(dbPerson, null);
-                if (person != null) {
-                    item.addPerson(person);
+                CrewMember crewMember = crewMemberTranslator.fromDBObject(dbPerson, null);
+                if (crewMember != null) {
+                    item.addPerson(crewMember);
                 }
             }
         }
@@ -121,8 +121,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		
 		if (! entity.people().isEmpty()) {
 		    BasicDBList list = new BasicDBList();
-            for (Person person: entity.people()) {
-                list.add(personTranslator.toDBObject(null, person));
+            for (CrewMember person: entity.people()) {
+                list.add(crewMemberTranslator.toDBObject(null, person));
             }
             itemDbo.put("people", list);
 		}
