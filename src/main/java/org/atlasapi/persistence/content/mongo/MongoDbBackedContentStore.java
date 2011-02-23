@@ -225,7 +225,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 	public void createOrUpdateSkeleton(ContentGroup playlist) {
     	checkNotNull(playlist.getCanonicalUri(), "Cannot persist a playlist without a canonical uri");
 
-    	checkArgument(checkThatSubElementsExist(playlist.getContents(), contentCollection), "Not all content exists in the database for playlist: " + playlist.getCanonicalUri());
+    	checkArgument(checkThatSubElementsExist(playlist.getContents(), contentCollection), "Not all content exists in the database for playlist: " + playlist.getCanonicalUri() + " expecting content uris of: " + ImmutableSet.copyOf(Iterables.transform(playlist.getContents(), Identified.TO_URI)));
     	
     	Identified previousValue = findByCanonicalUri(playlist.getCanonicalUri());
     	
