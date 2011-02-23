@@ -172,18 +172,18 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			return null;
 		}
 
-		@Override
-		public Void visit(DateTimeAttributeQuery dateTimeAttributeQuery) {
-			if (Attributes.BROADCAST_TRANSMISSION_TIME.equals(dateTimeAttributeQuery.getAttribute())) {
-				if (Operators.AFTER.equals(dateTimeAttributeQuery.getOperator())) {
-					start = (DateTime) dateTimeAttributeQuery.getValue().get(0);
-				} 
-				if (Operators.BEFORE.equals(dateTimeAttributeQuery.getOperator())) {
-					end = (DateTime) dateTimeAttributeQuery.getValue().get(0);
-				} 
-			}
-			return null;
-		}
+        @Override
+        public Void visit(DateTimeAttributeQuery dateTimeAttributeQuery) {
+            if (Attributes.BROADCAST_TRANSMISSION_TIME.equals(dateTimeAttributeQuery.getAttribute()) || Attributes.BROADCAST_TRANSMISSION_END_TIME.equals(dateTimeAttributeQuery.getAttribute())) {
+                if (Operators.AFTER.equals(dateTimeAttributeQuery.getOperator())) {
+                    start = (DateTime) dateTimeAttributeQuery.getValue().get(0);
+                }
+                if (Operators.BEFORE.equals(dateTimeAttributeQuery.getOperator())) {
+                    end = (DateTime) dateTimeAttributeQuery.getValue().get(0);
+                }
+            }
+            return null;
+        }
 
 		@Override
 		public Void visit(MatchesNothing noOp) {
