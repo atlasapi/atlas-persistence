@@ -404,7 +404,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		try { 
 			store.createOrUpdateSkeleton(playlist);
 			fail();
-		} catch (IllegalArgumentException e) {
+		} catch (GroupContentNotExistException e) {
 			// expected
 		}
 		
@@ -421,7 +421,7 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		try { 
 			store.createOrUpdateSkeleton(playlist);
 			fail();
-		} catch (IllegalArgumentException e) {
+		} catch (GroupContentNotExistException e) {
 			// expected
 		}
 	}
