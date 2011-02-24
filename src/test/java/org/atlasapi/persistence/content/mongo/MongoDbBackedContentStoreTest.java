@@ -180,6 +180,15 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         Item firstItem = (Item) data.goodEastendersEpisodes.getContents().iterator().next();
         assertEquals(firstItem.getTitle(), playlistItems.iterator().next().getTitle());
     }
+    
+    public void testShouldNotAllowCreationOfPlaylistWhenContentNotExist() throws Exception {
+        try {
+            store.createOrUpdateSkeleton(data.goodEastendersEpisodes);
+            fail("Should have thrown exception");
+        } catch (GroupContentNotExistException e) {
+            assertTrue(e.getMessage().contains(data.goodEastendersEpisodes.getCanonicalUri()));
+        }
+    }
 
 	public void testShouldMarkUnavailableItemsAsUnavailable() throws Exception {
 

@@ -14,7 +14,6 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
@@ -225,7 +224,9 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 	public void createOrUpdateSkeleton(ContentGroup playlist) {
     	checkNotNull(playlist.getCanonicalUri(), "Cannot persist a playlist without a canonical uri");
 
-    	checkArgument(checkThatSubElementsExist(playlist.getContents(), contentCollection), "Not all content exists in the database for playlist: " + playlist.getCanonicalUri() + " expecting content uris of: " + ImmutableSet.copyOf(Iterables.transform(playlist.getContents(), Identified.TO_URI)));
+    	if (! checkThatSubElementsExist(playlist.getContents(), contentCollection)) {
+    	    throw new GroupContentNotExistException(playlist.getCanonicalUri(), Iterables.transform(playlist.getContents(), Identified.TO_URI));
+    	}
     	
     	Identified previousValue = findByCanonicalUri(playlist.getCanonicalUri());
     	
