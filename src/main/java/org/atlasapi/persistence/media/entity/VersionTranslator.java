@@ -80,7 +80,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         TranslatorUtils.from(dbObject, "duration", entity.getDuration());
         TranslatorUtils.from(dbObject, "publishedDuration", entity.getPublishedDuration());
 
-        if(entity.getRestriction() != null) {
+        if(entity.getRestriction() != null && entity.getRestriction().hasRestrictionInformation()) {
         	dbObject.put("restriction", restrictionTranslator.toDBObject(null, entity.getRestriction()));
         }
         
@@ -91,17 +91,25 @@ public class VersionTranslator implements ModelTranslator<Version> {
         if (! entity.getBroadcasts().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (Broadcast broadcast: entity.getBroadcasts()) {
-                list.add(broadcastTranslator.toDBObject(broadcast));
+                if (broadcast != null) {
+                    list.add(broadcastTranslator.toDBObject(broadcast));
+                }
             }
-            dbObject.put("broadcasts", list);
+            if (! list.isEmpty()) {
+                dbObject.put("broadcasts", list);
+            }
         }
         
         if (! entity.getManifestedAs().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (Encoding encoding: entity.getManifestedAs()) {
-                list.add(encodingTranslator.toDBObject(null, encoding));
+                if (encoding != null) {
+                    list.add(encodingTranslator.toDBObject(null, encoding));
+                }
             }
-            dbObject.put("manifestedAs", list);
+            if (! list.isEmpty()) {
+                dbObject.put("manifestedAs", list);
+            }
         }
         
         return dbObject;
