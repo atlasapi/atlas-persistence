@@ -61,6 +61,15 @@ public class MongoScheduleStoreTest {
     }
     
     @Test
+    public void shouldSaveItemsAndRetrieveScheduleWithLoadsOfPublishers() throws Exception {
+        store.createOrUpdate(item1);
+        store.createOrUpdate(item2);
+        
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV));
+        assertSchedule(schedule);
+    }
+    
+    @Test
     public void wrongChannelShouldBeFiltered() throws Exception {
         Broadcast broadcast = new Broadcast(Channel.AL_JAZEERA_ENGLISH.uri(), now.minusHours(2), now.minusHours(3));
         version1.addBroadcast(broadcast);
