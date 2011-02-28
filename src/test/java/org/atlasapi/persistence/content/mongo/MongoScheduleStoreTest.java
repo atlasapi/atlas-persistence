@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.time.DateTimeZones;
 
@@ -56,7 +57,56 @@ public class MongoScheduleStoreTest {
         store.createOrUpdate(item2);
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
+        assertSchedule(schedule);
+    }
+    
+    @Test
+    public void wrongChannelShouldBeFiltered() throws Exception {
+        Broadcast broadcast = new Broadcast(Channel.AL_JAZEERA_ENGLISH.uri(), now.minusHours(2), now.minusHours(3));
+        version1.addBroadcast(broadcast);
         
+        store.createOrUpdate(item1);
+        store.createOrUpdate(item2);
+        
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
+        assertSchedule(schedule);
+    }
+    
+    @Test
+    public void wrongIntervalShouldBeFiltered() throws Exception {
+        Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(6), now.minusHours(5));
+        version1.addBroadcast(broadcast);
+        
+        store.createOrUpdate(item1);
+        store.createOrUpdate(item2);
+        
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
+        assertSchedule(schedule);
+        
+        schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(Channel.BBC_ONE), ImmutableSet.of(Publisher.BBC));
+        
+        ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
+        Item item1 = Iterables.getOnlyElement(channel.items());
+        Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
+        assertEquals(now.minusHours(6), broadcast1.getTransmissionTime());
+    }
+    
+    @Test
+    public void wrongPublisherShouldBeFiltered() throws Exception {
+        Item copy = (Item) item1.copy();
+        copy.setPublisher(Publisher.BLIP);
+        
+        store.createOrUpdate(copy);
+        store.createOrUpdate(item2);
+        
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE), ImmutableSet.of(Publisher.BBC));
+        ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
+        Item item1 = Iterables.getOnlyElement(channel.items());
+        Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
+        assertEquals(now.minusHours(2), broadcast1.getTransmissionTime());
+    }
+    
+    private void assertSchedule(Schedule schedule) {
         assertEquals(2, schedule.scheduleChannels().size());
         
         for (ScheduleChannel channel: schedule.scheduleChannels()) {
