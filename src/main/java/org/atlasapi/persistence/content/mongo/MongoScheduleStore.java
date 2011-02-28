@@ -4,6 +4,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
@@ -20,9 +21,15 @@ import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 
+import com.google.common.base.Function;
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -74,7 +81,7 @@ public class MongoScheduleStore implements ContentWriter, ScheduleResolver {
         Map<String, ScheduleEntry> entries = Maps.newHashMap();
 
         for (Item item : items) {
-            for (Version version : item.getVersions()) {
+            for (Version version : item.nativeVersions()) {
                 for (Broadcast broadcast : version.getBroadcasts()) {
                     Version entryVersion = version.copy();
                     entryVersion.setBroadcasts(ImmutableSet.of(broadcast.copy()));
@@ -103,12 +110,47 @@ public class MongoScheduleStore implements ContentWriter, ScheduleResolver {
 
     @Override
     public Schedule schedule(DateTime from, DateTime to, Iterable<Channel> channels, Iterable<Publisher> publishers) {
-        List<ScheduleEntry> entries = translator.fromDbObjects(where().idIn(keys(intervalsFor(to, from), channels, publishers)).find(collection));
-        // Get items out
-        // filter duplicate items
-        // remove items that shouldn't be there
-        // order items by broadcast
-        // convert to schedule
+        Map<Channel, List<Item>> channelMap = createChannelMap(channels);
+        Interval interval = new Interval(from, to);
+        List<ScheduleEntry> entries = translator.fromDbObjects(where().idIn(keys(intervalsFor(from, to), channels, publishers)).find(collection));
+        
+        for (ScheduleEntry entry: entries) {
+            channelMap.get(entry.channel()).addAll(entry.items());
+        }
+        
+        ImmutableMap.Builder<Channel, List<Item>> processedChannelMap = ImmutableMap.builder();
+        for (Entry<Channel, List<Item>> entry: channelMap.entrySet()) {
+            processedChannelMap.put(entry.getKey(), processChannelItems(entry.getValue(), interval));
+        }
+        return Schedule.fromChannelMap(processedChannelMap.build(), interval);
+    }
+    
+    private Map<Channel, List<Item>> createChannelMap(Iterable<Channel> channels) {
+        ImmutableMap.Builder<Channel, List<Item>> channelMap = ImmutableMap.builder();
+        for (Channel channel : channels) {
+            channelMap.put(channel, Lists.<Item> newArrayList());
+        }
+        return channelMap.build();
+    }
+    
+    private List<Item> processChannelItems(Iterable<Item> items, final Interval interval) {
+        return orderItems(filterItems(items, interval));
+    }
+    
+    private List<Item> orderItems(Iterable<Item> items) {
+        return Ordering.from(ScheduleEntry.START_TIME_ITEM_COMPARATOR).immutableSortedCopy(items);
+    }
+    
+    private Iterable<Item> filterItems(Iterable<Item> items, final Interval interval) {
+        final Predicate<Item> validBroadcast = new Predicate<Item>() {
+            @Override
+            public boolean apply(Item item) {
+                Broadcast broadcast = ScheduleEntry.BROADCAST.apply(item);
+                return interval.overlaps(new Interval(broadcast.getTransmissionTime(), broadcast.getTransmissionEndTime()));
+            }
+        };
+        
+        return Iterables.transform(ImmutableSet.copyOf(Iterables.transform(Iterables.filter(items, validBroadcast), ItemScheduleEntry.ITEM_SCHEDULE_ENTRY)), ItemScheduleEntry.ITEM);
     }
     
     private List<String> keys(Iterable<Interval> intervals, Iterable<Channel> channels, Iterable<Publisher> publishers) {
@@ -124,7 +166,9 @@ public class MongoScheduleStore implements ContentWriter, ScheduleResolver {
     }
     
     private long millisBackToNearestBin(DateTime when) {
-        return ((int) when.getMillis() / binMillis) * binMillis;
+        long div = when.getMillis() / binMillis;
+        int asInt = (int) div;
+        return asInt * binMillis;
     }
     
     private List<Interval> intervalsFor(DateTime start, DateTime end) {
@@ -144,5 +188,55 @@ public class MongoScheduleStore implements ContentWriter, ScheduleResolver {
     @Override
     public void createOrUpdateSkeleton(ContentGroup playlist) {
         throw new UnsupportedOperationException("Schedule Store is not interested in your pathetic groupings. Be gone.");
+    }
+    
+    private static class ItemScheduleEntry {
+        
+        private final Item item;
+        
+        public ItemScheduleEntry(Item item) {
+            Preconditions.checkNotNull(item);
+            this.item = item;
+        }
+        
+        public Item item() {
+            return item;
+        }
+        
+        public DateTime startTime() {
+            return ScheduleEntry.BROADCAST.apply(item).getTransmissionTime();
+        }
+        
+        public String canonicalUri() {
+            return item.getCanonicalUri();
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ItemScheduleEntry) {
+                ItemScheduleEntry entry = (ItemScheduleEntry) obj;
+                return startTime().equals(entry.startTime()) && canonicalUri().equals(entry.canonicalUri());
+            }
+            return super.equals(obj);
+        }
+        
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(startTime(), canonicalUri());
+        }
+        
+        final static Function<ItemScheduleEntry, Item> ITEM = new Function<ItemScheduleEntry, Item>() {
+            @Override
+            public Item apply(ItemScheduleEntry input) {
+                return input.item();
+            }
+        };
+        
+        final static Function<Item, ItemScheduleEntry> ITEM_SCHEDULE_ENTRY = new Function<Item, ItemScheduleEntry>() {
+            @Override
+            public ItemScheduleEntry apply(Item input) {
+                return new ItemScheduleEntry(input);
+            }
+        };
     }
 }
