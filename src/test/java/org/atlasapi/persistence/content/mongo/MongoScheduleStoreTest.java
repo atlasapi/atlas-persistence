@@ -1,7 +1,8 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Item;
@@ -36,6 +37,7 @@ public class MongoScheduleStoreTest {
     
     private final Item item1 = new Item("item1", "item1", Publisher.BBC);
     private final Item item2 = new Item("item2", "item2", Publisher.BBC);
+    private final Brand brand1 = new Brand("brand1", "brand1", Publisher.BBC);
     
     @Before
     public void setUp() throws Exception {
@@ -47,6 +49,7 @@ public class MongoScheduleStoreTest {
         version3.addBroadcast(broadcast4);
         
         item1.addVersion(version1);
+        item1.setContainer(brand1);
         item2.addVersion(version2);
         item2.addVersion(version3);
     }
@@ -123,6 +126,9 @@ public class MongoScheduleStoreTest {
             
             Item item1 = channel.items().get(0);
             Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
+            if (item1.getCanonicalUri().equals(this.item1.getCanonicalUri())) {
+                assertNotNull(item1.getContainer());
+            }
             
             Item item2 = channel.items().get(1);
             Broadcast broadcast2 = ScheduleEntry.BROADCAST.apply(item2);

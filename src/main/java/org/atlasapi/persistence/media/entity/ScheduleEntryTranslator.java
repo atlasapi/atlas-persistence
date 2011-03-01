@@ -18,7 +18,8 @@ import com.mongodb.DBObject;
 
 public class ScheduleEntryTranslator {
     
-    private final ItemTranslator itemTranslator = new ItemTranslator();
+    private final ItemTranslator itemTranslator = new ItemTranslator(false);
+    private final ContainerTranslator containerTranslator = new ContainerTranslator();
 
     public DBObject toDb(ScheduleEntry entry) {
         DBObject dbObject = new BasicDBObject();
@@ -30,7 +31,11 @@ public class ScheduleEntryTranslator {
         
         BasicDBList items = new BasicDBList();
         for (Item item: entry.items()) {
-            items.add(itemTranslator.toDBObject(null, item));
+            DBObject itemDbObject = itemTranslator.toDBObject(null, item);
+            if (item.getContainer() != null) {
+                itemDbObject.put("container", containerTranslator.toDBObject(null, item.getContainer().toSummary()));
+            }
+            items.add(itemDbObject);
         }
         dbObject.put("content", items);
         
@@ -55,8 +60,12 @@ public class ScheduleEntryTranslator {
         
         ImmutableList.Builder<Item> items = ImmutableList.builder();
         List<DBObject> dbItems = (List) object.get("content");
-        for (DBObject item: dbItems) {
-            items.add(itemTranslator.fromDBObject(item, null));
+        for (DBObject itemDbObject: dbItems) {
+            Item item = itemTranslator.fromDBObject(itemDbObject, null);
+            if (itemDbObject.containsField("container")) {
+                item.setContainer(containerTranslator.fromDBObject((DBObject) itemDbObject.get("container"), null));
+            }
+            items.add(item);
         }
         return new ScheduleEntry(interval, channel, publisher, items.build());
     }
