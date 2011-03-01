@@ -3,6 +3,7 @@ package org.atlasapi.persistence;
 import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
+import org.atlasapi.persistence.content.mongo.FullMongoScheduleRepopulator;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
 import org.atlasapi.persistence.content.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.content.mongo.ScheduleUpdatingContentListener;
@@ -30,6 +31,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Bean MongoScheduleStore scheduleStore() {
 	    return new MongoScheduleStore(db);
+	}
+	
+	public @Bean FullMongoScheduleRepopulator scheduleRepopulator() {
+	    return new FullMongoScheduleRepopulator(db, scheduleStore());
 	}
 	
 	@Bean EventFiringContentWriter eventFiringContentWriter() {
