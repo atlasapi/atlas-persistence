@@ -8,14 +8,11 @@ import java.util.Map.Entry;
 
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.ScheduleResolver;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 import org.joda.time.DateTime;
@@ -37,7 +34,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
 
-public class MongoScheduleStore implements ContentWriter, ScheduleResolver {
+public class MongoScheduleStore implements ScheduleResolver {
 
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
@@ -47,17 +44,11 @@ public class MongoScheduleStore implements ContentWriter, ScheduleResolver {
         collection = db.collection("schedule");
     }
 
-    @Override
     public void createOrUpdate(Item item) {
         createOrUpdate(ImmutableList.of(item));
     }
 
-    @Override
-    public void createOrUpdate(Container<? extends Item> container, boolean markMissingItemsAsUnavailable) {
-        createOrUpdate(container.getContents());
-    }
-
-    private void createOrUpdate(Iterable<? extends Item> items) {
+    public void createOrUpdate(Iterable<? extends Item> items) {
         for (ScheduleEntry entry: toScheduleEntries(items)) {
             List<ScheduleEntry> entries = translator.fromDbObjects(where().idEquals(entry.toKey()).find(collection));
             
@@ -183,11 +174,6 @@ public class MongoScheduleStore implements ContentWriter, ScheduleResolver {
         }
         
         return intervals.build();
-    }
-
-    @Override
-    public void createOrUpdateSkeleton(ContentGroup playlist) {
-        throw new UnsupportedOperationException("Schedule Store is not interested in your pathetic groupings. Be gone.");
     }
     
     private static class ItemScheduleEntry {

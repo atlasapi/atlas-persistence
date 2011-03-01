@@ -4,6 +4,8 @@ import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
+import org.atlasapi.persistence.content.mongo.MongoScheduleStore;
+import org.atlasapi.persistence.content.mongo.ScheduleUpdatingContentListener;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +28,18 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 		return new MongoDbBackedContentStore(db);
 	}
 	
+	public @Bean MongoScheduleStore scheduleStore() {
+	    return new MongoScheduleStore(db);
+	}
+	
 	@Bean EventFiringContentWriter eventFiringContentWriter() {
 	    return new EventFiringContentWriter(contentStore(), contentListener());
 	}
 
 	public @Bean AggregateContentListener contentListener() {
-		return new AggregateContentListener();
+	    AggregateContentListener listener = new AggregateContentListener();
+	    listener.addListener(new ScheduleUpdatingContentListener(scheduleStore()));
+	    return listener;
 	}
 
 	@Override
