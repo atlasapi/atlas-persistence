@@ -16,6 +16,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ScheduleResolver;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.joda.time.Interval;
 
 import com.google.common.base.Function;
@@ -31,6 +32,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
 
@@ -39,9 +41,11 @@ public class MongoScheduleStore implements ScheduleResolver {
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
     private final long binMillis = 3600000;
+    private final static Duration MAX_DURATION = Duration.standardDays(14);
 
     public MongoScheduleStore(DatabasedMongo db) {
         collection = db.collection("schedule");
+        collection.ensureIndex(translator.toIndex(), MongoConstants.BACKGROUND);
     }
 
     public void createOrUpdate(Item item) {
@@ -103,6 +107,9 @@ public class MongoScheduleStore implements ScheduleResolver {
     public Schedule schedule(DateTime from, DateTime to, Iterable<Channel> channels, Iterable<Publisher> publishers) {
         Map<Channel, List<Item>> channelMap = createChannelMap(channels);
         Interval interval = new Interval(from, to);
+        if (interval.toDuration().isLongerThan(MAX_DURATION)) {
+            throw new IllegalArgumentException("You cannot request more than 2 weeks of schedule");
+        }
         List<ScheduleEntry> entries = translator.fromDbObjects(where().idIn(keys(intervalsFor(from, to), channels, publishers)).find(collection));
         
         for (ScheduleEntry entry: entries) {

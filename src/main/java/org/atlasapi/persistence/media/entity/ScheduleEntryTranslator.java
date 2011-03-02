@@ -77,4 +77,8 @@ public class ScheduleEntryTranslator {
         }
         return entries.build();
     }
+    
+    public DBObject toIndex() {
+        return new BasicDBObject(MongoConstants.ID, 1).append("channel", 1).append("publisher", 1);
+    }
 }

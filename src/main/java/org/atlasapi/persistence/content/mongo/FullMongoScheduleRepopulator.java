@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,8 +39,18 @@ public class FullMongoScheduleRepopulator implements Runnable {
         String currentId = "0";
         
         while (true) {
-            for (DBObject dbObject: ImmutableList.copyOf(where().fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), BATCH_SIZE))) {
+            List<DBObject> objects = ImmutableList.copyOf(where().fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), BATCH_SIZE));
+            if (objects.isEmpty()) {
+                continue;
+            }
+            
+            for (DBObject dbObject: objects) {
                 Container<?> container = containerTranslator.fromDBObject(dbObject, null);
+                
+                if (currentId.equals(container.getCanonicalUri())) {
+                    continue;
+                }
+                currentId = container.getCanonicalUri();
                 try {
                     boundedQueue.submitTask(new UpdateItemScheduleJob(container));
                 } catch (InterruptedException e) {
