@@ -16,7 +16,6 @@ import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.metabroadcast.common.concurrency.BoundedExecutor;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -47,29 +46,34 @@ public class FullMongoScheduleRepopulator implements Runnable {
         while (true) {
             List<DBObject> objects = ImmutableList.copyOf(where().fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), BATCH_SIZE));
             if (objects.isEmpty()) {
-                continue;
+                break;
             }
             
+            ImmutableList.Builder<Item> itemsBuilder = ImmutableList.builder();
+            String latestId = null;
             for (DBObject dbObject: objects) {
                 String type = (String) dbObject.get("type");
-                List<? extends Item> items = ImmutableList.of();
+                
                 if (Episode.class.getSimpleName().equals(type) || Clip.class.getSimpleName().equals(type) || Item.class.getSimpleName().equals(type)) {
-                    items = ImmutableList.of(itemTranslator.fromDBObject(dbObject, null));
+                    Item item = itemTranslator.fromDBObject(dbObject, null);
+                    itemsBuilder.add(item);
+                    latestId = item.getCanonicalUri();
                 } else {
                     Container<?> container = containerTranslator.fromDBObject(dbObject, null);
-                    items = container.getContents();
+                    itemsBuilder.addAll(container.getContents());
+                    latestId = container.getCanonicalUri();
                 }
-                
-                String lastestId = items.isEmpty() ? null : Iterables.getLast(items).getCanonicalUri();
-                if (items == null || currentId.equals(lastestId)) {
-                    continue;
-                }
-                currentId = lastestId;
-                try {
-                    boundedQueue.submitTask(new UpdateItemScheduleJob(items));
-                } catch (InterruptedException e) {
-                    log.error("Problem submitting task to process queue for items: "+items, e);
-                }
+            }
+
+            if (latestId == null || latestId.equals(currentId)) {
+                break;
+            }
+            currentId = latestId;
+            List<Item> items = itemsBuilder.build();
+            try {
+                boundedQueue.submitTask(new UpdateItemScheduleJob(items));
+            } catch (InterruptedException e) {
+                log.error("Problem submitting task to process queue for items: "+items, e);
             }
         }
     }
