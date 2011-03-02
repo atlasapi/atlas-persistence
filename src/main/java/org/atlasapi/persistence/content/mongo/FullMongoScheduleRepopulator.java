@@ -8,10 +8,15 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.ItemTranslator;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.concurrency.BoundedExecutor;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -26,6 +31,7 @@ public class FullMongoScheduleRepopulator implements Runnable {
     private static final Log log = LogFactory.getLog(FullMongoScheduleRepopulator.class);
     private static final int BATCH_SIZE = 100;
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ItemTranslator itemTranslator = new ItemTranslator(true);
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
     private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 10);
 
@@ -45,16 +51,24 @@ public class FullMongoScheduleRepopulator implements Runnable {
             }
             
             for (DBObject dbObject: objects) {
-                Container<?> container = containerTranslator.fromDBObject(dbObject, null);
+                String type = (String) dbObject.get("type");
+                List<? extends Item> items = ImmutableList.of();
+                if (Episode.class.getSimpleName().equals(type) || Clip.class.getSimpleName().equals(type) || Item.class.getSimpleName().equals(type)) {
+                    items = ImmutableList.of(itemTranslator.fromDBObject(dbObject, null));
+                } else {
+                    Container<?> container = containerTranslator.fromDBObject(dbObject, null);
+                    items = container.getContents();
+                }
                 
-                if (currentId.equals(container.getCanonicalUri())) {
+                String lastestId = items.isEmpty() ? null : Iterables.getLast(items).getCanonicalUri();
+                if (items == null || currentId.equals(lastestId)) {
                     continue;
                 }
-                currentId = container.getCanonicalUri();
+                currentId = lastestId;
                 try {
-                    boundedQueue.submitTask(new UpdateItemScheduleJob(container));
+                    boundedQueue.submitTask(new UpdateItemScheduleJob(items));
                 } catch (InterruptedException e) {
-                    log.error("Problem submitting task to process queue for container: "+container, e);
+                    log.error("Problem submitting task to process queue for items: "+items, e);
                 }
             }
         }
@@ -62,15 +76,15 @@ public class FullMongoScheduleRepopulator implements Runnable {
     
     class UpdateItemScheduleJob implements Runnable {
         
-        private final Container<?> container;
+        private final Iterable<? extends Item> items;
 
-        public UpdateItemScheduleJob(Container<?> container) {
-            this.container = container;
+        public UpdateItemScheduleJob(Iterable<? extends Item> items) {
+            this.items = items;
         }
 
         @Override
         public void run() {
-            scheduleStore.createOrUpdate(container.getContents());
+            scheduleStore.createOrUpdate(items);
         }
     }
 }
