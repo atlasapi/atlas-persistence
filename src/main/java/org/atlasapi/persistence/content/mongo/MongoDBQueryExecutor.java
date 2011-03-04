@@ -18,31 +18,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
-import org.atlasapi.content.criteria.DateTimeAttributeQuery;
-import org.atlasapi.content.criteria.EnumAttributeQuery;
-import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
-import org.atlasapi.content.criteria.QueryVisitor;
-import org.atlasapi.content.criteria.StringAttributeQuery;
-import org.atlasapi.content.criteria.attribute.Attributes;
-import org.atlasapi.content.criteria.operator.Operators;
-import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
-import org.joda.time.DateTime;
-import org.joda.time.Interval;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
-import com.metabroadcast.common.query.Selection;
 
 @SuppressWarnings("unchecked")
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
@@ -125,81 +109,4 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	public void setFilterUriQueries(boolean filterUriQueries) {
 		this.filterUriQueries = filterUriQueries;
 	}
-
-	@Override
-	public Schedule schedule(ContentQuery query) {
-		if (!Selection.ALL.equals(query.getSelection())) {
-			throw new IllegalArgumentException("Cannot paginate schedule queries using limit and offset, change the transmission window instead");
-		}
-		List<Content> found = discover(query);
-		
-		ScheduleAttributeFinder finder = new ScheduleAttributeFinder();
-		query.accept(finder);
-		
-		if (finder.channel == null) {
-		    return Schedule.fromItems(new Interval(finder.start, finder.end), Iterables.concat(Iterables.transform(found, TO_ITEMS)));
-		} else {
-		    return Schedule.fromItems(ImmutableList.of(finder.channel), new Interval(finder.start, finder.end), Iterables.concat(Iterables.transform(found, TO_ITEMS)));
-		}
-	}
-	
-	private final class ScheduleAttributeFinder implements QueryVisitor<Void> {
-		
-		String channel = null;
-		DateTime start = new DateTime(0);
-		DateTime end = new DateTime(Long.MAX_VALUE);
-
-		@Override
-		public Void visit(IntegerAttributeQuery query) {
-			return null;
-		}
-
-		@Override
-		public Void visit(StringAttributeQuery query) {
-			if (Attributes.BROADCAST_ON.equals(query.getAttribute())) {
-				channel = (String) query.getValue().get(0);
-			}
-			return null;
-		}
-
-		@Override
-		public Void visit(BooleanAttributeQuery query) {
-			return null;
-		}
-
-		@Override
-		public Void visit(EnumAttributeQuery<?> query) {
-			return null;
-		}
-
-        @Override
-        public Void visit(DateTimeAttributeQuery dateTimeAttributeQuery) {
-            if (Attributes.BROADCAST_TRANSMISSION_TIME.equals(dateTimeAttributeQuery.getAttribute()) || Attributes.BROADCAST_TRANSMISSION_END_TIME.equals(dateTimeAttributeQuery.getAttribute())) {
-                if (Operators.AFTER.equals(dateTimeAttributeQuery.getOperator())) {
-                    start = (DateTime) dateTimeAttributeQuery.getValue().get(0);
-                }
-                if (Operators.BEFORE.equals(dateTimeAttributeQuery.getOperator())) {
-                    end = (DateTime) dateTimeAttributeQuery.getValue().get(0);
-                }
-            }
-            return null;
-        }
-
-		@Override
-		public Void visit(MatchesNothing noOp) {
-			return null;
-		}
-	}
-	
-	private static final Function<Content, List<Item>> TO_ITEMS = new Function<Content, List<Item>>() {
-
-		@Override
-		public List<Item> apply(Content input) {
-			if (input instanceof Item) {
-				return ImmutableList.of((Item) input);
-			} else {
-				return ((Container<Item>) input).getContents();
-			}
-		}
-	};
 }

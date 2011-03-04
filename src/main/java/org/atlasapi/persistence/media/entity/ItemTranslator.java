@@ -29,13 +29,23 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator = new VersionTranslator();
     private final CrewMemberTranslator crewMemberTranslator = new CrewMemberTranslator();
+    private final boolean createContainerForOrphans;
+    
+    ItemTranslator(ContentTranslator contentTranslator, boolean createContainerForOrphans) {
+		this.contentTranslator = contentTranslator;
+        this.createContainerForOrphans = createContainerForOrphans;
+    }
     
     ItemTranslator(ContentTranslator contentTranslator) {
-		this.contentTranslator = contentTranslator;
+        this(contentTranslator, true);
     }
     
     public ItemTranslator() {
-    	this(new ContentTranslator());
+    	this(new ContentTranslator(), true);
+    }
+    
+    public ItemTranslator(boolean createContainerForOrphans) {
+        this(new ContentTranslator(), createContainerForOrphans);
     }
     
     @SuppressWarnings("unchecked")
@@ -127,7 +137,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
             itemDbo.put("people", list);
 		}
 		
-		if (entity.getContainer() == null) {
+		// create fake container if it is its own container
+		if (entity.getContainer() == null && createContainerForOrphans) {
 			DBObject containerDBO = contentTranslator.toDBObject(null, entity);
 			containerDBO.put("contents", ImmutableList.of(itemDbo));
 			containerDBO.put(TYPE_KEY, entity.getClass().getSimpleName());
