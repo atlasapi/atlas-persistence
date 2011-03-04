@@ -12,7 +12,6 @@ import org.atlasapi.persistence.equiv.EquivalentContentFinder.EquivalentContent;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
@@ -81,10 +80,6 @@ public class EquivalentContentMerger {
 
 	private boolean areSame(Episode ep1, Episode ep2) {
 		return sameSeriesAndEpisodeNumber(ep1, ep2);
-	}
-
-	private boolean sameTitle(Item ep1, Item ep2) {
-		return Strings.nullToEmpty(ep1.getTitle()).equals(ep2.getTitle());
 	}
 
 	private boolean sameSeriesAndEpisodeNumber(Episode ep1, Episode ep2) {
