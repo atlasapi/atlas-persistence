@@ -104,17 +104,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         createOrUpdateItem(item);
     }
 
-	@SuppressWarnings("unchecked")
-	private  void addOrReplace(Item item, Container<?> container) {
-		if (!container.getContents().contains(item)) {
-			((Container<Item>) container).addContents(item);
-		} else { // replace
-			List<Item> currentItems = Lists.newArrayList(container.getContents());
-			currentItems.set(currentItems.indexOf(item), item);
-			((Container<Item>) container).setContents(currentItems);
-		}
-	}
-
 	private void createOrUpdateItem(Item item) {
 		updateFetchData(item);
 		Identified content = findByCanonicalUri(item.getCanonicalUri());
@@ -124,7 +113,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			if (item.getContainer() != null) {
 				Container<?> container = (Container<?>) findByCanonicalUri(item.getContainer().getCanonicalUri());
 				if (container != null) {
-					addOrReplace(item, container);
+					container.addOrReplace(item);
 					item.setContainer(container);
 				}
 			}
@@ -136,7 +125,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			preserveAliases(item, oldItem);
 
 			if (oldItem.getFullContainer() != null) {
-				addOrReplace(item, oldItem.getFullContainer());
+				oldItem.getFullContainer().addOrReplace(item);
 				item.setContainer(oldItem.getFullContainer());
 			}
 		}
