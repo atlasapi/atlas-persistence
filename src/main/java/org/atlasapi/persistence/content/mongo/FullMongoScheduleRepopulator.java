@@ -44,7 +44,7 @@ public class FullMongoScheduleRepopulator implements Runnable {
         String currentId = "0";
         
         while (true) {
-            List<DBObject> objects = ImmutableList.copyOf(where().fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), BATCH_SIZE));
+            List<DBObject> objects = ImmutableList.copyOf(where().fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), -BATCH_SIZE));
             if (objects.isEmpty()) {
                 break;
             }
