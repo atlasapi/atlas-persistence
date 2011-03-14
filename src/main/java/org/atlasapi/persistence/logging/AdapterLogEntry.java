@@ -26,6 +26,19 @@ public final class AdapterLogEntry {
 	private String description;
 	private String sourceClassName;
 	
+	public static AdapterLogEntry errorEntry() {
+	    return new AdapterLogEntry(Severity.ERROR);
+	}
+	public static AdapterLogEntry warnEntry() {
+	    return new AdapterLogEntry(Severity.WARN);
+	}
+	public static AdapterLogEntry infoEntry() {
+	    return new AdapterLogEntry(Severity.INFO);
+	}
+	public static AdapterLogEntry debugEntry() {
+	    return new AdapterLogEntry(Severity.DEBUG);
+	}
+	
 	public enum Severity {
 		ERROR,
 		WARN,

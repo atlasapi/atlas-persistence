@@ -424,15 +424,18 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 		}
 	};
 	
-    @SuppressWarnings("unchecked")
-	@Override
-    public List<Content> listAllRoots(String fromId, int batchSize) {
-        MongoQueryBuilder query = where();
+	@SuppressWarnings("unchecked")
+	public List<Content> iterate(MongoQueryBuilder query, String fromId, int batchSize) {
         if (fromId != null) {
             query = query.fieldGreaterThan(MongoConstants.ID, fromId);
         }
         
-        return (List) ImmutableList.copyOf(Iterables.transform(query.find(contentCollection, sortIds, batchSize), TO_MODEL));
+        return (List) ImmutableList.copyOf(Iterables.transform(query.find(contentCollection, sortIds, batchSize), TO_MODEL));  
+	}
+	
+	@Override
+    public List<Content> listAllRoots(String fromId, int batchSize) {
+        return iterate(where(), fromId, batchSize);
     }
   
 	private final MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
