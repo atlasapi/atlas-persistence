@@ -5,7 +5,9 @@ import static org.junit.Assert.*;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.ScheduleEntry;
@@ -39,13 +41,25 @@ public class MongoScheduleStoreTest {
     private final Item item2 = new Item("item2", "item2", Publisher.BBC);
     private final Brand brand1 = new Brand("brand1", "brand1", Publisher.BBC);
     
+    private final Location availableLocation = new Location();
+    private final Location unavailableLocation = new Location();
+    private final Encoding encoding = new Encoding();
+    
     @Before
     public void setUp() throws Exception {
         store = new MongoScheduleStore(MongoTestHelper.anEmptyTestDatabase());
         
+        availableLocation.setAvailable(true);
+        unavailableLocation.setAvailable(false);
+        encoding.addAvailableAt(availableLocation);
+        encoding.addAvailableAt(unavailableLocation);
+        
         version1.addBroadcast(broadcast1);
+        version1.addManifestedAs(encoding);
         version2.addBroadcast(broadcast2);
+        version2.addManifestedAs(encoding);
         version3.addBroadcast(broadcast3);
+        version3.addManifestedAs(encoding);
         version3.addBroadcast(broadcast4);
         
         item1.addVersion(version1);
@@ -125,6 +139,7 @@ public class MongoScheduleStoreTest {
             assertEquals(2, channel.items().size());
             
             Item item1 = channel.items().get(0);
+            assertTrue(Iterables.getOnlyElement(Iterables.getOnlyElement(Iterables.getOnlyElement(item1.getVersions()).getManifestedAs()).getAvailableAt()).getAvailable());
             Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
             if (item1.getCanonicalUri().equals(this.item1.getCanonicalUri())) {
                 assertNotNull(item1.getContainer());
@@ -132,6 +147,7 @@ public class MongoScheduleStoreTest {
             
             Item item2 = channel.items().get(1);
             Broadcast broadcast2 = ScheduleEntry.BROADCAST.apply(item2);
+            
             
             if (channel.channel() == Channel.BBC_ONE) {
                 assertEquals(now.minusHours(4), broadcast1.getTransmissionTime());

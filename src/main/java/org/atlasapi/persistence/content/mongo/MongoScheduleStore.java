@@ -8,7 +8,9 @@ import java.util.Map.Entry;
 
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.ScheduleEntry;
@@ -132,7 +134,7 @@ public class MongoScheduleStore implements ScheduleResolver {
     }
     
     private List<Item> processChannelItems(Iterable<Item> items, final Interval interval) {
-        return orderItems(filterItems(items, interval));
+        return filterLocations(orderItems(filterItems(items, interval)));
     }
     
     private List<Item> orderItems(Iterable<Item> items) {
@@ -149,6 +151,22 @@ public class MongoScheduleStore implements ScheduleResolver {
         };
         
         return Iterables.transform(ImmutableSet.copyOf(Iterables.transform(Iterables.filter(items, validBroadcast), ItemScheduleEntry.ITEM_SCHEDULE_ENTRY)), ItemScheduleEntry.ITEM);
+    }
+    
+    private List<Item> filterLocations(Iterable<Item> items) {
+        return ImmutableList.copyOf(Iterables.transform(items, new Function<Item, Item>() {
+            @Override
+            public Item apply(Item input) {
+                for (Version version: input.getVersions()) {
+                    for (Encoding encoding: version.getManifestedAs()) {
+                        if (! encoding.getAvailableAt().isEmpty()) {
+                            encoding.setAvailableAt(ImmutableSet.copyOf(Iterables.filter(encoding.getAvailableAt(), Location.AVAILABLE_LOCATION)));
+                        }
+                    }
+                }
+                return input;
+            }
+        }));
     }
     
     private List<String> keys(Iterable<Interval> intervals, Iterable<Channel> channels, Iterable<Publisher> publishers) {
