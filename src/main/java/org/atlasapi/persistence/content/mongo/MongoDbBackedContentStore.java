@@ -213,9 +213,9 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 	public void createOrUpdateSkeleton(ContentGroup playlist) {
     	checkNotNull(playlist.getCanonicalUri(), "Cannot persist a playlist without a canonical uri");
 
-    	if (! checkThatSubElementsExist(playlist.getContents(), contentCollection)) {
-    	    throw new GroupContentNotExistException(playlist.getCanonicalUri(), Iterables.transform(playlist.getContents(), Identified.TO_URI));
-    	}
+//    	if (! checkThatSubElementsExist(playlist.getContents(), contentCollection)) {
+//    	    throw new GroupContentNotExistException(playlist.getCanonicalUri(), Iterables.transform(playlist.getContents(), Identified.TO_URI));
+//    	}
     	
     	Identified previousValue = findByCanonicalUri(playlist.getCanonicalUri());
     	
@@ -233,10 +233,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         updateBasicPlaylistDetails(playlist, contentGroupCollection);
 	}
 
-	private boolean checkThatSubElementsExist(List<? extends Content> content, DBCollection collection) {
-		ImmutableSet<String> uris = ImmutableSet.copyOf(Iterables.transform(content, Identified.TO_URI));
-		return uris.size() == findByCanonicalUri(uris).size();
-	}
+//	private boolean checkThatSubElementsExist(List<? extends Content> content, DBCollection collection) {
+//		ImmutableSet<String> uris = ImmutableSet.copyOf(Iterables.transform(content, Identified.TO_URI));
+//		return uris.size() == findByCanonicalUri(uris).size();
+//	}
 
 	private void updateBasicPlaylistDetails(Described playlist, DBCollection collection) {
 		DBObject query = new BasicDBObject();
