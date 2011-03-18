@@ -425,7 +425,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 	};
 	
 	@SuppressWarnings("unchecked")
-	public List<Content> iterate(MongoQueryBuilder query, String fromId, int batchSize) {
+	public List<Content> iterateOverContent(MongoQueryBuilder query, String fromId, int batchSize) {
         if (fromId != null) {
             query = query.fieldGreaterThan(MongoConstants.ID, fromId);
         }
@@ -433,14 +433,28 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         return (List) ImmutableList.copyOf(Iterables.transform(query.find(contentCollection, sortIds, batchSize), TO_MODEL));  
 	}
 	
+	@SuppressWarnings("unchecked")
+    public List<ContentGroup> iterateOverContentGroup(MongoQueryBuilder query, String fromId, int batchSize) {
+        if (fromId != null) {
+            query = query.fieldGreaterThan(MongoConstants.ID, fromId);
+        }
+        
+        return (List) ImmutableList.copyOf(Iterables.transform(query.find(contentGroupCollection, sortIds, batchSize), TO_MODEL));  
+    }
+	
 	@Override
     public List<Content> listAllRoots(String fromId, int batchSize) {
-        return iterate(where(), fromId, batchSize);
+        return iterateOverContent(where(), fromId, batchSize);
     }
   
 	private final MongoDBQueryBuilder queryBuilder = new MongoDBQueryBuilder();
 
     public List<? extends Content> discover(ContentQuery query) {
         return topLevelElements(queryBuilder.buildQuery(query), query.getSelection());
+    }
+
+    @Override
+    public List<ContentGroup> listAllContentGroups(String fromId, int batchSize) {
+        return iterateOverContentGroup(where(), fromId, batchSize);
     }
 }
