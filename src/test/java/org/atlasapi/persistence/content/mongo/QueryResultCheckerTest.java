@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.atlasapi.content.criteria.ContentQuery;
-import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Encoding;
@@ -33,7 +32,6 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.mongo.QueryResultTrimmer;
 import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
@@ -70,18 +68,6 @@ public class QueryResultCheckerTest {
 		
 		streamingLocation = new Location();
 		streamingLocation.setTransportType(TransportType.STREAM);
-	}
-	
-	@Test
-	public void testAQueryThatShouldNotBeTrimmed() throws Exception {
-		
-		Item item = publicItem();
-		
-		item.addVersion(shortVersion);
-		item.addVersion(longVersion);
-		
-		trimmer.trim(Collections.singletonList(item), query().equalTo(Attributes.DESCRIPTION_TITLE, "test").build(), true);
-		assertEquals(Sets.newHashSet(shortVersion, longVersion), item.getVersions());
 	}
 	
 	@Test

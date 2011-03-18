@@ -49,7 +49,6 @@ import org.atlasapi.content.criteria.operator.Operators.Beginning;
 import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
-import org.atlasapi.content.criteria.operator.Operators.Search;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
@@ -185,11 +184,6 @@ class MongoDBQueryBuilder {
 					public ConstrainedAttribute visit(Beginning beginning) {
 						Pattern pattern = Pattern.compile("^" + (String) query.getValue().get(0), Pattern.CASE_INSENSITIVE);
 						return new ConstrainedAttribute(query.getAttribute(), pattern);
-					}
-
-					@Override
-					public ConstrainedAttribute visit(Search search) {
-						throw new UnsupportedOperationException();
 					}
 				});
 				

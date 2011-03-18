@@ -34,8 +34,6 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
 	private final MongoDbBackedContentStore roughSearch;
 	
-	private boolean filterUriQueries = false;
-	
 	public MongoDBQueryExecutor(MongoDbBackedContentStore roughSearch) {
 		this.roughSearch = roughSearch;
 	}
@@ -99,14 +97,10 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			return Collections.emptyList();
 		}
 		
-		return sort((List<Identified>) filter(query, content, filterUriQueries), uris);
+		return sort((List<Identified>) filter(query, content, false), uris);
 	}
 
 	private <T  extends Identified> List<T> filter(ContentQuery query, List<T> brands, boolean removeItemsThatDontMatch) {
 		return trimmer.trim(brands, query, removeItemsThatDontMatch);
-	}
-
-	public void setFilterUriQueries(boolean filterUriQueries) {
-		this.filterUriQueries = filterUriQueries;
 	}
 }

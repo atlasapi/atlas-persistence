@@ -15,8 +15,6 @@ permissions and limitations under the License. */
 package org.atlasapi.persistence.content.mongo;
 
 import static org.atlasapi.content.criteria.ContentQueryBuilder.query;
-import static org.atlasapi.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_END_TIME;
-import static org.atlasapi.content.criteria.attribute.Attributes.BROADCAST_TRANSMISSION_TIME;
 import static org.atlasapi.content.criteria.attribute.Attributes.LOCATION_TRANSPORT_TYPE;
 import static org.atlasapi.content.criteria.attribute.Attributes.VERSION_DURATION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,7 +33,6 @@ import org.atlasapi.content.criteria.attribute.Attributes;
 import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Episode;
@@ -168,24 +165,6 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		checkDiscover(query().greaterThan(VERSION_DURATION, 30), data.newsNight);
 	}
 	
-	public void testTransmittedNowForItems() throws Exception {
-		
-		DateTime tenAm = new DateTime(2010, 10, 20, 10, 0, 0, 0, DateTimeZones.UTC);
-		
-		Item halfHourShowStartingAt10Am = new Item("item1", "curie:item1", Publisher.BBC);
-		halfHourShowStartingAt10Am.addVersion(versionWithBroadcast(tenAm, Duration.standardMinutes(30), "channel"));
-		
-		Item halfHourShowStartingAt11Am = new Item("item2", "curie:item2", Publisher.BBC);
-		halfHourShowStartingAt11Am.addVersion(versionWithBroadcast(tenAm.plusMinutes(30), Duration.standardMinutes(30), "channel"));
-		
-		store.createOrUpdate(halfHourShowStartingAt10Am);
-		store.createOrUpdate(halfHourShowStartingAt11Am);
-		
-		checkDiscover(transmissionTimeQuery(tenAm), halfHourShowStartingAt10Am);
-		checkDiscover(transmissionTimeQuery(tenAm.plusMinutes(25)), halfHourShowStartingAt10Am);
-		checkDiscover(transmissionTimeQuery(tenAm.plusMinutes(30)), halfHourShowStartingAt11Am);
-	}
-	
 	public void testMultiLevelQuery() throws Exception {
 		DateTime tenAm = new DateTime(2010, 10, 20, 10, 0, 0, 0, DateTimeZones.UTC);
 		Item showStartingAt10Am = new Item("item1", "curie:item1", Publisher.BBC);
@@ -204,35 +183,12 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
 		
 		checkDiscoverMatchesNothing(query().equalTo(Attributes.BROADCAST_ON, "c1").equalTo(Attributes.VERSION_DURATION, (int) Duration.standardMinutes(10).getStandardSeconds()));
 	}
-
-	private ContentQueryBuilder transmissionTimeQuery(DateTime when) {
-		return query().before(BROADCAST_TRANSMISSION_TIME, when.plusSeconds(1)).after(BROADCAST_TRANSMISSION_END_TIME, when);
-	}
 	
 	private static Version versionWithBroadcast(DateTime start, Duration duration, String channel) {
 		Version version = new Version();
 		version.setDuration(duration);
 		version.addBroadcast(new Broadcast(channel, start, duration));
 		return version;
-	}
-	
-	public void testTransmittedBeforeForItems() throws Exception {
-		checkDiscoverMatchesNothing(query().before(BROADCAST_TRANSMISSION_TIME, DummyContentData.april22nd1930));
-		
-		List<Content> found = queryExecutor.discover(query().before(BROADCAST_TRANSMISSION_TIME, DummyContentData.april23rd).build());
-		
-		Container<?> container = (Container<?>) Iterables.getOnlyElement(found);
-		
-		assertEquals(data.eastenders, container);
-		assertEquals(ImmutableList.of(data.dotCottonsBigAdventure), container.getContents());
-	}
-	
-	public void testTransmittedAfterForItems() throws Exception {
-		ContentQueryBuilder query = query().after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april22nd1930); 
-		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.eelFishing, data.eastenders, data.newsNight, data.apprentice);
-		
-		query = query().after(BROADCAST_TRANSMISSION_TIME, DummyContentData.april23rd); 
-		checkDiscover(query, data.englishForCats, data.eggsForBreakfast, data.eelFishing, data.newsNight, data.apprentice);
 	}
 	
 	private void checkDiscoverMatchesNothing(ContentQueryBuilder query) {

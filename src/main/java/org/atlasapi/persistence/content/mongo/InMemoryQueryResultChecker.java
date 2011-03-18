@@ -37,7 +37,6 @@ import org.atlasapi.content.criteria.operator.Operators.Beginning;
 import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
-import org.atlasapi.content.criteria.operator.Operators.Search;
 import org.atlasapi.media.entity.Identified;
 import org.joda.time.DateTime;
 
@@ -166,13 +165,6 @@ class InMemoryQueryResultChecker  {
 				
 				for (final String value : values) {
 					boolean result =  query.accept(new StringOperatorVisitor<Boolean>() {
-						
-						@Override
-						public Boolean visit(Search search) {
-							/* Search can only be applied to Items and Brands, so there is no
-						  need to do any trimming */
-							return true;
-						}
 						
 						@Override
 						public Boolean visit(Beginning beginning) {
