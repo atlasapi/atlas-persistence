@@ -334,7 +334,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 			ContentGroup group = (ContentGroup) identified;
 			itemUris.addAll(group.getContentUris());
 		}
-		ImmutableMap<String, Content> lookup = Maps.uniqueIndex(findContentByCanonicalUri(itemUris), Identified.TO_URI);
+		ImmutableMap<String, Content> lookup = Maps.uniqueIndex(ImmutableSet.copyOf(findContentByCanonicalUri(itemUris)), Identified.TO_URI);
 		for (Identified identified : groups) {
 			ContentGroup group = (ContentGroup) identified;
 			
