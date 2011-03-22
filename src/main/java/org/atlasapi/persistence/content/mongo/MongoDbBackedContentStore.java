@@ -216,15 +216,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 //    	if (! checkThatSubElementsExist(playlist.getContents(), contentCollection)) {
 //    	    throw new GroupContentNotExistException(playlist.getCanonicalUri(), Iterables.transform(playlist.getContents(), Identified.TO_URI));
 //    	}
+    	ImmutableList<Identified> groups = findDehydratedGroupsByCanonicalUri(ImmutableSet.of(playlist.getCanonicalUri()), PASS_THROUGH);
+    	Identified previousValue = Iterables.getFirst(groups, null);
     	
-    	Identified previousValue = findByCanonicalUri(playlist.getCanonicalUri());
-    	
-    	if (previousValue != null) {
+    	if (previousValue != null && previousValue instanceof ContentGroup) {
     		preservePlaylistAttributes(playlist, (ContentGroup) previousValue);
     	}
     	
     	DateTime now = clock.now();
-    	
         if (previousValue == null) {
             playlist.setFirstSeen(now);
         }
@@ -232,6 +231,13 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         playlist.setLastFetched(now);
         updateBasicPlaylistDetails(playlist, contentGroupCollection);
 	}
+    
+    private final static Function<Identified, Identified> PASS_THROUGH = new Function<Identified, Identified>() {
+        @Override
+        public Identified apply(Identified input) {
+            return input;
+        }
+    };
 
 //	private boolean checkThatSubElementsExist(List<? extends Content> content, DBCollection collection) {
 //		ImmutableSet<String> uris = ImmutableSet.copyOf(Iterables.transform(content, Identified.TO_URI));
