@@ -382,9 +382,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 	}
 	
 	private static Identified extactItemIfInternalUrl(Identified content, Set<String> uris) {
-		if (!(content instanceof Container<?>)) {
-			return content; 
-		}
 		if (!Sets.intersection(directLookupElemsFor(content), uris).isEmpty()) {
 			return content;
 		}
@@ -401,7 +398,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 				}
 			}
 		}
-		throw new IllegalStateException();
+		throw new IllegalStateException("Unable to extract item from content: "+content+" with uris: "+uris);
 	}
 
 	@SuppressWarnings("unchecked")

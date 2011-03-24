@@ -489,4 +489,19 @@ public class MongoDbBackedContentStoreTest extends TestCase {
 		Series found = (Series) store.findByCanonicalUri(series.getCanonicalUri());
 		assertEquals(10, (int) found.getSeriesNumber());
 	}
+    
+    public void testRetrieveSeriesEmbededInBrand() throws Exception {
+        Episode ep2 = new Episode("2", "2", Publisher.BBC);
+
+        Brand brand = new Brand("brand", "brand", Publisher.BBC);
+        brand.setContents(ep2);
+        
+        Series series = new Series("series", "series", Publisher.BBC).withSeriesNumber(10);
+        series.setContents(ep2);
+        
+        store.createOrUpdate(brand, true);
+        
+        Identified content = store.findByCanonicalUri("series");
+        assertEquals(series, (Series) content);
+    }
 }
