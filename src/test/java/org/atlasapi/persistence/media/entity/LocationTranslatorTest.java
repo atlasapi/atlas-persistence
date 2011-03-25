@@ -56,6 +56,7 @@ public class LocationTranslatorTest extends TestCase {
         	.withPrice(new Price(Currency.getInstance("USD"), 99)));
 
         location.setEmbedCode("embed");
+        location.setEmbedId("embedId");
         location.setTransportSubType(TransportSubType.RTSP);
         location.setTransportType(TransportType.LINK);
         location.setTransportIsLive(true);
@@ -73,6 +74,7 @@ public class LocationTranslatorTest extends TestCase {
         assertEquals(location.getPolicy().getPrice(), resultingLocation.getPolicy().getPrice());
         
         assertEquals(location.getEmbedCode(), resultingLocation.getEmbedCode());
+        assertEquals(location.getEmbedId(), resultingLocation.getEmbedId());
         assertEquals(location.getTransportSubType(), resultingLocation.getTransportSubType());
         assertEquals(location.getTransportType(), resultingLocation.getTransportType());
         assertEquals(location.getTransportIsLive(), resultingLocation.getTransportIsLive());

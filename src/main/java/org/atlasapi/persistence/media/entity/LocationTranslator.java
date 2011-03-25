@@ -26,6 +26,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
 
         entity.setAvailable((Boolean) dbObject.get("available"));
         entity.setEmbedCode((String) dbObject.get("embedCode"));
+        entity.setEmbedId((String) dbObject.get("embedId"));
         entity.setTransportIsLive((Boolean) dbObject.get("transportIsLive"));
         
         entity.setTransportType(readEnum(TransportType.class, dbObject, "transportType"));
@@ -55,6 +56,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         
         TranslatorUtils.from(dbObject, "available", entity.getAvailable());
         TranslatorUtils.from(dbObject, "embedCode", entity.getEmbedCode());
+        TranslatorUtils.from(dbObject, "embedId", entity.getEmbedId());
         TranslatorUtils.from(dbObject, "transportIsLive", entity.getTransportIsLive());
         
         if (entity.getTransportType() != null) {
