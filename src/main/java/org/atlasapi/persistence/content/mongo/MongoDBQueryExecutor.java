@@ -38,36 +38,6 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		this.roughSearch = roughSearch;
 	}
 	
-	private <T extends Identified> List<T> sort(List<T> content, final Iterable<String> orderIterable) {
-		
-		final ImmutableList<String> order = ImmutableList.copyOf(orderIterable);
-		
-		Comparator<Identified> byPositionInList = new Comparator<Identified>() {
-
-			@Override
-			public int compare(Identified c1, Identified c2) {
-				return Ints.compare(indexOf(c1), indexOf(c2));
-			}
-
-			private int indexOf(Identified content) {
-				for (String uri : content.getAllUris()) {
-					int idx = order.indexOf(uri);
-					if (idx != -1) {
-						return idx;
-					}
-				}
-				if (content.getCurie() != null) {
-					return order.indexOf(content.getCurie());
-				}
-				return -1;
-			}
-		};
-		
-		List<T> toSort = Lists.newArrayList(content);
-		Collections.sort(toSort, byPositionInList);
-		return toSort;
-	}
-	
 	@Override
 	public List<Content> discover(ContentQuery query) {
 		if (MatchesNothing.isEquivalentTo(query)) {
@@ -97,7 +67,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 			return Collections.emptyList();
 		}
 		
-		return sort((List<Identified>) filter(query, content, false), uris);
+		return Identified.sort((List<Identified>) filter(query, content, false), uris);
 	}
 
 	private <T  extends Identified> List<T> filter(ContentQuery query, List<T> brands, boolean removeItemsThatDontMatch) {
