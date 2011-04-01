@@ -15,7 +15,6 @@ permissions and limitations under the License. */
 package org.atlasapi.persistence.content.mongo;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import org.atlasapi.content.criteria.ContentQuery;
@@ -25,8 +24,6 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 
 @SuppressWarnings("unchecked")
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {

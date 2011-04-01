@@ -305,7 +305,16 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     @Override
     public Identified findByCanonicalUri(String uri) {
-        return Iterables.getFirst(findByCanonicalUri(ImmutableList.of(uri)), null);
+        return findBestMatch(uri, findByCanonicalUri(ImmutableList.of(uri)));
+    }
+    
+    private Identified findBestMatch(String uri, List<? extends Identified> duplicates) {
+        for (Identified duplicate: duplicates) {
+            if (duplicate.getCanonicalUri().equals(uri) || duplicate.getCurie().equals(uri)) {
+                return duplicate;
+            }
+        }
+        return Iterables.getFirst(duplicates, null);
     }
     
 	public List<? extends Identified> findByUriOrAlias(Iterable<String> uris) {
