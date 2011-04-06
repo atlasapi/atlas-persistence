@@ -3,25 +3,27 @@ package org.atlasapi.persistence.content.mongo;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.content.ContentListener;
+import org.atlasapi.persistence.logging.AdapterLog;
+import org.atlasapi.persistence.logging.AdapterLogEntry;
+import org.atlasapi.persistence.logging.AdapterLogEntry.Severity;
 
 public class AsyncronousContentListener implements ContentListener {
     
-    private final Log log = LogFactory.getLog(AsyncronousContentListener.class);
     private final ContentListener delegate;
     private final ExecutorService executor;
+    private final AdapterLog log;
     
-    public AsyncronousContentListener(ContentListener delegate) {
-        this(delegate, Executors.newCachedThreadPool());
+    public AsyncronousContentListener(ContentListener delegate, AdapterLog log) {
+        this(delegate, Executors.newCachedThreadPool(), log);
     }
 
-    public AsyncronousContentListener(ContentListener delegate, ExecutorService executor) {
+    public AsyncronousContentListener(ContentListener delegate, ExecutorService executor, AdapterLog log) {
         this.delegate = delegate;
         this.executor = executor;
+        this.log = log;
     }
 
     @Override
@@ -49,7 +51,7 @@ public class AsyncronousContentListener implements ContentListener {
             try {
                 delegate.itemChanged(items, changeType);
             } catch (Exception e) {
-                log.error(e);
+                log.record(new AdapterLogEntry(Severity.ERROR).withCause(e).withSource(AsyncronousContentListener.class));
             }
         }
     }
@@ -69,7 +71,7 @@ public class AsyncronousContentListener implements ContentListener {
             try {
                 delegate.brandChanged(containers, changeType);
             } catch (Exception e) {
-                log.error(e);
+                log.record(new AdapterLogEntry(Severity.ERROR).withCause(e).withSource(AsyncronousContentListener.class));
             }
         }
     }
