@@ -150,7 +150,7 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals(1, ls.size());
         assertEquals(loc.getAvailable(), ls.iterator().next().getAvailable());
         
-        Set<CrewMember> people = i.people();
+        List<CrewMember> people = i.people();
         assertEquals(1, people.size());
         assertEquals("some guy", ((Actor) Iterables.getFirst(people, null)).character());
     }
