@@ -10,30 +10,36 @@ import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.logging.AdapterLogEntry;
 import org.atlasapi.persistence.logging.AdapterLogEntry.Severity;
 
+import com.metabroadcast.common.concurrency.BoundedExecutor;
+
 public class AsyncronousContentListener implements ContentListener {
     
     private final ContentListener delegate;
-    private final ExecutorService executor;
+    private final ExecutorService executor = Executors.newFixedThreadPool(50);
+    private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 100);
     private final AdapterLog log;
     
     public AsyncronousContentListener(ContentListener delegate, AdapterLog log) {
-        this(delegate, Executors.newCachedThreadPool(), log);
-    }
-
-    public AsyncronousContentListener(ContentListener delegate, ExecutorService executor, AdapterLog log) {
         this.delegate = delegate;
-        this.executor = executor;
         this.log = log;
     }
 
     @Override
     public void brandChanged(Iterable<? extends Container<?>> container, ChangeType changeType) {
-        executor.execute(new BrandChangedJob(container, changeType));
+        try {
+            boundedQueue.submitTask(new BrandChangedJob(container, changeType));
+        } catch (Exception e) {
+            log.record(new AdapterLogEntry(Severity.ERROR).withCause(e).withSource(AsyncronousContentListener.class));
+        }
     }
 
     @Override
     public void itemChanged(Iterable<? extends Item> item, ChangeType changeType) {
-        executor.execute(new ItemChangedJob(item, changeType));
+        try {
+            boundedQueue.submitTask(new ItemChangedJob(item, changeType));
+        } catch (Exception e) {
+            log.record(new AdapterLogEntry(Severity.ERROR).withCause(e).withSource(AsyncronousContentListener.class));
+        }
     }
 
     class ItemChangedJob implements Runnable {
