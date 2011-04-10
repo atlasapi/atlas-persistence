@@ -55,14 +55,15 @@ public class MongoScheduleStore implements ScheduleResolver {
     }
 
     public void createOrUpdate(Iterable<? extends Item> items) {
-        for (ScheduleEntry entry: toScheduleEntries(items)) {
-            List<ScheduleEntry> entries = translator.fromDbObjects(where().idEquals(entry.toKey()).find(collection));
-            
+        Map<String, ScheduleEntry> scheduleEntries = toScheduleEntries(items);
+        Map<String, ScheduleEntry> existingEntries = Maps.uniqueIndex(translator.fromDbObjects(where().idIn(scheduleEntries.keySet()).find(collection)), ScheduleEntry.KEY);
+        
+        for (ScheduleEntry entry: scheduleEntries.values()) {
             ScheduleEntry updateEntry;
-            if (entries.isEmpty()) {
+            if (! existingEntries.containsKey(entry.toKey())) {
                 updateEntry = entry;
             } else {
-                updateEntry = Iterables.getOnlyElement(entries);
+                updateEntry = existingEntries.get(entry.toKey());
                 updateEntry.withItems(mergeItems(updateEntry.items(), entry.items()));
             }
             
@@ -74,7 +75,7 @@ public class MongoScheduleStore implements ScheduleResolver {
         return Ordering.from(ScheduleEntry.START_TIME_ITEM_COMPARATOR).immutableSortedCopy(Sets.union(ImmutableSet.copyOf(latest), ImmutableSet.copyOf(original)));
     }
     
-    private List<ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
+    private Map<String, ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
         Map<String, ScheduleEntry> entries = Maps.newHashMap();
 
         for (Item item : items) {
@@ -102,7 +103,7 @@ public class MongoScheduleStore implements ScheduleResolver {
             }
         }
 
-        return Ordering.natural().immutableSortedCopy(entries.values());
+        return entries;
     }
 
     @Override

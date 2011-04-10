@@ -14,6 +14,7 @@ import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.entity.Schedule.ScheduleChannel;
 import org.joda.time.DateTime;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,6 +45,7 @@ public class MongoScheduleStoreTest {
     private final Location availableLocation = new Location();
     private final Location unavailableLocation = new Location();
     private final Encoding encoding = new Encoding();
+    private long when = System.currentTimeMillis();
     
     @Before
     public void setUp() throws Exception {
@@ -66,6 +68,13 @@ public class MongoScheduleStoreTest {
         item1.setContainer(brand1);
         item2.addVersion(version2);
         item2.addVersion(version3);
+        
+        when = System.currentTimeMillis();
+    }
+    
+    @After
+    public void tearDown() {
+        System.out.println("Completed in "+(System.currentTimeMillis()-when)+" millis");
     }
     
     @Test
