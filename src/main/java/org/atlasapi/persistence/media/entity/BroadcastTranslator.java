@@ -12,6 +12,7 @@ public class BroadcastTranslator  {
 	
     private static final String TRANSMISSION_END_TIME_KEY = "transmissionEndTime";
 	private static final String TRANSMISSION_TIME_KEY = "transmissionTime";
+	private static final String REPEAT_KEY = "repeat";
     
     public Broadcast fromDBObject(DBObject dbObject) {
         
@@ -27,6 +28,7 @@ public class BroadcastTranslator  {
         broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
         broadcast.setAliases(TranslatorUtils.toSet(dbObject, DescriptionTranslator.ALIASES));
         broadcast.setLastUpdated(TranslatorUtils.toDateTime(dbObject, DescriptionTranslator.LAST_UPDATED));
+        broadcast.setRepeat(TranslatorUtils.toBoolean(dbObject, REPEAT_KEY));
         
         return broadcast;
     }
@@ -42,6 +44,7 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
         TranslatorUtils.from(dbObject, "activelyPublished", entity.isActivelyPublished());
         TranslatorUtils.from(dbObject, "id", entity.getId());
+        TranslatorUtils.from(dbObject, REPEAT_KEY, entity.isRepeat());
         return dbObject;
     }
 
