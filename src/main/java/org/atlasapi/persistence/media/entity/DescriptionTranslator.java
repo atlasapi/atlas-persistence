@@ -10,7 +10,7 @@ import com.mongodb.DBObject;
 
 public class DescriptionTranslator implements ModelTranslator<Identified> {
    
-	private static final String CURIE = "curie";
+	public static final String CURIE = "curie";
 	
 	public static final String ALIASES = "aliases";
 	public static final String LAST_UPDATED = "lastUpdated";
