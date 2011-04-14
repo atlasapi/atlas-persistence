@@ -3,6 +3,8 @@ package org.atlasapi.persistence.content.mongo;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.annotation.PreDestroy;
+
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.content.ContentListener;
@@ -15,13 +17,18 @@ import com.metabroadcast.common.concurrency.BoundedExecutor;
 public class AsyncronousContentListener implements ContentListener {
     
     private final ContentListener delegate;
-    private final ExecutorService executor = Executors.newFixedThreadPool(50);
+    private final ExecutorService executor = Executors.newFixedThreadPool(100);
     private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 100);
     private final AdapterLog log;
     
     public AsyncronousContentListener(ContentListener delegate, AdapterLog log) {
         this.delegate = delegate;
         this.log = log;
+    }
+    
+    @PreDestroy
+    public void shutDown() {
+        executor.shutdown();
     }
 
     @Override
