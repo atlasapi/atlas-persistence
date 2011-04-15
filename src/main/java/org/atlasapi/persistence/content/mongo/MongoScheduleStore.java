@@ -81,10 +81,8 @@ public class MongoScheduleStore implements ScheduleResolver {
         for (Item item : items) {
             for (Version version : item.nativeVersions()) {
                 for (Broadcast broadcast : version.getBroadcasts()) {
-                    Version entryVersion = version.copy();
-                    entryVersion.setBroadcasts(ImmutableSet.of(broadcast.copy()));
-                    Item entryItem = (Item) item.copy();
-                    entryItem.setVersions(ImmutableSet.of(entryVersion));
+                    Version entryVersion = version.copyWithBroadcasts(ImmutableSet.of(broadcast.copy()));
+                    Item entryItem = item.copyWithVersions(ImmutableSet.of(entryVersion));
 
                     Channel channel = Channel.fromUri(broadcast.getBroadcastOn()).requireValue();
                     Publisher publisher = item.getPublisher();
