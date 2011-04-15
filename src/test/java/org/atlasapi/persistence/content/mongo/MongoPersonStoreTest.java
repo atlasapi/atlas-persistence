@@ -1,6 +1,9 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.util.List;
 
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
@@ -8,6 +11,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
@@ -30,9 +34,18 @@ public class MongoPersonStoreTest {
         Person person = new Person(uri, uri, Publisher.BBC);
         store.createOrUpdatePerson(person);
         
+        List<String> items = Lists.newArrayList();
         for (int i=0; i<10; i++) {
             Item item = new Item("item"+i, "item"+i, Publisher.BBC);
-            store.addItemToPerson(person, item);
+            items.add(item.getCanonicalUri());
+            person.addContents(item);
+            store.updatePersonItems(person);
+        }
+        
+        for (int i=0; i<10; i++) {
+            Item item = new Item("item"+i, "item"+i, Publisher.BBC);
+            person.addContents(item);
+            store.updatePersonItems(person);
         }
         
         Person found = store.person(uri);
@@ -41,6 +54,6 @@ public class MongoPersonStoreTest {
         assertEquals(person.getPublisher(), found.getPublisher());
         
         assertEquals(10, found.getContentUris().size());
-        assertEquals(person.getContentUris(), found.getContentUris());
+        assertEquals(items, found.getContentUris());
     }
 }

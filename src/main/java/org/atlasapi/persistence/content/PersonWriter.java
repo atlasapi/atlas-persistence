@@ -1,12 +1,10 @@
 package org.atlasapi.persistence.content;
 
-import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 
 public interface PersonWriter {
 
-    void addItemToPerson(Person person, Item item);
+    void updatePersonItems(Person person);
     
     void createOrUpdatePerson(Person person);
-    
 }

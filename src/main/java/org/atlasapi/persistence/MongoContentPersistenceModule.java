@@ -5,9 +5,11 @@ import javax.annotation.PostConstruct;
 import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
+import org.atlasapi.persistence.content.QueuingPersonWriter;
 import org.atlasapi.persistence.content.mongo.AsyncronousContentListener;
 import org.atlasapi.persistence.content.mongo.FullMongoScheduleRepopulator;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
+import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.content.mongo.ScheduleUpdatingContentListener;
 import org.atlasapi.persistence.logging.AdapterLog;
@@ -58,6 +60,14 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+	}
+	
+	public @Bean QueuingPersonWriter personWriter() {
+	    return new QueuingPersonWriter(personStore(), log);
+	}
+	
+	public @Bean MongoPersonStore personStore() {
+	    return new MongoPersonStore(db);
 	}
 	
 	public @Bean FullMongoScheduleRepopulator scheduleRepopulator() {
