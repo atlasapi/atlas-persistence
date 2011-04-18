@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.atlasapi.media.entity.Item;
@@ -16,10 +15,10 @@ import com.google.common.collect.Lists;
 
 public class BatchingScheduleWriter implements ScheduleWriter {
 	
-	private final BlockingQueue<Item> itemQueue = new ArrayBlockingQueue<Item>(200000);
+	private final BlockingQueue<Item> itemQueue = new ArrayBlockingQueue<Item>(100000);
 	private final AdapterLog log;
 	
-	private final int BATCH_SIZE = 50;
+	private final int BATCH_SIZE = 10;
 	
 	private AtomicBoolean running = new AtomicBoolean(true);
 	
@@ -55,12 +54,8 @@ public class BatchingScheduleWriter implements ScheduleWriter {
 	@Override
 	public void writeScheduleFor(Iterable<? extends Item> items) {
 		for (Item item : items) {
-			try {
-				if (!itemQueue.offer(item, 10, TimeUnit.SECONDS)) {
-					log.record(new AdapterLogEntry(Severity.ERROR).withSource(getClass()).withDescription("Schedule writing queue full: schedule will be stale"));
-				}
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
+			if (!itemQueue.offer(item)) {
+				log.record(new AdapterLogEntry(Severity.ERROR).withSource(getClass()).withDescription("Schedule writing queue full: schedule will be stale"));
 			}
 		}
 	}
