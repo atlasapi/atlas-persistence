@@ -53,10 +53,10 @@ public class BatchingScheduleWriter implements ScheduleWriter {
 
 	@Override
 	public void writeScheduleFor(Iterable<? extends Item> items) {
-		for (Item item : items) {
-			if (!itemQueue.offer(item)) {
-				log.record(new AdapterLogEntry(Severity.ERROR).withSource(getClass()).withDescription("Schedule writing queue full: schedule will be stale"));
-			}
-		}
+//		for (Item item : items) {
+//			if (!itemQueue.offer(item)) {
+//				log.record(new AdapterLogEntry(Severity.ERROR).withSource(getClass()).withDescription("Schedule writing queue full: schedule will be stale"));
+//			}
+//		}
 	}
 }
