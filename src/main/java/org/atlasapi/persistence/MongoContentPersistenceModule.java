@@ -8,8 +8,10 @@ import org.atlasapi.persistence.content.EventFiringContentWriter;
 import org.atlasapi.persistence.content.mongo.AsyncronousContentListener;
 import org.atlasapi.persistence.content.mongo.FullMongoScheduleRepopulator;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
-import org.atlasapi.persistence.content.mongo.MongoScheduleStore;
-import org.atlasapi.persistence.content.mongo.ScheduleUpdatingContentListener;
+import org.atlasapi.persistence.content.schedule.mongo.BatchingScheduleWriter;
+import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
+import org.atlasapi.persistence.content.schedule.mongo.ScheduleUpdatingContentListener;
+import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -60,8 +62,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         }
 	}
 	
+	public @Bean ScheduleWriter scheduleWriter() {
+		return new BatchingScheduleWriter(scheduleStore(), log);
+	}
+	
 	public @Bean FullMongoScheduleRepopulator scheduleRepopulator() {
-	    return new FullMongoScheduleRepopulator(db, scheduleStore());
+	    return new FullMongoScheduleRepopulator(db, scheduleWriter());
 	}
 	
 	@Bean EventFiringContentWriter eventFiringContentWriter() {
@@ -70,7 +76,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
 	public @Bean AggregateContentListener contentListener() {
 	    AggregateContentListener listener = new AggregateContentListener();
-	    listener.addListener(new AsyncronousContentListener(new ScheduleUpdatingContentListener(scheduleStore()), log));
+	    listener.addListener(new AsyncronousContentListener(new ScheduleUpdatingContentListener(scheduleWriter()), log));
 	    return listener;
 	}
 
