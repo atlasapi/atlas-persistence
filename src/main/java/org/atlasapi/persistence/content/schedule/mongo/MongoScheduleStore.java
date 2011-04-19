@@ -28,11 +28,11 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -40,10 +40,12 @@ import com.mongodb.DBCollection;
 
 public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
+	private final static long BIN_MILLIS = Duration.standardHours(1).getMillis();
+	private final static Duration MAX_DURATION = Duration.standardDays(14);
+	private static final Duration MAX_BROADCAST_AGE = Duration.standardDays(365);
+
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
-    private final long binMillis = 3600000;
-    private final static Duration MAX_DURATION = Duration.standardDays(14);
 
     public MongoScheduleStore(DatabasedMongo db) {
         collection = db.collection("schedule");
@@ -56,19 +58,19 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         
         for (ScheduleEntry entry: scheduleEntries.values()) {
             ScheduleEntry updateEntry;
-            if (! existingEntries.containsKey(entry.toKey())) {
+            ScheduleEntry existingEntry = existingEntries.get(entry.toKey());
+            if (existingEntry == null) {
                 updateEntry = entry;
             } else {
-                updateEntry = existingEntries.get(entry.toKey());
+				updateEntry = existingEntry;
                 updateEntry.withItems(mergeItems(updateEntry.items(), entry.items()));
             }
-            
-            collection.save(translator.toDb(updateEntry));
+			collection.save(translator.toDb(updateEntry));
         }
     }
     
-    private List<Item> mergeItems(Iterable<Item> original, Iterable<Item> latest) {
-        return Ordering.from(ScheduleEntry.START_TIME_ITEM_COMPARATOR).immutableSortedCopy(Sets.union(ImmutableSet.copyOf(latest), ImmutableSet.copyOf(original)));
+    private ImmutableSortedSet<Item> mergeItems(Iterable<Item> original, Iterable<Item> latest) {
+    	return ImmutableSortedSet.copyOf(ScheduleEntry.START_TIME_ITEM_COMPARATOR, Iterables.concat(latest, original));
     }
     
     private Map<String, ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
@@ -82,6 +84,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
                     Channel channel = Channel.fromUri(broadcast.getBroadcastOn()).requireValue();
                     Publisher publisher = item.getPublisher();
+                    
                     for (Interval interval: intervalsFor(broadcast.getTransmissionTime(), broadcast.getTransmissionEndTime())) {
                         String key = ScheduleEntry.toKey(interval, channel, publisher);
 
@@ -177,20 +180,24 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
     
     private long millisBackToNearestBin(DateTime when) {
-        long div = when.getMillis() / binMillis;
+        long div = when.getMillis() / BIN_MILLIS;
         int asInt = (int) div;
-        return asInt * binMillis;
+        return asInt * BIN_MILLIS;
     }
     
     private List<Interval> intervalsFor(DateTime start, DateTime end) {
+    	if (start.isBefore(new DateTime(DateTimeZones.UTC).minus(MAX_BROADCAST_AGE))) {
+    		return ImmutableList.of();
+    	}
+    	
         long startMillis = millisBackToNearestBin(start);
         long endMillis = end.getMillis();
         ImmutableList.Builder<Interval> intervals = ImmutableList.builder();
 
         while (startMillis < endMillis) {
-            Interval interval = new Interval(new DateTime(startMillis, DateTimeZones.UTC), new DateTime(startMillis + binMillis - 1, DateTimeZones.UTC));
+            Interval interval = new Interval(new DateTime(startMillis, DateTimeZones.UTC), new DateTime(startMillis + BIN_MILLIS - 1, DateTimeZones.UTC));
             intervals.add(interval);
-            startMillis += (binMillis);
+            startMillis += (BIN_MILLIS);
         }
         
         return intervals.build();

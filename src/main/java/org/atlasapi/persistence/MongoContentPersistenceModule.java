@@ -62,12 +62,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         }
 	}
 	
-	public @Bean ScheduleWriter scheduleWriter() {
+	public @Bean ScheduleWriter queueingScheduleWriter() {
 		return new BatchingScheduleWriter(scheduleStore(), log);
 	}
 	
 	public @Bean FullMongoScheduleRepopulator scheduleRepopulator() {
-	    return new FullMongoScheduleRepopulator(db, scheduleWriter());
+	    return new FullMongoScheduleRepopulator(db, scheduleStore());
 	}
 	
 	@Bean EventFiringContentWriter eventFiringContentWriter() {
@@ -76,7 +76,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
 	public @Bean AggregateContentListener contentListener() {
 	    AggregateContentListener listener = new AggregateContentListener();
-	    listener.addListener(new AsyncronousContentListener(new ScheduleUpdatingContentListener(scheduleWriter()), log));
+	    listener.addListener(new AsyncronousContentListener(new ScheduleUpdatingContentListener(queueingScheduleWriter()), log));
 	    return listener;
 	}
 
