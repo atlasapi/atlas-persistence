@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content.mongo;
+package org.atlasapi.persistence.content.schedule.mongo;
 
 import static org.junit.Assert.*;
 
@@ -13,6 +13,7 @@ import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.entity.Schedule.ScheduleChannel;
+import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -79,8 +80,8 @@ public class MongoScheduleStoreTest {
     
     @Test
     public void shouldSaveItemsAndRetrieveSchedule() throws Exception {
-        store.createOrUpdate(item1);
-        store.createOrUpdate(item2);
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
         assertSchedule(schedule);
@@ -88,8 +89,8 @@ public class MongoScheduleStoreTest {
     
     @Test
     public void shouldSaveItemsAndRetrieveScheduleWithLoadsOfPublishers() throws Exception {
-        store.createOrUpdate(item1);
-        store.createOrUpdate(item2);
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV));
         assertSchedule(schedule);
@@ -100,8 +101,8 @@ public class MongoScheduleStoreTest {
         Broadcast broadcast = new Broadcast(Channel.AL_JAZEERA_ENGLISH.uri(), now.minusHours(2), now.minusHours(3));
         version1.addBroadcast(broadcast);
         
-        store.createOrUpdate(item1);
-        store.createOrUpdate(item2);
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
         assertSchedule(schedule);
@@ -112,8 +113,8 @@ public class MongoScheduleStoreTest {
         Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(6), now.minusHours(5));
         version1.addBroadcast(broadcast);
         
-        store.createOrUpdate(item1);
-        store.createOrUpdate(item2);
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
         assertSchedule(schedule);
@@ -131,8 +132,8 @@ public class MongoScheduleStoreTest {
         Item copy = (Item) item1.copy();
         copy.setPublisher(Publisher.BLIP);
         
-        store.createOrUpdate(copy);
-        store.createOrUpdate(item2);
+        store.writeScheduleFrom(copy);
+        store.writeScheduleFrom(item2);
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE), ImmutableSet.of(Publisher.BBC));
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());

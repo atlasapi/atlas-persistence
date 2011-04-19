@@ -11,6 +11,7 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
@@ -27,7 +28,7 @@ import com.mongodb.DBObject;
 
 public class FullMongoScheduleRepopulator implements Runnable {
     
-    private final MongoScheduleStore scheduleStore;
+    private final ScheduleWriter scheduleStore;
     private final DBCollection contentCollection;
     private static final Log log = LogFactory.getLog(FullMongoScheduleRepopulator.class);
     private static final int BATCH_SIZE = 100;
@@ -37,7 +38,7 @@ public class FullMongoScheduleRepopulator implements Runnable {
     private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 10);
     private final Iterable<Publisher> forPublishers;
 
-    public FullMongoScheduleRepopulator(DatabasedMongo db, MongoScheduleStore scheduleStore, Iterable<Publisher> forPublishers) {
+    public FullMongoScheduleRepopulator(DatabasedMongo db, ScheduleWriter scheduleStore, Iterable<Publisher> forPublishers) {
         this.forPublishers = forPublishers;
         contentCollection = db.collection("content");
         this.scheduleStore = scheduleStore;
@@ -99,7 +100,7 @@ public class FullMongoScheduleRepopulator implements Runnable {
 
         @Override
         public void run() {
-            scheduleStore.createOrUpdate(items);
+            scheduleStore.writeScheduleFor(items);
         }
     }
 }
