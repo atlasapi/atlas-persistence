@@ -167,7 +167,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         }));
     }
     
-    private List<String> keys(Iterable<Interval> intervals, Iterable<Channel> channels, Iterable<Publisher> publishers) {
+    private static List<String> keys(Iterable<Interval> intervals, Iterable<Channel> channels, Iterable<Publisher> publishers) {
         ImmutableList.Builder<String> keys = ImmutableList.builder();
         for (Interval interval: intervals) {
             for (Channel channel: channels) {
@@ -255,5 +255,11 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
 	void writeScheduleFrom(Item item1) {
 		writeScheduleFor(ImmutableList.of(item1));
+	}
+	
+	public static void main(String[] args) {
+	    Interval interval = new Interval(new DateTime("18-04-2011 18:15:00 GMT+0000 (UTC)"), new DateTime("Mon Apr 18 2011 18:45:00 GMT+0000 (UTC)"));
+	    List<String> keys = keys(ImmutableList.of(interval), ImmutableList.of(Channel.BBC_RADIO_RADIO4), ImmutableList.of(Publisher.BBC));
+	    System.out.println(keys);
 	}
 }
