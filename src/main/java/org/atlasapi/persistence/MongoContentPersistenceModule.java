@@ -2,6 +2,7 @@ package org.atlasapi.persistence;
 
 import javax.annotation.PostConstruct;
 
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
@@ -22,6 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.scheduling.RepetitionRules;
 import com.metabroadcast.common.scheduling.SimpleScheduler;
@@ -40,7 +42,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	@PostConstruct
 	public void installScheduleRebuilder() {
-		scheduler.schedule(scheduleRepopulator(), RepetitionRules.weekly(DayOfWeek.SUNDAY, new LocalTime(1, 0, 0)));
+	    FullMongoScheduleRepopulator everythingRepopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of());
+		scheduler.schedule(everythingRepopulator, RepetitionRules.weekly(DayOfWeek.SUNDAY, new LocalTime(1, 0, 0)));
+		FullMongoScheduleRepopulator bbcRepopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.BBC));
+        scheduler.schedule(bbcRepopulator, RepetitionRules.daily(new LocalTime(21, 0, 0)));
+        FullMongoScheduleRepopulator c4Repopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.C4));
+        scheduler.schedule(c4Repopulator, RepetitionRules.daily(new LocalTime(23, 0, 0)));
 	}
 	
 	public @Bean ContentWriter persistentWriter() {
@@ -66,10 +73,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 		return new BatchingScheduleWriter(scheduleStore(), log);
 	}
 	
-	public @Bean FullMongoScheduleRepopulator scheduleRepopulator() {
-	    return new FullMongoScheduleRepopulator(db, scheduleStore());
-	}
-	
+
 	@Bean EventFiringContentWriter eventFiringContentWriter() {
 	    return new EventFiringContentWriter(contentStore(), contentListener());
 	}
