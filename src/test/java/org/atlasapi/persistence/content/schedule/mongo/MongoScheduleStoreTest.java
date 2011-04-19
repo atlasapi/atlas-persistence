@@ -19,10 +19,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
+import com.mongodb.DBObject;
 
 
 public class MongoScheduleStoreTest {
@@ -34,6 +37,8 @@ public class MongoScheduleStoreTest {
     private final Broadcast broadcast2 = new Broadcast(Channel.BBC_TWO.uri(), now.minusHours(4), now.minusHours(1));
     private final Broadcast broadcast3 = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(2), now.minusHours(1));
     private final Broadcast broadcast4 = new Broadcast(Channel.BBC_TWO.uri(), now.minusHours(1), now);
+
+    private final Broadcast veryOldBroadcast = new Broadcast(Channel.BBC_TWO.uri(), now.minusYears(1).minusHours(1), now.minusYears(1));
     
     private final Version version1 = new Version();
     private final Version version2 = new Version();
@@ -48,9 +53,12 @@ public class MongoScheduleStoreTest {
     private final Encoding encoding = new Encoding();
     private long when = System.currentTimeMillis();
     
+    private DatabasedMongo database;
+    
     @Before
     public void setUp() throws Exception {
-        store = new MongoScheduleStore(MongoTestHelper.anEmptyTestDatabase());
+        database = MongoTestHelper.anEmptyTestDatabase();
+		store = new MongoScheduleStore(database);
         
         availableLocation.setAvailable(true);
         unavailableLocation.setAvailable(false);
@@ -85,6 +93,23 @@ public class MongoScheduleStoreTest {
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
         assertSchedule(schedule);
+    }
+
+    @Test
+    public void testShouldIgnoreBroadcastsOverAYearOld() throws Exception {
+    	
+    	Version version = new Version();
+    	version.addBroadcast(veryOldBroadcast);
+    	version.addBroadcast(new Broadcast(Channel.BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
+    	
+    	Item item = new Item();
+    	item.setPublisher(Publisher.BBC);
+    	
+		item.addVersion(version);
+		
+        store.writeScheduleFrom(item);
+
+        assertEquals(1, Iterables.size(database.collection("schedule").find()));
     }
     
     @Test

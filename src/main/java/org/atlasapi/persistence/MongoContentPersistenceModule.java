@@ -42,11 +42,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	@PostConstruct
 	public void installScheduleRebuilder() {
-	    FullMongoScheduleRepopulator everythingRepopulator = new FullMongoScheduleRepopulator(db, scheduleWriter(), ImmutableList.<Publisher>of());
+	    FullMongoScheduleRepopulator everythingRepopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of());
 		scheduler.schedule(everythingRepopulator, RepetitionRules.weekly(DayOfWeek.SUNDAY, new LocalTime(1, 0, 0)));
-		FullMongoScheduleRepopulator bbcRepopulator = new FullMongoScheduleRepopulator(db, scheduleWriter(), ImmutableList.<Publisher>of(Publisher.BBC));
+		FullMongoScheduleRepopulator bbcRepopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.BBC));
         scheduler.schedule(bbcRepopulator, RepetitionRules.daily(new LocalTime(21, 0, 0)));
-        FullMongoScheduleRepopulator c4Repopulator = new FullMongoScheduleRepopulator(db, scheduleWriter(), ImmutableList.<Publisher>of(Publisher.C4));
+        FullMongoScheduleRepopulator c4Repopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.C4));
         scheduler.schedule(c4Repopulator, RepetitionRules.daily(new LocalTime(23, 0, 0)));
 	}
 	
@@ -69,17 +69,18 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         }
 	}
 	
-	public @Bean ScheduleWriter scheduleWriter() {
+	public @Bean ScheduleWriter queueingScheduleWriter() {
 		return new BatchingScheduleWriter(scheduleStore(), log);
 	}
 	
+
 	@Bean EventFiringContentWriter eventFiringContentWriter() {
 	    return new EventFiringContentWriter(contentStore(), contentListener());
 	}
 
 	public @Bean AggregateContentListener contentListener() {
 	    AggregateContentListener listener = new AggregateContentListener();
-	    listener.addListener(new AsyncronousContentListener(new ScheduleUpdatingContentListener(scheduleWriter()), log));
+	    listener.addListener(new AsyncronousContentListener(new ScheduleUpdatingContentListener(queueingScheduleWriter()), log));
 	    return listener;
 	}
 
