@@ -31,7 +31,7 @@ public class FullMongoScheduleRepopulator implements Runnable {
     private final ScheduleWriter scheduleStore;
     private final DBCollection contentCollection;
     private static final Log log = LogFactory.getLog(FullMongoScheduleRepopulator.class);
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 5;
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
     private final ItemTranslator itemTranslator = new ItemTranslator(true);
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
