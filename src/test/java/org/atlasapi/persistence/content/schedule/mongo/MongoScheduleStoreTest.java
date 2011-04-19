@@ -22,6 +22,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.ids.UUIDGenerator;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -97,20 +98,45 @@ public class MongoScheduleStoreTest {
 
     @Test
     public void testShouldIgnoreBroadcastsOverAYearOld() throws Exception {
-    	
-    	Version version = new Version();
-    	version.addBroadcast(veryOldBroadcast);
-    	version.addBroadcast(new Broadcast(Channel.BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
-    	
-    	Item item = new Item();
-    	item.setPublisher(Publisher.BBC);
-    	
-		item.addVersion(version);
-		
-        store.writeScheduleFrom(item);
+  
+    	Item item = itemWithBroadcast(new Broadcast(Channel.BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
+    	store.writeScheduleFrom(item);
 
         assertEquals(1, Iterables.size(database.collection("schedule").find()));
     }
+    
+    @Test
+    public void testUpdatingABroadcast() throws Exception {
+    	DateTime someHour = now.withHourOfDay(1).withMinuteOfHour(0);
+		Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), someHour.withMinuteOfHour(10), someHour.withMinuteOfHour(20));
+
+		broadcast.withId("v1");
+    	store.writeScheduleFrom(itemWithBroadcast(broadcast));
+    	
+    	Schedule schedule = store.schedule(someHour, someHour.plusHours(1), ImmutableList.of(Channel.BBC_ONE), ImmutableList.of(Publisher.BBC));
+    	assertEquals("v1", extractBroadcastFrom(schedule).getId());
+    	
+		broadcast.withId("v2");
+    	store.writeScheduleFrom(itemWithBroadcast(broadcast));
+    	
+    	schedule = store.schedule(someHour, someHour.plusHours(1), ImmutableList.of(Channel.BBC_ONE), ImmutableList.of(Publisher.BBC));
+    	assertEquals("v2", extractBroadcastFrom(schedule).getId());
+	}
+
+	private Broadcast extractBroadcastFrom(Schedule schedule) {
+		return Iterables.getOnlyElement(Iterables.getOnlyElement(Iterables.getOnlyElement(Iterables.getOnlyElement(schedule.scheduleChannels()).items()).getVersions()).getBroadcasts());
+	}
+
+	private Item itemWithBroadcast(Broadcast broadcast) {
+		Version version = new Version();
+    	version.addBroadcast(veryOldBroadcast);
+    	version.addBroadcast(broadcast);
+    	
+    	Item item = new Item(new UUIDGenerator().generate(), "", Publisher.BBC);
+    	
+		item.addVersion(version);
+		return item;
+	}
     
     @Test
     public void shouldSaveItemsAndRetrieveScheduleWithLoadsOfPublishers() throws Exception {

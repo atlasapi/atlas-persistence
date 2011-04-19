@@ -69,8 +69,15 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         }
     }
     
-    private ImmutableSortedSet<Item> mergeItems(Iterable<Item> original, Iterable<Item> latest) {
-    	return ImmutableSortedSet.copyOf(ScheduleEntry.START_TIME_ITEM_COMPARATOR, Iterables.concat(latest, original));
+    private Iterable<Item> mergeItems(Iterable<Item> original, Iterable<Item> latest) {
+    	final ImmutableSet<String> latestUris = ImmutableSet.copyOf(Iterables.transform(latest, Item.TO_URI));
+    	
+    	return ImmutableSortedSet.copyOf(ScheduleEntry.START_TIME_ITEM_COMPARATOR, Iterables.concat(latest, Iterables.filter(original, new Predicate<Item>() {
+			@Override
+			public boolean apply(Item input) {
+				return !latestUris.contains(input.getCanonicalUri());
+			}
+		})));
     }
     
     private Map<String, ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
