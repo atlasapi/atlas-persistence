@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content.mongo;
+package org.atlasapi.persistence.content.schedule.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
@@ -38,7 +38,7 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
 
-public class MongoScheduleStore implements ScheduleResolver {
+public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
@@ -50,11 +50,7 @@ public class MongoScheduleStore implements ScheduleResolver {
         collection.ensureIndex(translator.toIndex(), MongoConstants.BACKGROUND);
     }
 
-    public void createOrUpdate(Item item) {
-        createOrUpdate(ImmutableList.of(item));
-    }
-
-    public void createOrUpdate(Iterable<? extends Item> items) {
+    public void writeScheduleFor(Iterable<? extends Item> items) {
         Map<String, ScheduleEntry> scheduleEntries = toScheduleEntries(items);
         Map<String, ScheduleEntry> existingEntries = Maps.uniqueIndex(translator.fromDbObjects(where().idIn(scheduleEntries.keySet()).find(collection)), ScheduleEntry.KEY);
         
@@ -249,4 +245,8 @@ public class MongoScheduleStore implements ScheduleResolver {
             }
         };
     }
+
+	void writeScheduleFrom(Item item1) {
+		writeScheduleFor(ImmutableList.of(item1));
+	}
 }

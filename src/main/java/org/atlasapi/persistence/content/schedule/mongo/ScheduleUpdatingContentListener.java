@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content.mongo;
+package org.atlasapi.persistence.content.schedule.mongo;
 
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
@@ -6,9 +6,9 @@ import org.atlasapi.persistence.content.ContentListener;
 
 public class ScheduleUpdatingContentListener implements ContentListener {
     
-    private final MongoScheduleStore store;
+    private final ScheduleWriter store;
 
-    public ScheduleUpdatingContentListener(MongoScheduleStore store) {
+    public ScheduleUpdatingContentListener(ScheduleWriter store) {
         this.store = store;
     }
 
@@ -20,9 +20,7 @@ public class ScheduleUpdatingContentListener implements ContentListener {
     @Override
     public void itemChanged(Iterable<? extends Item> items, ChangeType changeType) {
         if (changeType == ChangeType.CONTENT_UPDATE) {
-            for (Item item: items) {
-                store.createOrUpdate(item);
-            }
+        	store.writeScheduleFor(items);
         }
     }
 }
