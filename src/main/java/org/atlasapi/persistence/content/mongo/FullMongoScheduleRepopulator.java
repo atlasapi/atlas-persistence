@@ -23,10 +23,11 @@ import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.scheduling.ScheduledTask;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-public class FullMongoScheduleRepopulator implements Runnable {
+public class FullMongoScheduleRepopulator extends ScheduledTask {
     
     private final ScheduleWriter scheduleStore;
     private final DBCollection contentCollection;
@@ -52,14 +53,18 @@ public class FullMongoScheduleRepopulator implements Runnable {
     }
     
     @Override
-    public void run() {
+    public void runTask() {
         String currentId = "0";
-        
-        while (true) {
+        long totalRows = contentCollection.count(where(forPublishers).build());
+        long rowsSeen = 0;
+        while (shouldContinue()) {
+        	reportStatus(rowsSeen + "/" + totalRows);
+        	
             List<DBObject> objects = ImmutableList.copyOf(where(forPublishers).fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), -BATCH_SIZE));
             if (objects.isEmpty()) {
                 break;
             }
+            rowsSeen += objects.size();
             
             ImmutableList.Builder<Item> itemsBuilder = ImmutableList.builder();
             String latestId = null;
