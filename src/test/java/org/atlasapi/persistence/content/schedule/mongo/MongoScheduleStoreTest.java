@@ -1,11 +1,14 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
@@ -13,7 +16,6 @@ import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.entity.Schedule.ScheduleChannel;
-import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +28,6 @@ import com.metabroadcast.common.ids.UUIDGenerator;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
-import com.mongodb.DBObject;
 
 
 public class MongoScheduleStoreTest {
@@ -46,7 +47,7 @@ public class MongoScheduleStoreTest {
     private final Version version3 = new Version();
     
     private final Item item1 = new Item("item1", "item1", Publisher.BBC);
-    private final Item item2 = new Item("item2", "item2", Publisher.BBC);
+    private final Item item2 = new Episode("item2", "item2", Publisher.BBC);
     private final Brand brand1 = new Brand("brand1", "brand1", Publisher.BBC);
     
     private final Location availableLocation = new Location();
@@ -207,6 +208,7 @@ public class MongoScheduleStoreTest {
             }
             
             Item item2 = channel.items().get(1);
+            assertTrue(item2 instanceof Episode);
             Broadcast broadcast2 = ScheduleEntry.BROADCAST.apply(item2);
             
             

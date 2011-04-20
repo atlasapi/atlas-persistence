@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
@@ -87,7 +88,13 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             for (Version version : item.nativeVersions()) {
                 for (Broadcast broadcast : version.getBroadcasts()) {
                     Version entryVersion = version.copyWithBroadcasts(ImmutableSet.of(broadcast.copy()));
-                    Item entryItem = item.copyWithVersions(ImmutableSet.of(entryVersion));
+                    
+                    Item entryItem = null;
+                    if (item instanceof Episode) {
+                        entryItem = ((Episode) item).copyWithVersions(ImmutableSet.of(entryVersion));
+                    } else {
+                        entryItem = item.copyWithVersions(ImmutableSet.of(entryVersion));
+                    }
 
                     Channel channel = Channel.fromUri(broadcast.getBroadcastOn()).requireValue();
                     Publisher publisher = item.getPublisher();
@@ -265,8 +272,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	}
 	
 	public static void main(String[] args) {
-	    Interval interval = new Interval(new DateTime("2011-04-17T22:00:00.0000Z"), new DateTime("2011-04-18T00:00:00.000Z"));
-	    List<String> keys = keys(ImmutableList.of(interval), ImmutableList.of(Channel.BBC_RADIO_ESSEX), ImmutableList.of(Publisher.BBC));
+	    Interval interval = new Interval(new DateTime("2011-04-19T08:00:00.0000Z"), new DateTime("2011-04-19T11:00:00.000Z"));
+	    List<String> keys = keys(ImmutableList.of(interval), ImmutableList.of(Channel.BBC_RADIO_THREECOUNTIES), ImmutableList.of(Publisher.BBC));
 	    System.out.println(keys);
 	}
 }
