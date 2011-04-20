@@ -71,7 +71,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         }
 	}
 	
-	public @Bean QueuingPersonWriter personWriter() {
+	public @Bean QueuingPersonWriter queuingPersonWriter() {
 	    return new QueuingPersonWriter(personStore(), log);
 	}
 	
