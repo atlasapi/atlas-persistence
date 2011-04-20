@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.PeopleResolver;
-import org.atlasapi.persistence.content.PersonWriter;
+import org.atlasapi.persistence.content.people.PersonWriter;
 import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.joda.time.DateTime;
 

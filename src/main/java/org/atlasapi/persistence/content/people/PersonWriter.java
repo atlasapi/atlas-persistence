@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content;
+package org.atlasapi.persistence.content.people;
 
 import org.atlasapi.media.entity.Person;
 

@@ -6,11 +6,13 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.AggregateContentListener;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EventFiringContentWriter;
-import org.atlasapi.persistence.content.QueuingPersonWriter;
 import org.atlasapi.persistence.content.mongo.AsyncronousContentListener;
 import org.atlasapi.persistence.content.mongo.FullMongoScheduleRepopulator;
 import org.atlasapi.persistence.content.mongo.MongoDbBackedContentStore;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
+import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
+import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
+import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.BatchingScheduleWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleUpdatingContentListener;
@@ -71,8 +73,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         }
 	}
 	
-	public @Bean QueuingPersonWriter queuingPersonWriter() {
-	    return new QueuingPersonWriter(personStore(), log);
+	public @Bean ItemsPeopleWriter itemsPeopleWriter() {
+	    return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
 	}
 	
 	public @Bean MongoPersonStore personStore() {

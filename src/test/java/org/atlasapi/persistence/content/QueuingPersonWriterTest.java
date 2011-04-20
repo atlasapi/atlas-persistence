@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.people.PersonWriter;
+import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.logging.SystemOutAdapterLog;
 import org.jmock.Expectations;
 import org.jmock.Mockery;

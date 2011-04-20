@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content;
+package org.atlasapi.persistence.content.people;
 
 import java.util.List;
 import java.util.Map;
