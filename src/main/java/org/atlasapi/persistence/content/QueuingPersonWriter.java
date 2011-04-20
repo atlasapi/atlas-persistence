@@ -38,7 +38,7 @@ public class QueuingPersonWriter {
         this.store = store;
         this.log = log;
         this.schedule = schedule;
-        this.schedule.scheduleWithFixedDelay(new WritePeople(), 10, 10, TimeUnit.MINUTES);
+        this.schedule.scheduleWithFixedDelay(new WritePeople(), 2, 2, TimeUnit.MINUTES);
     }
     
     @PreDestroy
