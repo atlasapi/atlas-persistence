@@ -258,8 +258,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	}
 	
 	public static void main(String[] args) {
-	    Interval interval = new Interval(new DateTime("18-04-2011 18:15:00 GMT+0000 (UTC)"), new DateTime("Mon Apr 18 2011 18:45:00 GMT+0000 (UTC)"));
-	    List<String> keys = keys(ImmutableList.of(interval), ImmutableList.of(Channel.BBC_RADIO_RADIO4), ImmutableList.of(Publisher.BBC));
+	    Interval interval = new Interval(new DateTime("2011-04-17T22:00:00.0000Z"), new DateTime("2011-04-18T00:00:00.000Z"));
+	    List<String> keys = keys(ImmutableList.of(interval), ImmutableList.of(Channel.BBC_RADIO_ESSEX), ImmutableList.of(Publisher.BBC));
 	    System.out.println(keys);
 	}
 }
