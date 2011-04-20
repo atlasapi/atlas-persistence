@@ -61,7 +61,7 @@ public class QueuingPersonWriter {
         @Override
         public void run() {
             try {
-                List<Person> people = Lists.newArrayList();
+                List<Person> people = Lists.newArrayListWithExpectedSize(queue.size());
                 queue.drainTo(people);
                 
                 for (Person person: dedupePeople(people)) {
