@@ -20,6 +20,7 @@ import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
+import org.joda.time.Duration;
 import org.joda.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +31,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.scheduling.RepetitionRules;
+import com.metabroadcast.common.scheduling.ScheduledTask;
 import com.metabroadcast.common.scheduling.SimpleScheduler;
 import com.metabroadcast.common.time.DayOfWeek;
 import com.mongodb.Mongo;
@@ -46,12 +48,23 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	@PostConstruct
 	public void installScheduleRebuilder() {
-	    FullMongoScheduleRepopulator everythingRepopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of());
-		scheduler.schedule(everythingRepopulator, RepetitionRules.weekly(DayOfWeek.SUNDAY, new LocalTime(1, 0, 0)));
-		FullMongoScheduleRepopulator bbcRepopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.BBC));
-        scheduler.schedule(bbcRepopulator, RepetitionRules.daily(new LocalTime(21, 0, 0)));
-        FullMongoScheduleRepopulator c4Repopulator = new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.C4));
-        scheduler.schedule(c4Repopulator, RepetitionRules.daily(new LocalTime(23, 0, 0)));
+	    ScheduledTask everythingRepopulator =
+	    	new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of())
+	    	.withName("Full Mongo Schedule repopulator");
+	    
+	    scheduler.schedule(everythingRepopulator, RepetitionRules.daily(new LocalTime(1, 15, 0)));
+		
+	    ScheduledTask bbcRepopulator = 
+	    	new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.BBC))
+	    	.withName("BBC Mongo Schedule repopulator");
+	    
+        scheduler.schedule(bbcRepopulator, RepetitionRules.every(Duration.standardHours(2)));
+        
+        ScheduledTask c4Repopulator = 
+        	new FullMongoScheduleRepopulator(db, scheduleStore(), ImmutableList.<Publisher>of(Publisher.C4))
+        	.withName("C4 Mongo Schedule repopulator");
+        
+        scheduler.schedule(c4Repopulator, RepetitionRules.every(Duration.standardHours(1)).withOffset(Duration.standardMinutes(30)));
 	}
 	
 	public @Bean ContentWriter persistentWriter() {
