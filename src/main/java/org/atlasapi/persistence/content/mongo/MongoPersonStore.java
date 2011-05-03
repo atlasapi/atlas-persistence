@@ -2,10 +2,9 @@ package org.atlasapi.persistence.content.mongo;
 
 import java.util.List;
 
-import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.PeopleResolver;
-import org.atlasapi.persistence.content.PersonWriter;
+import org.atlasapi.persistence.content.people.PersonWriter;
 import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.joda.time.DateTime;
 
@@ -25,9 +24,7 @@ public class MongoPersonStore implements PersonWriter, PeopleResolver {
     }
 
     @Override
-    public void addItemToPerson(Person person, Item item) {
-        person.addContents(item);
-        
+    public void updatePersonItems(Person person) {
         DBObject idQuery = translator.idQuery(person.getCanonicalUri()).build();
         
         collection.update(idQuery, translator.updateContentUris(person), true, false);

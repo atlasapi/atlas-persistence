@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
-
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,42 +10,61 @@ import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.concurrency.BoundedExecutor;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.scheduling.ScheduledTask;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-public class FullMongoScheduleRepopulator implements Runnable {
+public class FullMongoScheduleRepopulator extends ScheduledTask {
     
-    private final MongoScheduleStore scheduleStore;
+    private final ScheduleWriter scheduleStore;
     private final DBCollection contentCollection;
     private static final Log log = LogFactory.getLog(FullMongoScheduleRepopulator.class);
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 5;
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
     private final ItemTranslator itemTranslator = new ItemTranslator(true);
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
     private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 10);
+    private final Iterable<Publisher> forPublishers;
 
-    public FullMongoScheduleRepopulator(DatabasedMongo db, MongoScheduleStore scheduleStore) {
+    public FullMongoScheduleRepopulator(DatabasedMongo db, ScheduleWriter scheduleStore, Iterable<Publisher> forPublishers) {
+        this.forPublishers = forPublishers;
         contentCollection = db.collection("content");
         this.scheduleStore = scheduleStore;
     }
-
+    
+    private MongoQueryBuilder where(Iterable<Publisher> forPublishers) {
+        if (Iterables.isEmpty(forPublishers)) {
+            return MongoBuilders.where();
+        }
+        return MongoBuilders.where().fieldIn("publisher", Iterables.transform(forPublishers, Publisher.TO_KEY));
+    }
+    
     @Override
-    public void run() {
+    public void runTask() {
         String currentId = "0";
-        
-        while (true) {
-            List<DBObject> objects = ImmutableList.copyOf(where().fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), -BATCH_SIZE));
+        long totalRows = contentCollection.count(where(forPublishers).build());
+        long rowsSeen = 0;
+        while (shouldContinue()) {
+        	reportStatus(rowsSeen + "/" + totalRows);
+        	
+            List<DBObject> objects = ImmutableList.copyOf(where(forPublishers).fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), -BATCH_SIZE));
             if (objects.isEmpty()) {
                 break;
             }
+            rowsSeen += objects.size();
             
             ImmutableList.Builder<Item> itemsBuilder = ImmutableList.builder();
             String latestId = null;
@@ -88,7 +105,7 @@ public class FullMongoScheduleRepopulator implements Runnable {
 
         @Override
         public void run() {
-            scheduleStore.createOrUpdate(items);
+            scheduleStore.writeScheduleFor(items);
         }
     }
 }

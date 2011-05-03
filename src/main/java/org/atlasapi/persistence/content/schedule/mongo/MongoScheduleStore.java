@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content.mongo;
+package org.atlasapi.persistence.content.schedule.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Publisher;
@@ -28,51 +29,56 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
 
-public class MongoScheduleStore implements ScheduleResolver {
+public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
+
+	private final static long BIN_MILLIS = Duration.standardHours(1).getMillis();
+	private final static Duration MAX_DURATION = Duration.standardDays(14);
+	private static final Duration MAX_BROADCAST_AGE = Duration.standardDays(365);
 
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
-    private final long binMillis = 3600000;
-    private final static Duration MAX_DURATION = Duration.standardDays(14);
 
     public MongoScheduleStore(DatabasedMongo db) {
         collection = db.collection("schedule");
         collection.ensureIndex(translator.toIndex(), MongoConstants.BACKGROUND);
     }
 
-    public void createOrUpdate(Item item) {
-        createOrUpdate(ImmutableList.of(item));
-    }
-
-    public void createOrUpdate(Iterable<? extends Item> items) {
+    public void writeScheduleFor(Iterable<? extends Item> items) {
         Map<String, ScheduleEntry> scheduleEntries = toScheduleEntries(items);
         Map<String, ScheduleEntry> existingEntries = Maps.uniqueIndex(translator.fromDbObjects(where().idIn(scheduleEntries.keySet()).find(collection)), ScheduleEntry.KEY);
         
         for (ScheduleEntry entry: scheduleEntries.values()) {
             ScheduleEntry updateEntry;
-            if (! existingEntries.containsKey(entry.toKey())) {
+            ScheduleEntry existingEntry = existingEntries.get(entry.toKey());
+            if (existingEntry == null) {
                 updateEntry = entry;
             } else {
-                updateEntry = existingEntries.get(entry.toKey());
+				updateEntry = existingEntry;
                 updateEntry.withItems(mergeItems(updateEntry.items(), entry.items()));
             }
-            
-            collection.save(translator.toDb(updateEntry));
+			collection.save(translator.toDb(updateEntry));
         }
     }
     
-    private List<Item> mergeItems(Iterable<Item> original, Iterable<Item> latest) {
-        return Ordering.from(ScheduleEntry.START_TIME_ITEM_COMPARATOR).immutableSortedCopy(Sets.union(ImmutableSet.copyOf(latest), ImmutableSet.copyOf(original)));
+    private Iterable<Item> mergeItems(Iterable<Item> original, Iterable<Item> latest) {
+    	final ImmutableSet<String> latestUris = ImmutableSet.copyOf(Iterables.transform(latest, Item.TO_URI));
+    	
+    	return ImmutableSortedSet.copyOf(ScheduleEntry.START_TIME_ITEM_COMPARATOR, Iterables.concat(latest, Iterables.filter(original, new Predicate<Item>() {
+			@Override
+			public boolean apply(Item input) {
+				return !latestUris.contains(input.getCanonicalUri());
+			}
+		})));
     }
     
     private Map<String, ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
@@ -82,10 +88,17 @@ public class MongoScheduleStore implements ScheduleResolver {
             for (Version version : item.nativeVersions()) {
                 for (Broadcast broadcast : version.getBroadcasts()) {
                     Version entryVersion = version.copyWithBroadcasts(ImmutableSet.of(broadcast.copy()));
-                    Item entryItem = item.copyWithVersions(ImmutableSet.of(entryVersion));
+                    
+                    Item entryItem = null;
+                    if (item instanceof Episode) {
+                        entryItem = ((Episode) item).copyWithVersions(ImmutableSet.of(entryVersion));
+                    } else {
+                        entryItem = item.copyWithVersions(ImmutableSet.of(entryVersion));
+                    }
 
                     Channel channel = Channel.fromUri(broadcast.getBroadcastOn()).requireValue();
                     Publisher publisher = item.getPublisher();
+                    
                     for (Interval interval: intervalsFor(broadcast.getTransmissionTime(), broadcast.getTransmissionEndTime())) {
                         String key = ScheduleEntry.toKey(interval, channel, publisher);
 
@@ -168,7 +181,7 @@ public class MongoScheduleStore implements ScheduleResolver {
         }));
     }
     
-    private List<String> keys(Iterable<Interval> intervals, Iterable<Channel> channels, Iterable<Publisher> publishers) {
+    private static List<String> keys(Iterable<Interval> intervals, Iterable<Channel> channels, Iterable<Publisher> publishers) {
         ImmutableList.Builder<String> keys = ImmutableList.builder();
         for (Interval interval: intervals) {
             for (Channel channel: channels) {
@@ -181,20 +194,24 @@ public class MongoScheduleStore implements ScheduleResolver {
     }
     
     private long millisBackToNearestBin(DateTime when) {
-        long div = when.getMillis() / binMillis;
+        long div = when.getMillis() / BIN_MILLIS;
         int asInt = (int) div;
-        return asInt * binMillis;
+        return asInt * BIN_MILLIS;
     }
     
     private List<Interval> intervalsFor(DateTime start, DateTime end) {
+    	if (start.isBefore(new DateTime(DateTimeZones.UTC).minus(MAX_BROADCAST_AGE))) {
+    		return ImmutableList.of();
+    	}
+    	
         long startMillis = millisBackToNearestBin(start);
         long endMillis = end.getMillis();
         ImmutableList.Builder<Interval> intervals = ImmutableList.builder();
 
         while (startMillis < endMillis) {
-            Interval interval = new Interval(new DateTime(startMillis, DateTimeZones.UTC), new DateTime(startMillis + binMillis - 1, DateTimeZones.UTC));
+            Interval interval = new Interval(new DateTime(startMillis, DateTimeZones.UTC), new DateTime(startMillis + BIN_MILLIS - 1, DateTimeZones.UTC));
             intervals.add(interval);
-            startMillis += (binMillis);
+            startMillis += (BIN_MILLIS);
         }
         
         return intervals.build();
@@ -249,4 +266,14 @@ public class MongoScheduleStore implements ScheduleResolver {
             }
         };
     }
+
+	void writeScheduleFrom(Item item1) {
+		writeScheduleFor(ImmutableList.of(item1));
+	}
+	
+	public static void main(String[] args) {
+	    Interval interval = new Interval(new DateTime("2011-04-19T08:00:00.0000Z"), new DateTime("2011-04-19T11:00:00.000Z"));
+	    List<String> keys = keys(ImmutableList.of(interval), ImmutableList.of(Channel.BBC_RADIO_THREECOUNTIES), ImmutableList.of(Publisher.BBC));
+	    System.out.println(keys);
+	}
 }
