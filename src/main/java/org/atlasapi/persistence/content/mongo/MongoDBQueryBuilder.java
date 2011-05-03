@@ -24,10 +24,9 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
-
 
 import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
@@ -42,13 +41,13 @@ import org.atlasapi.content.criteria.operator.BooleanOperatorVisitor;
 import org.atlasapi.content.criteria.operator.DateTimeOperatorVisitor;
 import org.atlasapi.content.criteria.operator.EnumOperatorVisitor;
 import org.atlasapi.content.criteria.operator.IntegerOperatorVisitor;
-import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.content.criteria.operator.Operators.After;
 import org.atlasapi.content.criteria.operator.Operators.Before;
 import org.atlasapi.content.criteria.operator.Operators.Beginning;
 import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
+import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
@@ -67,12 +66,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 class MongoDBQueryBuilder {
+
+	private static final Joiner DOTTED_MONGO_ATTRIBUTE_PATH = Joiner.on(".");
 
 	DBObject buildQuery(ContentQuery query) {
 		
@@ -86,7 +88,7 @@ class MongoDBQueryBuilder {
 		}
 
 		// sort the keys by length so that versions are dealt with before broadcasts etc.
-		TreeMap<List<String>, Collection<ConstrainedAttribute>> map = Maps.newTreeMap(lengthOrder);
+		TreeMap<List<String>, Collection<ConstrainedAttribute>> map = Maps.newTreeMap(LENGTH_ORDER);
 		map.putAll(attributeConstraints.asMap());
 		
 		DBObject finalQuery = new BasicDBObject();
@@ -96,13 +98,10 @@ class MongoDBQueryBuilder {
 			
 			List<String> entityPath = entry.getKey();
 			
-			Collection<ConstrainedAttribute> contraints = entry.getValue();
+			Collection<ConstrainedAttribute> constraints = entry.getValue();
 			
 			if (entityPath.isEmpty()) {
-				for (ConstrainedAttribute constrainedAttribute : contraints) {
-					String fqn = fullyQualifiedPath(constrainedAttribute.attribute);
-					finalQuery.put(fqn, constrainedAttribute.queryOrValue());
-				}
+				finalQuery.putAll(buildQueryForSingleLevelEntity(constraints));
 				continue;
 			} 
 			
@@ -121,22 +120,26 @@ class MongoDBQueryBuilder {
 				parentPath = ImmutableList.of();
 			}
 			
-			DBObject rhs = new BasicDBObject();
-			for (ConstrainedAttribute constrainedAttribute : contraints) {
-				String name = attributeName(constrainedAttribute.attribute);
-				if (rhs.containsField(name)) {
-					((DBObject) rhs.get(name)).putAll((DBObject) constrainedAttribute.queryOrValue());
-				} else {
-					rhs.put(name, constrainedAttribute.queryOrValue());
-				}
-			}
-			String key = Joiner.on(".").join(entityPath.subList(parentPath.size(), entityPath.size()));
-			DBObject attrObj = new BasicDBObject(key, new BasicDBObject("$elemMatch",  rhs));
+			DBObject rhs = buildQueryForSingleLevelEntity(constraints);
+			String key = DOTTED_MONGO_ATTRIBUTE_PATH.join(entityPath.subList(parentPath.size(), entityPath.size()));
+			DBObject attrObj = new BasicDBObject(key, new BasicDBObject(MongoConstants.ELEM_MATCH,  rhs));
 			parentDbObject.putAll(attrObj);
 			queries.put(entityPath, rhs);
 		}
-
 		return finalQuery;
+	}
+
+	private DBObject buildQueryForSingleLevelEntity(Collection<ConstrainedAttribute> contraints) {
+		DBObject rhs = new BasicDBObject();
+		for (ConstrainedAttribute constrainedAttribute : contraints) {
+			String name = attributeName(constrainedAttribute.attribute);
+			if (rhs.containsField(name)) {
+				((DBObject) rhs.get(name)).putAll((DBObject) constrainedAttribute.queryOrValue());
+			} else {
+				rhs.put(name, constrainedAttribute.queryOrValue());
+			}
+		}
+		return rhs;
 	}
 
 	private List<ConstrainedAttribute> buildQueries(ContentQuery query) {
@@ -277,15 +280,6 @@ class MongoDBQueryBuilder {
 		list.addAll(elems);
 		return list;
 	}
-	
-	private static String fullyQualifiedPath(Attribute<?> attribute) {
-		String entityPath = entityPathAsString(attribute); 
-		return entityPath + (entityPath.length() > 0 ? "." : "") +  attributeName(attribute);
-	}
-
-	private static String entityPathAsString(Attribute<?> attribute) {
-		return Joiner.on(".").join(entityPath(attribute));
-	}
 
 	private static String attributeName(Attribute<?> attribute) {
 		if (Policy.class.equals(attribute.target())) {
@@ -353,13 +347,15 @@ class MongoDBQueryBuilder {
 		}
 	}
 	
-	private static final Comparator<List<String>> lengthOrder = new Comparator<List<String>>() {
+	private static final Joiner NO_SPACES = Joiner.on("");
+
+	private static final Comparator<List<String>> LENGTH_ORDER = new Comparator<List<String>>() {
 
 		@Override
 		public int compare(List<String> o1, List<String> o2) {
 			int lengthComparison = Integer.valueOf(o1.size()).compareTo(o2.size());
 			if (lengthComparison == 0) {
-				return Joiner.on("").join(o1).compareTo(Joiner.on("").join(o2));
+				return NO_SPACES.join(o1).compareTo(NO_SPACES.join(o2));
 			}
 			return lengthComparison;
 		}
