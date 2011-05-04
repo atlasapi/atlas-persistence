@@ -5,7 +5,6 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Episode;
-import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
@@ -25,8 +24,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
 	private static final String SYNTHETIC_KEY = "synthetic";
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
-	private static final String FILM_YEAR_KEY = "year";
-	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
 
 	
 	private final ContentTranslator contentTranslator;
@@ -93,21 +90,13 @@ public class ItemTranslator implements ModelTranslator<Item> {
         		episode.setSeriesUri((String) dbObject.get(EPISODE_SERIES_URI_KEY));
         	}
         }
-        
-        if (item instanceof Film) {
-            Film film = (Film) item;
-            film.setYear(TranslatorUtils.toInteger(dbObject, FILM_YEAR_KEY));
-            film.setWebsiteUrl(TranslatorUtils.toString(dbObject, FILM_WEBSITE_URL_KEY));
-        }
-        return item; 
+        return item;
     }
 
 	private Item newModel(DBObject dbObject, Item entity) {
 		String type = (String) dbObject.get(TYPE_KEY);
 		if (Episode.class.getSimpleName().equals(type)) {
 			entity = new Episode();
-		} else if (Film.class.getSimpleName().equals(type)){
-		    entity = new Film();
 		} else if (Item.class.getSimpleName().equals(type)) {
 			entity = new Item();
 		} else {
@@ -138,12 +127,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			if (series != null) {
 				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getCanonicalUri());
 			}
-		}
-		
-		if (entity instanceof Film) {
-		    Film film = (Film) entity;
-		    TranslatorUtils.from(itemDbo, FILM_YEAR_KEY, film.getYear());
-		    TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
 		}
 		
 		if (! entity.people().isEmpty()) {
