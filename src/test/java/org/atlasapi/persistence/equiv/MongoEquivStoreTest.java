@@ -1,33 +1,29 @@
 package org.atlasapi.persistence.equiv;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Collections;
-import java.util.Set;
 
 import org.atlasapi.media.entity.Equiv;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 
-@SuppressWarnings("unchecked")
 public class MongoEquivStoreTest {
 	
 	private final MongoEquivStore store = new MongoEquivStore(MongoTestHelper.anEmptyTestDatabase());
 	
 	@Test
 	public void testAnEmptyStore() throws Exception {
-		assertThat(store.get(ImmutableSet.of("any")), is(Collections.<String>emptySet()));
+		assertEquals(Collections.<String>emptySet(), store.get(ImmutableSet.of("any")));
 	}
 	
 	@Test
 	public void testASingleEquivalence() throws Exception {
 		store.store(new Equiv("a", "b"));
-		assertThat(store.get(ImmutableSet.of("a")), is((Set) Sets.newHashSet("b")));
-		assertThat(store.get(ImmutableSet.of("b")), is((Set) Sets.newHashSet("a")));
+		assertEquals(ImmutableSet.of("b"), store.get(ImmutableSet.of("a")));
+		assertEquals(ImmutableSet.of("a"), store.get(ImmutableSet.of("b")));
 	}
 	
 	@Test
@@ -35,8 +31,8 @@ public class MongoEquivStoreTest {
 		store.store(new Equiv("a", "b"));
 		store.store(new Equiv("c", "b"));
 		store.store(new Equiv("c", "d"));
-		assertThat(store.get(ImmutableSet.of("a")), is((Set) Sets.newHashSet("b", "c", "d")));
-		assertThat(store.get(ImmutableSet.of("c")), is((Set) Sets.newHashSet("a", "b", "d")));
+		assertEquals(ImmutableSet.of("b", "c", "d"), store.get(ImmutableSet.of("a")));
+		assertEquals(ImmutableSet.of("a", "b", "d"), store.get(ImmutableSet.of("c")));
 	}
 	
 	@Test
@@ -44,6 +40,6 @@ public class MongoEquivStoreTest {
 		store.store(new Equiv("a", "b"));
 		store.store(new Equiv("b", "c"));
 		store.store(new Equiv("c", "a"));
-		assertThat(store.get(ImmutableSet.of("a")), is((Set) Sets.newHashSet("b", "c")));
+		assertEquals(ImmutableSet.of("b", "c"), store.get(ImmutableSet.of("a")));
 	}
 }
