@@ -23,6 +23,7 @@ import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
@@ -99,6 +100,9 @@ public class MongoDBTemplate {
 		}
 		if (Item.class.getSimpleName().equals(type)) {
 			return itemTranslator.fromDBObject(dbo, null);
+		}
+		if (Film.class.getSimpleName().equals(type)) {
+		    return itemTranslator.fromDBObject(dbo, null);
 		}
 		if (Person.class.getSimpleName().equals(type)) {
 		    return personTranslator.fromDBObject(dbo, null);
