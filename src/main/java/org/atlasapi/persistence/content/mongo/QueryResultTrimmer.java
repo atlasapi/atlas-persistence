@@ -91,7 +91,6 @@ public class QueryResultTrimmer {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private Maybe<Set<Version>> trimVersions(Iterable<Version> versions, ContentQuery query) {
 		final ContentQuery softQuery = new ContentQuery(query.getSoftConstraints());
 		versions = Iterables.filter(versions, new Predicate<Version>() {
@@ -114,10 +113,9 @@ public class QueryResultTrimmer {
 		if (Iterables.isEmpty(trimmedVersions) && !concernsType(query, ImmutableSet.of(Version.class, Encoding.class, Location.class, Broadcast.class))) {
 		    return Maybe.just(Collections.<Version>emptySet());
 		}
-		return nothingIfEmpty((Iterable)trimmedVersions);
+		return nothingIfEmpty(trimmedVersions);
 	}
 
-	@SuppressWarnings("unchecked")
 	private Maybe<Set<Encoding>> trimEncodings(Set<Encoding> encodings, ContentQuery query) {
 		Set<Encoding> trimmedEncodings = Sets.newHashSetWithExpectedSize(encodings.size());
 		for (Encoding encoding : encodings) {
@@ -132,10 +130,9 @@ public class QueryResultTrimmer {
 		if (trimmedEncodings.isEmpty() && !concernsType(query, ImmutableSet.of(Encoding.class, Location.class))) {
 		    return Maybe.just(Collections.<Encoding>emptySet());
 		}
-		return nothingIfEmpty((Iterable)trimmedEncodings);
+		return nothingIfEmpty(trimmedEncodings);
 	}
 
-	@SuppressWarnings("unchecked")
 	private Maybe<Set<Location>> trimLocations(Set<Location> locations, ContentQuery query) {
 		Set<Location> trimmedLocations = Sets.newHashSetWithExpectedSize(locations.size());
 		for (Location location : locations) {
@@ -144,9 +141,9 @@ public class QueryResultTrimmer {
 			}
 		}
 		if (trimmedLocations.isEmpty() && !concernsType(query, Location.class)) {
-		    return Maybe.<Set<Location>>just((Set)ImmutableSet.<Location>of());
+		    return Maybe.<Set<Location>>just(ImmutableSet.<Location>of());
 		}
-		return nothingIfEmpty((Iterable)trimmedLocations);
+		return nothingIfEmpty(trimmedLocations);
 	}
 	
 	private <T extends Item> boolean trimContainer(Container<T> brand, ContentQuery query) {
@@ -168,9 +165,7 @@ public class QueryResultTrimmer {
 			return true;
 		}
 	}
-	
 
-	@SuppressWarnings("unchecked")
 	private <T extends Content> Maybe<List<T>> trimContainerSubItems(Iterable<T> items, ContentQuery query) {
 		final ContentQuery softQuery = new ContentQuery(query.getSoftConstraints());
 		items = Iterables.filter(items, new Predicate<Content>() {
@@ -201,7 +196,7 @@ public class QueryResultTrimmer {
 		if (Iterables.isEmpty(trimmedItems) && !concernsType(query, ImmutableSet.of(Item.class, Episode.class, Version.class, Encoding.class, Location.class, Broadcast.class))) {
             return Maybe.just(Collections.<T>emptyList());
         }
-		return nothingIfEmpty((Iterable) trimmedItems);
+		return nothingIfEmpty(trimmedItems);
 	}
 
 	private boolean check(ContentQuery query, Version version) {
@@ -236,7 +231,7 @@ public class QueryResultTrimmer {
 		return new InMemoryQueryResultChecker(content).check(query);
 	}
 
-	private static <T> Maybe<Iterable<T>> nothingIfEmpty(Iterable<T> elems) {
-		return Iterables.isEmpty(elems) ? Maybe.<Iterable<T>>nothing() : Maybe.just(elems);
+	private static <T, L extends Iterable<T>> Maybe<L> nothingIfEmpty(L elems) {
+		return Iterables.isEmpty(elems) ? Maybe.<L>nothing() : Maybe.just(elems);
 	}
 }
