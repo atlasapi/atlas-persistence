@@ -112,7 +112,7 @@ public class ItemTranslatorTest extends TestCase {
         version.addBroadcast(br);
         item.addVersion(version);
         
-        Actor actor = Actor.actor("blah", "some guy", Publisher.BBC);
+        Actor actor = Actor.actor("an_id", "blah", "some guy", Publisher.BBC);
         item.addPerson(actor);
         
         Set<String> tags = Sets.newHashSet();
