@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.atlasapi.application.ApplicationConfiguration;
 
-public class MongoLookupResolver implements LookupResolver {
+public class BasicLookupResolver implements LookupResolver {
 
     @Override
     public List<Equivalent> lookup(String id, ApplicationConfiguration config) {

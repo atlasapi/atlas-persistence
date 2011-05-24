@@ -17,6 +17,7 @@ import com.mongodb.DBObject;
 
 public class LookupEntryTranslator {
 
+    private static final String DIRECT = "direct";
     private static final String EQUIVS = "equivs";
     private static final String PUBLISHER = "publisher";
     private static final String TYPE = "type";
@@ -29,6 +30,9 @@ public class LookupEntryTranslator {
         
         TranslatorUtils.from(dbo, ID, entry.id());
         TranslatorUtils.fromSet(dbo, entry.aliases(), ALIASES);
+        TranslatorUtils.from(dbo, PUBLISHER, entry.publisher().key());
+        TranslatorUtils.from(dbo, TYPE, entry.type());
+        TranslatorUtils.fromSet(dbo, entry.directEquivalents(), DIRECT);
         
         BasicDBList equivDbos = new BasicDBList();
         equivDbos.addAll(Lists.transform(entry.equivalents(), equivalentToDbo));
@@ -60,11 +64,13 @@ public class LookupEntryTranslator {
         
         String id = TranslatorUtils.toString(dbo, ID);
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
+        Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(dbo, PUBLISHER)).requireValue();
+        String type = TranslatorUtils.toString(dbo, TYPE);
         List<Equivalent> equivs = Lists.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo);
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
         
-        return new LookupEntry(id, aliases, equivs, created, updated);
+        return new LookupEntry(id, aliases, publisher, type, equivs, created, updated).withDirectEquivalents(TranslatorUtils.toSet(dbo, DIRECT));
     }
 
     private static final Function<DBObject, Equivalent> equivalentFromDbo = new Function<DBObject, Equivalent>() {
