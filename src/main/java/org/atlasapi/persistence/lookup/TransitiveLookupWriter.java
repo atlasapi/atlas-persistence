@@ -2,9 +2,9 @@ package org.atlasapi.persistence.lookup;
 
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.transform;
-import static org.atlasapi.persistence.lookup.Equivalent.TO_ID;
-import static org.atlasapi.persistence.lookup.LookupEntry.TO_EQUIVS;
-import static org.atlasapi.persistence.lookup.LookupEntry.lookupEntryFrom;
+import static org.atlasapi.media.entity.Identified.TO_URI;
+import static org.atlasapi.persistence.lookup.entry.Equivalent.TO_ID;
+import static org.atlasapi.persistence.lookup.entry.LookupEntry.TO_EQUIVS;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -12,7 +12,9 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
-import org.atlasapi.media.entity.Identified;
+import org.atlasapi.persistence.lookup.entry.Equivalent;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
@@ -29,72 +31,82 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     @Override
-    public void writeLookup(Described subject, Set<Described> directEquivalents) {
+    public void writeLookup(final Described subject, Set<Described> directEquivalents) {
+        
+        Set<Described> allItems = ImmutableSet.<Described>builder().add(subject).addAll(directEquivalents).build();
         
         //canonical URIs of subject and directEquivalents
-        Set<String> canonUris = ImmutableSet.<String> builder().add(subject.getCanonicalUri()).addAll(Iterables.transform(directEquivalents, Identified.TO_URI)).build();
+        final Set<String> canonUris = ImmutableSet.copyOf(Iterables.transform(allItems, TO_URI));
 
         //entry for the subject.
-        LookupEntry subjectEntry = getOrCreate(subject).withDirectEquivalents(canonUris);
-
-        Set<LookupEntry> equivEntries = entriesFor(directEquivalents, subject);
+        LookupEntry subjectEntry = getOrCreate(subject).copyWithDirectEquivalents(Iterables.transform(allItems, Equivalent.FROM_DESCRIBED));
+        Set<LookupEntry> equivEntries = entriesFor(directEquivalents);
 
         //Pull the current transitive closures for the directly equivalent parameters.
-        Set<LookupEntry> lookups = transitiveClosure(ImmutableSet.copyOf(Iterables.concat(ImmutableSet.of(subjectEntry), equivEntries)));
+        Iterable<LookupEntry> lookups = transitiveClosure(ImmutableSet.copyOf(Iterables.concat(ImmutableSet.of(subjectEntry), equivEntries)));
+        
+        //Update the direct equivalents for all the lookups.
+        lookups = ImmutableSet.copyOf(Iterables.transform(lookups, new Function<LookupEntry, LookupEntry>() {
+            @Override
+            public LookupEntry apply(LookupEntry entry) {
+                if (canonUris.contains(entry.id())) {
+                    return entry.copyWithDirectEquivalents(Sets.union(entry.directEquivalents(), ImmutableSet.of(Equivalent.from(subject))));
+                } else {
+                    return entry.copyWithDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(Equivalent.from(subject))));
+                }
+            }
+        }));
+        
+        //For each lookup, recompute its transitive closure. 
+        Set<LookupEntry> newLookups = recomputeTransitiveClosures(lookups);
+
+        //Write to store
+        for (LookupEntry entry : newLookups) {
+            entryStore.store(entry);
+        }
+
+    }
+
+    private Set<LookupEntry> recomputeTransitiveClosures(Iterable<LookupEntry> lookups) {
         
         Map<String,LookupEntry> lookupMap = Maps.uniqueIndex(lookups, LookupEntry.TO_ID);
         
-        //Update the direct equivalents for all the lookups.
-        for (LookupEntry entry : lookups) {
-            if(canonUris.contains(entry.id())) {
-                entry.withDirectEquivalents(Sets.union(entry.directEquivalents(), ImmutableSet.of(subject.getCanonicalUri())));
-            } else {
-                entry.withDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(subject.getCanonicalUri())));
-            }
-        }
-        
-        //For each lookup, recompute its transitive closure. 
         Set<LookupEntry> newLookups = Sets.newHashSet();
         for (LookupEntry entry : lookups) {
             
             Set<Equivalent> transitiveSet = Sets.newHashSet();
-            Set<String> seen = Sets.newHashSet();
-            Queue<String> direct = new LinkedList<String>(entry.directEquivalents());
             
+            Set<Equivalent> seen = Sets.newHashSet();
+            Queue<Equivalent> direct = new LinkedList<Equivalent>(entry.directEquivalents());
+            //Traverse equivalence graph breadth-first
             while(!direct.isEmpty()) {
-                String next = direct.poll();
-                if(seen.contains(next)) {
+                Equivalent current = direct.poll();
+                if(seen.contains(current)) {
                     continue;
                 } else {
-                    seen.add(next);
+                    seen.add(current);
                 }
-                LookupEntry directEntry = lookupMap.get(next);
-                transitiveSet.add(directEntry.toEquivalent());
-                direct.addAll(directEntry.directEquivalents());
+                transitiveSet.add(current);
+                direct.addAll(lookupMap.get(current.id()).directEquivalents());
             }
+            
             newLookups.add(entry.copyWithEquivalents(transitiveSet));
         }
-
-        //Write to store
-        for (LookupEntry entry : newLookups) {
-            entryStore.store(entry.entriesForIdentifiers());
-        }
-
+        return newLookups;
     }
     
-    private Set<LookupEntry> entriesFor(Set<Described> equivalents, final Described subject) {
+    private Set<LookupEntry> entriesFor(Set<Described> equivalents) {
         return ImmutableSet.copyOf(Iterables.transform(equivalents, new Function<Described, LookupEntry>() {
             @Override
             public LookupEntry apply(Described input) {
-                LookupEntry entry = entryStore.entryFor(input.getCanonicalUri());
-                return entry != null ? entry : getOrCreate(input);
+                return getOrCreate(input);
             }
         }));
     }
 
     private LookupEntry getOrCreate(Described subject) {
         LookupEntry subjectEntry = entryStore.entryFor(subject.getCanonicalUri());
-        return subjectEntry != null ? subjectEntry : lookupEntryFrom(subject);
+        return subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
     }
 
     private Set<LookupEntry> transitiveClosure(Set<LookupEntry> entries) {

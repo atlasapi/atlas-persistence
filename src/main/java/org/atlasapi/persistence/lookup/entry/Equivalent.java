@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.lookup;
+package org.atlasapi.persistence.lookup.entry;
 
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Publisher;
@@ -8,6 +8,24 @@ import com.google.common.base.Objects;
 
 public class Equivalent {
 
+    public static Equivalent from(Described subject) {
+        return new Equivalent(subject.getCanonicalUri(), subject.getPublisher(), subject.getType());
+    }
+    
+    public static Function<Described,Equivalent> FROM_DESCRIBED = new Function<Described, Equivalent>() {
+        @Override
+        public Equivalent apply(Described input) {
+            return Equivalent.from(input);
+        }
+    };
+    
+    public static Function<Equivalent,String> TO_ID = new Function<Equivalent, String>() {
+        @Override
+        public String apply(Equivalent input) {
+            return input.id();
+        }
+    };
+    
     private final String id;
     private final Publisher publisher;
     private final String type;
@@ -49,17 +67,6 @@ public class Equivalent {
     
     @Override
     public String toString() {
-        return String.format("%s(%s,%s)", id, publisher.title(), type);
+        return String.format("Equiv:%s(%s,%s)", id, publisher.title(), type);
     }
-
-    public static Equivalent from(Described subject) {
-        return new Equivalent(subject.getCanonicalUri(), subject.getPublisher(), subject.getType());
-    }
-    
-    public static Function<Equivalent,String> TO_ID = new Function<Equivalent, String>() {
-        @Override
-        public String apply(Equivalent input) {
-            return input.id();
-        }
-    };
 }

@@ -2,6 +2,9 @@ package org.atlasapi.persistence.lookup;
 
 import java.util.Map;
 
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 
@@ -15,12 +18,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     
     @Override
     public void store(LookupEntry entry) {
-        store.put(entry.id(), entry);
-    }
-
-    @Override
-    public void store(Iterable<LookupEntry> entries) {
-        store.putAll(Maps.uniqueIndex(entries, new Function<LookupEntry, String>() {
+        store.putAll(Maps.uniqueIndex(entry.entriesForIdentifiers(), new Function<LookupEntry, String>() {
             @Override
             public String apply(LookupEntry input) {
                 return input.id();
