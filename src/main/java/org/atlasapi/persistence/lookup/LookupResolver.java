@@ -9,7 +9,4 @@ public interface LookupResolver {
     
     List<Equivalent> lookup(String id, ApplicationConfiguration config);
     
-    @Deprecated
-    List<Equivalent> lookupGroup(String id, ApplicationConfiguration config);
-
 }

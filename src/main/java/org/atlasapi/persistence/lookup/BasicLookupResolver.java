@@ -22,10 +22,5 @@ public class BasicLookupResolver implements LookupResolver {
         LookupEntry entry = lookupStore.entryFor(id);
         return entry != null ? entry.equivalents() : ImmutableList.<Equivalent>of();
     }
-
-    @Override
-    public List<Equivalent> lookupGroup(String id, ApplicationConfiguration config) {
-        throw new UnsupportedOperationException();
-    }
-
+    
 }
