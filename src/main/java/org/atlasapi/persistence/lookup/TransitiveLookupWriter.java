@@ -31,7 +31,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     @Override
-    public void writeLookup(final Described subject, Set<Described> directEquivalents) {
+    public <T extends Described> void writeLookup(final T subject, Iterable<T> directEquivalents) {
         
         Set<Described> allItems = ImmutableSet.<Described>builder().add(subject).addAll(directEquivalents).build();
         
@@ -95,7 +95,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         return newLookups;
     }
     
-    private Set<LookupEntry> entriesFor(Set<Described> equivalents) {
+    private Set<LookupEntry> entriesFor(Iterable<? extends Described> equivalents) {
         return ImmutableSet.copyOf(Iterables.transform(equivalents, new Function<Described, LookupEntry>() {
             @Override
             public LookupEntry apply(Described input) {
