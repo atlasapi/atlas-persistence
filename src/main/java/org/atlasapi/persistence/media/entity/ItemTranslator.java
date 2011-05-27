@@ -14,6 +14,7 @@ import org.atlasapi.persistence.ModelTranslator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
@@ -27,6 +28,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
 	private static final String FILM_YEAR_KEY = "year";
 	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
+	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
+	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
 
 	
 	private final ContentTranslator contentTranslator;
@@ -64,6 +67,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
         contentTranslator.fromDBObject(dbObject, item);
         
         item.setIsLongForm((Boolean) dbObject.get(IS_LONG_FORM_KEY));
+        item.setBlackAndWhite(TranslatorUtils.toBoolean(dbObject, BLACK_AND_WHITE_KEY));
+        item.setCountriesOfOrigin(Countries.fromCodes(TranslatorUtils.toSet(dbObject, COUNTRIES_OF_ORIGIN_KEY)));
         
         List<DBObject> list = (List) dbObject.get(VERSIONS_KEY);
         if (list != null && ! list.isEmpty()) {
@@ -128,6 +133,11 @@ public class ItemTranslator implements ModelTranslator<Item> {
                 list.add(versionTranslator.toDBObject(null, version));
             }
             itemDbo.put(VERSIONS_KEY, list);
+        }
+        
+        TranslatorUtils.from(itemDbo, BLACK_AND_WHITE_KEY, entity.isBlackAndWhite());
+        if (! entity.getCountriesOfOrigin().isEmpty()) {
+            TranslatorUtils.fromIterable(itemDbo, Countries.toCodes(entity.getCountriesOfOrigin()), COUNTRIES_OF_ORIGIN_KEY);
         }
 		
 		if (entity instanceof Episode) {

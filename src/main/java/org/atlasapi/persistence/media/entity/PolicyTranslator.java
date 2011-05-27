@@ -2,12 +2,12 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.Currency;
 
-import org.atlasapi.media.entity.Countries;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Policy.RevenueContract;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.currency.Price;
+import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 

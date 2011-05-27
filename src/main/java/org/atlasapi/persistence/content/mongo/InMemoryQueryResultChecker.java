@@ -30,13 +30,13 @@ import org.atlasapi.content.criteria.operator.BooleanOperatorVisitor;
 import org.atlasapi.content.criteria.operator.DateTimeOperatorVisitor;
 import org.atlasapi.content.criteria.operator.EnumOperatorVisitor;
 import org.atlasapi.content.criteria.operator.IntegerOperatorVisitor;
-import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.content.criteria.operator.Operators.After;
 import org.atlasapi.content.criteria.operator.Operators.Before;
 import org.atlasapi.content.criteria.operator.Operators.Beginning;
 import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
+import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.media.entity.Identified;
 import org.joda.time.DateTime;
 
