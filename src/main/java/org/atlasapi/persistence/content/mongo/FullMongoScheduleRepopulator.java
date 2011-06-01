@@ -6,9 +6,9 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
@@ -23,6 +23,7 @@ import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.scheduling.ScheduledTask;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -57,8 +58,9 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
         String currentId = "0";
         long totalRows = contentCollection.count(where(forPublishers).build());
         long rowsSeen = 0;
+        long errors = 0;
         while (shouldContinue()) {
-        	reportStatus(rowsSeen + "/" + totalRows);
+        	reportStatus(rowsSeen + "/" + totalRows + ", " + errors + " errors");
         	
             List<DBObject> objects = ImmutableList.copyOf(where(forPublishers).fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), -BATCH_SIZE));
             if (objects.isEmpty()) {
@@ -67,25 +69,29 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
             rowsSeen += objects.size();
             
             ImmutableList.Builder<Item> itemsBuilder = ImmutableList.builder();
-            String latestId = null;
-            for (DBObject dbObject: objects) {
-                String type = (String) dbObject.get("type");
-                
-                if (Episode.class.getSimpleName().equals(type) || Clip.class.getSimpleName().equals(type) || Item.class.getSimpleName().equals(type)) {
-                    Item item = itemTranslator.fromDBObject(dbObject, null);
-                    itemsBuilder.add(item);
-                    latestId = item.getCanonicalUri();
-                } else {
-                    Container<?> container = containerTranslator.fromDBObject(dbObject, null);
-                    itemsBuilder.addAll(container.getContents());
-                    latestId = container.getCanonicalUri();
-                }
-            }
-
+            final String latestId = TranslatorUtils.toString(Iterables.getLast(objects), MongoConstants.ID);
             if (latestId == null || latestId.equals(currentId)) {
                 break;
             }
             currentId = latestId;
+            
+            for (DBObject dbObject: objects) {
+                try {
+                    String type = (String) dbObject.get("type");
+                    
+                    if (Episode.class.getSimpleName().equals(type) || Film.class.getSimpleName().equals(type) || Item.class.getSimpleName().equals(type)) {
+                        Item item = itemTranslator.fromDBObject(dbObject, null);
+                        itemsBuilder.add(item);
+                    } else {
+                        Container<?> container = containerTranslator.fromDBObject(dbObject, null);
+                        itemsBuilder.addAll(container.getContents());
+                    }
+                } catch (Exception e) {
+                    errors++;
+                    log.error("Problem translating content from mongo: " + TranslatorUtils.toString(dbObject, MongoConstants.ID));
+                }
+            }
+    
             List<Item> items = itemsBuilder.build();
             try {
                 boundedQueue.submitTask(new UpdateItemScheduleJob(items));
