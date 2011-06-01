@@ -6,9 +6,9 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
@@ -79,7 +79,7 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
                 try {
                     String type = (String) dbObject.get("type");
                     
-                    if (Episode.class.getSimpleName().equals(type) || Clip.class.getSimpleName().equals(type) || Item.class.getSimpleName().equals(type)) {
+                    if (Episode.class.getSimpleName().equals(type) || Film.class.getSimpleName().equals(type) || Item.class.getSimpleName().equals(type)) {
                         Item item = itemTranslator.fromDBObject(dbObject, null);
                         itemsBuilder.add(item);
                     } else {

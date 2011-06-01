@@ -12,6 +12,15 @@ public class BroadcastTranslator  {
 	
     private static final String TRANSMISSION_END_TIME_KEY = "transmissionEndTime";
 	private static final String TRANSMISSION_TIME_KEY = "transmissionTime";
+	private static final String REPEAT_KEY = "repeat";
+	private static final String SUBTITLED_KEY = "subtitled";
+	private static final String SIGNED_KEY = "signed";
+	private static final String AUDIO_DESCRIBED_KEY = "audioDescribed";
+	private static final String HD_KEY = "highDefinition";
+	private static final String WIDESCREEN_KEY = "widescreen";
+	private static final String SURROUND_KEY = "surround";
+	private static final String LIVE_KEY = "live";
+	
     
     public Broadcast fromDBObject(DBObject dbObject) {
         
@@ -27,6 +36,14 @@ public class BroadcastTranslator  {
         broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
         broadcast.setAliases(TranslatorUtils.toSet(dbObject, DescriptionTranslator.ALIASES));
         broadcast.setLastUpdated(TranslatorUtils.toDateTime(dbObject, DescriptionTranslator.LAST_UPDATED));
+        broadcast.setRepeat(TranslatorUtils.toBoolean(dbObject, REPEAT_KEY));
+        broadcast.setSubtitled(TranslatorUtils.toBoolean(dbObject, SUBTITLED_KEY));
+        broadcast.setSigned(TranslatorUtils.toBoolean(dbObject, SIGNED_KEY));
+        broadcast.setAudioDescribed(TranslatorUtils.toBoolean(dbObject, AUDIO_DESCRIBED_KEY));
+        broadcast.setHighDefinition(TranslatorUtils.toBoolean(dbObject, HD_KEY));
+        broadcast.setWidescreen(TranslatorUtils.toBoolean(dbObject, WIDESCREEN_KEY));
+        broadcast.setSurround(TranslatorUtils.toBoolean(dbObject, SURROUND_KEY));
+        broadcast.setLive(TranslatorUtils.toBoolean(dbObject, LIVE_KEY));
         
         return broadcast;
     }
@@ -42,6 +59,14 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
         TranslatorUtils.from(dbObject, "activelyPublished", entity.isActivelyPublished());
         TranslatorUtils.from(dbObject, "id", entity.getId());
+        TranslatorUtils.from(dbObject, REPEAT_KEY, entity.isRepeat());
+        TranslatorUtils.from(dbObject, SUBTITLED_KEY, entity.isSubtitled());
+        TranslatorUtils.from(dbObject, SIGNED_KEY, entity.isSigned());
+        TranslatorUtils.from(dbObject, AUDIO_DESCRIBED_KEY, entity.isAudioDescribed());
+        TranslatorUtils.from(dbObject, HD_KEY, entity.isHighDefinition());
+        TranslatorUtils.from(dbObject, WIDESCREEN_KEY, entity.isWidescreen());
+        TranslatorUtils.from(dbObject, SURROUND_KEY, entity.isSurround());
+        TranslatorUtils.from(dbObject, LIVE_KEY, entity.isLive());
         return dbObject;
     }
 
