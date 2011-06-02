@@ -35,7 +35,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
 
@@ -50,7 +49,6 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
     public MongoScheduleStore(DatabasedMongo db) {
         collection = db.collection("schedule");
-        collection.ensureIndex(translator.toIndex(), MongoConstants.BACKGROUND);
     }
 
     public void writeScheduleFor(Iterable<? extends Item> items) {
