@@ -42,7 +42,6 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.MongoTestHelper;
@@ -62,19 +61,6 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	data = new DummyContentData();
     }
     
-    public void testSavesAliasesForItems() throws Exception {
-    	
-    	Item item = new Item("item", "item", Publisher.YOUTUBE);
-    	
-    	item.setAliases(ImmutableSet.of("c"));
-    	
-        store.createOrUpdate(item);
-        
-        store.addAliases(item.getCanonicalUri(), ImmutableSet.of("a", "b"));
-        
-        assertEquals(ImmutableSet.of("a", "b", "c"), store.findByCanonicalUri(item.getCanonicalUri()).getAliases()); 
-	}
-    
     public void testThatWhenFindingByUriContentThatIsACanonicalUriMatchIsUsed() throws Exception {
         
     	Item a = new Item("a", "curie:a", Publisher.BBC);
@@ -88,12 +74,6 @@ public class MongoDbBackedContentStoreTest extends TestCase {
     	assertEquals("a", store.findByCanonicalUri("a").getCanonicalUri());
     	assertEquals("b", store.findByCanonicalUri("b").getCanonicalUri());
 	}
-    
-    public void testSavesAliasesForPlaylists() throws Exception {
-        store.createOrUpdate(data.eastenders, true);
-        store.addAliases(data.eastenders.getCanonicalUri(), ImmutableSet.of("a", "b"));
-        assertTrue(store.findByCanonicalUri(data.eastenders.getCanonicalUri()).getAliases().containsAll(ImmutableSet.of("a", "b"))); 
-    }
 
     public void testShouldCreateAndRetrieveItem() throws Exception {
         store.createOrUpdate(data.eggsForBreakfast);
@@ -322,18 +302,6 @@ public class MongoDbBackedContentStoreTest extends TestCase {
         assertNotNull(items);
         assertEquals(1, items.size());
         assertEquals(3, items.get(0).getAliases().size());
-    }
-    
-    public void ignoreShouldAddAliases() throws Exception {
-        data.theCreditCrunch.setAliases(Sets.newHashSet("somealias"));
-        store.createOrUpdate(data.theCreditCrunch);
-        
-        store.addAliases(data.theCreditCrunch.getCanonicalUri(), Sets.newHashSet("anotherAlias"));
-        
-        List<Identified> items = store.findByCanonicalUri(ImmutableList.of(data.theCreditCrunch.getCanonicalUri()));
-        assertNotNull(items);
-        assertEquals(1, items.size());
-        assertEquals(2, items.get(0).getAliases().size());
     }
     
     public void testShouldProcessSubPlaylists() throws Exception {

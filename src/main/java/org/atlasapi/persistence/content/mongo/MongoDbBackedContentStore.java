@@ -64,7 +64,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister, AliasWriter {
+public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister {
 
     private static final int MAX_RESULTS = 20000;
     private static final MongoSortBuilder sortIds = new MongoSortBuilder().ascending(MongoConstants.ID); 
@@ -84,22 +84,6 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
 
     public MongoDbBackedContentStore(DatabasedMongo mongo) {
     	this(mongo, new SystemClock());
-	}
-
-	@Override
-    public void addAliases(String uri, Set<String> aliases) {
-		// TODO, this is a very crass way to edit one piece of data
-		Identified identified = findByCanonicalUri(uri);
-		if (identified == null) {
-			return;
-		}
-		identified.addAliases(aliases);
-		if (identified instanceof Item) {
-			createOrUpdate((Item) identified);
-		} 
-		if (identified instanceof Container<?>) {
-			createOrUpdate((Container<?>) identified, false);
-		}
 	}
 
     @Override
