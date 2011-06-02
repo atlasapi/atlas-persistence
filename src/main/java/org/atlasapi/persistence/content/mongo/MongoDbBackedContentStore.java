@@ -37,6 +37,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.RetrospectiveContentLister;
+import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.joda.time.DateTime;
 
@@ -71,12 +72,14 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     private final Clock clock;
     private final DBCollection contentCollection;
     private final DBCollection contentGroupCollection;
+    private final MongoLookupEntryStore lookupStore;
 
     public MongoDbBackedContentStore(DatabasedMongo mongo, Clock clock) {
         super(mongo);
 		this.clock = clock;
         contentCollection = table("content");
         contentGroupCollection = table("groups");
+        this.lookupStore = new MongoLookupEntryStore(mongo);
     }
 
     public MongoDbBackedContentStore(DatabasedMongo mongo) {
@@ -102,6 +105,7 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     @Override
     public void createOrUpdate(Item item) {
         createOrUpdateItem(item);
+        lookupStore.ensureLookup(item);
     }
 
 	private void createOrUpdateItem(Item item) {
@@ -188,6 +192,8 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         	notTopLevel.addAll(Collections2.transform(brand.getSeries(), Identified.TO_URI));
         }
         removeTopLevelElements(notTopLevel);
+        
+        lookupStore.ensureLookup(container);
     }
     
     private void removeTopLevelElements(Iterable<String> elems) {
