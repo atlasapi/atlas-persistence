@@ -17,22 +17,15 @@ import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.google.common.base.Strings;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.mongodb.Mongo;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
 	private @Autowired DatabasedMongo db;
-
-	private @Value("${schedule.mongo.host}") String scheduleMongoHost;
-	private @Value("${schedule.mongo.port}") String scheduleMongoPort;
-	private @Value("${schedule.mongo.name}") String scheduleMongoName;
 	private @Autowired AdapterLog log;
 	
 	public @Bean ContentWriter persistentWriter() {
@@ -45,10 +38,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Bean MongoScheduleStore scheduleStore() {
 	    try {
-            DatabasedMongo scheduleDb = ! Strings.isNullOrEmpty(scheduleMongoHost) && ! Strings.isNullOrEmpty(scheduleMongoName) && ! Strings.isNullOrEmpty(scheduleMongoPort)
-                    ? new DatabasedMongo(new Mongo(scheduleMongoHost, Integer.parseInt(scheduleMongoPort)), scheduleMongoName)
-                    : db;
-            return new MongoScheduleStore(scheduleDb);
+            return new MongoScheduleStore(db);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
