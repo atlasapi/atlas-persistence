@@ -5,8 +5,8 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.lookup.entry.Equivalent;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.joda.time.DateTime;
 
@@ -56,14 +56,14 @@ public class LookupEntryTranslator {
         return dbo;
     }
     
-    private static Function<Equivalent, DBObject> equivalentToDbo = new Function<Equivalent, DBObject>() {
+    private static Function<LookupRef, DBObject> equivalentToDbo = new Function<LookupRef, DBObject>() {
         @Override
-        public DBObject apply(Equivalent input) {
+        public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
             TranslatorUtils.from(dbo, ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
-            TranslatorUtils.from(dbo, TYPE, input.type());
+            TranslatorUtils.from(dbo, TYPE, input.type().toString());
             
             return dbo;
         }
@@ -76,22 +76,22 @@ public class LookupEntryTranslator {
         
         String id = TranslatorUtils.toString(dbo, ID);
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
-        List<Equivalent> equivs = Lists.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo);
+        List<LookupRef> equivs = Lists.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo);
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
         
-        Set<Equivalent> directEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
+        Set<LookupRef> directEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
         
         return new LookupEntry(id, aliases, directEquivalents, equivs, created, updated);
     }
 
-    private static final Function<DBObject, Equivalent> equivalentFromDbo = new Function<DBObject, Equivalent>() {
+    private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
         @Override
-        public Equivalent apply(DBObject input) {
+        public LookupRef apply(DBObject input) {
             String id = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
-            return new Equivalent(id , publisher , type);
+            return new LookupRef(id, publisher, LookupRef.LookupType.valueOf(type));
         }
     };
 }

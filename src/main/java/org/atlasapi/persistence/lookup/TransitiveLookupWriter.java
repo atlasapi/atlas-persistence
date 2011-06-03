@@ -3,7 +3,6 @@ package org.atlasapi.persistence.lookup;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.transform;
 import static org.atlasapi.media.entity.Identified.TO_URI;
-import static org.atlasapi.persistence.lookup.entry.Equivalent.TO_ID;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.TO_EQUIVS;
 
 import java.util.LinkedList;
@@ -12,7 +11,7 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
-import org.atlasapi.persistence.lookup.entry.Equivalent;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
@@ -39,7 +38,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         final Set<String> canonUris = ImmutableSet.copyOf(Iterables.transform(allItems, TO_URI));
 
         //entry for the subject.
-        LookupEntry subjectEntry = getOrCreate(subject).copyWithDirectEquivalents(Iterables.transform(allItems, Equivalent.FROM_DESCRIBED));
+        LookupEntry subjectEntry = getOrCreate(subject).copyWithDirectEquivalents(Iterables.transform(allItems, LookupRef.FROM_DESCRIBED));
         Set<LookupEntry> equivEntries = entriesFor(directEquivalents);
 
         //Pull the current transitive closures for the directly equivalent parameters.
@@ -50,9 +49,9 @@ public class TransitiveLookupWriter implements LookupWriter {
             @Override
             public LookupEntry apply(LookupEntry entry) {
                 if (canonUris.contains(entry.id())) {
-                    return entry.copyWithDirectEquivalents(Sets.union(entry.directEquivalents(), ImmutableSet.of(Equivalent.from(subject))));
+                    return entry.copyWithDirectEquivalents(Sets.union(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
                 } else {
-                    return entry.copyWithDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(Equivalent.from(subject))));
+                    return entry.copyWithDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
                 }
             }
         }));
@@ -74,13 +73,13 @@ public class TransitiveLookupWriter implements LookupWriter {
         Set<LookupEntry> newLookups = Sets.newHashSet();
         for (LookupEntry entry : lookups) {
             
-            Set<Equivalent> transitiveSet = Sets.newHashSet();
+            Set<LookupRef> transitiveSet = Sets.newHashSet();
             
-            Set<Equivalent> seen = Sets.newHashSet();
-            Queue<Equivalent> direct = new LinkedList<Equivalent>(entry.directEquivalents());
+            Set<LookupRef> seen = Sets.newHashSet();
+            Queue<LookupRef> direct = new LinkedList<LookupRef>(entry.directEquivalents());
             //Traverse equivalence graph breadth-first
             while(!direct.isEmpty()) {
-                Equivalent current = direct.poll();
+                LookupRef current = direct.poll();
                 if(seen.contains(current)) {
                     continue;
                 } else {
@@ -135,7 +134,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Set<String> singleStep(Set<LookupEntry> currentEntries) {
-        return ImmutableSet.copyOf(transform(concat(transform(currentEntries, TO_EQUIVS)), TO_ID));
+        return ImmutableSet.copyOf(transform(concat(transform(currentEntries, TO_EQUIVS)), LookupRef.TO_ID));
     }
 
     private Set<LookupEntry> entriesForUris(Set<String> roots) {

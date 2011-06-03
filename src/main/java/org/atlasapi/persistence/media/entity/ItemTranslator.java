@@ -54,6 +54,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
         this(new ContentTranslator(), createContainerForOrphans);
     }
     
+    public Item fromDB(DBObject dbObject) {
+        return fromDBObject(dbObject, null);
+    }
+    
     @SuppressWarnings("unchecked")
     @Override
     public Item fromDBObject(DBObject dbObject, Item item) {
@@ -119,6 +123,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			throw new IllegalArgumentException();
 		}
 		return entity;
+	}
+	
+	public DBObject toDB(Item item) {
+	    return toDBObject(null, item);
 	}
 
     @Override

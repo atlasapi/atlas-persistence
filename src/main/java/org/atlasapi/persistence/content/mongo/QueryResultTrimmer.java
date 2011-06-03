@@ -148,7 +148,7 @@ public class QueryResultTrimmer {
 	
 	private <T extends Item> boolean trimContainer(Container<T> brand, ContentQuery query) {
 		Maybe<List<T>> items = trimContainerSubItems(brand.getContents(), query);
-		brand.setContents(items.valueOrDefault(ImmutableList.<T>of()));
+		brand.setContentsByResolvingChildRefs(items.valueOrDefault(ImmutableList.<T>of()));
 		if (items.isNothing()) {
 			return false;
 		} else {

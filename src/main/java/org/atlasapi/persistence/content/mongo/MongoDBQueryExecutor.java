@@ -21,6 +21,7 @@ import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
+import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
 
 import com.google.common.collect.ImmutableList;
@@ -29,9 +30,9 @@ import com.google.common.collect.ImmutableList;
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
-	private final MongoDbBackedContentStore roughSearch;
+	private final ContentResolver roughSearch;
 	
-	public MongoDBQueryExecutor(MongoDbBackedContentStore roughSearch) {
+	public MongoDBQueryExecutor(ContentResolver roughSearch) {
 		this.roughSearch = roughSearch;
 	}
 	
@@ -58,7 +59,7 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		if (MatchesNothing.isEquivalentTo(query)) {
 			return Collections.emptyList();
 		}
-		List<? extends Identified> content = roughSearch.findByUriOrAlias(uris);
+		List<? extends Identified> content = roughSearch.findByCanonicalUri(uris);
 
 		if (content.isEmpty()) {
 			return Collections.emptyList();
