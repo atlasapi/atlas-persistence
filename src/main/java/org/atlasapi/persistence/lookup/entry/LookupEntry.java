@@ -69,7 +69,7 @@ public class LookupEntry {
     }
 
     public LookupEntry copyWithEquivalents(Iterable<Equivalent> newEquivs) {
-        return new LookupEntry(id, aliases, directEquivalents, ImmutableList.copyOf(newEquivs), created, updated);
+        return new LookupEntry(id, aliases, directEquivalents, ImmutableList.copyOf(newEquivs), created, new DateTime(DateTimeZones.UTC));
     }
     
     public Set<Equivalent> directEquivalents() {
@@ -77,7 +77,7 @@ public class LookupEntry {
     }
     
     public LookupEntry copyWithDirectEquivalents(Iterable<Equivalent> directEquivalents) {
-        return new LookupEntry(id, aliases, ImmutableSet.copyOf(directEquivalents), equivs, created, updated);
+        return new LookupEntry(id, aliases, ImmutableSet.copyOf(directEquivalents), equivs, created, new DateTime(DateTimeZones.UTC));
     }
 
     public DateTime created() {
