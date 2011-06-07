@@ -14,19 +14,15 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content.mongo;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.atlasapi.content.criteria.ContentQuery;
-import org.atlasapi.content.criteria.MatchesNothing;
-import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
 
-import com.google.common.collect.ImmutableList;
-
-@SuppressWarnings("unchecked")
+@Deprecated
 public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 	
 	private final QueryResultTrimmer trimmer = new QueryResultTrimmer();
@@ -36,36 +32,37 @@ public class MongoDBQueryExecutor implements KnownTypeQueryExecutor {
 		this.roughSearch = roughSearch;
 	}
 	
+//	@Override
+//	public List<Content> discover(ContentQuery query) {
+//		if (MatchesNothing.isEquivalentTo(query)) {
+//			return Collections.emptyList();
+//		}
+//		return executeDiscoverQuery(query);
+//	}
+//
+//	private List<Content> executeDiscoverQuery(ContentQuery query) {
+//		List<? extends Content> contents = null;///roughSearch.discover(query);
+//		
+//		if (contents.isEmpty()) {
+//			return ImmutableList.of();
+//		}
+//
+//		return (List<Content>) filter(query, contents, true);
+//	}
+//
 	@Override
-	public List<Content> discover(ContentQuery query) {
-		if (MatchesNothing.isEquivalentTo(query)) {
-			return Collections.emptyList();
-		}
-		return executeDiscoverQuery(query);
-	}
-
-	private List<Content> executeDiscoverQuery(ContentQuery query) {
-		List<? extends Content> contents = roughSearch.discover(query);
-		
-		if (contents.isEmpty()) {
-			return ImmutableList.of();
-		}
-
-		return (List<Content>) filter(query, contents, true);
-	}
-
-	@Override
-	public List<Identified> executeUriQuery(Iterable<String> uris, ContentQuery query) {
-		if (MatchesNothing.isEquivalentTo(query)) {
-			return Collections.emptyList();
-		}
-		List<? extends Identified> content = roughSearch.findByCanonicalUri(uris);
-
-		if (content.isEmpty()) {
-			return Collections.emptyList();
-		}
-		
-		return Identified.sort((List<Identified>) filter(query, content, false), uris);
+	public Map<String, List<Identified>> executeUriQuery(Iterable<String> uris, ContentQuery query) {
+//		if (MatchesNothing.isEquivalentTo(query)) {
+//			return Collections.emptyList();
+//		}
+//		List<? extends Identified> content = null;//roughSearch.findByCanonicalUri(uris);
+//
+//		if (content.isEmpty()) {
+//			return Collections.emptyList();
+//		}
+//		
+//		return Identified.sort((List<Identified>) filter(query, content, false), uris);
+	    return null;
 	}
 
 	private <T  extends Identified> List<T> filter(ContentQuery query, List<T> brands, boolean removeItemsThatDontMatch) {

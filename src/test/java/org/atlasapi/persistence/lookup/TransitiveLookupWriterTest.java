@@ -4,8 +4,8 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.lookup.entry.Equivalent;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
@@ -194,11 +194,11 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
 
     private void hasEquivs(String id, String... transitiveEquivs) {
-        assertEquals(ImmutableSet.copyOf(transitiveEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).equivalents(), Equivalent.TO_ID)));
+        assertEquals(ImmutableSet.copyOf(transitiveEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).equivalents(), LookupRef.TO_ID)));
     }
 
     private void hasDirectEquivs(String id, String... directEquivs) {
-        assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).directEquivalents(), Equivalent.TO_ID)));
+        assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).directEquivalents(), LookupRef.TO_ID)));
     }
 
 }

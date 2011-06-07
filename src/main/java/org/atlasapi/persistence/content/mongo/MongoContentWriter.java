@@ -18,7 +18,7 @@ import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentWriter;
-import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
@@ -37,7 +37,7 @@ import com.mongodb.DBCollection;
 public class MongoContentWriter implements ContentWriter {
 
     private final Clock clock;
-    private final MongoLookupEntryStore lookupStore;
+    private final NewLookupWriter lookupStore;
 
     private final ItemTranslator itemTranslator = new ItemTranslator();
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
@@ -46,7 +46,7 @@ public class MongoContentWriter implements ContentWriter {
     private final DBCollection topLevelItems;
     private final DBCollection containers;
 
-    public MongoContentWriter(DatabasedMongo mongo, MongoLookupEntryStore lookupStore, Clock clock) {
+    public MongoContentWriter(DatabasedMongo mongo, NewLookupWriter lookupStore, Clock clock) {
         this.lookupStore = lookupStore;
         this.clock = clock;
 
@@ -127,7 +127,7 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     private void updateFetchData(Item item) {
-        item.setLastFetched(new DateTime());
+        item.setLastFetched(clock.now());
         setThisOrChildLastUpdated(item);
     }
 

@@ -18,6 +18,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.atlasapi.content.criteria.ContentQuery;
@@ -44,7 +45,6 @@ import org.joda.time.DateTime;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -52,6 +52,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
@@ -64,6 +65,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
+@Deprecated
 public class MongoDbBackedContentStore extends MongoDBTemplate implements ContentWriter, ContentResolver, RetrospectiveContentLister {
 
     private static final int MAX_RESULTS = 20000;
@@ -93,39 +95,39 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     }
 
 	private void createOrUpdateItem(Item item) {
-		updateFetchData(item);
-		Identified content = findByCanonicalUri(item.getCanonicalUri());
-		if (content == null) {
-			item.setFirstSeen(clock.now());
-
-			if (item.getContainer() != null) {
-				Container<?> container = (Container<?>) findByCanonicalUri(item.getContainer().getCanonicalUri());
-				if (container != null) {
-					container.addOrReplace(item);
-					item.setContainer(container);
-				}
-			}
-		} else {
-			if (!(content instanceof Item)) {
-				throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() + "  since the old entity was not an item");
-			}
-			Item oldItem = (Item) content;
-			preserveAliases(item, oldItem);
-
-			if (oldItem.getFullContainer() != null) {
-				oldItem.getFullContainer().addOrReplace(item);
-				item.setContainer(oldItem.getFullContainer());
-			}
-		}
-
-		Container<?> container = item.getFullContainer();
-		if (container != null) {
-			updateBasicPlaylistDetails(container, contentCollection);
-		} else {
-			DBObject query = new BasicDBObject();
-			query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
-			contentCollection.update(query, toDB(item), true, false);
-		}
+//		updateFetchData(item);
+//		Identified content = findByCanonicalUri(item.getCanonicalUri());
+//		if (content == null) {
+//			item.setFirstSeen(clock.now());
+//
+//			if (item.getContainer() != null) {
+//				Container<?> container = (Container<?>) findByCanonicalUri(item.getContainer().getCanonicalUri());
+//				if (container != null) {
+//					container.addOrReplace(item);
+//					item.setContainer(container);
+//				}
+//			}
+//		} else {
+//			if (!(content instanceof Item)) {
+//				throw new IllegalArgumentException("Cannot update item with uri: " + item.getCanonicalUri() + "  since the old entity was not an item");
+//			}
+//			Item oldItem = (Item) content;
+//			preserveAliases(item, oldItem);
+//
+//			if (oldItem.getFullContainer() != null) {
+//				oldItem.getFullContainer().addOrReplace(item);
+//				item.setContainer(oldItem.getFullContainer());
+//			}
+//		}
+//
+//		Container<?> container = item.getFullContainer();
+//		if (container != null) {
+//			updateBasicPlaylistDetails(container, contentCollection);
+//		} else {
+//			DBObject query = new BasicDBObject();
+//			query.put(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
+//			contentCollection.update(query, toDB(item), true, false);
+//		}
 	}
 
 	private void updateFetchData(Item item) {
@@ -135,49 +137,49 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     
     @Override
     @SuppressWarnings("unchecked")
-    public void createOrUpdate(Container<?> container, boolean markMissingItemsAsUnavailable) {
-		for (Item item : container.getContents()) {
-			updateFetchData(item);
-		}
-	
-		Identified oldContent = findByCanonicalUri(container.getCanonicalUri());
-
-		if (oldContent != null) {
-			if (!(oldContent instanceof Container<?>)) {
-				throw new IllegalStateException("Cannot save container " + container.getCanonicalUri() + " because there's already an item with that uri");
-			}
-			Container<? extends Item> oldContainer = (Container<?>) oldContent;
-        	
-        	Set<Item> missingItems = Sets.difference(ImmutableSet.copyOf(oldContainer.getContents()), ImmutableSet.copyOf(container.getContents()));
-
-			for (Item item : missingItems) {
-				if (markMissingItemsAsUnavailable) {
-					markAllNativeVersionsAsUnavailable(item);
-				}
-				((Container<Item>) container).addContents(item);
-			}
-			preservePlaylistAttributes(container, oldContainer);
-        }
-
-        if (oldContent == null) {
-            container.setFirstSeen(new DateTime());
-        }
-        
-        container.setLastFetched(new DateTime());
-        setThisOrChildLastUpdated(container);
-
-        updateBasicPlaylistDetails(container, contentCollection);
-
-        // The items and series inside a brand cannot be top level items any more
-        // so we remove them as outer elements
-        Set<String> notTopLevel = Sets.newHashSet(container.getContentUris());
-        if (container instanceof Brand) {
-        	Brand brand = (Brand) container;
-        	notTopLevel.addAll(Collections2.transform(brand.getSeries(), Identified.TO_URI));
-        }
-        removeTopLevelElements(notTopLevel);
-        
-        lookupStore.ensureLookup(container);
+    public void createOrUpdate(Container<?> container) {
+//		for (Item item : container.getContents()) {
+//			updateFetchData(item);
+//		}
+//	
+//		Identified oldContent = findByCanonicalUri(container.getCanonicalUri());
+//
+//		if (oldContent != null) {
+//			if (!(oldContent instanceof Container<?>)) {
+//				throw new IllegalStateException("Cannot save container " + container.getCanonicalUri() + " because there's already an item with that uri");
+//			}
+//			Container<? extends Item> oldContainer = (Container<?>) oldContent;
+//        	
+//        	Set<Item> missingItems = Sets.difference(ImmutableSet.copyOf(oldContainer.getContents()), ImmutableSet.copyOf(container.getContents()));
+//
+//			for (Item item : missingItems) {
+//				if (markMissingItemsAsUnavailable) {
+//					markAllNativeVersionsAsUnavailable(item);
+//				}
+//				((Container<Item>) container).addContents(item);
+//			}
+//			preservePlaylistAttributes(container, oldContainer);
+//        }
+//
+//        if (oldContent == null) {
+//            container.setFirstSeen(new DateTime());
+//        }
+//        
+//        container.setLastFetched(new DateTime());
+//        setThisOrChildLastUpdated(container);
+//
+//        updateBasicPlaylistDetails(container, contentCollection);
+//
+//        // The items and series inside a brand cannot be top level items any more
+//        // so we remove them as outer elements
+//        Set<String> notTopLevel = Sets.newHashSet(container.getContentUris());
+//        if (container instanceof Brand) {
+//        	Brand brand = (Brand) container;
+//        	notTopLevel.addAll(Collections2.transform(brand.getSeries(), Identified.TO_URI));
+//        }
+//        removeTopLevelElements(notTopLevel);
+//        
+//        lookupStore.ensureLookup(container);
     }
     
     private void removeTopLevelElements(Iterable<String> elems) {
@@ -293,10 +295,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
         }
     }
 
-    @Override
-    public Identified findByCanonicalUri(String uri) {
-        return findBestMatch(uri, findByCanonicalUri(ImmutableList.of(uri)));
-    }
+//    @Override
+//    public Identified findByCanonicalUri(String uri) {
+//        return findBestMatch(uri, findByCanonicalUri(ImmutableList.of(uri)));
+//    }
     
     private Identified findBestMatch(String uri, List<? extends Identified> duplicates) {
         for (Identified duplicate: duplicates) {
@@ -459,4 +461,10 @@ public class MongoDbBackedContentStore extends MongoDBTemplate implements Conten
     public List<ContentGroup> listAllContentGroups(String fromId, int batchSize) {
         return iterateOverContentGroup(where(), fromId, batchSize);
     }
+
+    @Override
+    public Map<String, Maybe<Identified>> findByCanonicalUris(Iterable<String> canonicalUris) {
+        return null;
+    }
+
 }

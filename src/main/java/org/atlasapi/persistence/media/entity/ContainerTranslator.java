@@ -1,26 +1,18 @@
 package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.Episode;
-import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
-import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.persistence.ModelTranslator;
-import org.bson.BSONObject;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -87,23 +79,6 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
             return new ChildRef(uri, sortKey, updated);
         }
     };
-
-    @SuppressWarnings("unchecked")
-    private void addSeriesToContents(DBObject dbObject, Container<?> entity) {
-        Iterable<DBObject> seriesDbos = (Iterable<DBObject>) dbObject.get(FULL_SERIES_KEY);
-        if (seriesDbos != null) {
-            ImmutableMap<String, Series> lookup = seriesLookup(seriesDbos);
-            for (Episode episode : ((Brand) entity).getContents()) {
-                String seriesUri = episode.getSeriesUri();
-                if (seriesUri != null) {
-                    Series series = lookup.get(seriesUri);
-                    if (series != null) {
-                        series.addContents(episode);
-                    }
-                }
-            }
-        }
-    }
 
     private List<Series> series(Iterable<DBObject> seriesDbos) {
         if (seriesDbos != null) {

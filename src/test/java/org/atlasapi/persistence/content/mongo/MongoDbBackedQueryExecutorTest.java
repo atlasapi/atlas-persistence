@@ -60,10 +60,10 @@ public class MongoDbBackedQueryExecutorTest extends TestCase {
     	store = new MongoDbBackedContentStore(MongoTestHelper.anEmptyTestDatabase());
     	queryExecutor = new MongoDBQueryExecutor(store);
     	
-    	store.createOrUpdate(data.eastenders, true);
-    	store.createOrUpdate(data.apprentice, true);
-    	store.createOrUpdate(data.newsNight, true);
-    	store.createOrUpdate(data.ER, true);
+    	store.createOrUpdate(data.eastenders);
+    	store.createOrUpdate(data.apprentice);
+    	store.createOrUpdate(data.newsNight);
+    	store.createOrUpdate(data.ER);
     	
     	store.createOrUpdate(data.englishForCats);
     	store.createOrUpdate(data.eggsForBreakfast);

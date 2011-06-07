@@ -20,8 +20,8 @@ public class EventFiringContentWriter implements ContentWriter {
 	}
 	
 	@Override
-	public void createOrUpdate(Container<?> container, boolean markMissingItemsAsUnavailable) {
-		delegate.createOrUpdate(container, markMissingItemsAsUnavailable);
+	public void createOrUpdate(Container<?> container) {
+		delegate.createOrUpdate(container);
 		notifyListener(container);
 	}
 	
@@ -32,6 +32,7 @@ public class EventFiringContentWriter implements ContentWriter {
 	}
     
 	@Override
+	@Deprecated
 	public void createOrUpdateSkeleton(ContentGroup group) {
 		delegate.createOrUpdateSkeleton(group);
 	}
