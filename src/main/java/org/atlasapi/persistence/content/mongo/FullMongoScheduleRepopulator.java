@@ -88,7 +88,7 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
                     }
                 } catch (Exception e) {
                     errors++;
-                    log.error("Problem translating content from mongo: " + TranslatorUtils.toString(dbObject, MongoConstants.ID));
+                    log.error("Problem translating content from mongo: " + TranslatorUtils.toString(dbObject, MongoConstants.ID), e);
                 }
             }
     
