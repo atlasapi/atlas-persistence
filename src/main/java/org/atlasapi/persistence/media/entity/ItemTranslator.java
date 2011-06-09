@@ -61,7 +61,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         	dbObject = Iterables.getOnlyElement((Iterable<DBObject>) dbObject.get("contents"));
         }
     	if (item == null) {
-        	item = newModel(dbObject, item);
+        	item = newModel(dbObject);
         }
         
         contentTranslator.fromDBObject(dbObject, item);
@@ -107,18 +107,17 @@ public class ItemTranslator implements ModelTranslator<Item> {
         return item; 
     }
 
-	private Item newModel(DBObject dbObject, Item entity) {
+	private Item newModel(DBObject dbObject) {
 		String type = (String) dbObject.get(TYPE_KEY);
 		if (Episode.class.getSimpleName().equals(type)) {
-			entity = new Episode();
+			return new Episode();
 		} else if (Film.class.getSimpleName().equals(type)){
-		    entity = new Film();
+		    return new Film();
 		} else if (Item.class.getSimpleName().equals(type)) {
-			entity = new Item();
+			return new Item();
 		} else {
 			throw new IllegalArgumentException();
 		}
-		return entity;
 	}
 
     @Override
