@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.lookup.mongo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
