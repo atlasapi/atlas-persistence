@@ -12,6 +12,7 @@ import com.mongodb.DBObject;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
+	public static final String LAST_FETCHED = "lastFetched";
 	private final DescriptionTranslator descriptionTranslator;
 
 	public DescribedTranslator(DescriptionTranslator descriptionTranslator) {
@@ -34,7 +35,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
 		entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
 		entity.setImage((String) dbObject.get("image"));
-		entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, "lastFetched"));
+		entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, LAST_FETCHED));
 
 		String publisherKey = (String) dbObject.get("publisher");
 		if (publisherKey != null) {
@@ -71,7 +72,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.fromDateTime(dbObject, "thisOrChildLastUpdated", entity.getThisOrChildLastUpdated());
         TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genres");
         TranslatorUtils.from(dbObject, "image", entity.getImage());
-        TranslatorUtils.fromDateTime(dbObject, "lastFetched", entity.getLastFetched());
+        TranslatorUtils.fromDateTime(dbObject, LAST_FETCHED, entity.getLastFetched());
         
         if (entity.getPublisher() != null) {
         	TranslatorUtils.from(dbObject, "publisher", entity.getPublisher().key());
