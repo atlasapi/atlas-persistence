@@ -5,6 +5,7 @@ import junit.framework.TestCase;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.LookupRef.LookupType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -35,7 +36,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
-        assertEquals(item.getType(), Iterables.getOnlyElement(uriEntry.equivalents()).type());
+        assertEquals(LookupType.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).type());
 
         LookupEntry aliasEntry = store.entryFor("testAlias");
         assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.id());
@@ -43,7 +44,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(aliasEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(aliasEntry.equivalents()).publisher());
-        assertEquals(item.getType(), Iterables.getOnlyElement(aliasEntry.equivalents()).type());
+        assertEquals(LookupType.TOP_LEVEL_ITEM, Iterables.getOnlyElement(aliasEntry.equivalents()).type());
 
         assertNotNull(aliasEntry.created());
         assertNotNull(aliasEntry.updated());

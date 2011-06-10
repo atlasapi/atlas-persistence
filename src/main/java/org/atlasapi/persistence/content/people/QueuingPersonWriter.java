@@ -11,12 +11,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PreDestroy;
 
+import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.logging.AdapterLogEntry;
 import org.atlasapi.persistence.logging.AdapterLogEntry.Severity;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -52,7 +54,7 @@ public class QueuingPersonWriter {
     }
 
     public void addItemToPerson(Person person, Item item) {
-        person.addContents(item);
+        person.setContents(ImmutableList.<ChildRef>builder().addAll(person.getContents()).add(item.childRef()).build());
         queue.add(person);
     }
     
@@ -83,7 +85,8 @@ public class QueuingPersonWriter {
             
             for (Person person: people) {
                 if (peopleLookup.containsKey(person.getCanonicalUri())) {
-                    peopleLookup.get(person.getCanonicalUri()).addContents(person.getContents());
+                    Person existingPerson = peopleLookup.get(person.getCanonicalUri());
+                    existingPerson.setContents(ImmutableList.<ChildRef>builder().addAll(existingPerson.getContents()).addAll(person.getContents()).build());
                 } else {
                     peopleLookup.put(person.getCanonicalUri(), person);
                 }

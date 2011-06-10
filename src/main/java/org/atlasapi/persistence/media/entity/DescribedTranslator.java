@@ -95,7 +95,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 	static Identified newModel(DBObject dbObject) {
 		EntityType type = EntityType.from((String) dbObject.get(TYPE_KEY));
 		try {
-			return (Item) type.getModelClass().newInstance();
+			return type.getModelClass().newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

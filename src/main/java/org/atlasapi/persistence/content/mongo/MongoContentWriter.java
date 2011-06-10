@@ -22,7 +22,6 @@ import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -62,28 +61,34 @@ public class MongoContentWriter implements ContentWriter {
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
         if (item.getContainer() != null) {
             
-            includeItemInTopLevelContainer(item);
             if(item instanceof Episode) {
-                includeItemInSeries((Episode)item);
+                includeEpisodeInSeriesAndBrand((Episode)item);
+            } else {
+                includeItemInTopLevelContainer(item);
             }
+            
             children.update(where.build(), itemTranslator.toDB(item), true, false);
             
         } else {
+            if (item instanceof Episode) {
+                throw new IllegalArgumentException("Can't write episode with no container");
+            }
             topLevelItems.update(where.build(), itemTranslator.toDB(item), true, false);
         }
 
         lookupStore.ensureLookup(item);
     }
 
-    private void includeItemInSeries(Episode episode) {
-        if(episode.getSeriesRef() == null) {
-            return; //episode not in a series
+    private void includeEpisodeInSeriesAndBrand(Episode episode) {
+        
+        if(episode.getSeriesRef() == null) { //just ensure item in container.
+            includeItemInContainer(episode, containers);
+            return;
         }
-        includeItemInContainer(episode, programmeGroups);
+        
     }
 
-    @VisibleForTesting
-    protected void includeItemInTopLevelContainer(Item item) {
+    private void includeItemInTopLevelContainer(Item item) {
         includeItemInContainer(item, containers);
     }
 
