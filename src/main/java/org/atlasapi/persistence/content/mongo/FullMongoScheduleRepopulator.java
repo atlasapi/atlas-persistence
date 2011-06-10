@@ -6,13 +6,9 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.Episode;
-import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
-import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
 import com.google.common.collect.ImmutableList;
@@ -30,20 +26,24 @@ import com.mongodb.DBObject;
 
 public class FullMongoScheduleRepopulator extends ScheduledTask {
     
-    private final ScheduleWriter scheduleStore;
-    private final DBCollection contentCollection;
     private static final Log log = LogFactory.getLog(FullMongoScheduleRepopulator.class);
     private static final int BATCH_SIZE = 5;
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
+
+    private final DBCollection childrenCollection;
+    private final DBCollection topLevelItemCollection;
+    private final ScheduleWriter scheduleStore;
+    private final Iterable<Publisher> publishers;
+
     private final ItemTranslator itemTranslator = new ItemTranslator(true);
+    
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
     private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 10);
-    private final Iterable<Publisher> forPublishers;
 
     public FullMongoScheduleRepopulator(DatabasedMongo db, ScheduleWriter scheduleStore, Iterable<Publisher> forPublishers) {
-        this.forPublishers = forPublishers;
-        contentCollection = db.collection("content");
+        this.childrenCollection = db.collection("children");
+        this.topLevelItemCollection = db.collection("topLevelItems");
         this.scheduleStore = scheduleStore;
+        this.publishers = forPublishers;
     }
     
     private MongoQueryBuilder where(Iterable<Publisher> forPublishers) {
@@ -56,49 +56,54 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
     @Override
     public void runTask() {
         String currentId = "0";
-        long totalRows = contentCollection.count(where(forPublishers).build());
+        long totalRows = countItems();
         long rowsSeen = 0;
         long errors = 0;
-        while (shouldContinue()) {
-        	reportStatus(rowsSeen + "/" + totalRows + ", " + errors + " errors");
-        	
-            List<DBObject> objects = ImmutableList.copyOf(where(forPublishers).fieldGreaterThan(MongoConstants.ID, currentId).find(contentCollection, new MongoSortBuilder().ascending(MongoConstants.ID), -BATCH_SIZE));
-            if (objects.isEmpty()) {
-                break;
-            }
-            rowsSeen += objects.size();
-            
-            ImmutableList.Builder<Item> itemsBuilder = ImmutableList.builder();
-            final String latestId = TranslatorUtils.toString(Iterables.getLast(objects), MongoConstants.ID);
-            if (latestId == null || latestId.equals(currentId)) {
-                break;
-            }
-            currentId = latestId;
-            
-            for (DBObject dbObject: objects) {
+        
+        for(int i = 0; i < 2 && shouldContinue(); i++) {
+            DBCollection collection = ImmutableList.of(childrenCollection,topLevelItemCollection).get(i);
+            while (shouldContinue()) {
+                reportStatus(rowsSeen + "/" + totalRows + ", " + errors + " errors");
+
+                List<DBObject> objects = ImmutableList.copyOf(where(publishers).fieldGreaterThan(MongoConstants.ID, currentId).find(collection, new MongoSortBuilder().ascending(MongoConstants.ID),
+                        -BATCH_SIZE));
+                if (objects.isEmpty()) {
+                    break;
+                }
+                rowsSeen += objects.size();
+
+                final String latestId = TranslatorUtils.toString(Iterables.getLast(objects), MongoConstants.ID);
+                if (latestId == null || latestId.equals(currentId)) {
+                    break;
+                }
+                currentId = latestId;
+
+                List<Item> items = toItems(objects);
+                errors += objects.size() - items.size();
+
                 try {
-                    String type = (String) dbObject.get("type");
-                    
-                    if (Episode.class.getSimpleName().equals(type) || Film.class.getSimpleName().equals(type) || Item.class.getSimpleName().equals(type)) {
-                        Item item = itemTranslator.fromDBObject(dbObject, null);
-                        itemsBuilder.add(item);
-                    } else {
-                        Container<?> container = containerTranslator.fromDBObject(dbObject, null);
-                        itemsBuilder.addAll(container.getContents());
-                    }
-                } catch (Exception e) {
-                    errors++;
-                    log.error("Problem translating content from mongo: " + TranslatorUtils.toString(dbObject, MongoConstants.ID));
+                    boundedQueue.submitTask(new UpdateItemScheduleJob(items));
+                } catch (InterruptedException e) {
+                    log.error("Problem submitting task to process queue for items: " + items, e);
                 }
             }
-    
-            List<Item> items = itemsBuilder.build();
+        }
+    }
+
+    private List<Item> toItems(List<DBObject> objects) {
+        ImmutableList.Builder<Item> itemsBuilder = ImmutableList.builder();
+        for (DBObject dbObject : objects) {
             try {
-                boundedQueue.submitTask(new UpdateItemScheduleJob(items));
-            } catch (InterruptedException e) {
-                log.error("Problem submitting task to process queue for items: "+items, e);
+                itemsBuilder.add(itemTranslator.fromDBObject(dbObject, null));
+            } catch (Exception e) {
+                log.error("Problem translating content from mongo: " + TranslatorUtils.toString(dbObject, MongoConstants.ID), e);
             }
         }
+        return itemsBuilder.build();
+    }
+
+    private long countItems() {
+        return childrenCollection.count(where(publishers).build()) + topLevelItemCollection.count(where(publishers).build());
     }
     
     class UpdateItemScheduleJob implements Runnable {

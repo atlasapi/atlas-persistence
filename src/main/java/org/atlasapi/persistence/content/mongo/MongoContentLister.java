@@ -7,6 +7,7 @@ import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.persistence.content.RetrospectiveContentLister;
 
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 
 public class MongoContentLister implements RetrospectiveContentLister {
 
@@ -24,6 +25,11 @@ public class MongoContentLister implements RetrospectiveContentLister {
     @Override
     public List<ContentGroup> listAllContentGroups(String fromId, int batchSize) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Content> iterateOverContent(MongoQueryBuilder query, String fromId, int batchSize) {
+        return null;
     }
 
 }

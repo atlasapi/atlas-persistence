@@ -7,7 +7,7 @@ import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -99,7 +99,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         	episode.setEpisodeNumber((Integer) dbObject.get("episodeNumber"));
         	episode.setSeriesNumber((Integer) dbObject.get("seriesNumber"));
         	if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
-        		episode.setSeriesUri((String) dbObject.get(EPISODE_SERIES_URI_KEY));
+        		episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY)));
         	}
         }
         
@@ -152,9 +152,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			Episode episode = (Episode) entity;
 			TranslatorUtils.from(itemDbo, "episodeNumber", episode.getEpisodeNumber());
 			TranslatorUtils.from(itemDbo, "seriesNumber", episode.getSeriesNumber());
-			Series series = episode.getSeries();
+			ParentRef series = episode.getSeriesRef();
 			if (series != null) {
-				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getCanonicalUri());
+				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getUri());
 			}
 		}
 		

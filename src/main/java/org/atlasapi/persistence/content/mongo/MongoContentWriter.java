@@ -12,7 +12,6 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
-import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
@@ -45,6 +44,7 @@ public class MongoContentWriter implements ContentWriter {
     private final DBCollection children;
     private final DBCollection topLevelItems;
     private final DBCollection containers;
+    private final DBCollection programmeGroups;
 
     public MongoContentWriter(DatabasedMongo mongo, NewLookupWriter lookupStore, Clock clock) {
         this.lookupStore = lookupStore;
@@ -53,6 +53,7 @@ public class MongoContentWriter implements ContentWriter {
         children = mongo.collection("children");
         topLevelItems = mongo.collection("topLevelItems");
         containers = mongo.collection("containers");
+        programmeGroups = mongo.collection("programmeGroups");
     }
 
     @Override
@@ -61,8 +62,13 @@ public class MongoContentWriter implements ContentWriter {
 
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
         if (item.getContainer() != null) {
+            
+            includeItemInTopLevelContainer(item);
+            if(item instanceof Episode) {
+                includeItemInSeries((Episode)item);
+            }
             children.update(where.build(), itemTranslator.toDB(item), true, false);
-            includeItemInContainer(item);
+            
         } else {
             topLevelItems.update(where.build(), itemTranslator.toDB(item), true, false);
         }
@@ -70,40 +76,85 @@ public class MongoContentWriter implements ContentWriter {
         lookupStore.ensureLookup(item);
     }
 
-    @VisibleForTesting
-    protected void includeItemInContainer(Item item) {
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getContainer().getCanonicalUri());
+    private void includeItemInSeries(Episode episode) {
+        if(episode.getSeriesRef() == null) {
+            return; //episode not in a series
+        }
+        includeItemInContainer(episode, programmeGroups);
+    }
 
-        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(containers)));
+    @VisibleForTesting
+    protected void includeItemInTopLevelContainer(Item item) {
+        includeItemInContainer(item, containers);
+    }
+
+    private void includeItemInContainer(Item item, DBCollection collection) {
+        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getContainer().getUri());
+
+        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection)));
         if (oldContainer.hasValue()) {
             Container<?> container = oldContainer.requireValue();
             container.setChildRefs(mergeChildRefs(ImmutableList.of(item.childRef()), oldContainer));
-            containers.update(where.build(), containerTranslator.toDB(container), true, false);
+            collection.update(where.build(), containerTranslator.toDB(container), true, false);
+        } else {
+            throw new IllegalStateException(String.format("Container %s not found in %s",item.getContainer().getUri(), collection.getName()));
         }
     }
 
     @Override
     public void createOrUpdate(Container<?> container) {
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
 
-        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(containers)));
-        container.setChildRefs(mergeChildRefs(container, oldContainer));
-
-        container.setLastFetched(clock.now());
-        setThisOrChildLastUpdated(container);
-
-        containers.update(where.build(), containerTranslator.toDB(container), true, false);
-
+        if (container instanceof Series) {
+            
+            createOrUpdateContainer(container, programmeGroups);
+            
+            if(((Series) container).getParent() != null) {
+                includeSeriesInBrand((Series)container);
+                return;
+            }
+            
+        }
+        
+        createOrUpdateContainer(container, containers);
+        
         // The series inside a brand cannot be top level items any more so we
         // remove them as outer elements
         if (container instanceof Brand) {
             Brand brand = (Brand) container;
             
-            Set<String> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeries(), Identified.TO_URI));
+            Set<String> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeriesRefs(), ChildRef.TO_URI));
             if (!urisToRemove.isEmpty()) {
                 containers.remove(where().idIn(urisToRemove).build());
             }
         }
+
+    }
+
+    private void includeSeriesInBrand(Series series) {
+        DBCollection collection = topLevelItems;
+
+        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, series.getParent().getUri());
+        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection )));
+        if (oldContainer.hasValue()) {
+            Brand container = (Brand) oldContainer.requireValue();
+            container.setSeriesRefs(mergeChildRefs(ImmutableList.of(series.childRef()), oldContainer));
+            collection.update(where.build(), containerTranslator.toDB(container), true, false);
+        } else {
+            throw new IllegalStateException(String.format("Brand %s not found for series %s",series.getParent().getUri(), series.getCanonicalUri()));
+        }
+        
+    }
+
+    private void createOrUpdateContainer(Container<?> container, DBCollection collection) {
+        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
+
+        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection)));
+        container.setChildRefs(mergeChildRefs(container, oldContainer));
+
+        container.setLastFetched(clock.now());
+        setThisOrChildLastUpdated(container);
+
+        collection.update(where.build(), containerTranslator.toDB(container), true, false);
 
         lookupStore.ensureLookup(container);
     }
@@ -155,15 +206,9 @@ public class MongoContentWriter implements ContentWriter {
 
     private DateTime setThisOrChildLastUpdated(Container<?> playlist) {
         DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, playlist.getLastUpdated());
-        for (Item item : playlist.getContents()) {
-            DateTime itemOrChildUpdated = setThisOrChildLastUpdated(item);
+        for (ChildRef item : playlist.getChildRefs()) {
+            DateTime itemOrChildUpdated = item.getUpdated();
             thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, itemOrChildUpdated);
-            if (item instanceof Episode) {
-                Series series = ((Episode) item).getSeries();
-                if (series != null) {
-                    series.setThisOrChildLastUpdated(thisOrChildLastUpdated(itemOrChildUpdated, series.getThisOrChildLastUpdated()));
-                }
-            }
         }
         playlist.setThisOrChildLastUpdated(thisOrChildLastUpdated);
         return thisOrChildLastUpdated;
