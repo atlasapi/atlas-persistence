@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.joda.time.DateTime;
@@ -33,7 +34,7 @@ public class ScheduleEntryTranslator {
         for (Item item: entry.items()) {
             DBObject itemDbObject = itemTranslator.toDBObject(null, item);
             if (item.getContainer() != null) {
-                itemDbObject.put("container", containerTranslator.toDBObject(null, item.getContainer().toSummary()));
+                itemDbObject.put("container", item.getContainer().getUri());
             }
             items.add(itemDbObject);
         }
@@ -63,7 +64,7 @@ public class ScheduleEntryTranslator {
         for (DBObject itemDbObject: dbItems) {
             Item item = itemTranslator.fromDBObject(itemDbObject, null);
             if (itemDbObject.containsField("container")) {
-                item.setContainer(containerTranslator.fromDBObject((DBObject) itemDbObject.get("container"), null));
+                item.setParentRef(new ParentRef((String) itemDbObject.get("container")));
             }
             items.add(item);
         }

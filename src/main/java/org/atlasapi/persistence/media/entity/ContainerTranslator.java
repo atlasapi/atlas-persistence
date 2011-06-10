@@ -65,7 +65,7 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         }
 
         if (entity instanceof Brand) {
-            ((Brand) entity).setSeriesLookup(series((Iterable<DBObject>) dbObject.get(FULL_SERIES_KEY)));
+            ((Brand) entity).setSeriesRefs(series((Iterable<DBObject>) dbObject.get(FULL_SERIES_KEY)));
         }
         return entity;
     }
@@ -80,14 +80,9 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         }
     };
 
-    private List<Series> series(Iterable<DBObject> seriesDbos) {
+    private List<ChildRef> series(Iterable<DBObject> seriesDbos) {
         if (seriesDbos != null) {
-            return ImmutableList.copyOf(Iterables.transform(seriesDbos, new Function<DBObject, Series>() {
-                @Override
-                public Series apply(DBObject seriesDbo) {
-                    return (Series) fromDBObject(seriesDbo, null);
-                }
-            }));
+            return ImmutableList.copyOf(Iterables.transform(seriesDbos, TO_CHILD_REF));
         }
         return ImmutableList.of();
     }
@@ -116,13 +111,8 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         dbObject.put(CHILDREN_KEY, Iterables.transform(entity.getChildRefs(), FROM_CHILD_REF));
         if (entity instanceof Brand) {
             Brand brand = (Brand) entity;
-            if (!brand.getSeries().isEmpty()) {
-                dbObject.put(FULL_SERIES_KEY, Iterables.transform(brand.getSeries(), new Function<Series, DBObject>() {
-                    @Override
-                    public DBObject apply(Series input) {
-                        return toDboNotIncludingContents(null, input);
-                    }
-                }));
+            if (!brand.getSeriesRefs().isEmpty()) {
+                dbObject.put(FULL_SERIES_KEY, Iterables.transform(brand.getSeriesRefs(), FROM_CHILD_REF));
             }
         }
         return dbObject;
