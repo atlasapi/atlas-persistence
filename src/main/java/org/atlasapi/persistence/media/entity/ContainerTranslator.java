@@ -113,6 +113,7 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
             TranslatorUtils.from(dbObject, "uri", input.getUri());
             TranslatorUtils.from(dbObject, "sortKey", input.getSortKey());
             TranslatorUtils.fromDateTime(dbObject, "updated", input.getUpdated());
+            dbObject.put(DescribedTranslator.TYPE_KEY, input.getType().toString());
             return dbObject;
         }
     };
