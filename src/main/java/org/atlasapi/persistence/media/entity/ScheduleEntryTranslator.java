@@ -19,8 +19,7 @@ import com.mongodb.DBObject;
 
 public class ScheduleEntryTranslator {
     
-    private final ItemTranslator itemTranslator = new ItemTranslator(false);
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ItemTranslator itemTranslator = new ItemTranslator();
 
     public DBObject toDb(ScheduleEntry entry) {
         DBObject dbObject = new BasicDBObject();
@@ -51,7 +50,6 @@ public class ScheduleEntryTranslator {
         return dbObjects.build();
     }
     
-    @SuppressWarnings("unchecked")
     public ScheduleEntry fromDb(DBObject object) {
         Publisher publisher = Publisher.fromKey((String) object.get("publisher")).requireValue();
         Channel channel = Channel.fromKey((String) object.get("channel")).requireValue();
@@ -60,7 +58,7 @@ public class ScheduleEntryTranslator {
         Interval interval = new Interval(start, end);
         
         ImmutableList.Builder<Item> items = ImmutableList.builder();
-        List<DBObject> dbItems = (List) object.get("content");
+        List<DBObject> dbItems = TranslatorUtils.toDBObjectList(object,"content");
         for (DBObject itemDbObject: dbItems) {
             Item item = itemTranslator.fromDBObject(itemDbObject, null);
             if (itemDbObject.containsField("container")) {

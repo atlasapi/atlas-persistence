@@ -39,7 +39,7 @@ public class PersonTranslator implements ModelTranslator<Person> {
     }
     
     public DBObject updateContentUris(Person entity) {
-        return new BasicDBObject(MongoConstants.ADD_TO_SET, new BasicDBObject(ContentGroupTranslator.CONTENT_URIS_KEY, new BasicDBObject("$each", entity.getContentUris())));
+        return new BasicDBObject(MongoConstants.ADD_TO_SET, new BasicDBObject(ContentGroupTranslator.CONTENT_URIS_KEY, new BasicDBObject("$each", entity.getContents())));
     }
     
     public List<Person> fromDBObjects(Iterable<DBObject> dbObjects) {

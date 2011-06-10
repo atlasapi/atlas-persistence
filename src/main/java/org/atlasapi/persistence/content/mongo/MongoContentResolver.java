@@ -26,12 +26,13 @@ public class MongoContentResolver implements KnownTypeContentResolver {
     private final DBCollection children;
     private final DBCollection topLevelItems;
     private final DBCollection containers;
+    private final DBCollection programmeGroups;
 
     public MongoContentResolver(DatabasedMongo mongo) {
-
         this.children = mongo.collection("children");
         this.topLevelItems = mongo.collection("topLevelItems");
         this.containers = mongo.collection("containers");
+        this.programmeGroups = mongo.collection("programmeGroups");
     }
 
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
@@ -53,6 +54,9 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         switch (lookupRef.type()) {
         case CONTAINER:
             collection = containers;
+            break;
+        case PROGRAMME_GROUP:
+            collection = programmeGroups;
             break;
         case TOP_LEVEL_ITEM:
             collection = topLevelItems;

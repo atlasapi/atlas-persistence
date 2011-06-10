@@ -9,13 +9,8 @@ import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.ModelTranslator;
-import org.joda.time.DateTime;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container<?>> {
@@ -26,9 +21,11 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
     private static final String FULL_SERIES_KEY = "series";
 
     private final ContentTranslator contentTranslator;
+    private final ChildRefTranslator childRefTranslator;
 
     public ContainerTranslator() {
         this.contentTranslator = new ContentTranslator();
+        this.childRefTranslator = new ChildRefTranslator();
     }
 
     public List<Container<?>> fromDBObjects(Iterable<DBObject> dbObjects) {
@@ -57,7 +54,7 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
 
         if (dbObject.containsField(CHILDREN_KEY)) {
             Iterable<DBObject> childrenDBos = (Iterable<DBObject>) dbObject.get(CHILDREN_KEY);
-            ((Container<Item>) entity).setChildRefs(Iterables.transform(childrenDBos, TO_CHILD_REF));
+            ((Container<Item>) entity).setChildRefs(childRefTranslator.fromDBObjects(childrenDBos));
         }
 
         if (entity instanceof Series) {
@@ -71,20 +68,9 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         return entity;
     }
 
-    private static final Function<DBObject, ChildRef> TO_CHILD_REF = new Function<DBObject, ChildRef>() {
-        @Override
-        public ChildRef apply(DBObject input) {
-            String uri = (String) input.get("uri");
-            String sortKey = (String) input.get("sortKey");
-            DateTime updated = TranslatorUtils.toDateTime(input, "updated");
-            EntityType type = EntityType.from((String) input.get(DescribedTranslator.TYPE_KEY));
-            return new ChildRef(uri, sortKey, updated, type);
-        }
-    };
-
     private List<ChildRef> series(Iterable<DBObject> seriesDbos) {
         if (seriesDbos != null) {
-            return ImmutableList.copyOf(Iterables.transform(seriesDbos, TO_CHILD_REF));
+            return ImmutableList.copyOf(childRefTranslator.fromDBObjects(seriesDbos));
         }
         return ImmutableList.of();
     }
@@ -96,31 +82,19 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
     @Override
     public DBObject toDBObject(DBObject dbObject, Container<?> entity) {
         dbObject = toDboNotIncludingContents(dbObject, entity);
-        dbObject.put(CHILDREN_KEY, Iterables.transform(entity.getChildRefs(), FROM_CHILD_REF));
+        dbObject.put(CHILDREN_KEY, childRefTranslator.toDBObjectList(entity.getChildRefs()));
         if (entity instanceof Brand) {
             Brand brand = (Brand) entity;
             if (!brand.getSeriesRefs().isEmpty()) {
-                dbObject.put(FULL_SERIES_KEY, Iterables.transform(brand.getSeriesRefs(), FROM_CHILD_REF));
+                dbObject.put(FULL_SERIES_KEY, childRefTranslator.toDBObjectList(brand.getSeriesRefs()));
             }
         }
         return dbObject;
     }
 
-    private static Function<ChildRef, DBObject> FROM_CHILD_REF = new Function<ChildRef, DBObject>() {
-        @Override
-        public DBObject apply(ChildRef input) {
-            DBObject dbObject = new BasicDBObject();
-            TranslatorUtils.from(dbObject, "uri", input.getUri());
-            TranslatorUtils.from(dbObject, "sortKey", input.getSortKey());
-            TranslatorUtils.fromDateTime(dbObject, "updated", input.getUpdated());
-            dbObject.put(DescribedTranslator.TYPE_KEY, input.getType().toString());
-            return dbObject;
-        }
-    };
-
     private DBObject toDboNotIncludingContents(DBObject dbObject, Container<?> entity) {
         dbObject = contentTranslator.toDBObject(dbObject, entity);
-        dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity));
+        dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity).toString());
 
         if (entity instanceof Series) {
             Series series = (Series) entity;

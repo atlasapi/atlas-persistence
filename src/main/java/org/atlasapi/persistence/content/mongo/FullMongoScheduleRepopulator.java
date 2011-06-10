@@ -34,7 +34,7 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
     private final ScheduleWriter scheduleStore;
     private final Iterable<Publisher> publishers;
 
-    private final ItemTranslator itemTranslator = new ItemTranslator(true);
+    private final ItemTranslator itemTranslator = new ItemTranslator();
     
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
     private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 10);

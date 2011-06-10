@@ -12,6 +12,7 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 	public static final String CONTENT_URIS_KEY = "contentUris";
 	
 	private final DescribedTranslator contentTranslator;
+	private final ChildRefTranslator childTranslator;
 
 	public ContentGroupTranslator() {
 		this(new DescribedTranslator(new DescriptionTranslator()));
@@ -19,19 +20,20 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 	
 	public ContentGroupTranslator(DescribedTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
+        this.childTranslator = new ChildRefTranslator();
 	}
 	
     @Override
     public ContentGroup fromDBObject(DBObject dbObject, ContentGroup entity) {
         contentTranslator.fromDBObject(dbObject, entity);
-        entity.setContentUris(TranslatorUtils.toList(dbObject, CONTENT_URIS_KEY));
+        entity.setContents(childTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, CONTENT_URIS_KEY)));
         return entity;
     }
 
     @Override
     public DBObject toDBObject(DBObject dbObject, ContentGroup entity) {
     	dbObject = contentTranslator.toDBObject(dbObject, entity);
-    	TranslatorUtils.fromList(dbObject, entity.getContentUris(), CONTENT_URIS_KEY);
+    	TranslatorUtils.from(dbObject, CONTENT_URIS_KEY, childTranslator.toDBObjectList(entity.getContents()));
     	dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity));
     	return dbObject;
     }
