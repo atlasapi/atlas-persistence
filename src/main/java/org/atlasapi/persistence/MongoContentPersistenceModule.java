@@ -2,8 +2,10 @@ package org.atlasapi.persistence;
 
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.RetrospectiveContentLister;
 import org.atlasapi.persistence.content.mongo.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.mongo.LookupResolvingContentResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
@@ -71,5 +73,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	public @Bean ShortUrlSaver shortUrlSaver() {
 		return new MongoShortUrlSaver(db);
 	}
-
+	
+	public @Bean RetrospectiveContentLister contentListener() {
+		return new MongoContentLister(db);
+	}
 }
