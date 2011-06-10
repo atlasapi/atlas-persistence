@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -18,6 +19,7 @@ import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Test;
 
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -116,7 +118,62 @@ public class MongoContentWriterTest {
         }
     }
 
-
+    @Test
+    public void testWritingEpisodeInSeriesInBrand() {
+        
+        Episode item = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        item.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+        
+        Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+        Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC);
+        
+        series.setParent(brand);
+        
+        item.setSeries(series);
+        item.setContainer(brand);
+        
+        contentWriter.createOrUpdate(brand);
+        contentWriter.createOrUpdate(series);
+        contentWriter.createOrUpdate(item);
+        
+        assertNotNull(children.findOne(item.getCanonicalUri()));
+        
+        Series retrievedSeries = (Series) containerTranslator.fromDB(programmeGroups.findOne(series.getCanonicalUri()));
+        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
+        
+        assertNull(containers.findOne(series.getCanonicalUri()));
+        
+        Brand retrievedBrand = (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
+        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getChildRefs()).getUri());
+        assertEquals(series.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getSeriesRefs()).getUri());
+    }
+    
+    @Test
+    public void testWritingEpisodeInTopLevelSeries() {
+       
+        Episode item = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        item.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+        
+        Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+        
+        item.setContainer(series);
+        item.setSeries(series);
+        
+        contentWriter.createOrUpdate(series);
+        contentWriter.createOrUpdate(item);
+        
+        assertNotNull(children.findOne(item.getCanonicalUri()));
+        
+        Series retrievedSeries = (Series) containerTranslator.fromDB(programmeGroups.findOne(series.getCanonicalUri()));
+        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
+        
+        assertNotNull(containers.findOne(series.getCanonicalUri()));
+        
+    }
+    
+    
     @Test
     public void testWritingContainer() {
         

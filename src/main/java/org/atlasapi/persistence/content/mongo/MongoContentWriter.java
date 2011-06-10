@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static org.atlasapi.persistence.media.entity.DescriptionTranslator.CANONICAL_URI;
 
 import java.util.List;
 import java.util.Set;
@@ -85,7 +86,26 @@ public class MongoContentWriter implements ContentWriter {
             includeItemInContainer(episode, containers);
             return;
         }
+
         
+        MongoQueryBuilder brandWhere = where().fieldEquals(CANONICAL_URI, episode.getContainer().getUri());
+        Maybe<Container<?>> maybeBrand = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(brandWhere.find(containers)));
+        
+        MongoQueryBuilder seriesWhere = where().fieldEquals(CANONICAL_URI, episode.getSeriesRef().getUri());
+        Maybe<Container<?>> maybeSeries = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(seriesWhere.find(programmeGroups)));
+        
+        
+        if(maybeBrand.isNothing() || maybeSeries.isNothing()) {
+            throw new IllegalStateException(String.format("Container or series not found for %s",episode.getCanonicalUri()));
+        }
+        
+        Container<?> container = maybeBrand.requireValue();
+        container.setChildRefs(mergeChildRefs(ImmutableList.of(episode.childRef()), maybeBrand));
+        containers.update(brandWhere.build(), containerTranslator.toDB(container), true, false);
+        
+        Container<?> series = maybeSeries.requireValue();
+        series.setChildRefs(mergeChildRefs(ImmutableList.of(episode.childRef()), maybeSeries));
+        programmeGroups.update(seriesWhere.build(), containerTranslator.toDB(series), true, false);
     }
 
     private void includeItemInTopLevelContainer(Item item) {
@@ -135,10 +155,10 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     private void includeSeriesInBrand(Series series) {
-        DBCollection collection = topLevelItems;
+        DBCollection collection = containers;
 
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, series.getParent().getUri());
-        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection )));
+        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection)));
         if (oldContainer.hasValue()) {
             Brand container = (Brand) oldContainer.requireValue();
             container.setSeriesRefs(mergeChildRefs(ImmutableList.of(series.childRef()), oldContainer));
