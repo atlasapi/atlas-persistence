@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.ContentGroup;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -22,9 +23,6 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 	
     @Override
     public ContentGroup fromDBObject(DBObject dbObject, ContentGroup entity) {
-        if (entity == null) {
-            entity = new ContentGroup();
-        }
         contentTranslator.fromDBObject(dbObject, entity);
         entity.setContentUris(TranslatorUtils.toList(dbObject, CONTENT_URIS_KEY));
         return entity;
@@ -34,7 +32,7 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
     public DBObject toDBObject(DBObject dbObject, ContentGroup entity) {
     	dbObject = contentTranslator.toDBObject(dbObject, entity);
     	TranslatorUtils.fromList(dbObject, entity.getContentUris(), CONTENT_URIS_KEY);
-    	dbObject.put("type", ContentGroup.class.getSimpleName());
+    	dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity));
     	return dbObject;
     }
 }

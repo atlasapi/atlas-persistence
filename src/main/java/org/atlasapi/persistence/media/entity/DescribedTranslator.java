@@ -1,6 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
@@ -12,6 +15,8 @@ import com.mongodb.DBObject;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
+    static final String TYPE_KEY = "type";
+	
 	private final DescriptionTranslator descriptionTranslator;
 
 	public DescribedTranslator(DescriptionTranslator descriptionTranslator) {
@@ -20,10 +25,6 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 	
 	@Override
 	public Described fromDBObject(DBObject dbObject, Described entity) {
-
-		if (entity == null) {
-			entity = new Described();
-		}
 
 		descriptionTranslator.fromDBObject(dbObject, entity);
 
@@ -89,5 +90,14 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         }
         
         return dbObject;
+	}
+	
+	static Identified newModel(DBObject dbObject) {
+		EntityType type = EntityType.from((String) dbObject.get(TYPE_KEY));
+		try {
+			return (Item) type.getModelClass().newInstance();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

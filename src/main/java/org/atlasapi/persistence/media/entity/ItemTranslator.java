@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.CrewMember;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
@@ -65,7 +66,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         	dbObject = Iterables.getOnlyElement((Iterable<DBObject>) dbObject.get("contents"));
         }
     	if (item == null) {
-        	item = newModel(dbObject, item);
+        	item = (Item) DescribedTranslator.newModel(dbObject);
         }
         
         contentTranslator.fromDBObject(dbObject, item);
@@ -110,20 +111,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         }
         return item; 
     }
-
-	private Item newModel(DBObject dbObject, Item entity) {
-		String type = (String) dbObject.get(TYPE_KEY);
-		if (Episode.class.getSimpleName().equals(type)) {
-			entity = new Episode();
-		} else if (Film.class.getSimpleName().equals(type)){
-		    entity = new Film();
-		} else if (Item.class.getSimpleName().equals(type)) {
-			entity = new Item();
-		} else {
-			throw new IllegalArgumentException();
-		}
-		return entity;
-	}
 	
 	public DBObject toDB(Item item) {
 	    return toDBObject(null, item);
@@ -132,7 +119,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     @Override
     public DBObject toDBObject(DBObject itemDbo, Item entity) {
         itemDbo = contentTranslator.toDBObject(itemDbo, entity);
-        itemDbo.put(TYPE_KEY, entity.getClass().getSimpleName());
+        itemDbo.put(TYPE_KEY, EntityType.from(entity));
 
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
         if (! entity.getVersions().isEmpty()) {

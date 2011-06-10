@@ -5,6 +5,7 @@ import java.util.List;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.ModelTranslator;
@@ -19,7 +20,7 @@ import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container<?>> {
 
-    private static final String CHILDREN_KEY = "childRefs";
+	private static final String CHILDREN_KEY = "childRefs";
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
 
     private static final String FULL_SERIES_KEY = "series";
@@ -50,7 +51,7 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
     @SuppressWarnings("unchecked")
     public Container<?> fromDBObject(DBObject dbObject, Container<?> entity) {
         if (entity == null) {
-            entity = newModel(dbObject);
+            entity = (Container<?>) DescribedTranslator.newModel(dbObject);
         }
         contentTranslator.fromDBObject(dbObject, entity);
 
@@ -76,7 +77,8 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
             String uri = (String) input.get("uri");
             String sortKey = (String) input.get("sortKey");
             DateTime updated = TranslatorUtils.toDateTime(input, "updated");
-            return new ChildRef(uri, sortKey, updated);
+            EntityType type = EntityType.from((String) input.get(DescribedTranslator.TYPE_KEY));
+            return new ChildRef(uri, sortKey, updated, type);
         }
     };
 
@@ -86,21 +88,7 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         }
         return ImmutableList.of();
     }
-
-    private Container<?> newModel(DBObject dbo) {
-        String type = (String) dbo.get("type");
-        if (type.equals(Brand.class.getSimpleName())) {
-            return new Brand();
-        }
-        if (type.equals(Series.class.getSimpleName())) {
-            return new Series();
-        }
-        if (type.equals(Container.class.getSimpleName())) {
-            return new Container<Item>();
-        }
-        throw new IllegalStateException();
-    }
-
+   
     public DBObject toDB(Container<?> entity) {
         return toDBObject(null, entity);
     }
@@ -131,7 +119,7 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
 
     private DBObject toDboNotIncludingContents(DBObject dbObject, Container<?> entity) {
         dbObject = contentTranslator.toDBObject(dbObject, entity);
-        dbObject.put("type", entity.getClass().getSimpleName());
+        dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity));
 
         if (entity instanceof Series) {
             Series series = (Series) entity;
