@@ -9,7 +9,6 @@ import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
@@ -170,11 +169,6 @@ public class MongoContentWriter implements ContentWriter {
             childRefs.addAll(oldContainer.requireValue().getChildRefs());
         }
         return ChildRef.dedupeAndSort(childRefs.build());
-    }
-
-    @Override
-    public void createOrUpdateSkeleton(ContentGroup playlist) {
-        // @deprecated. Replace with something better.
     }
 
     private void updateFetchData(Item item) {

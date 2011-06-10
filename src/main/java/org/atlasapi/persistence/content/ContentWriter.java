@@ -15,7 +15,6 @@ permissions and limitations under the License. */
 package org.atlasapi.persistence.content;
 
 import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Item;
 
 public interface ContentWriter {
@@ -24,7 +23,4 @@ public interface ContentWriter {
 	
 	void createOrUpdate(Container<?> container);
 
-	@Deprecated
-	void createOrUpdateSkeleton(ContentGroup playlist);
-	
 }
