@@ -24,7 +24,10 @@ public class BasicLookupResolver implements LookupResolver {
 
     @Override
     public LookupRef lookup(String id) {
-        return lookupStore.entryFor(id).lookupRef();
+        LookupEntry entry = lookupStore.entryFor(id);
+        if (entry == null) {
+        	return null;
+        }
+		return entry.lookupRef();
     }
-    
 }

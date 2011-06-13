@@ -23,6 +23,7 @@ import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
@@ -37,6 +38,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 		return new MongoContentWriter(db, lookupStore(), new SystemClock());
 	}
 	
+	@Primary
 	public @Bean ContentResolver contentResolver() {
 	    return new LookupResolvingContentResolver(knownTypeContentResolver(), new BasicLookupResolver(lookupStore()));
 	}

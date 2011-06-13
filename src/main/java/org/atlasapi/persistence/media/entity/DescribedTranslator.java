@@ -15,7 +15,7 @@ import com.mongodb.DBObject;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
-    static final String TYPE_KEY = "type";
+    public static final String TYPE_KEY = "type";
 	
 	private final DescriptionTranslator descriptionTranslator;
 

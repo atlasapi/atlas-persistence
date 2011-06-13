@@ -3,6 +3,7 @@ package org.atlasapi.persistence.content.mongo;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Identified;
@@ -12,8 +13,10 @@ import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
+import com.google.common.base.CaseFormat;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -75,30 +78,21 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         if(dbo == null) {
             return null;
         }
-        if (!dbo.containsField("type")) {
+        if (!dbo.containsField(DescribedTranslator.TYPE_KEY)) {
             throw new IllegalStateException("Missing type field");
         }
-        String type = (String) dbo.get("type");
-        if (Brand.class.getSimpleName().equals(type)) {
-            return containerTranslator.fromDBObject(dbo, null);
-        }
-        if (Series.class.getSimpleName().equals(type)) {
-            return containerTranslator.fromDBObject(dbo, null);
-        }
-        if (Container.class.getSimpleName().equals(type)) {
-            return containerTranslator.fromDBObject(dbo, null);
-        }
-        if (Episode.class.getSimpleName().equals(type)) {
-            return itemTranslator.fromDBObject(dbo, null);
-        }
-        if (Clip.class.getSimpleName().equals(type)) {
-            return itemTranslator.fromDBObject(dbo, null);
-        }
-        if (Item.class.getSimpleName().equals(type)) {
-            return itemTranslator.fromDBObject(dbo, null);
-        }
-        if (Film.class.getSimpleName().equals(type)) {
-            return itemTranslator.fromDBObject(dbo, null);
+        EntityType type = EntityType.from((String) dbo.get(DescribedTranslator.TYPE_KEY));
+        
+        switch(type) {
+        	case BRAND:
+        	case SERIES:
+        	case CONTAINER:
+        		return containerTranslator.fromDBObject(dbo, null);
+        	case ITEM:
+        	case EPISODE:
+        	case CLIP:
+        	case FILM:
+        		return itemTranslator.fromDBObject(dbo, null);
         }
         throw new IllegalArgumentException("Unknown type: " + type);
     }

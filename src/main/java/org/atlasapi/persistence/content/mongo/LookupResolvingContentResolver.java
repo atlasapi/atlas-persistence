@@ -6,6 +6,8 @@ import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.lookup.LookupResolver;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 public class LookupResolvingContentResolver implements ContentResolver {
@@ -20,7 +22,9 @@ public class LookupResolvingContentResolver implements ContentResolver {
     
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
-        return knownTypeResolver.findByLookupRefs(Iterables.transform(canonicalUris, lookup));
+    	ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(Iterables.transform(canonicalUris, lookup), Predicates.notNull()));
+        ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);
+        return resolvedContent.copyWithAllRequestedUris(canonicalUris);
     }
 
     private Function<String, LookupRef> lookup = new Function<String, LookupRef>() {
