@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -66,6 +67,8 @@ public class MongoContentWriter implements ContentWriter {
 
     @Override
     public void createOrUpdate(Item item) {
+        checkNotNull(item);
+        
         updateFetchData(item);
 
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
@@ -96,6 +99,7 @@ public class MongoContentWriter implements ContentWriter {
             return;
         }
         
+        // otherwise retrieve the child references for both series and brand, if either are missing, change nothing and error out.
         String brandUri = episode.getContainer().getUri();
         String seriesUri = episode.getSeriesRef().getUri();
         
@@ -143,6 +147,7 @@ public class MongoContentWriter implements ContentWriter {
 
     @Override
     public void createOrUpdate(Container<?> container) {
+        checkNotNull(container);
 
         if (container instanceof Series) {
             
