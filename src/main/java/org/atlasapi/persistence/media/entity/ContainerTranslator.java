@@ -6,7 +6,6 @@ import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -15,10 +14,10 @@ import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container<?>> {
 
-	private static final String CHILDREN_KEY = "childRefs";
+	public static final String CHILDREN_KEY = "childRefs";
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
 
-    private static final String FULL_SERIES_KEY = "series";
+    public static final String FULL_SERIES_KEY = "series";
 
     private final ContentTranslator contentTranslator;
     private final ChildRefTranslator childRefTranslator;
@@ -52,10 +51,13 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         }
         contentTranslator.fromDBObject(dbObject, entity);
 
+        Iterable<ChildRef> childRefs;
         if (dbObject.containsField(CHILDREN_KEY)) {
-            Iterable<DBObject> childrenDBos = (Iterable<DBObject>) dbObject.get(CHILDREN_KEY);
-            ((Container<Item>) entity).setChildRefs(childRefTranslator.fromDBObjects(childrenDBos));
+            childRefs = childRefTranslator.fromDBObjects((Iterable<DBObject>) dbObject.get(CHILDREN_KEY));
+        } else {
+            childRefs = ImmutableList.of();
         }
+        entity.setChildRefs(childRefs);
 
         if (entity instanceof Series) {
             Series series = (Series) entity;
@@ -82,13 +84,13 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
     @Override
     public DBObject toDBObject(DBObject dbObject, Container<?> entity) {
         dbObject = toDboNotIncludingContents(dbObject, entity);
-        dbObject.put(CHILDREN_KEY, childRefTranslator.toDBObjectList(entity.getChildRefs()));
-        if (entity instanceof Brand) {
-            Brand brand = (Brand) entity;
-            if (!brand.getSeriesRefs().isEmpty()) {
-                dbObject.put(FULL_SERIES_KEY, childRefTranslator.toDBObjectList(brand.getSeriesRefs()));
-            }
-        }
+//        dbObject.put(CHILDREN_KEY, childRefTranslator.toDBObjectList(entity.getChildRefs()));
+//        if (entity instanceof Brand) {
+//            Brand brand = (Brand) entity;
+//            if (!brand.getSeriesRefs().isEmpty()) {
+//                dbObject.put(FULL_SERIES_KEY, childRefTranslator.toDBObjectList(brand.getSeriesRefs()));
+//            }
+//        }
         return dbObject;
     }
 

@@ -55,7 +55,7 @@ public class MongoContentWriterTest {
     }
     
     @Test
-    public void testCreatingItemWithoutWrittenBrandFails() {
+    public void testCreatingItemWithoutWrittenContainerFails() {
 
         Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
 

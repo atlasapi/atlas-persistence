@@ -1,7 +1,10 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
-import static org.atlasapi.persistence.media.entity.DescriptionTranslator.CANONICAL_URI;
+import static org.atlasapi.persistence.media.entity.ContainerTranslator.CHILDREN_KEY;
+import static org.atlasapi.persistence.media.entity.ContainerTranslator.FULL_SERIES_KEY;
 
 import java.util.List;
 import java.util.Set;
@@ -18,7 +21,9 @@ import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.atlasapi.persistence.media.entity.ChildRefTranslator;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
@@ -28,9 +33,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.time.Clock;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 
 public class MongoContentWriter implements ContentWriter {
 
@@ -39,6 +47,7 @@ public class MongoContentWriter implements ContentWriter {
 
     private final ItemTranslator itemTranslator = new ItemTranslator();
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ChildRefTranslator childRefTranslator = new ChildRefTranslator();
 
     private final DBCollection children;
     private final DBCollection topLevelItems;
@@ -83,45 +92,52 @@ public class MongoContentWriter implements ContentWriter {
     private void includeEpisodeInSeriesAndBrand(Episode episode) {
         
         if(episode.getSeriesRef() == null) { //just ensure item in container.
-            includeItemInContainer(episode, containers);
+            includeChildRefInContainer(episode.getContainer().getUri(), episode.childRef(), containers, CHILDREN_KEY);
             return;
         }
-
         
-        MongoQueryBuilder brandWhere = where().fieldEquals(CANONICAL_URI, episode.getContainer().getUri());
-        Maybe<Container<?>> maybeBrand = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(brandWhere.find(containers)));
+        String brandUri = episode.getContainer().getUri();
+        String seriesUri = episode.getSeriesRef().getUri();
         
-        MongoQueryBuilder seriesWhere = where().fieldEquals(CANONICAL_URI, episode.getSeriesRef().getUri());
-        Maybe<Container<?>> maybeSeries = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(seriesWhere.find(programmeGroups)));
+        Maybe<List<ChildRef>> maybeBrandChildren = getChildRefs(containers, brandUri, CHILDREN_KEY);
+        Maybe<List<ChildRef>> maybeSeriesChildren = getChildRefs(programmeGroups, seriesUri, CHILDREN_KEY);
         
-        
-        if(maybeBrand.isNothing() || maybeSeries.isNothing()) {
-            throw new IllegalStateException(String.format("Container or series not found for %s",episode.getCanonicalUri()));
+        if(maybeBrandChildren.isNothing() || maybeSeriesChildren.isNothing()) {
+            throw new IllegalStateException(String.format("Container or series not found for episode %s",episode.getCanonicalUri()));
         }
         
-        Container<?> container = maybeBrand.requireValue();
-        container.setChildRefs(mergeChildRefs(ImmutableList.of(episode.childRef()), maybeBrand));
-        containers.update(brandWhere.build(), containerTranslator.toDB(container), true, false);
+        List<ChildRef> brandChildren = maybeBrandChildren.requireValue();
+        brandChildren = mergeChildRefs(ImmutableList.of(episode.childRef()), brandChildren);
+        containers.update(where().idEquals(brandUri).build(), update().setField(CHILDREN_KEY, childRefTranslator.toDBList(brandChildren)).build(), true, false);
         
-        Container<?> series = maybeSeries.requireValue();
-        series.setChildRefs(mergeChildRefs(ImmutableList.of(episode.childRef()), maybeSeries));
-        programmeGroups.update(seriesWhere.build(), containerTranslator.toDB(series), true, false);
+        List<ChildRef> seriesChildren = maybeSeriesChildren.requireValue();
+        seriesChildren = mergeChildRefs(ImmutableList.of(episode.childRef()), seriesChildren);
+        programmeGroups.update(where().idEquals(seriesUri).build(),  update().setField(CHILDREN_KEY, childRefTranslator.toDBList(seriesChildren)).build(), true, false);
+    }
+
+    private Maybe<List<ChildRef>> getChildRefs(DBCollection collection, String containerUri, String key) {
+        DBObject dbo = collection.findOne(where().idEquals(containerUri).build(), select().fields(key, DescribedTranslator.TYPE_KEY).build());
+        
+        if(dbo == null) {
+            return Maybe.nothing();
+        }
+        
+        return Maybe.<List<ChildRef>>fromPossibleNullValue(containerTranslator.fromDBObject(dbo, null).getChildRefs());
     }
 
     private void includeItemInTopLevelContainer(Item item) {
-        includeItemInContainer(item, containers);
+        includeChildRefInContainer(item.getContainer().getUri(), item.childRef(), containers, CHILDREN_KEY);
     }
 
-    private void includeItemInContainer(Item item, DBCollection collection) {
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getContainer().getUri());
-
-        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection)));
-        if (oldContainer.hasValue()) {
-            Container<?> container = oldContainer.requireValue();
-            container.setChildRefs(mergeChildRefs(ImmutableList.of(item.childRef()), oldContainer));
-            collection.update(where.build(), containerTranslator.toDB(container), true, false);
+    private void includeChildRefInContainer(String containerUri, ChildRef ref, DBCollection collection, String key) {
+        
+        Maybe<List<ChildRef>> currentChildRefs = getChildRefs(containers, containerUri, key);
+        if (currentChildRefs.hasValue()) {
+            List<ChildRef> containerChildRefs = currentChildRefs.requireValue();
+            containerChildRefs = mergeChildRefs(ImmutableList.of(ref), containerChildRefs);
+            collection.update(where().idEquals(containerUri).build(), update().setField(key, childRefTranslator.toDBList(containerChildRefs)).build(), true, false);
         } else {
-            throw new IllegalStateException(String.format("Container %s not found in %s",item.getContainer().getUri(), collection.getName()));
+            throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s",containerUri, collection.getName(), ref.getUri()));
         }
     }
 
@@ -133,7 +149,8 @@ public class MongoContentWriter implements ContentWriter {
             createOrUpdateContainer(container, programmeGroups);
             
             if(((Series) container).getParent() != null) {
-                includeSeriesInBrand((Series)container);
+                Series series = (Series)container;
+                includeChildRefInContainer(series.getParent().getUri(), series.childRef(), containers, FULL_SERIES_KEY);
                 return;
             }
             
@@ -154,46 +171,25 @@ public class MongoContentWriter implements ContentWriter {
 
     }
 
-    private void includeSeriesInBrand(Series series) {
-        DBCollection collection = containers;
-
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, series.getParent().getUri());
-        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection)));
-        if (oldContainer.hasValue()) {
-            Brand container = (Brand) oldContainer.requireValue();
-            container.setSeriesRefs(mergeChildRefs(ImmutableList.of(series.childRef()), oldContainer));
-            collection.update(where.build(), containerTranslator.toDB(container), true, false);
-        } else {
-            throw new IllegalStateException(String.format("Brand %s not found for series %s",series.getParent().getUri(), series.getCanonicalUri()));
-        }
-        
-    }
-
     private void createOrUpdateContainer(Container<?> container, DBCollection collection) {
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
-
-        Maybe<Container<?>> oldContainer = Maybe.firstElementOrNothing(containerTranslator.fromDBObjects(where.find(collection)));
-        container.setChildRefs(mergeChildRefs(container, oldContainer));
-
+        
         container.setLastFetched(clock.now());
         setThisOrChildLastUpdated(container);
 
-        collection.update(where.build(), containerTranslator.toDB(container), true, false);
+        collection.update(where.build(), set(containerTranslator.toDB(container)), true, false);
 
         lookupStore.ensureLookup(container);
     }
 
-    private List<ChildRef> mergeChildRefs(Container<?> container, Maybe<Container<?>> oldContainer) {
-        return mergeChildRefs(container.getChildRefs(), oldContainer);
+    private BasicDBObject set(DBObject dbo) {
+        dbo.removeField(MongoConstants.ID);
+        BasicDBObject containerUpdate = new BasicDBObject(MongoConstants.SET, dbo);
+        return containerUpdate;
     }
     
-    private List<ChildRef> mergeChildRefs(Iterable<ChildRef> currentChildRefs, Maybe<Container<?>> oldContainer) {
-        ImmutableList.Builder<ChildRef> childRefs = ImmutableList.builder();
-        childRefs.addAll(currentChildRefs);
-        if (oldContainer.hasValue()) {
-            childRefs.addAll(oldContainer.requireValue().getChildRefs());
-        }
-        return ChildRef.dedupeAndSort(childRefs.build());
+    private List<ChildRef> mergeChildRefs(Iterable<ChildRef> newChildRefs, Iterable<ChildRef> currentChildRefs) {
+        return ChildRef.dedupeAndSort(ImmutableList.<ChildRef>builder().addAll(currentChildRefs).addAll(newChildRefs).build());
     }
 
     private void updateFetchData(Item item) {

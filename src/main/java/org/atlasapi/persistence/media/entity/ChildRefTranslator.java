@@ -44,7 +44,7 @@ public class ChildRefTranslator {
         return dbObject;
     }
     
-    public BasicDBList toDBObjectList(Iterable<ChildRef> childRefs) {
+    public BasicDBList toDBList(Iterable<ChildRef> childRefs) {
         BasicDBList list = new BasicDBList();
         list.addAll(ImmutableList.copyOf(Iterables.transform(childRefs, FROM_CHILD_REF)));
         return list;

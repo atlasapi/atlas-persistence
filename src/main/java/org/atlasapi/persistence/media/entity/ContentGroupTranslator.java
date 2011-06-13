@@ -33,7 +33,7 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
     @Override
     public DBObject toDBObject(DBObject dbObject, ContentGroup entity) {
     	dbObject = contentTranslator.toDBObject(dbObject, entity);
-    	TranslatorUtils.from(dbObject, CONTENT_URIS_KEY, childTranslator.toDBObjectList(entity.getContents()));
+    	TranslatorUtils.from(dbObject, CONTENT_URIS_KEY, childTranslator.toDBList(entity.getContents()));
     	dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity));
     	return dbObject;
     }
