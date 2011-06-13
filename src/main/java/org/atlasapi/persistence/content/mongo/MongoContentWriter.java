@@ -72,20 +72,20 @@ public class MongoContentWriter implements ContentWriter {
         updateFetchData(item);
 
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
-        if (item.getContainer() != null) {
             
-            if(item instanceof Episode) {
-                includeEpisodeInSeriesAndBrand((Episode)item);
-            } else {
-                includeItemInTopLevelContainer(item);
-            }
+        if (item instanceof Episode) {
+            if (item.getContainer() == null) {
+                throw new IllegalArgumentException("Episodes must have containers");
+            } 
             
+            includeEpisodeInSeriesAndBrand((Episode) item);
+            
+        } else if(item.getContainer() != null) {
+            
+            includeItemInTopLevelContainer(item);
             children.update(where.build(), itemTranslator.toDB(item), true, false);
             
         } else {
-            if (item instanceof Episode) {
-                throw new IllegalArgumentException("Can't write episode with no container");
-            }
             topLevelItems.update(where.build(), itemTranslator.toDB(item), true, false);
         }
 
