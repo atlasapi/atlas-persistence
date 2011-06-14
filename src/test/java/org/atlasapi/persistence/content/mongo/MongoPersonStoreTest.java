@@ -9,6 +9,7 @@ import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.PeopleListerListener;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,7 +18,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-
+import com.metabroadcast.common.text.NumberPadder;
 
 public class MongoPersonStoreTest {
 
@@ -30,6 +31,29 @@ public class MongoPersonStoreTest {
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
         store = new MongoPersonStore(db);
+    }
+    
+    @Test 
+    public void testListingPeople() {
+    	int dummyPeopleToCreate = MongoPersonStore.MONGO_SCAN_BATCH_SIZE * 2;
+    	
+    	final List<Person> dummyPeople = Lists.newArrayList();
+		for (int i = 0; i < dummyPeopleToCreate; i++) {
+	        Person person = new Person(NumberPadder.pad(i), "", Publisher.BBC);
+	        store.createOrUpdatePerson(person);
+	        dummyPeople.add(person);
+    	}
+		
+		final List<Person> peopleReturned = Lists.newArrayList();
+		store.list(new PeopleListerListener() {
+			
+			@Override
+			public void personListed(Person person) {
+				peopleReturned.add(person);
+			}
+		});
+		assertEquals(dummyPeopleToCreate, peopleReturned.size());
+		assertEquals(dummyPeople, peopleReturned);
     }
     
     @Test

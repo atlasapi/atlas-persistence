@@ -11,6 +11,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
 
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
@@ -51,7 +52,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject,"broadcasts");
         if (list != null && ! list.isEmpty()) {
-            Set<Broadcast> broadcasts = Sets.newHashSet();
+            Set<Broadcast> broadcasts = Sets.newLinkedHashSet();
             for (DBObject object: list) {
                 Broadcast broadcast = broadcastTranslator.fromDBObject(object);
                 broadcasts.add(broadcast);
@@ -89,7 +90,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         
         if (! entity.getBroadcasts().isEmpty()) {
             BasicDBList list = new BasicDBList();
-            for (Broadcast broadcast: entity.getBroadcasts()) {
+            for (Broadcast broadcast: sortByBroadcastTime(entity.getBroadcasts())) {
                 if (broadcast != null) {
                     list.add(broadcastTranslator.toDBObject(broadcast));
                 }
@@ -113,5 +114,33 @@ public class VersionTranslator implements ModelTranslator<Version> {
         
         return dbObject;
     }
+
+	private List<Broadcast> sortByBroadcastTime(Set<Broadcast> broadcasts) {
+		return MOST_RECENT_FIRST.sortedCopy(broadcasts);
+	}
+	
+	private static final Ordering<Broadcast> MOST_RECENT_FIRST = new Ordering<Broadcast>() {
+
+		@Override
+		public int compare(Broadcast a, Broadcast b) {
+			int broadcastTimeCmp = b.getTransmissionTime().compareTo(a.getTransmissionTime());
+			if (broadcastTimeCmp != 0) {
+				 return broadcastTimeCmp;
+			}
+			if (a.getBroadcastOn() != null && b.getBroadcastOn() != null) {
+				int channelCmp = a.getBroadcastOn().compareTo(b.getBroadcastOn());
+				if (channelCmp != 0) {
+					return channelCmp;
+				}
+			}
+			if (a.getId() != null && b.getId() != null) {
+				int idCmp = a.getId().compareTo(b.getId());
+				if (idCmp != 0) {
+					return idCmp;
+				}
+			}
+			return Ordering.arbitrary().compare(a, b);
+		}
+	};
 
 }
