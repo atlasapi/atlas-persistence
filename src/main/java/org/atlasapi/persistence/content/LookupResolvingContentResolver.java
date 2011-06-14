@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content.mongo;
+package org.atlasapi.persistence.content;
 
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.content.ContentResolver;

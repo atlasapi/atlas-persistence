@@ -3,6 +3,7 @@ package org.atlasapi.persistence.content.mongo;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
