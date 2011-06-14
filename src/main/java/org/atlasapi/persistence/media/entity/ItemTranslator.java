@@ -99,6 +99,11 @@ public class ItemTranslator implements ModelTranslator<Item> {
             film.setYear(TranslatorUtils.toInteger(dbObject, FILM_YEAR_KEY));
             film.setWebsiteUrl(TranslatorUtils.toString(dbObject, FILM_WEBSITE_URL_KEY));
         }
+        
+        // don't include the last-fetched time in the hash
+        dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        item.setReadHash(String.valueOf(dbObject.hashCode()));
+        
         return item; 
     }
 	
