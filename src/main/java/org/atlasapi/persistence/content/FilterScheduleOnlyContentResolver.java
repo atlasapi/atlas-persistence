@@ -17,10 +17,10 @@ public class FilterScheduleOnlyContentResolver implements ContentResolver {
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> lookups) {
         ResolvedContent resolvedContent = contentResovler.findByCanonicalUris(lookups);
-        return resolvedContent.filterContent(REMOVE_SCHEDULE_ONLY);
+        return resolvedContent.filterContent(NOT_SCHEDULE_ONLY);
     }
     
-    private final static Predicate<Maybe<Identified>> REMOVE_SCHEDULE_ONLY = new Predicate<Maybe<Identified>>() {
+    public final static Predicate<Maybe<Identified>> NOT_SCHEDULE_ONLY = new Predicate<Maybe<Identified>>() {
         @Override
         public boolean apply(Maybe<Identified> input) {
             if (input.hasValue() && input.requireValue() instanceof Described && ((Described) input.requireValue()).isScheduleOnly()) {
