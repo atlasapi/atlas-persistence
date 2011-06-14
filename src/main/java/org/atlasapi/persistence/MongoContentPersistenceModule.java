@@ -1,12 +1,13 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.persistence.content.ContentLister;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
-import org.atlasapi.persistence.content.RetrospectiveContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentTables;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
@@ -34,8 +35,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
 	
+	private final MongoContentTables contentTables = new MongoContentTables(db);
+	
 	public @Bean ContentWriter contentWriter() {
-		return new MongoContentWriter(db, lookupStore(), new SystemClock());
+		return new MongoContentWriter(contentTables, lookupStore(), new SystemClock());
 	}
 	
 	@Primary
@@ -44,7 +47,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean KnownTypeContentResolver knownTypeContentResolver() {
-	    return new MongoContentResolver(db);
+	    return new MongoContentResolver(contentTables);
 	}
 	
 	public @Bean MongoLookupEntryStore lookupStore() {
@@ -76,7 +79,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 		return new MongoShortUrlSaver(db);
 	}
 	
-	public @Bean RetrospectiveContentLister contentListener() {
-		return new MongoContentLister(db);
+	public @Bean ContentLister contentListener() {
+		return new MongoContentLister(contentTables);
 	}
 }

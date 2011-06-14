@@ -1,5 +1,10 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static org.atlasapi.persistence.content.ContentTable.CHILD_ITEMS;
+import static org.atlasapi.persistence.content.ContentTable.PROGRAMME_GROUPS;
+import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
+import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
+
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -10,7 +15,6 @@ import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
@@ -24,11 +28,11 @@ public class MongoContentResolver implements KnownTypeContentResolver {
     private final DBCollection containers;
     private final DBCollection programmeGroups;
 
-    public MongoContentResolver(DatabasedMongo mongo) {
-        this.children = mongo.collection("children");
-        this.topLevelItems = mongo.collection("topLevelItems");
-        this.containers = mongo.collection("containers");
-        this.programmeGroups = mongo.collection("programmeGroups");
+    public MongoContentResolver(MongoContentTables contentTables) {
+        children = contentTables.collectionFor(CHILD_ITEMS);
+        topLevelItems = contentTables.collectionFor(TOP_LEVEL_ITEMS);
+        containers = contentTables.collectionFor(TOP_LEVEL_CONTAINERS);
+        programmeGroups = contentTables.collectionFor(PROGRAMME_GROUPS);
     }
 
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {

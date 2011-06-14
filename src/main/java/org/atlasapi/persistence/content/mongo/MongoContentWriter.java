@@ -4,6 +4,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static org.atlasapi.persistence.content.ContentTable.CHILD_ITEMS;
+import static org.atlasapi.persistence.content.ContentTable.PROGRAMME_GROUPS;
+import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
+import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
 import static org.atlasapi.persistence.media.entity.ContainerTranslator.CHILDREN_KEY;
 import static org.atlasapi.persistence.media.entity.ContainerTranslator.FULL_SERIES_KEY;
 
@@ -33,7 +37,6 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.time.Clock;
@@ -55,14 +58,14 @@ public class MongoContentWriter implements ContentWriter {
     private final DBCollection containers;
     private final DBCollection programmeGroups;
 
-    public MongoContentWriter(DatabasedMongo mongo, NewLookupWriter lookupStore, Clock clock) {
+    public MongoContentWriter(MongoContentTables contentTables, NewLookupWriter lookupStore, Clock clock) {
         this.lookupStore = lookupStore;
         this.clock = clock;
 
-        children = mongo.collection("children");
-        topLevelItems = mongo.collection("topLevelItems");
-        containers = mongo.collection("containers");
-        programmeGroups = mongo.collection("programmeGroups");
+        children = contentTables.collectionFor(CHILD_ITEMS);
+        topLevelItems = contentTables.collectionFor(TOP_LEVEL_ITEMS);
+        containers = contentTables.collectionFor(TOP_LEVEL_CONTAINERS);
+        programmeGroups = contentTables.collectionFor(PROGRAMME_GROUPS);
     }
 
     @Override
