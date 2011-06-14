@@ -48,7 +48,7 @@ public class MongoPersonStoreTest {
 		store.list(new PeopleListerListener() {
 			
 			@Override
-			public void handle(Person person) {
+			public void personListed(Person person) {
 				peopleReturned.add(person);
 			}
 		});

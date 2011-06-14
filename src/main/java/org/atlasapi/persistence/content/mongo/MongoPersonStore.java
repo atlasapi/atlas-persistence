@@ -68,7 +68,7 @@ public class MongoPersonStore implements PersonWriter, PeopleResolver, PeopleLis
                 break;
             }
             for (Person person : roots) {
-            	handler.handle(person);
+            	handler.personListed(person);
             }
             ContentGroup last = Iterables.getLast(roots);
             fromId = last.getCanonicalUri();
