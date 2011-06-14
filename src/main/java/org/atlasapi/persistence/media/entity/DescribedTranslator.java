@@ -36,6 +36,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
 		entity.setImage((String) dbObject.get("image"));
 		entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, LAST_FETCHED_KEY));
+		Boolean scheduleOnly = TranslatorUtils.toBoolean(dbObject, "scheduleOnly");
+		entity.setScheduleOnly(scheduleOnly != null ? scheduleOnly : false);
 
 		String publisherKey = (String) dbObject.get("publisher");
 		if (publisherKey != null) {
@@ -81,6 +83,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.fromSet(dbObject, entity.getTags(), "tags");
         TranslatorUtils.from(dbObject, "thumbnail", entity.getThumbnail());
         TranslatorUtils.from(dbObject, "title", entity.getTitle());
+        dbObject.put("scheduleOnly", Boolean.valueOf(entity.isScheduleOnly()));
         
         if (entity.getMediaType() != null) {
         	TranslatorUtils.from(dbObject, "mediaType", entity.getMediaType().toString().toLowerCase());

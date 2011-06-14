@@ -39,6 +39,7 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.time.Clock;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -70,26 +71,36 @@ public class MongoContentWriter implements ContentWriter {
 
     @Override
     public void createOrUpdate(Item item) {
-        checkNotNull(item);
+        checkNotNull(item, "Tried to persist null item");
         
-        updateFetchData(item);
-
+        setThisOrChildLastUpdated(item);
+        
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
             
-        if (item instanceof Episode) {
+        DBObject itemDbo = itemTranslator.toDB(item);
+        itemDbo.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        
+        if (!item.hashChanged(String.valueOf(itemDbo.hashCode()))) {
+        	return;
+        } 
+        
+        TranslatorUtils.fromDateTime(itemDbo, DescribedTranslator.LAST_FETCHED_KEY, clock.now());
+        
+		if (item instanceof Episode) {
             if (item.getContainer() == null) {
                 throw new IllegalArgumentException("Episodes must have containers");
             } 
             
             includeEpisodeInSeriesAndBrand((Episode) item);
+            children.update(where.build(), itemDbo, true, false);
             
         } else if(item.getContainer() != null) {
             
             includeItemInTopLevelContainer(item);
-            children.update(where.build(), itemTranslator.toDB(item), true, false);
+            children.update(where.build(), itemDbo, true, false);
             
         } else {
-            topLevelItems.update(where.build(), itemTranslator.toDB(item), true, false);
+            topLevelItems.update(where.build(), itemDbo, true, false);
         }
 
         lookupStore.ensureLookup(item);
@@ -198,11 +209,6 @@ public class MongoContentWriter implements ContentWriter {
     
     private List<ChildRef> mergeChildRefs(Iterable<ChildRef> newChildRefs, Iterable<ChildRef> currentChildRefs) {
         return ChildRef.dedupeAndSort(ImmutableList.<ChildRef>builder().addAll(currentChildRefs).addAll(newChildRefs).build());
-    }
-
-    private void updateFetchData(Item item) {
-        item.setLastFetched(clock.now());
-        setThisOrChildLastUpdated(item);
     }
 
     private DateTime setThisOrChildLastUpdated(Item item) {
