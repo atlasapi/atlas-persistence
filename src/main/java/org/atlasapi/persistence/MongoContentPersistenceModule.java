@@ -35,10 +35,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
 	
-	private final MongoContentTables contentTables = new MongoContentTables(db);
 	
 	public @Bean ContentWriter contentWriter() {
-		return new MongoContentWriter(contentTables, lookupStore(), new SystemClock());
+		return new MongoContentWriter(new MongoContentTables(db), lookupStore(), new SystemClock());
 	}
 	
 	@Primary
@@ -47,7 +46,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean KnownTypeContentResolver knownTypeContentResolver() {
-	    return new MongoContentResolver(contentTables);
+	    return new MongoContentResolver(new MongoContentTables(db));
 	}
 	
 	public @Bean MongoLookupEntryStore lookupStore() {
@@ -80,6 +79,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean ContentLister contentListener() {
-		return new MongoContentLister(contentTables);
+		return new MongoContentLister(new MongoContentTables(db));
 	}
 }
