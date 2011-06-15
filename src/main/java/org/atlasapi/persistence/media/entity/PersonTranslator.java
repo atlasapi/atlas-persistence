@@ -16,6 +16,7 @@ import com.mongodb.DBObject;
 public class PersonTranslator implements ModelTranslator<Person> {
     
     private ContentGroupTranslator contentGroupTranslator = new ContentGroupTranslator();
+    private ChildRefTranslator childRefTranslator = new ChildRefTranslator();
     
     @Override
     public Person fromDBObject(DBObject dbObject, Person entity) {
@@ -39,7 +40,7 @@ public class PersonTranslator implements ModelTranslator<Person> {
     }
     
     public DBObject updateContentUris(Person entity) {
-        return new BasicDBObject(MongoConstants.ADD_TO_SET, new BasicDBObject(ContentGroupTranslator.CONTENT_URIS_KEY, new BasicDBObject("$each", entity.getContents())));
+        return new BasicDBObject(MongoConstants.ADD_TO_SET, new BasicDBObject(ContentGroupTranslator.CONTENT_URIS_KEY, new BasicDBObject("$each", childRefTranslator.toDBList(entity.getContents()))));
     }
     
     public List<Person> fromDBObjects(Iterable<DBObject> dbObjects) {

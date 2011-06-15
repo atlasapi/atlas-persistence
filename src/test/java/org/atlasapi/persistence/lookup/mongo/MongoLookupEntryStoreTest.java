@@ -42,7 +42,6 @@ public class MongoLookupEntryStoreTest {
         LookupEntry firstEntry = entryStore.entryFor("newItemUri");
         
         assertNotNull(firstEntry);
-        assertNotNull(entryStore.entryFor("newItemAlias"));
         
         entryStore.ensureLookup(testItem);
         
