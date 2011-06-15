@@ -16,14 +16,12 @@ import com.google.common.collect.Lists;
 public class BatchingScheduleWriter implements ScheduleWriter {
 	
 	private final BlockingQueue<Item> itemQueue = new ArrayBlockingQueue<Item>(100000);
-	private final AdapterLog log;
 	
 	private final int BATCH_SIZE = 10;
 	
 	private AtomicBoolean running = new AtomicBoolean(true);
 	
 	public BatchingScheduleWriter(final ScheduleWriter writer, final AdapterLog log) {
-		this.log = log;
 		Executors.newFixedThreadPool(1).submit(new Runnable() {
 
 			@Override

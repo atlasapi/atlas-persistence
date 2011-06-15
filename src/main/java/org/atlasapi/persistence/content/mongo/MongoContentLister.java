@@ -6,23 +6,27 @@ import static org.atlasapi.persistence.content.ContentTable.CHILD_ITEMS;
 import static org.atlasapi.persistence.content.ContentTable.PROGRAMME_GROUPS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
+import static org.atlasapi.persistence.content.listing.ContentListingProgress.progressFor;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.persistence.content.ContentListingHandler;
-import org.atlasapi.persistence.content.ContentLister;
-import org.atlasapi.persistence.content.ContentListingProgress;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentTable;
+import org.atlasapi.persistence.content.listing.ContentLister;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
+import org.atlasapi.persistence.content.listing.ContentListingHandler;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -52,24 +56,28 @@ public class MongoContentLister implements ContentLister {
     }
     
     @Override
-    public boolean listContent(Set<ContentTable> tables, ContentListingProgress progress, ContentListingHandler handler) {
+    public boolean listContent(Set<ContentTable> tables, ContentListingCriteria criteria, ContentListingHandler handler) {
         checkNotNull(handler, "Content Listing handler can't be null");
         
-        String fromId = null;
-        ContentTable table = null;
-        
-        if(progress != null) {
-            fromId = progress.getUri();
-            table = progress.getTable();
+        if(criteria == null) {
+            criteria = ContentListingCriteria.defaultCriteria();
         }
         
-        List<ContentTable> sortedTables = Ordering.natural().reverse().immutableSortedCopy(tables); 
+        Set<Publisher> publishers = criteria.getPublishers();
+        publishers = publishers == null || publishers.isEmpty() ? ImmutableSet.copyOf(Publisher.values()) : publishers;
         
+        String fromId = criteria.getProgress().getUri();
+        ContentTable table = criteria.getProgress().getTable();
+        
+        List<ContentTable> sortedTables = Ordering.natural().reverse().immutableSortedCopy(tables); 
         List<ContentTable> remainTables = sortedTables.subList(table == null ? 0 : sortedTables.indexOf(table), sortedTables.size());
+        
+        int total = countRows(sortedTables, publishers);
+        AtomicInteger progress = new AtomicInteger(criteria.getProgress().count());
         
         for (ContentTable contentTable : remainTables) {
             
-            boolean shouldContinue = listContent(fromId, handler, contentTable, translatorFor(contentTable));
+            boolean shouldContinue = listContent(fromId, total, progress, publishers, handler, contentTable);
             if(shouldContinue) {
                 fromId = null;
             } else {
@@ -80,23 +88,28 @@ public class MongoContentLister implements ContentLister {
         return true;
     }
     
-    private Function<DBObject, ? extends Content> translatorFor(ContentTable table) {
-        return ImmutableMap.<ContentTable, Function<DBObject, ? extends Content>>of(
-                CHILD_ITEMS, TO_ITEM, 
-                PROGRAMME_GROUPS, TO_CONTAINER, 
-                TOP_LEVEL_ITEMS, TO_ITEM, 
-                TOP_LEVEL_CONTAINERS, TO_CONTAINER).get(table);
+    private int countRows(List<ContentTable> sortedTables, Set<Publisher> publishers) {
+        int total = 0;
+        for (ContentTable contentTable : sortedTables) {
+            total += contentTables.collectionFor(contentTable).find(where().fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY)).build()).count();
+        }
+        return total;
     }
-    
-    private boolean listContent(String start, ContentListingHandler handler, ContentTable table, Function<DBObject, ? extends Content> translatorFunction) {
+
+    private boolean listContent(String start, int total, AtomicInteger progress, Set<Publisher> publishers, ContentListingHandler handler, ContentTable table) {
         DBCollection collection = contentTables.collectionFor(table);
         while (true) {
-            List<Content> contents = ImmutableList.copyOf(contentBatch(start, collection, translatorFunction));
+            
+            MongoQueryBuilder query = queryFor(start, publishers);
+            
+            List<Content> contents = ImmutableList.copyOf(Iterables.transform(query.find(collection, SORT_BY_ID, batchSize), TRANSLATORS.get(table)));
+            
             if (Iterables.isEmpty(contents)) {
                 return true;
             }
+            
             for (Content content : contents) {
-                if(!handler.handle(content, ContentListingProgress.valueOf(content, table))){
+                if(!handler.handle(content, progressFor(content, table).withCount(progress.incrementAndGet()).withTotal(total))){
                     return false;
                 }
             }
@@ -105,19 +118,14 @@ public class MongoContentLister implements ContentLister {
         }
     }
 
-    private <T> Iterable<T> contentBatch(String fromId, DBCollection collection, Function<DBObject, ? extends T> translatorFunction) {
-        return Iterables.transform(dboBatch(batchSize, fromId, collection), translatorFunction);
+    private MongoQueryBuilder queryFor(String start, Set<Publisher> publishers) {
+        MongoQueryBuilder query = where().fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY));
+        if (start != null) {
+            query.fieldGreaterThan(MongoConstants.ID, start);
+        }
+        return query;
     }
 
-    private Iterable<DBObject> dboBatch(int batchSize, String fromId, DBCollection collection) {
-        MongoQueryBuilder query = where();
-        if (fromId != null) {
-            query.fieldGreaterThan(MongoConstants.ID, fromId);
-        }
-        Iterable<DBObject> dbos = query.find(collection, SORT_BY_ID, batchSize);
-        return dbos;
-    }
-    
     private final Function<DBObject, Container<?>> TO_CONTAINER = new Function<DBObject, Container<?>>() {
         @Override
         public Container<?> apply(DBObject input) {
@@ -131,5 +139,11 @@ public class MongoContentLister implements ContentLister {
             return itemTranslator.fromDBObject(input, null);
         }
     };
+
+    private final ImmutableMap<ContentTable, Function<DBObject, ? extends Content>> TRANSLATORS = ImmutableMap.<ContentTable, Function<DBObject, ? extends Content>>of(
+            CHILD_ITEMS, TO_ITEM, 
+            PROGRAMME_GROUPS, TO_CONTAINER, 
+            TOP_LEVEL_ITEMS, TO_ITEM, 
+            TOP_LEVEL_CONTAINERS, TO_CONTAINER);
 
 }

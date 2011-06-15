@@ -1,4 +1,4 @@
-package org.atlasapi.persistence.content;
+package org.atlasapi.persistence.content.listing;
 
 import org.atlasapi.media.entity.Content;
 
