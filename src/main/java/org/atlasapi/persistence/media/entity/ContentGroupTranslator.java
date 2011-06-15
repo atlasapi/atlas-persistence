@@ -9,7 +9,7 @@ import com.mongodb.DBObject;
 
 public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 
-	public static final String CONTENT_URIS_KEY = "contentUris";
+	public static final String CONTENT_URIS_KEY = "childRefs";
 	
 	private final DescribedTranslator contentTranslator;
 	private final ChildRefTranslator childTranslator;
