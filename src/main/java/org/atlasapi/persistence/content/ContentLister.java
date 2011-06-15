@@ -4,6 +4,13 @@ import java.util.Set;
 
 public interface ContentLister {
 
-    void listContent(Set<ContentTable> tables, ContentListingProgress progress, ContentListingHandler handler);
+    /**
+     * 
+     * @param tables
+     * @param progress
+     * @param handler
+     * @return true if the listing finished, false if interrupted by handler
+     */
+    boolean listContent(Set<ContentTable> tables, ContentListingProgress progress, ContentListingHandler handler);
     
 }

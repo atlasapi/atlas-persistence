@@ -52,7 +52,7 @@ public class MongoContentLister implements ContentLister {
     }
     
     @Override
-    public void listContent(Set<ContentTable> tables, ContentListingProgress progress, ContentListingHandler handler) {
+    public boolean listContent(Set<ContentTable> tables, ContentListingProgress progress, ContentListingHandler handler) {
         checkNotNull(handler, "Content Listing handler can't be null");
         
         String fromId = null;
@@ -63,7 +63,7 @@ public class MongoContentLister implements ContentLister {
             table = progress.getTable();
         }
         
-        List<ContentTable> sortedTables = Ordering.natural().immutableSortedCopy(tables); 
+        List<ContentTable> sortedTables = Ordering.natural().reverse().immutableSortedCopy(tables); 
         
         List<ContentTable> remainTables = sortedTables.subList(table == null ? 0 : sortedTables.indexOf(table), sortedTables.size());
         
@@ -73,11 +73,11 @@ public class MongoContentLister implements ContentLister {
             if(shouldContinue) {
                 fromId = null;
             } else {
-                return;
+                return false;
             }
             
         }
-        
+        return true;
     }
     
     private Function<DBObject, ? extends Content> translatorFor(ContentTable table) {
