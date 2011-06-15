@@ -69,8 +69,12 @@ public class MongoContentLister implements ContentLister {
         
         for (ContentTable contentTable : remainTables) {
             
-            listContent(fromId, handler, contentTable, translatorFor(contentTable));
-            fromId = null;
+            boolean shouldContinue = listContent(fromId, handler, contentTable, translatorFor(contentTable));
+            if(shouldContinue) {
+                fromId = null;
+            } else {
+                return;
+            }
             
         }
         
@@ -84,15 +88,17 @@ public class MongoContentLister implements ContentLister {
                 TOP_LEVEL_CONTAINERS, TO_CONTAINER).get(table);
     }
     
-    private void listContent(String start, ContentListingHandler handler, ContentTable table, Function<DBObject, ? extends Content> translatorFunction) {
+    private boolean listContent(String start, ContentListingHandler handler, ContentTable table, Function<DBObject, ? extends Content> translatorFunction) {
         DBCollection collection = contentTables.collectionFor(table);
         while (true) {
             List<Content> contents = ImmutableList.copyOf(contentBatch(start, collection, translatorFunction));
             if (Iterables.isEmpty(contents)) {
-                break;
+                return true;
             }
             for (Content content : contents) {
-                handler.handle(content, ContentListingProgress.valueOf(content, table));
+                if(!handler.handle(content, ContentListingProgress.valueOf(content, table))){
+                    return false;
+                }
             }
             Content last = Iterables.getLast(contents);
             start = last.getCanonicalUri();

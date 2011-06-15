@@ -55,8 +55,9 @@ public class MongoContentListerTest {
             
             
             @Override
-            public void handle(Content content, ContentListingProgress progress) {
+            public boolean handle(Content content, ContentListingProgress progress) {
                 contents.add(content);
+                return true;
             }
         };
         
