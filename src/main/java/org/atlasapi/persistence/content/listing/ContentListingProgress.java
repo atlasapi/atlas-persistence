@@ -47,4 +47,9 @@ public class ContentListingProgress {
     public int total() {
         return this.total;
     }
+    
+    @Override
+    public String toString() {
+        return String.format("%s:%s (%s/%s)", table.toString(), uri, count, total);
+    }
 }
