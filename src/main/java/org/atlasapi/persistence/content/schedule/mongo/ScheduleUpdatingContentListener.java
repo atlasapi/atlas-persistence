@@ -13,7 +13,7 @@ public class ScheduleUpdatingContentListener implements ContentListener {
     }
 
     @Override
-    public void brandChanged(Iterable<? extends Container<?>> containers, ChangeType changeType) {
+    public void brandChanged(Iterable<? extends Container> containers, ChangeType changeType) {
         // ignore brand changes
     }
 

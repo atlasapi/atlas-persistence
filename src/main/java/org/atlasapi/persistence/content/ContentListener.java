@@ -33,5 +33,5 @@ public interface ContentListener {
 	
 	void itemChanged(Iterable<? extends Item> item, ChangeType changeType);
 	
-	void brandChanged(Iterable<? extends Container<?>> container, ChangeType changeType);
+	void brandChanged(Iterable<? extends Container> container, ChangeType changeType);
 }

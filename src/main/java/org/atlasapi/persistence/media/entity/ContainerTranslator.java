@@ -12,7 +12,7 @@ import org.atlasapi.persistence.ModelTranslator;
 import com.google.common.collect.ImmutableList;
 import com.mongodb.DBObject;
 
-public class ContainerTranslator implements ModelTranslator<Container<?>> {
+public class ContainerTranslator implements ModelTranslator<Container> {
 
 	public static final String CHILDREN_KEY = "childRefs";
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
@@ -27,8 +27,8 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         this.childRefTranslator = new ChildRefTranslator();
     }
 
-    public List<Container<?>> fromDBObjects(Iterable<DBObject> dbObjects) {
-        ImmutableList.Builder<Container<?>> containers = ImmutableList.builder();
+    public List<Container> fromDBObjects(Iterable<DBObject> dbObjects) {
+        ImmutableList.Builder<Container> containers = ImmutableList.builder();
 
         if (dbObjects != null) {
             for (DBObject dbObject : dbObjects) {
@@ -39,15 +39,15 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         return containers.build();
     }
 
-    public Container<?> fromDB(DBObject dbObject) {
+    public Container fromDB(DBObject dbObject) {
         return fromDBObject(dbObject, null);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Container<?> fromDBObject(DBObject dbObject, Container<?> entity) {
+    public Container fromDBObject(DBObject dbObject, Container entity) {
         if (entity == null) {
-            entity = (Container<?>) DescribedTranslator.newModel(dbObject);
+            entity = (Container) DescribedTranslator.newModel(dbObject);
         }
         contentTranslator.fromDBObject(dbObject, entity);
 
@@ -77,12 +77,12 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         return ImmutableList.of();
     }
    
-    public DBObject toDB(Container<?> entity) {
+    public DBObject toDB(Container entity) {
         return toDBObject(null, entity);
     }
 
     @Override
-    public DBObject toDBObject(DBObject dbObject, Container<?> entity) {
+    public DBObject toDBObject(DBObject dbObject, Container entity) {
         dbObject = toDboNotIncludingContents(dbObject, entity);
 //        dbObject.put(CHILDREN_KEY, childRefTranslator.toDBObjectList(entity.getChildRefs()));
 //        if (entity instanceof Brand) {
@@ -94,7 +94,7 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
         return dbObject;
     }
 
-    private DBObject toDboNotIncludingContents(DBObject dbObject, Container<?> entity) {
+    private DBObject toDboNotIncludingContents(DBObject dbObject, Container entity) {
         dbObject = contentTranslator.toDBObject(dbObject, entity);
         dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity).toString());
 

@@ -16,7 +16,7 @@ public class AggregateContentListener implements ContentListener {
 	private final Collection<ContentListener> listeners = Sets.newHashSet();
 	
 	@Override
-	public void brandChanged(Iterable<? extends Container<?>> container, ChangeType changeType) {
+	public void brandChanged(Iterable<? extends Container> container, ChangeType changeType) {
 		for (ContentListener listener : listeners) {
 			try {
 				listener.brandChanged(container, changeType);

@@ -21,6 +21,6 @@ public interface ContentWriter {
 
 	void createOrUpdate(Item item);
 	
-	void createOrUpdate(Container<?> container);
+	void createOrUpdate(Container container);
 
 }

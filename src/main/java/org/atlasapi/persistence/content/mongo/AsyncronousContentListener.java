@@ -32,7 +32,7 @@ public class AsyncronousContentListener implements ContentListener {
     }
 
     @Override
-    public void brandChanged(Iterable<? extends Container<?>> container, ChangeType changeType) {
+    public void brandChanged(Iterable<? extends Container> container, ChangeType changeType) {
         try {
             boundedQueue.submitTask(new BrandChangedJob(container, changeType));
         } catch (Exception e) {
@@ -71,10 +71,10 @@ public class AsyncronousContentListener implements ContentListener {
     
     class BrandChangedJob implements Runnable {
         
-        private final Iterable<? extends Container<?>> containers;
+        private final Iterable<? extends Container> containers;
         private final ChangeType changeType;
 
-        public BrandChangedJob(Iterable<? extends Container<?>> containers, ChangeType changeType) {
+        public BrandChangedJob(Iterable<? extends Container> containers, ChangeType changeType) {
             this.containers = containers;
             this.changeType = changeType;
         }
