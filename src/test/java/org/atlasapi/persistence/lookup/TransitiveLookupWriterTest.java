@@ -2,6 +2,7 @@ package org.atlasapi.persistence.lookup;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
@@ -202,4 +203,12 @@ public class TransitiveLookupWriterTest extends TestCase {
         assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).directEquivalents(), LookupRef.TO_ID)));
     }
 
+    public void testBreakingEquivs() {
+        Brand one = new Brand("2722", "c2772", Publisher.PA);
+        Brand two = new Brand("2943", "c2943", Publisher.PA);
+        Brand three = new Brand("47228", "c47228", Publisher.PA);
+        
+        
+        
+    }
 }

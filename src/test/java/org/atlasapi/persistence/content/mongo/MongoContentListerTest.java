@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
 
 public class MongoContentListerTest {
@@ -33,7 +34,8 @@ public class MongoContentListerTest {
     
     private static final Brand brand= new Brand("brand1", "brand2curie", Publisher.BBC);
     
-    private static final MongoContentTables contentTables = new MongoContentTables(MongoTestHelper.anEmptyTestDatabase());
+    private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+    private static final MongoContentTables contentTables = new MongoContentTables(mongo);
     
     private final MongoContentLister lister = new MongoContentLister(contentTables);
     
@@ -44,7 +46,7 @@ public class MongoContentListerTest {
             public void ensureLookup(Described described) {
             }
         };
-        MongoContentWriter writer = new MongoContentWriter(contentTables, lookupStore , new SystemClock());
+        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore , new SystemClock());
         writer.createOrUpdate(brand);
         writer.createOrUpdate(item1);
         writer.createOrUpdate(item2);

@@ -90,9 +90,12 @@ public class MongoContentLister implements ContentLister {
     
     private int countRows(List<ContentTable> sortedTables, Set<Publisher> publishers) {
         int total = 0;
-        DBObject query = where().fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY)).build();
+        MongoQueryBuilder query = where();
+        if(!publishers.equals(ImmutableSet.copyOf(Publisher.values()))) {
+            query.fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY));
+        }
         for (ContentTable contentTable : sortedTables) {
-            total += contentTables.collectionFor(contentTable).find(query).count();
+            total += contentTables.collectionFor(contentTable).find(query.build()).count();
         }
         return total;
     }
