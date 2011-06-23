@@ -42,7 +42,7 @@ public class MongoContentLister implements ContentLister {
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
     private final ItemTranslator itemTranslator = new ItemTranslator();
 
-    private int batchSize = 10;
+    private int batchSize = 1000;
 
     private final MongoContentTables contentTables;
 
