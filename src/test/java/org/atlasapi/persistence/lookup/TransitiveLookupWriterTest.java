@@ -204,11 +204,18 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
 
     public void testBreakingEquivs() {
-        Brand one = new Brand("2722", "c2772", Publisher.PA);
-        Brand two = new Brand("2943", "c2943", Publisher.PA);
-        Brand three = new Brand("47228", "c47228", Publisher.PA);
         
+        Brand pivot = new Brand("pivot", "cpivot", Publisher.PA);
+        Brand left = new Brand("left", "cleft", Publisher.PA);
+        Brand right = new Brand("right", "cright", Publisher.PA);
+
+        writer.writeLookup(pivot, ImmutableSet.of(left,right));
+        writer.writeLookup(left, ImmutableSet.of(right));
         
+        writer.writeLookup(pivot, ImmutableSet.of(left));
+        writer.writeLookup(left, ImmutableSet.<Described>of());
+        
+        hasEquivs("pivot", "pivot");
         
     }
 }

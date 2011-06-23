@@ -36,6 +36,13 @@ public class LookupEntry {
         }
     };
     
+    public static Function<LookupEntry,List<LookupRef>> TO_DIRECT_EQUIVS = new Function<LookupEntry, List<LookupRef>>() {
+        @Override
+        public List<LookupRef> apply(LookupEntry input) {
+            return ImmutableList.copyOf(input.directEquivalents());
+        }
+    };
+    
     private final String id;
     private final Set<String> aliases;
     
