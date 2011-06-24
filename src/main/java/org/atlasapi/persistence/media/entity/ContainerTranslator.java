@@ -78,19 +78,26 @@ public class ContainerTranslator implements ModelTranslator<Container<?>> {
     }
    
     public DBObject toDB(Container<?> entity) {
-        return toDBObject(null, entity);
+        return toDBO(entity, false);
+    }
+    
+    public DBObject toDBO(Container<?> entity, boolean includeChildren) {
+        DBObject dbObject = toDBObject(null, entity);
+        if(includeChildren) {
+          dbObject.put(CHILDREN_KEY, childRefTranslator.toDBList(entity.getChildRefs()));
+          if (entity instanceof Brand) {
+              Brand brand = (Brand) entity;
+              if (!brand.getSeriesRefs().isEmpty()) {
+                  dbObject.put(FULL_SERIES_KEY, childRefTranslator.toDBList(brand.getSeriesRefs()));
+              }
+          }
+        }
+        return dbObject;
     }
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Container<?> entity) {
         dbObject = toDboNotIncludingContents(dbObject, entity);
-//        dbObject.put(CHILDREN_KEY, childRefTranslator.toDBObjectList(entity.getChildRefs()));
-//        if (entity instanceof Brand) {
-//            Brand brand = (Brand) entity;
-//            if (!brand.getSeriesRefs().isEmpty()) {
-//                dbObject.put(FULL_SERIES_KEY, childRefTranslator.toDBObjectList(brand.getSeriesRefs()));
-//            }
-//        }
         return dbObject;
     }
 
