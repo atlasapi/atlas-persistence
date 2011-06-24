@@ -82,7 +82,7 @@ public class ChildRefWriter {
         if (currentChildRefs.hasValue()) {
             List<ChildRef> containerChildRefs = currentChildRefs.requireValue();
             containerChildRefs = mergeChildRefs(ImmutableList.of(ref), containerChildRefs);
-            collection.update(where().idEquals(containerUri).build(), update().setField(key, childRefTranslator.toDBList(containerChildRefs)).build(), true, false);
+            collection.update(where().idEquals(containerUri).build(), update().setField(key, childRefTranslator.toDBList(containerChildRefs)).build(), false, false);
         } else {
             throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s",containerUri, collection.getName(), ref.getUri()));
         }
