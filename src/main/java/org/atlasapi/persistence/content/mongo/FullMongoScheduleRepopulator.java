@@ -5,12 +5,8 @@ import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
 import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -22,13 +18,10 @@ import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.metabroadcast.common.concurrency.BoundedExecutor;
 import com.metabroadcast.common.scheduling.ScheduledTask;
 
 public class FullMongoScheduleRepopulator extends ScheduledTask {
     
-    private static final Log log = LogFactory.getLog(FullMongoScheduleRepopulator.class);
-
     private final ContentLister contentLister;
     private final ScheduleWriter scheduleStore;
     private final Iterable<Publisher> publishers;
@@ -52,7 +45,7 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
                 if (batch.get().size() == 10) {
                     scheduleStore.writeScheduleFor(Iterables.filter(batch.getAndSet(Lists.<Content> newArrayList()), Item.class));
                 }
-                reportStatus(String.format("%s / %s items", progress.count(), progress.total()));
+                reportStatus(progress.toString());
                 return true;
             }
         });
