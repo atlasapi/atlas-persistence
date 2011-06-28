@@ -33,9 +33,6 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
     private final ScheduleWriter scheduleStore;
     private final Iterable<Publisher> publishers;
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(10);
-    private final BoundedExecutor boundedQueue = new BoundedExecutor(executor, 10);
-
     public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> forPublishers) {
         this.contentLister = contentLister;
         this.scheduleStore = scheduleStore;
@@ -46,45 +43,21 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
     public void runTask() {
         
         final AtomicReference<List<Content>> batch = new AtomicReference<List<Content>>(Lists.<Content>newArrayList());
-        ContentListingHandler handler = new ContentListingHandler() {
-            
+        
+        contentLister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, CHILD_ITEMS), defaultCriteria().forPublishers(publishers), new ContentListingHandler() {
+
             @Override
             public boolean handle(Content content, ContentListingProgress progress) {
-                if(batch.get().size() < 10) {
-                    batch.get().add(content);
-                } else {
-                    try {
-                        Iterable<Item> itemBatch = Iterables.filter(batch.getAndSet(Lists.<Content>newArrayList()), Item.class);
-                        boundedQueue.submitTask(new UpdateItemScheduleJob(itemBatch));
-                    } catch (InterruptedException e) {
-                        log.error("Problem submitting task to process queue for items: " + batch, e);
-                    }
+                batch.get().add(content);
+                if (batch.get().size() == 10) {
+                    scheduleStore.writeScheduleFor(Iterables.filter(batch.getAndSet(Lists.<Content> newArrayList()), Item.class));
                 }
                 reportStatus(String.format("%s / %s items", progress.count(), progress.total()));
                 return true;
             }
-        };
+        });
         
-        contentLister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, CHILD_ITEMS), defaultCriteria().forPublishers(publishers), handler );
-        
-        try {
-            boundedQueue.submitTask(new UpdateItemScheduleJob(Iterables.filter(batch.get(), Item.class)));
-        } catch (InterruptedException e) {
-            log.error("Problem submitting task to process queue for items: " + batch, e);
-        }
-    }
-    
-    class UpdateItemScheduleJob implements Runnable {
-        
-        private final Iterable<? extends Item> items;
+        scheduleStore.writeScheduleFor(Iterables.filter(batch.getAndSet(Lists.<Content>newArrayList()), Item.class));
 
-        public UpdateItemScheduleJob(Iterable<? extends Item> items) {
-            this.items = items;
-        }
-
-        @Override
-        public void run() {
-            scheduleStore.writeScheduleFor(items);
-        }
     }
 }
