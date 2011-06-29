@@ -22,6 +22,7 @@ import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.content.listing.ContentListingHandler;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -77,7 +78,7 @@ public class MongoContentLister implements ContentLister {
         
         for (ContentTable contentTable : remainTables) {
             
-            boolean shouldContinue = listContent(fromId, total, progress, publishers, handler, contentTable);
+            boolean shouldContinue = listContent(fromId, total, progress, publishers, criteria.getUpdatedSince(), handler, contentTable);
             if(shouldContinue) {
                 fromId = null;
             } else {
@@ -100,11 +101,11 @@ public class MongoContentLister implements ContentLister {
         return total;
     }
 
-    private boolean listContent(String start, int total, AtomicInteger progress, Set<Publisher> publishers, ContentListingHandler handler, ContentTable table) {
+    private boolean listContent(String start, int total, AtomicInteger progress, Set<Publisher> publishers, DateTime updatedSince, ContentListingHandler handler, ContentTable table) {
         DBCollection collection = contentTables.collectionFor(table);
         while (true) {
             
-            MongoQueryBuilder query = queryFor(start, publishers);
+            MongoQueryBuilder query = queryFor(start, publishers, updatedSince);
             
             List<Content> contents = ImmutableList.copyOf(Iterables.transform(query.find(collection, SORT_BY_ID, batchSize), TRANSLATORS.get(table)));
             
@@ -122,10 +123,13 @@ public class MongoContentLister implements ContentLister {
         }
     }
 
-    private MongoQueryBuilder queryFor(String start, Set<Publisher> publishers) {
+    private MongoQueryBuilder queryFor(String start, Set<Publisher> publishers, DateTime updatedSince) {
         MongoQueryBuilder query = where().fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY));
         if (start != null) {
             query.fieldGreaterThan(MongoConstants.ID, start);
+        }
+        if (updatedSince != null) {
+            query.fieldAfter("thisOrChildLastUpdated", updatedSince);
         }
         return query;
     }
