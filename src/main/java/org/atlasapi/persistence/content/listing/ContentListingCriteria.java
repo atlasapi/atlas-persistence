@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Publisher;
-import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -18,8 +17,6 @@ public class ContentListingCriteria {
     private ContentListingProgress progress = ContentListingProgress.START;
     
     private Set<Publisher> publishers = null;
-
-    private DateTime updatedSince;
     
     public ContentListingCriteria startingAt(ContentListingProgress progress) {
         this.progress = checkNotNull(progress);
@@ -42,14 +39,5 @@ public class ContentListingCriteria {
     
     public Set<Publisher> getPublishers() {
         return this.publishers;
-    }
-    
-    public DateTime getUpdatedSince() {
-        return updatedSince;
-    }
-
-    public ContentListingCriteria updatedSince(DateTime from) {
-        this.updatedSince = from;
-        return null;
     }
 }
