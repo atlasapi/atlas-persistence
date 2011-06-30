@@ -152,7 +152,7 @@ public class MongoContentWriter implements ContentWriter {
         return containerUpdate;
     }
     
-    private DateTime setThisOrChildLastUpdated(Item item) {
+    private void setThisOrChildLastUpdated(Item item) {
         DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, item.getLastUpdated());
 
         for (Version version : item.getVersions()) {
@@ -170,8 +170,7 @@ public class MongoContentWriter implements ContentWriter {
                 }
             }
         }
-
-        return thisOrChildLastUpdated;
+        item.setThisOrChildLastUpdated(thisOrChildLastUpdated);
     }
 
     private DateTime setThisOrChildLastUpdated(Container<?> playlist) {
