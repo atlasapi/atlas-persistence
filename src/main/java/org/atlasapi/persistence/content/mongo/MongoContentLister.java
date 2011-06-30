@@ -154,7 +154,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     currentTranslator = TRANSLATORS.get(table);
                     DBObject query = where()
                         .fieldEquals("publisher", publisher.key())
-                        .fieldAfter(CHILD_ITEMS.equals(table) ? "lastUpdated" : "thisOrChildLastUpdated", when)
+                        .fieldAfter("thisOrChildLastUpdated", when)
                     .build();
                     currentResults = contentTables.collectionFor(table).find(query);
                 }
