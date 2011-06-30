@@ -37,7 +37,7 @@ public class AToZUriSource implements Iterable<String> {
 
 	private List<String> build() {
 		List<String> modifiableUris = Lists.newArrayListWithCapacity(27);
-		for(char c = 'a'; c <= 'z'; c++) {
+		for(char c = 'z'; c >= 'a'; c--) {
 			modifiableUris.add(prefix + c + suffix);
 		}
 		if (includeZeroDashNine) {
