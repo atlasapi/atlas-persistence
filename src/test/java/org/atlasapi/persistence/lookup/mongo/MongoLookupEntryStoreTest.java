@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.lookup.mongo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -41,7 +42,6 @@ public class MongoLookupEntryStoreTest {
         LookupEntry firstEntry = entryStore.entryFor("newItemUri");
         
         assertNotNull(firstEntry);
-        assertNotNull(entryStore.entryFor("newItemAlias"));
         
         entryStore.ensureLookup(testItem);
         

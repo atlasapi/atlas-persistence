@@ -7,10 +7,12 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
-import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
@@ -36,7 +38,14 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public void ensureLookup(Described described) {
-        lookup.insert(Lists.transform(lookupEntryFrom(described).entriesForIdentifiers(),translator.TO_DBO));
+        // Since most content will already have a lookup entry we read first to avoid locking the database
+        if (rowMissing(described)) {
+            lookup.insert(translator.TO_DBO.apply(lookupEntryFrom(described)));
+        }
     }
 
+    private boolean rowMissing(Described described) {
+        DBObject existing = lookup.findOne(new BasicDBObject(MongoConstants.ID, described.getCanonicalUri()), new BasicDBObject(MongoConstants.ID, 1));
+        return existing == null;
+    }
 }

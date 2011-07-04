@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.joda.time.DateTime;
@@ -18,8 +19,7 @@ import com.mongodb.DBObject;
 
 public class ScheduleEntryTranslator {
     
-    private final ItemTranslator itemTranslator = new ItemTranslator(false);
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ItemTranslator itemTranslator = new ItemTranslator();
 
     public DBObject toDb(ScheduleEntry entry) {
         DBObject dbObject = new BasicDBObject();
@@ -33,7 +33,7 @@ public class ScheduleEntryTranslator {
         for (Item item: entry.items()) {
             DBObject itemDbObject = itemTranslator.toDBObject(null, item);
             if (item.getContainer() != null) {
-                itemDbObject.put("container", containerTranslator.toDBObject(null, item.getContainer().toSummary()));
+                itemDbObject.put("container", item.getContainer().getUri());
             }
             items.add(itemDbObject);
         }
@@ -50,7 +50,6 @@ public class ScheduleEntryTranslator {
         return dbObjects.build();
     }
     
-    @SuppressWarnings("unchecked")
     public ScheduleEntry fromDb(DBObject object) {
         Publisher publisher = Publisher.fromKey((String) object.get("publisher")).requireValue();
         Channel channel = Channel.fromKey((String) object.get("channel")).requireValue();
@@ -59,11 +58,11 @@ public class ScheduleEntryTranslator {
         Interval interval = new Interval(start, end);
         
         ImmutableList.Builder<Item> items = ImmutableList.builder();
-        List<DBObject> dbItems = (List) object.get("content");
+        List<DBObject> dbItems = TranslatorUtils.toDBObjectList(object,"content");
         for (DBObject itemDbObject: dbItems) {
             Item item = itemTranslator.fromDBObject(itemDbObject, null);
             if (itemDbObject.containsField("container")) {
-                item.setContainer(containerTranslator.fromDBObject((DBObject) itemDbObject.get("container"), null));
+                item.setParentRef(new ParentRef((String) itemDbObject.get("container")));
             }
             items.add(item);
         }

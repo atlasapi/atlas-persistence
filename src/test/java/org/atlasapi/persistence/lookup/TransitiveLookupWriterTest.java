@@ -2,10 +2,12 @@ package org.atlasapi.persistence.lookup;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.LookupRef.LookupType;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.lookup.entry.Equivalent;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
@@ -35,7 +37,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
-        assertEquals(item.getType(), Iterables.getOnlyElement(uriEntry.equivalents()).type());
+        assertEquals(LookupType.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).type());
 
         LookupEntry aliasEntry = store.entryFor("testAlias");
         assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.id());
@@ -43,7 +45,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(aliasEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(aliasEntry.equivalents()).publisher());
-        assertEquals(item.getType(), Iterables.getOnlyElement(aliasEntry.equivalents()).type());
+        assertEquals(LookupType.TOP_LEVEL_ITEM, Iterables.getOnlyElement(aliasEntry.equivalents()).type());
 
         assertNotNull(aliasEntry.created());
         assertNotNull(aliasEntry.updated());
@@ -194,11 +196,26 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
 
     private void hasEquivs(String id, String... transitiveEquivs) {
-        assertEquals(ImmutableSet.copyOf(transitiveEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).equivalents(), Equivalent.TO_ID)));
+        assertEquals(ImmutableSet.copyOf(transitiveEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).equivalents(), LookupRef.TO_ID)));
     }
 
     private void hasDirectEquivs(String id, String... directEquivs) {
-        assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).directEquivalents(), Equivalent.TO_ID)));
+        assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).directEquivalents(), LookupRef.TO_ID)));
     }
 
+    public void testBreakingEquivs() {
+        
+        Brand pivot = new Brand("pivot", "cpivot", Publisher.PA);
+        Brand left = new Brand("left", "cleft", Publisher.PA);
+        Brand right = new Brand("right", "cright", Publisher.PA);
+
+        writer.writeLookup(pivot, ImmutableSet.of(left,right));
+        writer.writeLookup(left, ImmutableSet.of(right));
+        
+        writer.writeLookup(pivot, ImmutableSet.of(left));
+        writer.writeLookup(left, ImmutableSet.<Described>of());
+        
+        hasEquivs("pivot", "pivot");
+        
+    }
 }

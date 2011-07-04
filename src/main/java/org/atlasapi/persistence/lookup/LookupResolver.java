@@ -2,11 +2,12 @@ package org.atlasapi.persistence.lookup;
 
 import java.util.List;
 
-import org.atlasapi.application.ApplicationConfiguration;
-import org.atlasapi.persistence.lookup.entry.Equivalent;
+import org.atlasapi.media.entity.LookupRef;
 
 public interface LookupResolver {
     
-    List<Equivalent> lookup(String id, ApplicationConfiguration config);
+    LookupRef lookup(String id);
+    
+    List<LookupRef> equivalentsFor(String id);
     
 }

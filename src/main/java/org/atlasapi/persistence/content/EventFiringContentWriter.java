@@ -3,7 +3,6 @@ package org.atlasapi.persistence.content;
 import java.util.Collections;
 
 import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.content.ContentListener.ChangeType;
 
@@ -20,8 +19,8 @@ public class EventFiringContentWriter implements ContentWriter {
 	}
 	
 	@Override
-	public void createOrUpdate(Container<?> container, boolean markMissingItemsAsUnavailable) {
-		delegate.createOrUpdate(container, markMissingItemsAsUnavailable);
+	public void createOrUpdate(Container<?> container) {
+		delegate.createOrUpdate(container);
 		notifyListener(container);
 	}
 	
@@ -31,14 +30,8 @@ public class EventFiringContentWriter implements ContentWriter {
 		notifyListener(item);
 	}
     
-	@Override
-	public void createOrUpdateSkeleton(ContentGroup group) {
-		delegate.createOrUpdateSkeleton(group);
-	}
-    
     private void notifyListener(Container<?> container) {
     	listener.brandChanged(ImmutableList.<Container<?>>of(container), ChangeType.CONTENT_UPDATE);
-        listener.itemChanged(container.getContents(), ChangeType.CONTENT_UPDATE);
     }
     
     private void notifyListener(Item item) {

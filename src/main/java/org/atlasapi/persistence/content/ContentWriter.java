@@ -15,26 +15,12 @@ permissions and limitations under the License. */
 package org.atlasapi.persistence.content;
 
 import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Item;
 
-/**
- * Simple interface to the store of available content.
- *
- * @author Robert Chatley (robert@metabroadcast.com)
- * @author John Ayres (john@metabroadcast.com)
- */
 public interface ContentWriter {
 
 	void createOrUpdate(Item item);
 	
-	void createOrUpdate(Container<?> container, boolean markMissingItemsAsUnavailable);
-
-	/**
-	 * Saves the ContentGroup but does not attempt to persist the sub-content
-	 * within the ContentGroup.  Will throw an {@link IllegalArgumentException} if the
-	 * group contains a sub-element that is not already in the database
-	 */
-	void createOrUpdateSkeleton(ContentGroup playlist);
+	void createOrUpdate(Container<?> container);
 
 }

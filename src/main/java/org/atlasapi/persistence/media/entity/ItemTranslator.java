@@ -4,15 +4,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.CrewMember;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -24,44 +23,33 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String VERSIONS_KEY = "versions";
 	private static final String TYPE_KEY = "type";
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
-	private static final String SYNTHETIC_KEY = "synthetic";
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
 	private static final String FILM_YEAR_KEY = "year";
 	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
 	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
 	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
 
-	
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator = new VersionTranslator();
     private final CrewMemberTranslator crewMemberTranslator = new CrewMemberTranslator();
-    private final boolean createContainerForOrphans;
-    
-    ItemTranslator(ContentTranslator contentTranslator, boolean createContainerForOrphans) {
-		this.contentTranslator = contentTranslator;
-        this.createContainerForOrphans = createContainerForOrphans;
-    }
     
     ItemTranslator(ContentTranslator contentTranslator) {
-        this(contentTranslator, true);
+		this.contentTranslator = contentTranslator;
     }
     
     public ItemTranslator() {
-    	this(new ContentTranslator(), true);
+    	this(new ContentTranslator());
     }
     
-    public ItemTranslator(boolean createContainerForOrphans) {
-        this(new ContentTranslator(), createContainerForOrphans);
+    public Item fromDB(DBObject dbObject) {
+        return fromDBObject(dbObject, null);
     }
     
-    @SuppressWarnings("unchecked")
     @Override
     public Item fromDBObject(DBObject dbObject, Item item) {
-        if (Boolean.TRUE.equals(dbObject.get(SYNTHETIC_KEY))) {
-        	dbObject = Iterables.getOnlyElement((Iterable<DBObject>) dbObject.get("contents"));
-        }
+
     	if (item == null) {
-        	item = newModel(dbObject);
+        	item = (Item) DescribedTranslator.newModel(dbObject);
         }
         
         contentTranslator.fromDBObject(dbObject, item);
@@ -70,17 +58,20 @@ public class ItemTranslator implements ModelTranslator<Item> {
         item.setBlackAndWhite(TranslatorUtils.toBoolean(dbObject, BLACK_AND_WHITE_KEY));
         item.setCountriesOfOrigin(Countries.fromCodes(TranslatorUtils.toSet(dbObject, COUNTRIES_OF_ORIGIN_KEY)));
         
-        List<DBObject> list = (List) dbObject.get(VERSIONS_KEY);
+        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, VERSIONS_KEY);
         if (list != null && ! list.isEmpty()) {
             Set<Version> versions = Sets.newHashSet();
-            for (DBObject object: list) {
-                Version version = versionTranslator.fromDBObject(object, null);
+            for (DBObject versionDbo: list) {
+                if (versionDbo == null) {
+                    throw new IllegalStateException("Cannot read item stored with null version: " + item.getCanonicalUri());
+                }
+                Version version = versionTranslator.fromDBObject(versionDbo, null);
                 versions.add(version);
             }
             item.setVersions(versions);
         }
         
-        list = (List) dbObject.get("people");
+        list = TranslatorUtils.toDBObjectList(dbObject, "people");
         if (list != null && ! list.isEmpty()) {
             for (DBObject dbPerson: list) {
                 CrewMember crewMember = crewMemberTranslator.fromDBObject(dbPerson, null);
@@ -89,13 +80,20 @@ public class ItemTranslator implements ModelTranslator<Item> {
                 }
             }
         }
+        
+        if(dbObject.containsField("container")) {
+            item.setParentRef(new ParentRef((String)dbObject.get("container")));
+        }
 
         if (item instanceof Episode) {
         	Episode episode = (Episode) item;
+        	if(dbObject.containsField("series")) {
+        	    episode.setSeriesRef(new ParentRef((String)dbObject.get("series")));
+        	}
         	episode.setEpisodeNumber((Integer) dbObject.get("episodeNumber"));
         	episode.setSeriesNumber((Integer) dbObject.get("seriesNumber"));
         	if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
-        		episode.setSeriesUri((String) dbObject.get(EPISODE_SERIES_URI_KEY));
+        		episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY)));
         	}
         }
         
@@ -104,31 +102,30 @@ public class ItemTranslator implements ModelTranslator<Item> {
             film.setYear(TranslatorUtils.toInteger(dbObject, FILM_YEAR_KEY));
             film.setWebsiteUrl(TranslatorUtils.toString(dbObject, FILM_WEBSITE_URL_KEY));
         }
+        
+        // don't include the last-fetched time in the hash
+        dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        item.setReadHash(String.valueOf(dbObject.hashCode()));
+        
         return item; 
     }
-
-	private Item newModel(DBObject dbObject) {
-		String type = (String) dbObject.get(TYPE_KEY);
-		if (Episode.class.getSimpleName().equals(type)) {
-			return new Episode();
-		} else if (Film.class.getSimpleName().equals(type)){
-		    return new Film();
-		} else if (Item.class.getSimpleName().equals(type)) {
-			return new Item();
-		} else {
-			throw new IllegalArgumentException();
-		}
+	
+	public DBObject toDB(Item item) {
+	    return toDBObject(null, item);
 	}
 
     @Override
     public DBObject toDBObject(DBObject itemDbo, Item entity) {
         itemDbo = contentTranslator.toDBObject(itemDbo, entity);
-        itemDbo.put(TYPE_KEY, entity.getClass().getSimpleName());
-
+        itemDbo.put(TYPE_KEY, EntityType.from(entity).toString());
+        
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
         if (! entity.getVersions().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (Version version: entity.getVersions()) {
+                if (version == null) {
+                    throw new IllegalArgumentException("Cannot save item with null version: " + entity.getCanonicalUri());
+                }
                 list.add(versionTranslator.toDBObject(null, version));
             }
             itemDbo.put(VERSIONS_KEY, list);
@@ -139,13 +136,22 @@ public class ItemTranslator implements ModelTranslator<Item> {
             TranslatorUtils.fromIterable(itemDbo, Countries.toCodes(entity.getCountriesOfOrigin()), COUNTRIES_OF_ORIGIN_KEY);
         }
 		
-		if (entity instanceof Episode) {
+        if(entity.getContainer() != null) {
+            itemDbo.put("container", entity.getContainer().getUri());
+        }
+
+        if (entity instanceof Episode) {
 			Episode episode = (Episode) entity;
+			
+			if(episode.getSeriesRef() != null) {
+			    itemDbo.put("series", episode.getSeriesRef().getUri());
+			}
+			
 			TranslatorUtils.from(itemDbo, "episodeNumber", episode.getEpisodeNumber());
 			TranslatorUtils.from(itemDbo, "seriesNumber", episode.getSeriesNumber());
-			Series series = episode.getSeries();
+			ParentRef series = episode.getSeriesRef();
 			if (series != null) {
-				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getCanonicalUri());
+				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getUri());
 			}
 		}
 		
@@ -163,14 +169,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
             itemDbo.put("people", list);
 		}
 		
-		// create fake container if it is its own container
-		if (entity.getContainer() == null && createContainerForOrphans) {
-			DBObject containerDBO = contentTranslator.toDBObject(null, entity);
-			containerDBO.put("contents", ImmutableList.of(itemDbo));
-			containerDBO.put(TYPE_KEY, entity.getClass().getSimpleName());
-			containerDBO.put(SYNTHETIC_KEY, true);
-			return containerDBO;
-		}
         return itemDbo;
     }
 }

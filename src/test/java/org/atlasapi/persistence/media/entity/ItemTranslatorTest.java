@@ -66,10 +66,7 @@ public class ItemTranslatorTest extends TestCase {
             assertTrue(tags.contains(tag));
         }
         
-        Iterable<DBObject> items = (Iterable<DBObject>) dbObject.get("contents");
-        DBObject itemDdbo = Iterables.getOnlyElement(items);
-        
-        BasicDBList vs = (BasicDBList) itemDdbo.get("versions");
+        BasicDBList vs = (BasicDBList) dbObject.get("versions");
         assertEquals(1, vs.size());
         DBObject v = (DBObject) vs.get(0);
         assertEquals(version.getDuration(), v.get("duration"));

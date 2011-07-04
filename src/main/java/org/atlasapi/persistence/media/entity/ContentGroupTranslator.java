@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.ContentGroup;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -8,9 +9,10 @@ import com.mongodb.DBObject;
 
 public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 
-	public static final String CONTENT_URIS_KEY = "contentUris";
+	public static final String CONTENT_URIS_KEY = "childRefs";
 	
 	private final DescribedTranslator contentTranslator;
+	private final ChildRefTranslator childTranslator;
 
 	public ContentGroupTranslator() {
 		this(new DescribedTranslator(new DescriptionTranslator()));
@@ -18,23 +20,21 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 	
 	public ContentGroupTranslator(DescribedTranslator contentTranslator) {
 		this.contentTranslator = contentTranslator;
+        this.childTranslator = new ChildRefTranslator();
 	}
 	
     @Override
     public ContentGroup fromDBObject(DBObject dbObject, ContentGroup entity) {
-        if (entity == null) {
-            entity = new ContentGroup();
-        }
         contentTranslator.fromDBObject(dbObject, entity);
-        entity.setContentUris(TranslatorUtils.toList(dbObject, CONTENT_URIS_KEY));
+        entity.setContents(childTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, CONTENT_URIS_KEY)));
         return entity;
     }
 
     @Override
     public DBObject toDBObject(DBObject dbObject, ContentGroup entity) {
     	dbObject = contentTranslator.toDBObject(dbObject, entity);
-    	TranslatorUtils.fromList(dbObject, entity.getContentUris(), CONTENT_URIS_KEY);
-    	dbObject.put("type", ContentGroup.class.getSimpleName());
+    	TranslatorUtils.from(dbObject, CONTENT_URIS_KEY, childTranslator.toDBList(entity.getContents()));
+    	dbObject.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity));
     	return dbObject;
     }
 }

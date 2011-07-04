@@ -26,7 +26,6 @@ public class VersionTranslator implements ModelTranslator<Version> {
     private final EncodingTranslator encodingTranslator = new EncodingTranslator();
     private final RestrictionTranslator restrictionTranslator = new RestrictionTranslator();
 
-    @SuppressWarnings("unchecked")
     @Override
     public Version fromDBObject(DBObject dbObject, Version entity) {
         if (entity == null) {
@@ -51,7 +50,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         	entity.setRestriction(new Restriction());
         }
         
-        List<DBObject> list = (List) dbObject.get("broadcasts");
+        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject,"broadcasts");
         if (list != null && ! list.isEmpty()) {
             Set<Broadcast> broadcasts = Sets.newLinkedHashSet();
             for (DBObject object: list) {
@@ -61,7 +60,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
             entity.setBroadcasts(broadcasts);
         }
         
-        list = (List) dbObject.get("manifestedAs");
+        list = TranslatorUtils.toDBObjectList(dbObject,"manifestedAs");
         if (list != null && ! list.isEmpty()) {
             Set<Encoding> encodings = Sets.newHashSet();
             for (DBObject object: list) {
