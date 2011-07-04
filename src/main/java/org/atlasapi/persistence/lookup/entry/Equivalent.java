@@ -55,7 +55,7 @@ public class Equivalent {
         }
         if(that instanceof Equivalent) {
             Equivalent other = (Equivalent) that;
-            return id.equals(other.id) && publisher.equals(other.publisher) && type.equals(other.type);
+            return id.equals(other.id) && publisher.equals(other.publisher);
         }
         return false;
     }
