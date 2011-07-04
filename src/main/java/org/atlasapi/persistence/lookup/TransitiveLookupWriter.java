@@ -1,9 +1,11 @@
 package org.atlasapi.persistence.lookup;
 
+import static com.google.common.base.Predicates.in;
+import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 import static org.atlasapi.media.entity.Identified.TO_URI;
-import static org.atlasapi.persistence.lookup.entry.LookupEntry.TO_EQUIVS;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -18,6 +20,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -38,14 +41,15 @@ public class TransitiveLookupWriter implements LookupWriter {
         final Set<String> canonUris = ImmutableSet.copyOf(Iterables.transform(allItems, TO_URI));
 
         //entry for the subject.
-        LookupEntry subjectEntry = getOrCreate(subject).copyWithDirectEquivalents(Iterables.transform(allItems, LookupRef.FROM_DESCRIBED));
+        LookupEntry subjectEntry = getOrCreate(subject);//.copyWithDirectEquivalents(Iterables.transform(allItems, LookupRef.FROM_DESCRIBED));
         Set<LookupEntry> equivEntries = entriesFor(directEquivalents);
 
         //Pull the current transitive closures for the directly equivalent parameters.
-        Iterable<LookupEntry> lookups = transitiveClosure(ImmutableSet.copyOf(Iterables.concat(ImmutableSet.of(subjectEntry), equivEntries)));
+        Map<LookupRef, LookupEntry> lookups = transitiveClosure(ImmutableSet.copyOf(Iterables.concat(ImmutableSet.of(subjectEntry), equivEntries)));
+        
         
         //Update the direct equivalents for all the lookups.
-        lookups = ImmutableSet.copyOf(Iterables.transform(lookups, new Function<LookupEntry, LookupEntry>() {
+        lookups = Maps.newHashMap(Maps.transformValues(lookups, new Function<LookupEntry, LookupEntry>() {
             @Override
             public LookupEntry apply(LookupEntry entry) {
                 if (canonUris.contains(entry.id())) {
@@ -53,11 +57,14 @@ public class TransitiveLookupWriter implements LookupWriter {
                 } else {
                     return entry.copyWithDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
                 }
+                
             }
         }));
         
+        lookups.put(subjectEntry.lookupRef(), subjectEntry.copyWithDirectEquivalents(Iterables.transform(allItems, LookupRef.FROM_DESCRIBED)));
+        
         //For each lookup, recompute its transitive closure. 
-        Set<LookupEntry> newLookups = recomputeTransitiveClosures(lookups);
+        Set<LookupEntry> newLookups = recomputeTransitiveClosures(lookups.values());
 
         //Write to store
         for (LookupEntry entry : newLookups) {
@@ -108,25 +115,47 @@ public class TransitiveLookupWriter implements LookupWriter {
         return subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
     }
 
-    private Set<LookupEntry> transitiveClosure(Set<LookupEntry> entries) {
-        Set<LookupEntry> currentEntries = Sets.newHashSet(entries);
-        Set<String> currentRoots = ImmutableSet.copyOf(lookupIds(currentEntries));
-
-        Set<String> foundUris = Sets.newHashSet(currentRoots);
-        Set<LookupEntry> found = Sets.newHashSet(currentEntries);
-
-        while (!currentRoots.isEmpty()) {
-            Set<String> stepIds = singleStep(currentEntries);
-            currentRoots = Sets.difference(stepIds, foundUris);
-
-            if (!currentRoots.isEmpty()) {
-                currentEntries = entriesForUris(currentRoots);
-                found.addAll(currentEntries);
-                foundUris.addAll(stepIds);
-            }
+    private Map<LookupRef, LookupEntry> transitiveClosure(Set<LookupEntry> entries) {
+        
+        Queue<LookupEntry> toProcess = Lists.newLinkedList(entries);
+        
+        Map<LookupRef, LookupEntry> found = Maps.newHashMap();
+        
+        while(!toProcess.isEmpty()) {
+            LookupEntry current = toProcess.poll();
+            found.put(current.lookupRef(), current);
+            toProcess.addAll(entriesForRefs(filter(current.directEquivalents(), not(in(found.keySet())))));
         }
-
+        
         return found;
+//        Set<LookupEntry> currentEntries = Sets.newHashSet(entries);
+//        Set<String> currentRoots = ImmutableSet.copyOf(lookupIds(currentEntries));
+//
+//        Set<String> foundUris = Sets.newHashSet(currentRoots);
+//        Set<LookupEntry> found = Sets.newHashSet(currentEntries);
+//
+//        while (!currentRoots.isEmpty()) {
+//            Set<String> stepIds = singleStep(currentEntries);
+//            currentRoots = Sets.difference(stepIds, foundUris);
+//
+//            if (!currentRoots.isEmpty()) {
+//                currentEntries = entriesForUris(currentRoots);
+//                found.addAll(currentEntries);
+//                foundUris.addAll(stepIds);
+//            }
+//        }
+//
+//        return found;
+    }
+
+    private Set<LookupEntry> entriesForRefs(Iterable<LookupRef> refs) {
+        return ImmutableSet.copyOf(Iterables.transform(refs, new Function<LookupRef, LookupEntry>() {
+            @Override
+            public LookupEntry apply(LookupRef input) {
+                LookupEntry entry = entryStore.entryFor(input.id());
+                return entry;
+            }
+        }));
     }
 
     private Iterable<String> lookupIds(Set<LookupEntry> currentEntries) {
@@ -134,7 +163,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Set<String> singleStep(Set<LookupEntry> currentEntries) {
-        return ImmutableSet.copyOf(transform(concat(transform(currentEntries, TO_EQUIVS)), LookupRef.TO_ID));
+        return ImmutableSet.copyOf(transform(concat(transform(currentEntries, LookupEntry.TO_DIRECT_EQUIVS)), LookupRef.TO_ID));
     }
 
     private Set<LookupEntry> entriesForUris(Set<String> roots) {

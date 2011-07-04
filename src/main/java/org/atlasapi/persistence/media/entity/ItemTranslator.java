@@ -61,8 +61,11 @@ public class ItemTranslator implements ModelTranslator<Item> {
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, VERSIONS_KEY);
         if (list != null && ! list.isEmpty()) {
             Set<Version> versions = Sets.newHashSet();
-            for (DBObject object: list) {
-                Version version = versionTranslator.fromDBObject(object, null);
+            for (DBObject versionDbo: list) {
+                if (versionDbo == null) {
+                    throw new IllegalStateException("Cannot read item stored with null version: " + item.getCanonicalUri());
+                }
+                Version version = versionTranslator.fromDBObject(versionDbo, null);
                 versions.add(version);
             }
             item.setVersions(versions);
@@ -120,6 +123,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
         if (! entity.getVersions().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (Version version: entity.getVersions()) {
+                if (version == null) {
+                    throw new IllegalArgumentException("Cannot save item with null version: " + entity.getCanonicalUri());
+                }
                 list.add(versionTranslator.toDBObject(null, version));
             }
             itemDbo.put(VERSIONS_KEY, list);

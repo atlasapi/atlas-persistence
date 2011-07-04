@@ -37,7 +37,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	
 	public @Bean ContentWriter contentWriter() {
-		return new MongoContentWriter(new MongoContentTables(db), lookupStore(), new SystemClock());
+		return new MongoContentWriter(db, lookupStore(), new SystemClock());
 	}
 	
 	@Primary

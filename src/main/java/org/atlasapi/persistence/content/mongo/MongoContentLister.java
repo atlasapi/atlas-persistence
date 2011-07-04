@@ -8,6 +8,7 @@ import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
 import static org.atlasapi.persistence.content.listing.ContentListingProgress.progressFor;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,12 +23,15 @@ import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.content.listing.ContentListingHandler;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
@@ -35,14 +39,14 @@ import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-public class MongoContentLister implements ContentLister {
+public class MongoContentLister implements ContentLister, LastUpdatedContentFinder {
 
     private static final MongoSortBuilder SORT_BY_ID = new MongoSortBuilder().ascending(MongoConstants.ID); 
     
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
     private final ItemTranslator itemTranslator = new ItemTranslator();
 
-    private int batchSize = 10;
+    private int batchSize = -100;
 
     private final MongoContentTables contentTables;
 
@@ -90,9 +94,12 @@ public class MongoContentLister implements ContentLister {
     
     private int countRows(List<ContentTable> sortedTables, Set<Publisher> publishers) {
         int total = 0;
-        DBObject query = where().fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY)).build();
+        MongoQueryBuilder query = where();
+        if(!publishers.equals(ImmutableSet.copyOf(Publisher.values()))) {
+            query.fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY));
+        }
         for (ContentTable contentTable : sortedTables) {
-            total += contentTables.collectionFor(contentTable).find(query).count();
+            total += contentTables.collectionFor(contentTable).find(query.build()).count();
         }
         return total;
     }
@@ -125,6 +132,35 @@ public class MongoContentLister implements ContentLister {
             query.fieldGreaterThan(MongoConstants.ID, start);
         }
         return query;
+    }
+    
+    private static final List<ContentTable> BRAND_SERIES_AND_ITEMS_TABLES = ImmutableList.of(ContentTable.TOP_LEVEL_CONTAINERS, ContentTable.PROGRAMME_GROUPS, ContentTable.TOP_LEVEL_ITEMS, ContentTable.CHILD_ITEMS);
+    
+    @Override
+    public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {
+        return new AbstractIterator<Content>() {
+
+            private final Iterator<ContentTable> tablesIt = BRAND_SERIES_AND_ITEMS_TABLES.iterator();
+            private Iterator<DBObject> currentResults = Iterators.emptyIterator();
+            private Function<DBObject, ? extends Content> currentTranslator;
+            
+            @Override
+            protected Content computeNext() {
+                while (!currentResults.hasNext()) {
+                    if (!tablesIt.hasNext()) {
+                        return endOfData();
+                    }
+                    ContentTable table = tablesIt.next();
+                    currentTranslator = TRANSLATORS.get(table);
+                    DBObject query = where()
+                        .fieldEquals("publisher", publisher.key())
+                        .fieldAfter("thisOrChildLastUpdated", when)
+                    .build();
+                    currentResults = contentTables.collectionFor(table).find(query);
+                }
+                return currentTranslator.apply(currentResults.next());
+            }
+        };
     }
 
     private final Function<DBObject, Container> TO_CONTAINER = new Function<DBObject, Container>() {

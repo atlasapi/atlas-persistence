@@ -79,6 +79,10 @@ public final class AdapterLogEntry {
 		return this;
 	}
 	
+   public AdapterLogEntry withDescription(String formatString, Object...args) {
+        return withDescription(String.format(formatString, args));
+    }
+	
 	public String description() {
 		return description;
 	}

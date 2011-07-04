@@ -37,7 +37,7 @@ public class MongoContentWriterTest {
         }
     };
     
-    private final MongoContentWriter contentWriter = new MongoContentWriter(new MongoContentTables(mongo), lookupWriter, new SystemClock());
+    private final MongoContentWriter contentWriter = new MongoContentWriter(mongo, lookupWriter, new SystemClock());
     
     private final DBCollection children = mongo.collection("children");
     private final DBCollection topLevelItems = mongo.collection("topLevelItems");
@@ -183,5 +183,5 @@ public class MongoContentWriterTest {
         
         assertNotNull(containers.findOne(container.getCanonicalUri()));
     }
-
+    
 }

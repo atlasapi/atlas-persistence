@@ -1,17 +1,12 @@
 package org.atlasapi.persistence.content.mongo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static org.atlasapi.persistence.content.ContentTable.CHILD_ITEMS;
 import static org.atlasapi.persistence.content.ContentTable.PROGRAMME_GROUPS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
-import static org.atlasapi.persistence.media.entity.ContainerTranslator.CHILDREN_KEY;
-import static org.atlasapi.persistence.media.entity.ContainerTranslator.FULL_SERIES_KEY;
 
-import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Brand;
@@ -26,7 +21,6 @@ import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
-import org.atlasapi.persistence.media.entity.ChildRefTranslator;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
@@ -34,9 +28,8 @@ import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -52,21 +45,26 @@ public class MongoContentWriter implements ContentWriter {
 
     private final ItemTranslator itemTranslator = new ItemTranslator();
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
-    private final ChildRefTranslator childRefTranslator = new ChildRefTranslator();
+
+    private ChildRefWriter childRefWriter;
 
     private final DBCollection children;
     private final DBCollection topLevelItems;
     private final DBCollection containers;
     private final DBCollection programmeGroups;
 
-    public MongoContentWriter(MongoContentTables contentTables, NewLookupWriter lookupStore, Clock clock) {
+    public MongoContentWriter(DatabasedMongo mongo, NewLookupWriter lookupStore, Clock clock) {
         this.lookupStore = lookupStore;
         this.clock = clock;
 
+        MongoContentTables contentTables = new MongoContentTables(mongo);
+        
         children = contentTables.collectionFor(CHILD_ITEMS);
         topLevelItems = contentTables.collectionFor(TOP_LEVEL_ITEMS);
         containers = contentTables.collectionFor(TOP_LEVEL_CONTAINERS);
         programmeGroups = contentTables.collectionFor(PROGRAMME_GROUPS);
+        
+        this.childRefWriter = new ChildRefWriter(mongo);
     }
 
     @Override
@@ -91,12 +89,12 @@ public class MongoContentWriter implements ContentWriter {
                 throw new IllegalArgumentException("Episodes must have containers");
             } 
             
-            includeEpisodeInSeriesAndBrand((Episode) item);
+            childRefWriter.includeEpisodeInSeriesAndBrand((Episode) item);
             children.update(where.build(), itemDbo, true, false);
             
         } else if(item.getContainer() != null) {
             
-            includeItemInTopLevelContainer(item);
+            childRefWriter.includeItemInTopLevelContainer(item);
             children.update(where.build(), itemDbo, true, false);
             
         } else {
@@ -104,59 +102,6 @@ public class MongoContentWriter implements ContentWriter {
         }
 
         lookupStore.ensureLookup(item);
-    }
-
-    private void includeEpisodeInSeriesAndBrand(Episode episode) {
-        
-        if(episode.getSeriesRef() == null) { //just ensure item in container.
-            includeChildRefInContainer(episode.getContainer().getUri(), episode.childRef(), containers, CHILDREN_KEY);
-            return;
-        }
-        
-        // otherwise retrieve the child references for both series and brand, if either are missing, change nothing and error out.
-        String brandUri = episode.getContainer().getUri();
-        String seriesUri = episode.getSeriesRef().getUri();
-        
-        Maybe<List<ChildRef>> maybeBrandChildren = getChildRefs(containers, brandUri, CHILDREN_KEY);
-        Maybe<List<ChildRef>> maybeSeriesChildren = getChildRefs(programmeGroups, seriesUri, CHILDREN_KEY);
-        
-        if(maybeBrandChildren.isNothing() || maybeSeriesChildren.isNothing()) {
-            throw new IllegalStateException(String.format("Container or series not found for episode %s",episode.getCanonicalUri()));
-        }
-        
-        List<ChildRef> brandChildren = maybeBrandChildren.requireValue();
-        brandChildren = mergeChildRefs(ImmutableList.of(episode.childRef()), brandChildren);
-        containers.update(where().idEquals(brandUri).build(), update().setField(CHILDREN_KEY, childRefTranslator.toDBList(brandChildren)).build(), true, false);
-        
-        List<ChildRef> seriesChildren = maybeSeriesChildren.requireValue();
-        seriesChildren = mergeChildRefs(ImmutableList.of(episode.childRef()), seriesChildren);
-        programmeGroups.update(where().idEquals(seriesUri).build(),  update().setField(CHILDREN_KEY, childRefTranslator.toDBList(seriesChildren)).build(), true, false);
-    }
-
-    private Maybe<List<ChildRef>> getChildRefs(DBCollection collection, String containerUri, String key) {
-        DBObject dbo = collection.findOne(where().idEquals(containerUri).build(), select().fields(key, DescribedTranslator.TYPE_KEY).build());
-        
-        if(dbo == null) {
-            return Maybe.nothing();
-        }
-        
-        return Maybe.<List<ChildRef>>fromPossibleNullValue(containerTranslator.fromDBObject(dbo, null).getChildRefs());
-    }
-
-    private void includeItemInTopLevelContainer(Item item) {
-        includeChildRefInContainer(item.getContainer().getUri(), item.childRef(), containers, CHILDREN_KEY);
-    }
-
-    private void includeChildRefInContainer(String containerUri, ChildRef ref, DBCollection collection, String key) {
-        
-        Maybe<List<ChildRef>> currentChildRefs = getChildRefs(containers, containerUri, key);
-        if (currentChildRefs.hasValue()) {
-            List<ChildRef> containerChildRefs = currentChildRefs.requireValue();
-            containerChildRefs = mergeChildRefs(ImmutableList.of(ref), containerChildRefs);
-            collection.update(where().idEquals(containerUri).build(), update().setField(key, childRefTranslator.toDBList(containerChildRefs)).build(), true, false);
-        } else {
-            throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s",containerUri, collection.getName(), ref.getUri()));
-        }
     }
 
     @Override
@@ -169,7 +114,7 @@ public class MongoContentWriter implements ContentWriter {
             
             if(((Series) container).getParent() != null) {
                 Series series = (Series)container;
-                includeChildRefInContainer(series.getParent().getUri(), series.childRef(), containers, FULL_SERIES_KEY);
+                childRefWriter.includeSeriesInTopLevelContainer(series);
                 return;
             }
             
@@ -207,11 +152,7 @@ public class MongoContentWriter implements ContentWriter {
         return containerUpdate;
     }
     
-    private List<ChildRef> mergeChildRefs(Iterable<ChildRef> newChildRefs, Iterable<ChildRef> currentChildRefs) {
-        return ChildRef.dedupeAndSort(ImmutableList.<ChildRef>builder().addAll(currentChildRefs).addAll(newChildRefs).build());
-    }
-
-    private DateTime setThisOrChildLastUpdated(Item item) {
+    private void setThisOrChildLastUpdated(Item item) {
         DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, item.getLastUpdated());
 
         for (Version version : item.getVersions()) {
@@ -229,8 +170,7 @@ public class MongoContentWriter implements ContentWriter {
                 }
             }
         }
-
-        return thisOrChildLastUpdated;
+        item.setThisOrChildLastUpdated(thisOrChildLastUpdated);
     }
 
     private DateTime setThisOrChildLastUpdated(Container playlist) {
