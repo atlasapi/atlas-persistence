@@ -6,7 +6,6 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Identified;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.Sets;

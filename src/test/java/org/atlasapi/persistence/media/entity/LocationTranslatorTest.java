@@ -6,13 +6,13 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.TransportSubType;
 import org.atlasapi.media.TransportType;
-import org.atlasapi.media.entity.Countries;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Policy.RevenueContract;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.currency.Price;
+import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;

@@ -1,11 +1,10 @@
 package org.atlasapi.persistence.media.entity;
 
+import junit.framework.TestCase;
+
 import org.atlasapi.media.entity.Equiv;
-import org.atlasapi.persistence.media.entity.EquivTranslator;
 
 import com.mongodb.DBObject;
-
-import junit.framework.TestCase;
 
 public class EquivTranslatorTest extends TestCase {
     private EquivTranslator translator = new EquivTranslator();
