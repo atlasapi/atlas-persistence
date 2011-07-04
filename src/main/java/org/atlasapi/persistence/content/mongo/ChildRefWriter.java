@@ -50,8 +50,8 @@ public class ChildRefWriter {
         String brandUri = episode.getContainer().getUri();
         String seriesUri = episode.getSeriesRef().getUri();
 
-        Maybe<Container<?>> maybeBrand = getContainer(brandUri, containers);
-        Maybe<Container<?>> maybeSeries = getContainer(seriesUri, programmeGroups);
+        Maybe<Container> maybeBrand = getContainer(brandUri, containers);
+        Maybe<Container> maybeSeries = getContainer(seriesUri, programmeGroups);
 
         if (maybeBrand.isNothing() || maybeSeries.isNothing()) {
             throw new IllegalStateException(String.format("Container or series not found for episode %s", episode.getCanonicalUri()));
@@ -65,10 +65,10 @@ public class ChildRefWriter {
     public void includeSeriesInTopLevelContainer(Series series) {
         String containerUri = series.getParent().getUri();
         
-        Maybe<Container<?>> maybeContainer = getContainer(containerUri, containers);
+        Maybe<Container> maybeContainer = getContainer(containerUri, containers);
 
         if (maybeContainer.hasValue()) {
-            Container<?> container = maybeContainer.requireValue();
+            Container container = maybeContainer.requireValue();
             if(container instanceof Brand) {
                 Brand brand = (Brand) container;
                 List<ChildRef> merged = mergeChildRefs(series.childRef(), brand.getSeriesRefs());
@@ -88,7 +88,7 @@ public class ChildRefWriter {
 
     private void includeChildRefInContainer(String containerUri, ChildRef ref, DBCollection collection, String key) {
 
-        Maybe<Container<?>> maybeContainer = getContainer(containerUri, collection);
+        Maybe<Container> maybeContainer = getContainer(containerUri, collection);
 
         if (maybeContainer.hasValue()) {
             addChildRef(ref, collection, maybeContainer.requireValue());
@@ -97,7 +97,7 @@ public class ChildRefWriter {
         }
     }
 
-    private void addChildRef(ChildRef ref, DBCollection collection, Container<?> container) {
+    private void addChildRef(ChildRef ref, DBCollection collection, Container container) {
         List<ChildRef> merged = mergeChildRefs(ref, container.getChildRefs());
         container.setChildRefs(merged);
         collection.save(containerTranslator.toDBO(container, true));
@@ -109,12 +109,12 @@ public class ChildRefWriter {
         return ChildRef.dedupeAndSort(ImmutableList.<ChildRef> builder().addAll(currentChildRefs).add(newChildRef).build());
     }
 
-    private Maybe<Container<?>> getContainer(String canonicalUri, DBCollection collection) {
+    private Maybe<Container> getContainer(String canonicalUri, DBCollection collection) {
         DBObject dbo = collection.findOne(where().idEquals(canonicalUri).build());
         if (dbo == null) {
             return Maybe.nothing();
         }
-        return Maybe.<Container<?>> fromPossibleNullValue(containerTranslator.fromDB(dbo));
+        return Maybe.<Container> fromPossibleNullValue(containerTranslator.fromDB(dbo));
     }
     
 }

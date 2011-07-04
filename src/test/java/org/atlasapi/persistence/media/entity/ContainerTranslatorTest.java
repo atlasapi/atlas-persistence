@@ -47,7 +47,7 @@ public class ContainerTranslatorTest extends TestCase {
         
         DBObject obj = bt.toDBObject(null, brand);
         
-        Container<?> b = bt.fromDBObject(obj, null);
+        Container b = bt.fromDBObject(obj, null);
         assertEquals(brand.getCanonicalUri(), b.getCanonicalUri());
         assertEquals(brand.getFirstSeen(), b.getFirstSeen());
         assertEquals(brand.getLastFetched(), b.getLastFetched());

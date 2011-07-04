@@ -163,9 +163,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         };
     }
 
-    private final Function<DBObject, Container<?>> TO_CONTAINER = new Function<DBObject, Container<?>>() {
+    private final Function<DBObject, Container> TO_CONTAINER = new Function<DBObject, Container>() {
         @Override
-        public Container<?> apply(DBObject input) {
+        public Container apply(DBObject input) {
             return containerTranslator.fromDBObject(input, null);
         }
     };

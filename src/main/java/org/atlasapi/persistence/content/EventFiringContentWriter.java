@@ -19,7 +19,7 @@ public class EventFiringContentWriter implements ContentWriter {
 	}
 	
 	@Override
-	public void createOrUpdate(Container<?> container) {
+	public void createOrUpdate(Container container) {
 		delegate.createOrUpdate(container);
 		notifyListener(container);
 	}
@@ -30,8 +30,8 @@ public class EventFiringContentWriter implements ContentWriter {
 		notifyListener(item);
 	}
     
-    private void notifyListener(Container<?> container) {
-    	listener.brandChanged(ImmutableList.<Container<?>>of(container), ChangeType.CONTENT_UPDATE);
+    private void notifyListener(Container container) {
+    	listener.brandChanged(ImmutableList.<Container>of(container), ChangeType.CONTENT_UPDATE);
     }
     
     private void notifyListener(Item item) {

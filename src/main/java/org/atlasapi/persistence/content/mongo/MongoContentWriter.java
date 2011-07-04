@@ -105,7 +105,7 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     @Override
-    public void createOrUpdate(Container<?> container) {
+    public void createOrUpdate(Container container) {
         checkNotNull(container);
 
         if (container instanceof Series) {
@@ -135,7 +135,7 @@ public class MongoContentWriter implements ContentWriter {
 
     }
 
-    private void createOrUpdateContainer(Container<?> container, DBCollection collection) {
+    private void createOrUpdateContainer(Container container, DBCollection collection) {
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
         
         container.setLastFetched(clock.now());
@@ -173,7 +173,7 @@ public class MongoContentWriter implements ContentWriter {
         item.setThisOrChildLastUpdated(thisOrChildLastUpdated);
     }
 
-    private DateTime setThisOrChildLastUpdated(Container<?> playlist) {
+    private DateTime setThisOrChildLastUpdated(Container playlist) {
         DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, playlist.getLastUpdated());
         for (ChildRef item : playlist.getChildRefs()) {
             DateTime itemOrChildUpdated = item.getUpdated();

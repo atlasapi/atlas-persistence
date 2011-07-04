@@ -59,7 +59,7 @@ public class MongoContentWriterTest {
 
         Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
 
-        Container<Item> container = new Container<Item>("containerUri", "containerCurie", Publisher.BBC);
+        Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
 
         item.setContainer(container);
 
@@ -177,7 +177,7 @@ public class MongoContentWriterTest {
     @Test
     public void testWritingContainer() {
         
-        Container<Item> container = new Container<Item>("containerUri", "containerCurie", Publisher.BBC);
+        Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
         
         contentWriter.createOrUpdate(container);
         
