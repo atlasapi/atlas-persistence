@@ -20,7 +20,11 @@ import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
     
-	private static final String VERSIONS_KEY = "versions";
+    private static final String PART_NUMBER = "partNumber";
+    private static final String EPISODE_NUMBER = "episodeNumber";
+    private static final String SERIES_NUMBER = "seriesNumber";
+
+    private static final String VERSIONS_KEY = "versions";
 	private static final String TYPE_KEY = "type";
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
@@ -90,8 +94,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
         	if(dbObject.containsField("series")) {
         	    episode.setSeriesRef(new ParentRef((String)dbObject.get("series")));
         	}
-        	episode.setEpisodeNumber((Integer) dbObject.get("episodeNumber"));
-        	episode.setSeriesNumber((Integer) dbObject.get("seriesNumber"));
+        	episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
+        	episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
+        	episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
         	if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
         		episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY)));
         	}
@@ -147,8 +152,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			    itemDbo.put("series", episode.getSeriesRef().getUri());
 			}
 			
-			TranslatorUtils.from(itemDbo, "episodeNumber", episode.getEpisodeNumber());
-			TranslatorUtils.from(itemDbo, "seriesNumber", episode.getSeriesNumber());
+			TranslatorUtils.from(itemDbo, PART_NUMBER, episode.getPartNumber());
+			TranslatorUtils.from(itemDbo, EPISODE_NUMBER, episode.getEpisodeNumber());
+			TranslatorUtils.from(itemDbo, SERIES_NUMBER, episode.getSeriesNumber());
+			
 			ParentRef series = episode.getSeriesRef();
 			if (series != null) {
 				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getUri());
