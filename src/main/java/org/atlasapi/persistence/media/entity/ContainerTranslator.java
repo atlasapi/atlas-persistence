@@ -6,6 +6,7 @@ import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -62,6 +63,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         if (entity instanceof Series) {
             Series series = (Series) entity;
             series.withSeriesNumber((Integer) dbObject.get(SERIES_NUMBER_KEY));
+            if(dbObject.containsField("container")) {
+                series.setParentRef(new ParentRef((String)dbObject.get("container")));
+            }
         }
 
         if (entity instanceof Brand) {
@@ -92,6 +96,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
               }
           }
         }
+        
         return dbObject;
     }
 
@@ -109,6 +114,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
             Series series = (Series) entity;
             if (series.getSeriesNumber() != null) {
                 dbObject.put(SERIES_NUMBER_KEY, series.getSeriesNumber());
+            }
+            if (series.getParent() != null) {
+                dbObject.put("container", series.getParent().getUri());
             }
         }
         return dbObject;

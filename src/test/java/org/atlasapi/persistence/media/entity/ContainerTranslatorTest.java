@@ -7,7 +7,9 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Series;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.SystemClock;
@@ -57,5 +59,20 @@ public class ContainerTranslatorTest extends TestCase {
         for (String genre: g) {
             assertTrue(genres.contains(genre));
         }
+    }
+    
+    public void testEncodeDecodeSeries() {
+        
+        Series series = new Series("testUri", "testCurie", Publisher.BBC);
+        series.setParentRef(new ParentRef("testParent"));
+        series.withSeriesNumber(5);
+        
+        DBObject encoded = bt.toDB(series);
+        
+        Series fromDBObject = (Series) bt.fromDBObject(encoded, null);
+        
+        assertEquals(series.getParent(), fromDBObject.getParent());
+        assertEquals(series.getSeriesNumber(), fromDBObject.getSeriesNumber());
+        
     }
 }
