@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.lookup.mongo;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import org.atlasapi.media.entity.Item;
@@ -8,6 +9,8 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
@@ -25,10 +28,10 @@ public class MongoLookupEntryStoreTest {
         LookupEntry testEntry = LookupEntry.lookupEntryFrom(testItem);
         entryStore.store(testEntry);
         
-        LookupEntry uriEntry = entryStore.entryFor("testItemUri");
-        assertEquals(testEntry, uriEntry);
+        Iterable<LookupEntry> uriEntry = entryStore.entriesFor(ImmutableList.of("testItemUri"));
+        assertEquals(testEntry, Iterables.getOnlyElement(uriEntry));
         
-        assertNotNull(entryStore.entryFor("testItemAlias"));
+        assertFalse(Iterables.isEmpty(entryStore.entriesFor(ImmutableList.of("testItemAlias"))));
     }
 
     @Test
@@ -39,14 +42,12 @@ public class MongoLookupEntryStoreTest {
         
         entryStore.ensureLookup(testItem);
         
-        LookupEntry firstEntry = entryStore.entryFor("newItemUri");
+        LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("newItemUri")));
         
         assertNotNull(firstEntry);
         
         entryStore.ensureLookup(testItem);
         
-        assertEquals(firstEntry.created(), entryStore.entryFor("newItemUri").created());
-        
+        assertEquals(firstEntry.created(), Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("newItemUri"))).created());
     }
-
 }

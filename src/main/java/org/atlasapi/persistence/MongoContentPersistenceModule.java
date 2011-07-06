@@ -17,7 +17,6 @@ import org.atlasapi.persistence.content.schedule.mongo.BatchingScheduleWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 import org.atlasapi.persistence.logging.AdapterLog;
-import org.atlasapi.persistence.lookup.BasicLookupResolver;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -42,7 +41,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	@Primary
 	public @Bean ContentResolver contentResolver() {
-	    return new LookupResolvingContentResolver(knownTypeContentResolver(), new BasicLookupResolver(lookupStore()));
+	    return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
 	}
 	
 	public @Bean KnownTypeContentResolver knownTypeContentResolver() {

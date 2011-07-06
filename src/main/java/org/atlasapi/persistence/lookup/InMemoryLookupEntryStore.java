@@ -1,11 +1,13 @@
 package org.atlasapi.persistence.lookup;
 
+import java.util.List;
 import java.util.Map;
 
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class InMemoryLookupEntryStore implements LookupEntryStore {
@@ -27,9 +29,11 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
     
     @Override
-    public LookupEntry entryFor(String identifier) {
-        return store.get(identifier);
+    public Iterable<LookupEntry> entriesFor(Iterable<String> ids) {
+        List<LookupEntry> entries = Lists.newArrayList();
+        for (String id : ids) {
+            entries.add(store.get(id));
+        }
+        return entries;
     }
-
-
 }

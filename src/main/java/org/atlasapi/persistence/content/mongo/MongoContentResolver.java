@@ -5,6 +5,9 @@ import static org.atlasapi.persistence.content.ContentTable.PROGRAMME_GROUPS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
 
+import java.util.Collection;
+import java.util.Map.Entry;
+
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -15,8 +18,13 @@ import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.*;
 
 public class MongoContentResolver implements KnownTypeContentResolver {
 
@@ -38,37 +46,37 @@ public class MongoContentResolver implements KnownTypeContentResolver {
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
         ResolvedContentBuilder results = ResolvedContent.builder();
 
+        Multimap<DBCollection, String> idsGroupedByTable = HashMultimap.create();
         for (LookupRef lookupRef : lookupRefs) {
-
-            DBObject found = find(lookupRef);
-            results.put(lookupRef.id(), toModel(found));
-
+            idsGroupedByTable.put(collectionFor(lookupRef), lookupRef.id());
         }
-
+        
+        for (Entry<DBCollection, Collection<String>> lookupInOneTable : idsGroupedByTable.asMap().entrySet()) {
+            
+            DBCursor found = lookupInOneTable.getKey().find(where().idIn(lookupInOneTable.getValue()).build());
+            if (found != null) {
+                for (DBObject dbo : found) {
+                    Identified model = toModel(dbo);
+                    results.put(model.getCanonicalUri(), model);
+                }
+            }
+        }
         return results.build();
     }
-
-    private DBObject find(LookupRef lookupRef) {
-        DBCollection collection = null;
-
+    
+    private DBCollection collectionFor(LookupRef lookupRef) {
         switch (lookupRef.type()) {
-        case CONTAINER:
-            collection = containers;
-            break;
-        case PROGRAMME_GROUP:
-            collection = programmeGroups;
-            break;
-        case TOP_LEVEL_ITEM:
-            collection = topLevelItems;
-            break;
-        case CHILD_ITEM:
-            collection = children;
-            break;
-        default:
-            throw new IllegalArgumentException("Unknown lookup type");
+            case CONTAINER:
+                return containers;
+            case PROGRAMME_GROUP:
+                return programmeGroups;
+            case TOP_LEVEL_ITEM:
+                return topLevelItems;
+            case CHILD_ITEM:
+                return children;
+            default:
+                throw new IllegalArgumentException("Unknown lookup type");
         }
-
-        return collection.findOne(lookupRef.id());
     }
 
     private Identified toModel(DBObject dbo) {

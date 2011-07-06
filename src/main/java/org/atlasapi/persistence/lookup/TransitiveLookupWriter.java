@@ -16,6 +16,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -39,7 +40,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         final Set<String> canonUris = ImmutableSet.copyOf(Iterables.transform(allItems, TO_URI));
 
         //entry for the subject.
-        LookupEntry subjectEntry = entryStore.entryFor(subject.getCanonicalUri());
+        LookupEntry subjectEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of(subject.getCanonicalUri())), null);
         
         if(subjectEntry != null && ImmutableSet.copyOf(Iterables.transform(subjectEntry.directEquivalents(),LookupRef.TO_ID)).equals(canonUris)) {
             return;
@@ -115,7 +116,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private LookupEntry getOrCreate(Described subject) {
-        LookupEntry subjectEntry = entryStore.entryFor(subject.getCanonicalUri());
+        LookupEntry subjectEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of(subject.getCanonicalUri())), null);
         return subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
     }
 
@@ -135,13 +136,6 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Set<LookupEntry> entriesForRefs(Iterable<LookupRef> refs) {
-        return ImmutableSet.copyOf(Iterables.transform(refs, new Function<LookupRef, LookupEntry>() {
-            @Override
-            public LookupEntry apply(LookupRef input) {
-                LookupEntry entry = entryStore.entryFor(input.id());
-                return entry;
-            }
-        }));
+        return ImmutableSet.copyOf(entryStore.entriesFor(Iterables.transform(refs, LookupRef.TO_ID)));
     }
-
 }

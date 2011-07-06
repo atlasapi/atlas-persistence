@@ -8,6 +8,6 @@ public interface LookupEntryStore {
      */
     void store(LookupEntry entry);
     
-    LookupEntry entryFor(String identifier);
+    Iterable<LookupEntry> entriesFor(Iterable<String> ids);
     
 }

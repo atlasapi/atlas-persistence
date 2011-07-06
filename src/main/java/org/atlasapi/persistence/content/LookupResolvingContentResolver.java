@@ -1,11 +1,9 @@
 package org.atlasapi.persistence.content;
 
 import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.persistence.content.ContentResolver;
-import org.atlasapi.persistence.content.ResolvedContent;
-import org.atlasapi.persistence.lookup.LookupResolver;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -13,24 +11,19 @@ import com.google.common.collect.Iterables;
 public class LookupResolvingContentResolver implements ContentResolver {
 
     private final KnownTypeContentResolver knownTypeResolver;
-    private final LookupResolver lookupResolver;
+    private final LookupEntryStore lookupResolver;
 
-    public LookupResolvingContentResolver(KnownTypeContentResolver knownTypeResolver, LookupResolver lookupResolver) {
+    public LookupResolvingContentResolver(KnownTypeContentResolver knownTypeResolver, LookupEntryStore mongoLookupEntryStore) {
         this.knownTypeResolver = knownTypeResolver;
-        this.lookupResolver = lookupResolver;
+        this.lookupResolver = mongoLookupEntryStore;
     }
     
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
-    	ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(Iterables.transform(canonicalUris, lookup), Predicates.notNull()));
+        Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesFor(canonicalUris), LookupEntry.TO_SELF);
+        ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(lookupRefs, Predicates.notNull()));
         ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);
         return resolvedContent.copyWithAllRequestedUris(canonicalUris);
     }
-
-    private Function<String, LookupRef> lookup = new Function<String, LookupRef>() {
-        @Override
-        public LookupRef apply(String input) {
-            return lookupResolver.lookup(input);
-        }
-    };
 }
+

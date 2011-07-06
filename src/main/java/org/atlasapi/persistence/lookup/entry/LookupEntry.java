@@ -29,6 +29,13 @@ public class LookupEntry {
         }
     };
     
+    public static Function<LookupEntry, LookupRef> TO_SELF = new Function<LookupEntry, LookupRef>() {
+        @Override
+        public LookupRef apply(LookupEntry input) {
+            return input.self;
+        }
+    };
+    
     public static Function<LookupEntry,List<LookupRef>> TO_EQUIVS = new Function<LookupEntry, List<LookupRef>>() {
         @Override
         public List<LookupRef> apply(LookupEntry input) {

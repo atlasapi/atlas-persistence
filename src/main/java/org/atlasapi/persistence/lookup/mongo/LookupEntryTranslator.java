@@ -36,6 +36,13 @@ public class LookupEntryTranslator {
             return toDbo(input);
         }
     };
+    public Function<DBObject, LookupEntry> FROM_DBO = new Function<DBObject, LookupEntry>() {
+
+        @Override
+        public LookupEntry apply(DBObject dbo) {
+            return fromDbo(dbo);
+        }
+    };
     
     public DBObject toDbo(LookupEntry entry) {
         BasicDBObject dbo = new BasicDBObject();

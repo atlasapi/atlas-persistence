@@ -11,6 +11,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -27,7 +28,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         writer.writeLookup(item, ImmutableSet.<Described> of());
 
-        LookupEntry uriEntry = store.entryFor("testUri");
+        LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of("testUri")));
         assertEquals(item.getCanonicalUri(), uriEntry.id());
         assertEquals(item.getAliases(), uriEntry.aliases());
         assertEquals("testUri", Iterables.getOnlyElement(uriEntry.directEquivalents()).id());
@@ -39,7 +40,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
         assertEquals(LookupType.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).type());
 
-        LookupEntry aliasEntry = store.entryFor("testAlias");
+        LookupEntry aliasEntry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of("testAlias")));
         assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.id());
         assertEquals(ImmutableSet.of(), aliasEntry.directEquivalents());
 
@@ -196,11 +197,13 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
 
     private void hasEquivs(String id, String... transitiveEquivs) {
-        assertEquals(ImmutableSet.copyOf(transitiveEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).equivalents(), LookupRef.TO_ID)));
+        LookupEntry entry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of(id)));
+        assertEquals(ImmutableSet.copyOf(transitiveEquivs), ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), LookupRef.TO_ID)));
     }
 
     private void hasDirectEquivs(String id, String... directEquivs) {
-        assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(store.entryFor(id).directEquivalents(), LookupRef.TO_ID)));
+        LookupEntry entry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of(id)));
+        assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(), LookupRef.TO_ID)));
     }
 
     public void testBreakingEquivs() {

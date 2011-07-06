@@ -7,12 +7,17 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
@@ -32,8 +37,12 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
     
     @Override
-    public LookupEntry entryFor(String identifier) {
-        return translator.fromDbo(lookup.findOne(identifier));
+    public Iterable<LookupEntry> entriesFor(Iterable<String> ids) {
+        DBCursor found = lookup.find(where().idIn(ids).build());
+        if (found == null) {
+            return ImmutableList.of();
+        }
+        return Iterables.transform(found, translator.FROM_DBO);
     }
 
     @Override
