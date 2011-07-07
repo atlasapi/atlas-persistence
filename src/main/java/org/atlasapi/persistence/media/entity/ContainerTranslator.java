@@ -71,6 +71,13 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         if (entity instanceof Brand) {
             ((Brand) entity).setSeriesRefs(series((Iterable<DBObject>) dbObject.get(FULL_SERIES_KEY)));
         }
+        
+        // don't include the last-fetched time in the hash
+        dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        dbObject.removeField(CHILDREN_KEY);
+        dbObject.removeField(FULL_SERIES_KEY);
+        entity.setReadHash(String.valueOf(dbObject.hashCode()));
+        
         return entity;
     }
 
