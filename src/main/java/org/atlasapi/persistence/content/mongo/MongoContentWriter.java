@@ -77,11 +77,9 @@ public class MongoContentWriter implements ContentWriter {
             
         DBObject itemDbo = itemTranslator.toDB(item);
         itemDbo.removeField(DescribedTranslator.LAST_FETCHED_KEY);
-        
         if (!item.hashChanged(String.valueOf(itemDbo.hashCode()))) {
         	return;
         } 
-        
         TranslatorUtils.fromDateTime(itemDbo, DescribedTranslator.LAST_FETCHED_KEY, clock.now());
         
 		if (item instanceof Episode) {
@@ -107,10 +105,19 @@ public class MongoContentWriter implements ContentWriter {
     @Override
     public void createOrUpdate(Container container) {
         checkNotNull(container);
+        
+        setThisOrChildLastUpdated(container);
+        
+        DBObject containerDbo = containerTranslator.toDB(container);
+        containerDbo.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        if (!container.hashChanged(String.valueOf(containerDbo.hashCode()))) {
+            return;
+        } 
+        TranslatorUtils.fromDateTime(containerDbo, DescribedTranslator.LAST_FETCHED_KEY, clock.now());
 
         if (container instanceof Series) {
             
-            createOrUpdateContainer(container, programmeGroups);
+            createOrUpdateContainer(container, programmeGroups, containerDbo);
             
             if(((Series) container).getParent() != null) {
                 Series series = (Series)container;
@@ -120,7 +127,7 @@ public class MongoContentWriter implements ContentWriter {
             
         }
         
-        createOrUpdateContainer(container, containers);
+        createOrUpdateContainer(container, containers, containerDbo);
         
         // The series inside a brand cannot be top level items any more so we
         // remove them as outer elements
@@ -135,13 +142,10 @@ public class MongoContentWriter implements ContentWriter {
 
     }
 
-    private void createOrUpdateContainer(Container container, DBCollection collection) {
+    private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
         
-        container.setLastFetched(clock.now());
-        setThisOrChildLastUpdated(container);
-
-        collection.update(where.build(), set(containerTranslator.toDB(container)), true, false);
+        collection.update(where.build(), set(containerDbo), true, false);
 
         lookupStore.ensureLookup(container);
     }
