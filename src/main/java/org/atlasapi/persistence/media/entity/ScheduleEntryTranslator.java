@@ -2,24 +2,29 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
+import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
+import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class ScheduleEntryTranslator {
     
-    private final ItemTranslator itemTranslator = new ItemTranslator();
+    private static final String BROADCAST_KEY = "broadcast";
+    private static final String ITEM_URI_KEY = "itemUri";
+    private static final String ITEM_REFS_AND_BROADCAST_KEY = "itemsAndBroadcasts";
+    
+    private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
 
     public DBObject toDb(ScheduleEntry entry) {
         DBObject dbObject = new BasicDBObject();
@@ -29,15 +34,14 @@ public class ScheduleEntryTranslator {
         TranslatorUtils.fromDateTime(dbObject, "intervalStart", entry.interval().getStart());
         TranslatorUtils.fromDateTime(dbObject, "intervalEnd", entry.interval().getEnd());
         
-        BasicDBList items = new BasicDBList();
-        for (Item item: entry.items()) {
-            DBObject itemDbObject = itemTranslator.toDBObject(null, item);
-            if (item.getContainer() != null) {
-                itemDbObject.put("container", item.getContainer().getUri());
+        dbObject.put(ITEM_REFS_AND_BROADCAST_KEY, Iterables.transform(entry.getItemRefsAndBroadcasts(), new Function<ItemRefAndBroadcast, DBObject>() {
+            @Override
+            public DBObject apply(ItemRefAndBroadcast input) {
+                BasicDBObject dbo = new BasicDBObject(ITEM_URI_KEY, input.getItemUri());
+                dbo.put(BROADCAST_KEY, broadcastTranslator.toDBObject(input.getBroadcast()));
+                return dbo;
             }
-            items.add(itemDbObject);
-        }
-        dbObject.put("content", items);
+        }));
         
         return dbObject;
     }
@@ -50,6 +54,7 @@ public class ScheduleEntryTranslator {
         return dbObjects.build();
     }
     
+    @SuppressWarnings("unchecked")
     public ScheduleEntry fromDb(DBObject object) {
         Publisher publisher = Publisher.fromKey((String) object.get("publisher")).requireValue();
         Channel channel = Channel.fromKey((String) object.get("channel")).requireValue();
@@ -57,16 +62,19 @@ public class ScheduleEntryTranslator {
         DateTime end = TranslatorUtils.toDateTime(object, "intervalEnd");
         Interval interval = new Interval(start, end);
         
-        ImmutableList.Builder<Item> items = ImmutableList.builder();
-        List<DBObject> dbItems = TranslatorUtils.toDBObjectList(object,"content");
-        for (DBObject itemDbObject: dbItems) {
-            Item item = itemTranslator.fromDBObject(itemDbObject, null);
-            if (itemDbObject.containsField("container")) {
-                item.setParentRef(new ParentRef((String) itemDbObject.get("container")));
-            }
-            items.add(item);
+        Iterable<DBObject> itemsAndBroacasts = (Iterable<DBObject>) object.get(ITEM_REFS_AND_BROADCAST_KEY);
+        
+        if (itemsAndBroacasts == null) {
+            return new ScheduleEntry(interval, channel, publisher, ImmutableList.<ItemRefAndBroadcast>of());
         }
-        return new ScheduleEntry(interval, channel, publisher, items.build());
+        
+        return new ScheduleEntry(interval, channel, publisher, Iterables.transform(itemsAndBroacasts, new Function<DBObject, ItemRefAndBroadcast>() {
+            @Override
+            public ItemRefAndBroadcast apply(DBObject dbo) {
+               Broadcast broadcast = broadcastTranslator.fromDBObject((DBObject) dbo.get(BROADCAST_KEY));
+               return new ItemRefAndBroadcast((String) dbo.get(ITEM_URI_KEY), broadcast);
+            }
+        }));
     }
     
     public List<ScheduleEntry> fromDbObjects(Iterable<DBObject> objects) {
