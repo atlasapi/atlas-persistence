@@ -14,6 +14,7 @@ import com.mongodb.DBObject;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
+    public static final String THIS_OR_CHILD_LAST_UPDATED_KEY = "thisOrChildLastUpdated";
     public static final String TYPE_KEY = "type";
 	public static final String LAST_FETCHED_KEY = "lastFetched";
 	
@@ -31,7 +32,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		entity.setDescription((String) dbObject.get("description"));
 
 		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
-		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, "thisOrChildLastUpdated"));
+		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY));
 
 		entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
 		entity.setImage((String) dbObject.get("image"));
@@ -71,7 +72,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
         TranslatorUtils.from(dbObject, "description", entity.getDescription());
         TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
-        TranslatorUtils.fromDateTime(dbObject, "thisOrChildLastUpdated", entity.getThisOrChildLastUpdated());
+        TranslatorUtils.fromDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY, entity.getThisOrChildLastUpdated());
         TranslatorUtils.fromSet(dbObject, entity.getGenres(), "genres");
         TranslatorUtils.from(dbObject, "image", entity.getImage());
         TranslatorUtils.fromDateTime(dbObject, LAST_FETCHED_KEY, entity.getLastFetched());
