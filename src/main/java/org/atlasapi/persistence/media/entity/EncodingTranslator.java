@@ -15,6 +15,8 @@ import com.mongodb.DBObject;
 
 public class EncodingTranslator implements ModelTranslator<Encoding> {
 	
+    static final String LOCATIONS_KEY = "availableAt";
+    
     private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final LocationTranslator locationTranslator = new LocationTranslator();
 
@@ -52,7 +54,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         entity.setVideoProgressiveScan((Boolean) dbObject.get("videoProgressiveScan"));
         entity.setVideoVerticalSize((Integer) dbObject.get("videoVerticalSize"));
         
-        List<DBObject> list = (List<DBObject>) dbObject.get("availableAt");
+        List<DBObject> list = (List<DBObject>) dbObject.get(LOCATIONS_KEY);
         if (list != null && ! list.isEmpty()) {
             Set<Location> locations = Sets.newHashSet();
             for (DBObject object: list) {
@@ -130,7 +132,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
             for (Location location: entity.getAvailableAt()) {
                 list.add(locationTranslator.toDBObject(null, location));
             }
-            dbObject.put("availableAt", list);
+            dbObject.put(LOCATIONS_KEY, list);
         }
         
         return dbObject;

@@ -108,11 +108,56 @@ public class ItemTranslator implements ModelTranslator<Item> {
             film.setWebsiteUrl(TranslatorUtils.toString(dbObject, FILM_WEBSITE_URL_KEY));
         }
         
-        // don't include the last-fetched time in the hash
-        dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
-        item.setReadHash(String.valueOf(dbObject.hashCode()));
-        
+        item.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
         return item; 
+    }
+    
+    public String hashCodeOf(Item item) {
+        return generateHashByRemovingFieldsFromTheDbo(toDB(item));
+    }
+
+    @SuppressWarnings("unchecked")
+    private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
+        // don't include the last-fetched/update time in the hash
+        dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
+        dbObject.removeField(DescriptionTranslator.LAST_UPDATED);
+        
+        Iterable<DBObject> versions = (Iterable<DBObject>) dbObject.get(VERSIONS_KEY);
+        if (versions != null) {
+            removeUpdateTimeFromVersions(versions);
+        }
+        return String.valueOf(dbObject.hashCode());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeUpdateTimeFromVersions(Iterable<DBObject> versions) {
+        for (DBObject versionDbo : versions) {
+            versionDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+            Iterable<DBObject> broadcasts = (Iterable<DBObject>) versionDbo.get(VersionTranslator.BROADCASTS_KEY);
+            if (broadcasts != null) {
+                for (DBObject broadcastDbo : broadcasts) {
+                    broadcastDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+                }
+            }
+            Iterable<DBObject> encodings = (Iterable<DBObject>) versionDbo.get(VersionTranslator.ENCODINGS_KEY);
+            if (encodings != null) {
+                removeUpdateTimesFromEncodings(encodings);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeUpdateTimesFromEncodings(Iterable<DBObject> encodings) {
+        for (DBObject encodingDbo : encodings) {
+            encodingDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+            Iterable<DBObject> locations = (Iterable<DBObject>) encodingDbo.get(EncodingTranslator.LOCATIONS_KEY);
+            if (locations != null) {
+                for (DBObject locationDbo : locations) {
+                    locationDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+                }
+            }
+        }
     }
 	
 	public DBObject toDB(Item item) {

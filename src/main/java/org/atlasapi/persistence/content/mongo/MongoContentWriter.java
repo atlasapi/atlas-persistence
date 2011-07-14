@@ -22,7 +22,6 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
-import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
@@ -32,7 +31,6 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.time.Clock;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -72,15 +70,15 @@ public class MongoContentWriter implements ContentWriter {
         checkNotNull(item, "Tried to persist null item");
         
         setThisOrChildLastUpdated(item);
+        item.setLastFetched(clock.now());
         
         MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
             
-        DBObject itemDbo = itemTranslator.toDB(item);
-        itemDbo.removeField(DescribedTranslator.LAST_FETCHED_KEY);
-        if (!item.hashChanged(String.valueOf(itemDbo.hashCode()))) {
+        if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
         	return;
         } 
-        TranslatorUtils.fromDateTime(itemDbo, DescribedTranslator.LAST_FETCHED_KEY, clock.now());
+        
+        DBObject itemDbo = itemTranslator.toDB(item);
         
 		if (item instanceof Episode) {
             if (item.getContainer() == null) {
@@ -107,13 +105,13 @@ public class MongoContentWriter implements ContentWriter {
         checkNotNull(container);
         
         setThisOrChildLastUpdated(container);
+        container.setLastFetched(clock.now());
         
-        DBObject containerDbo = containerTranslator.toDB(container);
-        containerDbo.removeField(DescribedTranslator.LAST_FETCHED_KEY);
-        if (!container.hashChanged(String.valueOf(containerDbo.hashCode()))) {
+        if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             return;
         } 
-        TranslatorUtils.fromDateTime(containerDbo, DescribedTranslator.LAST_FETCHED_KEY, clock.now());
+
+        DBObject containerDbo = containerTranslator.toDB(container);
 
         if (container instanceof Series) {
             

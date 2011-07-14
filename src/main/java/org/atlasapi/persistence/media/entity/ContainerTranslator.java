@@ -72,13 +72,22 @@ public class ContainerTranslator implements ModelTranslator<Container> {
             ((Brand) entity).setSeriesRefs(series((Iterable<DBObject>) dbObject.get(FULL_SERIES_KEY)));
         }
         
+        entity.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
+        return entity;
+    }
+
+    private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
         // don't include the last-fetched time in the hash
         dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
+        dbObject.removeField(DescriptionTranslator.LAST_UPDATED);
         dbObject.removeField(CHILDREN_KEY);
         dbObject.removeField(FULL_SERIES_KEY);
-        entity.setReadHash(String.valueOf(dbObject.hashCode()));
-        
-        return entity;
+        return String.valueOf(dbObject.hashCode());
+    }
+    
+    public String hashCodeOf(Container container) {
+        return generateHashByRemovingFieldsFromTheDbo(toDB(container));
     }
 
     private List<ChildRef> series(Iterable<DBObject> seriesDbos) {
