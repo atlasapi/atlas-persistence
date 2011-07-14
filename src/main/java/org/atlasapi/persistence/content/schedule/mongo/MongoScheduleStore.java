@@ -97,8 +97,9 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 Maybe<Identified> possibleItem = resolver.findByCanonicalUris(ImmutableList.of(itemRefAndBroadcast.getItemUri())).getFirstValue();
                 if (possibleItem.hasValue()) {
                     Item item = ((Item) possibleItem.requireValue()).copy();
-                    selectBroadcast(item, itemRefAndBroadcast.getBroadcast());
-                    channelMap.get(entry.channel()).add(item);
+                    if (selectAndTrimBroadcast(item, itemRefAndBroadcast.getBroadcast())) {
+                        channelMap.get(entry.channel()).add(item);
+                    }
                 }
             }
         }
@@ -110,7 +111,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         return Schedule.fromChannelMap(processedChannelMap.build(), interval);
     }
 
-    private void selectBroadcast(Item item, Broadcast scheduleBroadcast) {
+    private boolean selectAndTrimBroadcast(Item item, Broadcast scheduleBroadcast) {
         boolean found = false;
         for (Version version : item.getVersions()) {
             Set<Broadcast> allBroadcasts = version.getBroadcasts();
@@ -125,6 +126,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 }
             }
         }
+        return found;
     }
     
     private Map<Channel, List<Item>> createChannelMap(Iterable<Channel> channels) {
