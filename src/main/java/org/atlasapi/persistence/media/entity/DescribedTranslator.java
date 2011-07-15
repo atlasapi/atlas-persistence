@@ -14,6 +14,7 @@ import com.mongodb.DBObject;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
+    private static final String SCHEDULE_ONLY_KEY = "scheduleOnly";
     public static final String THIS_OR_CHILD_LAST_UPDATED_KEY = "thisOrChildLastUpdated";
     public static final String TYPE_KEY = "type";
 	public static final String LAST_FETCHED_KEY = "lastFetched";
@@ -37,7 +38,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		entity.setGenres(TranslatorUtils.toSet(dbObject, "genres"));
 		entity.setImage((String) dbObject.get("image"));
 		entity.setLastFetched(TranslatorUtils.toDateTime(dbObject, LAST_FETCHED_KEY));
-		Boolean scheduleOnly = TranslatorUtils.toBoolean(dbObject, "scheduleOnly");
+		Boolean scheduleOnly = TranslatorUtils.toBoolean(dbObject, SCHEDULE_ONLY_KEY);
 		entity.setScheduleOnly(scheduleOnly != null ? scheduleOnly : false);
 
 		String publisherKey = (String) dbObject.get("publisher");
@@ -84,7 +85,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.fromSet(dbObject, entity.getTags(), "tags");
         TranslatorUtils.from(dbObject, "thumbnail", entity.getThumbnail());
         TranslatorUtils.from(dbObject, "title", entity.getTitle());
-        dbObject.put("scheduleOnly", Boolean.valueOf(entity.isScheduleOnly()));
+        
+        if (entity.isScheduleOnly()) {
+            dbObject.put(SCHEDULE_ONLY_KEY, Boolean.TRUE);
+        }
         
         if (entity.getMediaType() != null) {
         	TranslatorUtils.from(dbObject, "mediaType", entity.getMediaType().toString().toLowerCase());
