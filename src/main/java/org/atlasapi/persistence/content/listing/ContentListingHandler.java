@@ -4,6 +4,6 @@ import org.atlasapi.media.entity.Content;
 
 public interface ContentListingHandler {
     
-    boolean handle(Content content, ContentListingProgress progress);
+    boolean handle(Iterable<? extends Content> contents, ContentListingProgress progress);
     
 }

@@ -16,7 +16,6 @@ import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleEntryBuilder;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -43,11 +42,9 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
         contentLister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, CHILD_ITEMS), defaultCriteria().forPublishers(publishers), new ContentListingHandler() {
 
             @Override
-            public boolean handle(Content content, ContentListingProgress progress) {
+            public boolean handle(Iterable<? extends Content> contents, ContentListingProgress progress) {
                 // Only looking at item tables, so all content will be items
-                Item item = (Item) content;
-                
-                Map<String, ScheduleEntry> entries = scheduleEntryBuilder.toScheduleEntries(ImmutableList.of(item));
+                Map<String, ScheduleEntry> entries = scheduleEntryBuilder.toScheduleEntries(Iterables.filter(contents, Item.class));
                 
                 for (ScheduleEntry entry: entries.values()) {
                     ScheduleEntry existingEntry = scheduleEntries.get(entry.toKey());
