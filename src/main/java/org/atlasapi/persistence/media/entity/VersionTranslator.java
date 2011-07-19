@@ -19,7 +19,9 @@ import com.mongodb.DBObject;
 
 public class VersionTranslator implements ModelTranslator<Version> {
     
-	private static final String PROVIDER_KEY = "provider";
+	static final String ENCODINGS_KEY = "manifestedAs";
+    static final String BROADCASTS_KEY = "broadcasts";
+    private static final String PROVIDER_KEY = "provider";
 	
 	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
@@ -50,7 +52,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         	entity.setRestriction(new Restriction());
         }
         
-        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject,"broadcasts");
+        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject,BROADCASTS_KEY);
         if (list != null && ! list.isEmpty()) {
             Set<Broadcast> broadcasts = Sets.newLinkedHashSet();
             for (DBObject object: list) {
@@ -60,7 +62,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
             entity.setBroadcasts(broadcasts);
         }
         
-        list = TranslatorUtils.toDBObjectList(dbObject,"manifestedAs");
+        list = TranslatorUtils.toDBObjectList(dbObject,ENCODINGS_KEY);
         if (list != null && ! list.isEmpty()) {
             Set<Encoding> encodings = Sets.newHashSet();
             for (DBObject object: list) {
@@ -96,7 +98,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
                 }
             }
             if (! list.isEmpty()) {
-                dbObject.put("broadcasts", list);
+                dbObject.put(BROADCASTS_KEY, list);
             }
         }
         
@@ -108,7 +110,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
                 }
             }
             if (! list.isEmpty()) {
-                dbObject.put("manifestedAs", list);
+                dbObject.put(ENCODINGS_KEY, list);
             }
         }
         

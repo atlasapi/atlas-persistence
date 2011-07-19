@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -16,15 +17,14 @@ import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.Schedule.ScheduleChannel;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.testing.StubContentResolver;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.metabroadcast.common.ids.UUIDGenerator;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -57,10 +57,11 @@ public class MongoScheduleStoreTest {
     
     private DatabasedMongo database;
     
+    private StubContentResolver contentResolver;
+    
     @Before
     public void setUp() throws Exception {
         database = MongoTestHelper.anEmptyTestDatabase();
-		store = new MongoScheduleStore(database);
         
         availableLocation.setAvailable(true);
         unavailableLocation.setAvailable(false);
@@ -81,6 +82,10 @@ public class MongoScheduleStoreTest {
         item2.addVersion(version3);
         
         when = System.currentTimeMillis();
+
+        contentResolver = new StubContentResolver().respondTo(item1).respondTo(item2);
+        
+        store = new MongoScheduleStore(database, contentResolver);
     }
     
     @After
@@ -100,40 +105,18 @@ public class MongoScheduleStoreTest {
     @Test
     public void testShouldIgnoreBroadcastsOverAYearOld() throws Exception {
   
-    	Item item = itemWithBroadcast(new Broadcast(Channel.BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
+    	Item item = itemWithBroadcast("id", new Broadcast(Channel.BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
     	store.writeScheduleFrom(item);
 
         assertEquals(1, Iterables.size(database.collection("schedule").find()));
     }
-    
-    @Test
-    public void testUpdatingABroadcast() throws Exception {
-    	DateTime someHour = now.withHourOfDay(1).withMinuteOfHour(0);
-		Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), someHour.withMinuteOfHour(10), someHour.withMinuteOfHour(20));
 
-		broadcast.withId("v1");
-    	store.writeScheduleFrom(itemWithBroadcast(broadcast));
-    	
-    	Schedule schedule = store.schedule(someHour, someHour.plusHours(1), ImmutableList.of(Channel.BBC_ONE), ImmutableList.of(Publisher.BBC));
-    	assertEquals("v1", extractBroadcastFrom(schedule).getId());
-    	
-		broadcast.withId("v2");
-    	store.writeScheduleFrom(itemWithBroadcast(broadcast));
-    	
-    	schedule = store.schedule(someHour, someHour.plusHours(1), ImmutableList.of(Channel.BBC_ONE), ImmutableList.of(Publisher.BBC));
-    	assertEquals("v2", extractBroadcastFrom(schedule).getId());
-	}
-
-	private Broadcast extractBroadcastFrom(Schedule schedule) {
-		return Iterables.getOnlyElement(Iterables.getOnlyElement(Iterables.getOnlyElement(Iterables.getOnlyElement(schedule.scheduleChannels()).items()).getVersions()).getBroadcasts());
-	}
-
-	private Item itemWithBroadcast(Broadcast broadcast) {
+	private Item itemWithBroadcast(String id, Broadcast broadcast) {
 		Version version = new Version();
     	version.addBroadcast(veryOldBroadcast);
     	version.addBroadcast(broadcast);
     	
-    	Item item = new Item(new UUIDGenerator().generate(), "", Publisher.BBC);
+    	Item item = new Item(id, "", Publisher.BBC);
     	
 		item.addVersion(version);
 		return item;
@@ -201,7 +184,13 @@ public class MongoScheduleStoreTest {
             assertEquals(2, channel.items().size());
             
             Item item1 = channel.items().get(0);
-            assertTrue(Iterables.getOnlyElement(Iterables.getOnlyElement(Iterables.getOnlyElement(item1.getVersions()).getManifestedAs()).getAvailableAt()).getAvailable());
+            
+            assertFalse(Iterables.isEmpty(item1.flattenLocations()));
+            
+            for (Location location : item1.flattenLocations()) {
+                assertTrue(location.getAvailable());
+            }
+            
             Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
             if (item1.getCanonicalUri().equals(this.item1.getCanonicalUri())) {
                 assertNotNull(item1.getContainer());
@@ -210,7 +199,6 @@ public class MongoScheduleStoreTest {
             Item item2 = channel.items().get(1);
             assertTrue(item2 instanceof Episode);
             Broadcast broadcast2 = ScheduleEntry.BROADCAST.apply(item2);
-            
             
             if (channel.channel() == Channel.BBC_ONE) {
                 assertEquals(now.minusHours(4), broadcast1.getTransmissionTime());

@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -52,12 +53,11 @@ public class MongoContentListerTest {
         writer.createOrUpdate(item2);
     }
     
-    private ContentListingHandler storingContentListingHandler(final List<Content> contents) {
+    private ContentListingHandler storingContentListingHandler(final List<Content> allContents) {
         return new ContentListingHandler() {
-            
             @Override
-            public boolean handle(Content content, ContentListingProgress progress) {
-                contents.add(content);
+            public boolean handle(Iterable<? extends Content> contents, ContentListingProgress progress) {
+                Iterables.addAll(allContents, contents);
                 assertTrue(progress.count() > 0);
                 assertTrue(progress.total() > 0);
                 return true;
@@ -92,22 +92,26 @@ public class MongoContentListerTest {
     @Test
     public void testStopsListContentWhenHandlerReturnsFalse() {
         
-        final List<Content> contents = Lists.newArrayList();
+        final List<Content> processedContents = Lists.newArrayList();
 
         ContentListingHandler handler = new ContentListingHandler() {
-            
             @Override
-            public boolean handle(Content content, ContentListingProgress progress) {
-                contents.add(content);
-                return !content.getCanonicalUri().equals("item1");
+            public boolean handle(Iterable<? extends Content> contents, ContentListingProgress progress) {
+                for (Content content : contents) {
+                    if (content.getCanonicalUri().equals("item1")) {
+                        return false;
+                    } else {
+                        processedContents.add(content);
+                    }
+                }
+                return true;
             }
         };
         
         boolean finished = lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, TOP_LEVEL_CONTAINERS), defaultCriteria(), handler);
         
-        assertEquals(ImmutableList.of(brand, item1), contents);
+        assertEquals(ImmutableList.of(brand), processedContents);
         assertFalse(finished);
-        
     }
 
     @Test

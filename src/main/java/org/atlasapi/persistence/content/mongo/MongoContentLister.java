@@ -116,12 +116,11 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                 return true;
             }
             
-            for (Content content : contents) {
-                if(!handler.handle(content, progressFor(content, table).withCount(progress.incrementAndGet()).withTotal(total))){
-                    return false;
-                }
-            }
             Content last = Iterables.getLast(contents);
+            if (!handler.handle(contents, progressFor(last, table).withCount(progress.addAndGet(contents.size())).withTotal(total))) {
+                return false;
+            }
+            
             start = last.getCanonicalUri();
         }
     }
