@@ -24,11 +24,16 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.Mongo;
+import com.mongodb.MongoReplicaSetProbe;
+import com.mongodb.WriteConcern;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
+    private @Autowired Mongo mongo;
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
 	
@@ -74,4 +79,14 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	public @Bean ContentLister contentListener() {
 		return new MongoContentLister(new MongoContentTables(db));
 	}
+	
+    @Bean
+    MongoReplicaSetProbe mongoReplicaSetProbe() {
+        return new MongoReplicaSetProbe(mongo);
+    }
+
+    @Bean
+    MongoIOProbe mongoIoSetProbe() {
+        return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
+    }
 }
