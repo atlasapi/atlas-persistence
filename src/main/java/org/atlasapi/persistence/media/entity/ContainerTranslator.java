@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.atlasapi.media.entity.Brand;
@@ -8,9 +9,11 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.SortKey;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container> {
@@ -22,6 +25,17 @@ public class ContainerTranslator implements ModelTranslator<Container> {
 
     private final ContentTranslator contentTranslator;
     private final ChildRefTranslator childRefTranslator;
+    
+    private static final Ordering<ChildRef> CHILD_REF_OUTPUT_SORT = Ordering.from(new Comparator<ChildRef>() {
+        
+        private Comparator<String> sortKeyComparator = new SortKey.SortKeyOutputComparator();
+        
+        @Override
+        public int compare(ChildRef o1, ChildRef o2) {
+            return sortKeyComparator.compare(o1.getSortKey(), o2.getSortKey());
+            
+        }
+    });
 
     public ContainerTranslator() {
         this.contentTranslator = new ContentTranslator();
@@ -58,7 +72,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         } else {
             childRefs = ImmutableList.of();
         }
-        entity.setChildRefs(childRefs);
+        entity.setChildRefs(CHILD_REF_OUTPUT_SORT.immutableSortedCopy(childRefs));
 
         if (entity instanceof Series) {
             Series series = (Series) entity;
