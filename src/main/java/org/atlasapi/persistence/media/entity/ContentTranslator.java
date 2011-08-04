@@ -14,7 +14,7 @@ import com.mongodb.DBObject;
 
 public class ContentTranslator implements ModelTranslator<Content> {
 
-	private static String CLIPS_KEY = "clips";
+	public static String CLIPS_KEY = "clips";
 	
 	private ClipTranslator clipTranslator;
 	private final DescribedTranslator describedTranslator;

@@ -116,18 +116,29 @@ public class ItemTranslator implements ModelTranslator<Item> {
         return generateHashByRemovingFieldsFromTheDbo(toDB(item));
     }
 
-    @SuppressWarnings("unchecked")
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
         // don't include the last-fetched/update time in the hash
+        removeUpdateTimeFromItem(dbObject);
+
+        return String.valueOf(dbObject.hashCode());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeUpdateTimeFromItem(DBObject dbObject) {
         dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
         dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
         dbObject.removeField(DescriptionTranslator.LAST_UPDATED);
-        
+
         Iterable<DBObject> versions = (Iterable<DBObject>) dbObject.get(VERSIONS_KEY);
         if (versions != null) {
             removeUpdateTimeFromVersions(versions);
         }
-        return String.valueOf(dbObject.hashCode());
+        Iterable<DBObject> clips = (Iterable<DBObject>) dbObject.get(ContentTranslator.CLIPS_KEY);
+        if (clips != null) {
+            for (DBObject clipDbo : clips) {
+                removeUpdateTimeFromItem(clipDbo);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
