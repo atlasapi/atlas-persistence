@@ -30,7 +30,7 @@ public class ManualScheduleRebuildModule {
 	    	new FullMongoScheduleRepopulator(lister, scheduleStore, ImmutableList.<Publisher>of())
 	    	.withName("Full Mongo Schedule repopulator");
 	    
-	    scheduler.schedule(everythingRepopulator, RepetitionRules.daily(new LocalTime(1, 15, 0)));
+	    scheduler.schedule(everythingRepopulator, RepetitionRules.daily(new LocalTime(3, 15, 0)));
 		
 	    ScheduledTask bbcRepopulator = 
 	    	new FullMongoScheduleRepopulator(lister, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC))
