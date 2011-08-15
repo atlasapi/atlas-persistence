@@ -124,7 +124,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     }
 
     @SuppressWarnings("unchecked")
-    private void removeUpdateTimeFromItem(DBObject dbObject) {
+    public void removeUpdateTimeFromItem(DBObject dbObject) {
         dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
         dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
         dbObject.removeField(DescriptionTranslator.LAST_UPDATED);
@@ -166,6 +166,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
             if (locations != null) {
                 for (DBObject locationDbo : locations) {
                     locationDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+                    DBObject policy = (DBObject) locationDbo.get(LocationTranslator.POLICY);
+                    if(policy != null) {
+                        policy.removeField(DescriptionTranslator.LAST_UPDATED);
+                    }
                 }
             }
         }

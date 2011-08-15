@@ -6,9 +6,8 @@ import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.persistence.ModelTranslator;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
@@ -39,13 +38,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
 		if (dbObject.containsField(CLIPS_KEY)) {
 			Iterable<DBObject> clipsDbos = (Iterable<DBObject>) dbObject.get(CLIPS_KEY);
-			Iterable<Clip> clips = Iterables.transform(clipsDbos, new Function<DBObject, Clip>() {
-
-				@Override
-				public Clip apply(DBObject dbo) {
-					return clipTranslator.fromDBObject(dbo, null);
-				}
-			});
+			List<Clip> clips = Lists.newArrayList();
+			for (DBObject dbo : clipsDbos) {
+                clips.add(clipTranslator.fromDBObject(dbo, null));
+            }
 			entity.setClips(clips);
 		}
 
@@ -56,13 +52,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	public DBObject toDBObject(DBObject dbObject, Content entity) {
 		dbObject = describedTranslator.toDBObject(dbObject, entity);
 		if (!entity.getClips().isEmpty()) {
-			List<DBObject> clipDbos = Lists.transform(entity.getClips(), new Function<Clip, DBObject>() {
-
-				@Override
-				public DBObject apply(Clip clip) {
-					return clipTranslator.toDBObject(new BasicDBObject(), clip);
-				}
-			});
+		    BasicDBList clipDbos = new BasicDBList();
+		    for (Clip clip : entity.getClips()) {
+		        clipDbos.add(clipTranslator.toDBObject(new BasicDBObject(), clip));
+            }
 			dbObject.put(CLIPS_KEY, clipDbos);
 		}
         return dbObject;

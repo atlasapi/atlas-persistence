@@ -12,6 +12,8 @@ import com.mongodb.DBObject;
 
 public class LocationTranslator implements ModelTranslator<Location> {
 	
+    public static final String POLICY = "policy";
+    
     private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
 	private final PolicyTranslator policyTranslator = new PolicyTranslator();
     
@@ -35,7 +37,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         entity.setUri((String) dbObject.get("uri"));
         entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, DescriptionTranslator.LAST_UPDATED));
         
-        DBObject policyObject = (DBObject) dbObject.get("policy");
+        DBObject policyObject = (DBObject) dbObject.get(POLICY);
         if (policyObject != null) {
         	entity.setPolicy(policyTranslator.fromDBObject(policyObject, new Policy()));
         }
@@ -73,7 +75,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         if (entity.getPolicy() != null) {
         	DBObject policyObject = policyTranslator.toDBObject(new BasicDBObject(), entity.getPolicy());
 			if (!policyObject.keySet().isEmpty()) {
-				dbObject.put("policy", policyObject);
+				dbObject.put(POLICY, policyObject);
 			}
         }
         return dbObject;

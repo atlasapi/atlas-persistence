@@ -7,10 +7,13 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
@@ -150,5 +153,84 @@ public class ItemTranslatorTest extends TestCase {
         List<CrewMember> people = i.people();
         assertEquals(1, people.size());
         assertEquals("some guy", ((Actor) Iterables.getFirst(people, null)).character());
+    }
+    
+    @SuppressWarnings("unchecked")
+    public void testRemovesLastUpdatedFromClipsForHashcode() {
+        
+        Item item = new Item("testUri", "testCurie", Publisher.BBC);
+        createModel(item);
+        
+        Clip clip = new Clip();
+        createModel(clip);
+        item.addClip(clip);
+        
+        ItemTranslator translator =  new ItemTranslator();
+        DBObject dbo = translator.toDB(item);
+        translator.removeUpdateTimeFromItem(dbo);
+        
+        assertTimesAreNull(dbo);
+        
+        DBObject clipDbo = Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("clips"));
+        assertTimesAreNull(clipDbo);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void assertTimesAreNull(DBObject dbo) {
+        assertNull(dbo.get(DescribedTranslator.LAST_FETCHED_KEY));
+        assertNull(dbo.get(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY));
+        assertLastUpdatedNull(dbo);
+        
+        assertNull(Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("people")).get(DescriptionTranslator.LAST_UPDATED));
+        
+        DBObject versionDbo = Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("versions"));
+        assertLastUpdatedNull(versionDbo);
+        
+        DBObject broadcastDbo = Iterables.getOnlyElement((Iterable<DBObject>) versionDbo.get("broadcasts"));
+        assertLastUpdatedNull(broadcastDbo);
+        
+        DBObject encodingDbo = Iterables.getOnlyElement((Iterable<DBObject>) versionDbo.get("manifestedAs"));
+        assertLastUpdatedNull(encodingDbo);
+        
+        DBObject locationDbo = Iterables.getOnlyElement((Iterable<DBObject>) encodingDbo.get("availableAt"));
+        assertLastUpdatedNull(locationDbo);
+        
+        DBObject policyDbo = (DBObject) locationDbo.get("policy");
+        assertLastUpdatedNull(policyDbo);
+    }
+    
+    public void assertLastUpdatedNull(DBObject dbo) {
+        assertNull(dbo.get(DescriptionTranslator.LAST_UPDATED));
+    }
+
+    public void createModel(Item item) {
+        item.setLastUpdated(clock.now());
+        item.setThisOrChildLastUpdated(clock.now());
+        item.setLastFetched(clock.now());
+        
+        Actor person = new Actor("personUri","personCurie",Publisher.BBC);
+        person.setLastUpdated(clock.now());
+        item.addPerson(person);
+        
+        Version version = new Version(); 
+        version.setLastUpdated(clock.now());
+        item.addVersion(version);
+        
+        Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), clock.now(), clock.now());
+        broadcast.setLastUpdated(clock.now());
+        version.addBroadcast(broadcast);
+        
+        Encoding encoding = new Encoding();
+        encoding.setLastUpdated(clock.now());
+        version.addManifestedAs(encoding);
+        
+        Location location = new Location();
+        location.setLastUpdated(clock.now());
+        encoding.addAvailableAt(location);
+        
+        Policy policy = new Policy();
+        policy.setAvailabilityStart(clock.now());
+        policy.setLastUpdated(clock.now());
+        location.setPolicy(policy);
     }
 }
