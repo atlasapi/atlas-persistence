@@ -131,48 +131,63 @@ public class ItemTranslator implements ModelTranslator<Item> {
 
         Iterable<DBObject> versions = (Iterable<DBObject>) dbObject.get(VERSIONS_KEY);
         if (versions != null) {
-            removeUpdateTimeFromVersions(versions);
+            dbObject.put(VERSIONS_KEY, removeUpdateTimeFromVersions(versions));
         }
         Iterable<DBObject> clips = (Iterable<DBObject>) dbObject.get(ContentTranslator.CLIPS_KEY);
         if (clips != null) {
+            Set<DBObject> unorderedClips = Sets.newHashSet();
             for (DBObject clipDbo : clips) {
                 removeUpdateTimeFromItem(clipDbo);
+                unorderedClips.add(clipDbo);
             }
+            dbObject.put(ContentTranslator.CLIPS_KEY, unorderedClips);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void removeUpdateTimeFromVersions(Iterable<DBObject> versions) {
+    private Set<DBObject> removeUpdateTimeFromVersions(Iterable<DBObject> versions) {
+        Set<DBObject> unorderedVersions = Sets.newHashSet();
         for (DBObject versionDbo : versions) {
             versionDbo.removeField(DescriptionTranslator.LAST_UPDATED);
             Iterable<DBObject> broadcasts = (Iterable<DBObject>) versionDbo.get(VersionTranslator.BROADCASTS_KEY);
             if (broadcasts != null) {
+                Set<DBObject> unorderedBroadcasts = Sets.newHashSet();
                 for (DBObject broadcastDbo : broadcasts) {
                     broadcastDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+                    unorderedBroadcasts.add(broadcastDbo);
                 }
+                versionDbo.put(VersionTranslator.BROADCASTS_KEY, unorderedBroadcasts);
             }
             Iterable<DBObject> encodings = (Iterable<DBObject>) versionDbo.get(VersionTranslator.ENCODINGS_KEY);
             if (encodings != null) {
-                removeUpdateTimesFromEncodings(encodings);
+                versionDbo.put(VersionTranslator.ENCODINGS_KEY, removeUpdateTimesFromEncodings(encodings));
             }
+            unorderedVersions.add(versionDbo);
         }
+        return unorderedVersions;
     }
 
     @SuppressWarnings("unchecked")
-    private void removeUpdateTimesFromEncodings(Iterable<DBObject> encodings) {
+    private Set<DBObject> removeUpdateTimesFromEncodings(Iterable<DBObject> encodings) {
+        Set<DBObject> unorderedEncodings = Sets.newHashSet();
         for (DBObject encodingDbo : encodings) {
             encodingDbo.removeField(DescriptionTranslator.LAST_UPDATED);
             Iterable<DBObject> locations = (Iterable<DBObject>) encodingDbo.get(EncodingTranslator.LOCATIONS_KEY);
             if (locations != null) {
+                Set<DBObject> unorderedLocations = Sets.newHashSet();
                 for (DBObject locationDbo : locations) {
                     locationDbo.removeField(DescriptionTranslator.LAST_UPDATED);
                     DBObject policy = (DBObject) locationDbo.get(LocationTranslator.POLICY);
                     if(policy != null) {
                         policy.removeField(DescriptionTranslator.LAST_UPDATED);
                     }
+                    unorderedLocations.add(locationDbo);
                 }
+                encodingDbo.put(EncodingTranslator.LOCATIONS_KEY, unorderedLocations);
             }
+            unorderedEncodings.add(encodingDbo);
         }
+        return unorderedEncodings;
     }
 	
 	public DBObject toDB(Item item) {
