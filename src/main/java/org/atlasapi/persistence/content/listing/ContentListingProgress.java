@@ -50,6 +50,6 @@ public class ContentListingProgress {
     
     @Override
     public String toString() {
-        return String.format("%s:%s (%s/%s)", table.toString(), uri, count, total);
+        return String.format("%s:%s (%s/%s)", table, uri, count, total);
     }
 }
