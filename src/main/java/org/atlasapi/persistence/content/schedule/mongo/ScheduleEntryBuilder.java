@@ -8,14 +8,13 @@ import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
-import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
+import org.atlasapi.media.entity.Version;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Interval;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -31,7 +30,10 @@ public class ScheduleEntryBuilder {
         for (Item item : items) {
             for (Version version : item.nativeVersions()) {
                 for (Broadcast broadcast : version.getBroadcasts()) {
-
+                    if(!broadcast.isActivelyPublished() && Publisher.PA.equals(version.getProvider())) {
+                        continue;
+                    }
+                    
                     ItemRefAndBroadcast itemAndBroadcast = new ItemRefAndBroadcast(item, broadcast);
                     
                     Channel channel = Channel.fromUri(broadcast.getBroadcastOn()).requireValue();
