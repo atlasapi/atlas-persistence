@@ -1,15 +1,22 @@
 package org.atlasapi.persistence.lookup.mongo;
 
+import static com.google.common.base.Predicates.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.LookupRef.LookupType;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -49,5 +56,56 @@ public class MongoLookupEntryStoreTest {
         entryStore.ensureLookup(testItem);
         
         assertEquals(firstEntry.created(), Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("newItemUri"))).created());
+    }
+    
+    @Test
+    public void testEnsureLookupWritesEntryWhenOfDifferentType() {
+        
+        Item testItem = new Item("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testItem.addAlias("oldItemAlias");
+        
+        entryStore.ensureLookup(testItem);
+        
+        LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemUri")));
+        
+        Item transitiveItem = new Item("transitiveUri", "transitiveCurie", Publisher.PA);
+        transitiveItem.addAlias("transitiveAlias");
+        
+        entryStore.ensureLookup(transitiveItem);
+        
+        LookupEntry secondEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveUri")));
+        
+        ImmutableSet<LookupRef> secondRef = ImmutableSet.of(secondEntry.lookupRef());
+        firstEntry = firstEntry.copyWithDirectEquivalents(secondRef).copyWithEquivalents(secondRef);
+        ImmutableSet<LookupRef> firstRef = ImmutableSet.of(firstEntry.lookupRef());
+        secondEntry= secondEntry.copyWithDirectEquivalents(firstRef).copyWithEquivalents(firstRef);
+
+        entryStore.store(firstEntry);
+        entryStore.store(secondEntry);
+
+        Episode testEpisode = new Episode("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testEpisode.addAlias("oldItemAlias");
+        testEpisode.setParentRef(new ParentRef("aBrand"));
+        
+        entryStore.ensureLookup(testEpisode);
+
+        LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemUri")));
+        assertEquals(LookupType.CHILD_ITEM, newEntry.lookupRef().type());
+        assertTrue(newEntry.directEquivalents().contains(secondEntry.lookupRef()));
+        assertTrue(newEntry.equivalents().contains(secondEntry.lookupRef()));
+        assertEquals(firstEntry.created(), newEntry.created());
+        
+        LookupEntry aliasEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemAlias")));
+        assertEquals(LookupType.CHILD_ITEM, aliasEntry.lookupRef().type());
+        assertTrue(aliasEntry.equivalents().contains(secondEntry.lookupRef()));
+        assertEquals(firstEntry.created(), aliasEntry.created());
+        
+        LookupEntry transtiveEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveUri")));
+        assertEquals(LookupType.CHILD_ITEM, Iterables.find(transtiveEntry.equivalents(), equalTo(newEntry.lookupRef())).type());
+        assertEquals(LookupType.CHILD_ITEM, Iterables.find(transtiveEntry.directEquivalents(), equalTo(newEntry.lookupRef())).type());
+        assertEquals(transtiveEntry.created(), secondEntry.created());
+        
+        LookupEntry aliasTranstiveEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveAlias")));
+        assertEquals(LookupType.CHILD_ITEM, Iterables.find(aliasTranstiveEntry.equivalents(), equalTo(newEntry.lookupRef())).type());
     }
 }
