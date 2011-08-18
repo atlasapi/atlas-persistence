@@ -2,6 +2,9 @@ package org.atlasapi.persistence.content.mongo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.persistence.content.ContentTable.CHILD_ITEMS;
 import static org.atlasapi.persistence.content.ContentTable.PROGRAMME_GROUPS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
@@ -83,21 +86,34 @@ public class MongoContentWriter implements ContentWriter {
 		if (item instanceof Episode) {
             if (item.getContainer() == null) {
                 throw new IllegalArgumentException("Episodes must have containers");
-            } 
-            
+            }
+
             childRefWriter.includeEpisodeInSeriesAndBrand((Episode) item);
-            children.update(where.build(), itemDbo, true, false);
-            
-        } else if(item.getContainer() != null) {
-            
+            children.update(where.build(), itemDbo, UPSERT, SINGLE);
+
+            remove(item.getCanonicalUri(), topLevelItems);
+
+        } else if (item.getContainer() != null) {
+
             childRefWriter.includeItemInTopLevelContainer(item);
-            children.update(where.build(), itemDbo, true, false);
-            
+            children.update(where.build(), itemDbo, UPSERT, SINGLE);
+
+            remove(item.getCanonicalUri(), topLevelItems);
         } else {
-            topLevelItems.update(where.build(), itemDbo, true, false);
+            topLevelItems.update(where.build(), itemDbo, UPSERT, SINGLE);
+            
+            //disabled for now. need to remove the childref from the brand/series if enabled
+            //remove(item.getCanonicalUri(), children);
         }
 
         lookupStore.ensureLookup(item);
+    }
+
+    private void remove(String canonicalUri, DBCollection containingCollection) {
+        DBObject find = containingCollection.findOne(new BasicDBObject(MongoConstants.ID, canonicalUri), new BasicDBObject(ID, 1));
+        if(find != null) {
+            containingCollection.remove(new BasicDBObject(MongoConstants.ID, canonicalUri));
+        }
     }
 
     @Override
