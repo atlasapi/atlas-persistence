@@ -184,4 +184,25 @@ public class MongoContentWriterTest {
         assertNotNull(containers.findOne(container.getCanonicalUri()));
     }
     
+    @Test
+    public void testConvertingBetweenEpisodeAndTopLevelItem() {
+        
+        Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
+        
+        contentWriter.createOrUpdate(item);
+        
+        assertNotNull(topLevelItems.findOne(item.getCanonicalUri()));
+        
+        Episode episode = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
+        
+        episode.setContainer(brand);
+        
+        contentWriter.createOrUpdate(brand);
+        contentWriter.createOrUpdate(episode);
+        
+        assertNull(topLevelItems.findOne(item.getCanonicalUri()));
+        assertNotNull(children.findOne(item.getCanonicalUri()));
+        
+    }
 }
