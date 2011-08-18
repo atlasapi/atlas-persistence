@@ -1,13 +1,25 @@
 package org.atlasapi.persistence.lookup.mongo;
 
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.base.Predicates.not;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.transform;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
+import static org.atlasapi.media.entity.LookupRef.TO_ID;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 
+import java.util.Set;
+
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
@@ -15,9 +27,6 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
@@ -32,7 +41,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public void store(LookupEntry entry) {
         for (LookupEntry idEntry : entry.entriesForIdentifiers()) {
-            lookup.update(MongoBuilders.where().idEquals(idEntry.id()).build(), translator.toDbo(idEntry), true, false);
+            lookup.update(MongoBuilders.where().idEquals(idEntry.id()).build(), translator.toDbo(idEntry), UPSERT, SINGLE);
         }
     }
     
@@ -47,14 +56,30 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public void ensureLookup(Described described) {
+        LookupEntry newEntry = lookupEntryFrom(described);
         // Since most content will already have a lookup entry we read first to avoid locking the database
-        if (rowMissing(described)) {
-            lookup.insert(translator.TO_DBO.apply(lookupEntryFrom(described)));
+        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, described.getCanonicalUri())));
+        if (existing == null) {
+            store(newEntry);
+        } else if(!newEntry.lookupRef().type().equals(existing.lookupRef().type())) {
+            convertEntry(described, newEntry, existing);
         }
     }
 
-    private boolean rowMissing(Described described) {
-        DBObject existing = lookup.findOne(new BasicDBObject(MongoConstants.ID, described.getCanonicalUri()), new BasicDBObject(MongoConstants.ID, 1));
-        return existing == null;
+    private void convertEntry(Described described, LookupEntry newEntry, LookupEntry existing) {
+        LookupRef ref = LookupRef.from(described);
+        Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
+        Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
+        LookupEntry merged = new LookupEntry(newEntry.id(), ref, newEntry.aliases(), directEquivs, transitiveEquivs, existing.created(), newEntry.updated());
+        
+        store(merged);
+        
+        for (LookupEntry entry : entriesFor(transform(filter(transitiveEquivs, not(equalTo(ref))), TO_ID))) {
+            if(entry.directEquivalents().contains(ref)) {
+                entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
+            }
+            entry = entry.copyWithEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build());
+            store(entry);
+        }
     }
 }

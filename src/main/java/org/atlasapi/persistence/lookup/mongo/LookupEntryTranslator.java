@@ -2,7 +2,6 @@ package org.atlasapi.persistence.lookup.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
-import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.LookupRef;
@@ -13,7 +12,6 @@ import org.joda.time.DateTime;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -56,7 +54,7 @@ public class LookupEntryTranslator {
         TranslatorUtils.from(dbo, DIRECT, directEquivDbos);
         
         BasicDBList equivDbos = new BasicDBList();
-        equivDbos.addAll(Lists.transform(entry.equivalents(), equivalentToDbo));
+        equivDbos.addAll(ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), equivalentToDbo)));
         TranslatorUtils.from(dbo, EQUIVS, equivDbos);
         
         TranslatorUtils.fromDateTime(dbo, FIRST_CREATED, entry.created());
@@ -86,7 +84,7 @@ public class LookupEntryTranslator {
         String id = TranslatorUtils.toString(dbo, ID);
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
-        List<LookupRef> equivs = Lists.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo);
+        Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
         
