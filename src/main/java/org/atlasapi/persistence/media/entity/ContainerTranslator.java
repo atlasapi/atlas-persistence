@@ -14,12 +14,14 @@ import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container> {
 
 	public static final String CHILDREN_KEY = "childRefs";
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
+    private static final String TOTAL_EPISODES = "totalEpisodes";
 
     public static final String FULL_SERIES_KEY = "series";
 
@@ -80,6 +82,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
             if(dbObject.containsField("container")) {
                 series.setParentRef(new ParentRef((String)dbObject.get("container")));
             }
+            series.setTotalEpisodes(TranslatorUtils.toInteger(dbObject, TOTAL_EPISODES));
         }
 
         if (entity instanceof Brand) {
@@ -147,6 +150,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
             }
             if (series.getParent() != null) {
                 dbObject.put("container", series.getParent().getUri());
+            }
+            if(series.getTotalEpisodes() != null) {
+                TranslatorUtils.from(dbObject, TOTAL_EPISODES, series.getTotalEpisodes());
             }
         }
         return dbObject;

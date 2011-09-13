@@ -66,6 +66,7 @@ public class ContainerTranslatorTest extends TestCase {
         Series series = new Series("testUri", "testCurie", Publisher.BBC);
         series.setParentRef(new ParentRef("testParent"));
         series.withSeriesNumber(5);
+        series.setTotalEpisodes(5);
         
         DBObject encoded = bt.toDB(series);
         
@@ -73,6 +74,7 @@ public class ContainerTranslatorTest extends TestCase {
         
         assertEquals(series.getParent(), fromDBObject.getParent());
         assertEquals(series.getSeriesNumber(), fromDBObject.getSeriesNumber());
+        assertEquals(series.getTotalEpisodes(), fromDBObject.getTotalEpisodes());
         
     }
 }
