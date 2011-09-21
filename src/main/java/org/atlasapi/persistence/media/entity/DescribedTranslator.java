@@ -59,6 +59,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		if (specialization != null) {
 			entity.setSpecialization(Specialization.valueOf(specialization.toUpperCase()));
 		}
+		
+		entity.setPresentationChannel(TranslatorUtils.toString(dbObject, "presentationChannel"));
 
 		return entity;
 	}
@@ -96,6 +98,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         if (entity.getSpecialization() != null) {
             TranslatorUtils.from(dbObject, "specialization", entity.getSpecialization().toString().toLowerCase());
         }
+        
+        TranslatorUtils.from(dbObject, "presentationChannel", entity.getPresentationChannel());
         
         return dbObject;
 	}
