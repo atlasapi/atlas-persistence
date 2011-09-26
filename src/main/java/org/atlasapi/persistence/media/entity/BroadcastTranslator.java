@@ -10,6 +10,8 @@ import com.mongodb.DBObject;
 
 public class BroadcastTranslator  {
 	
+    private static final String NEW_SERIES_KEY = "newSeries";
+    private static final String PREMIER_KEY = "premier";
     private static final String TRANSMISSION_END_TIME_KEY = "transmissionEndTime";
 	private static final String TRANSMISSION_TIME_KEY = "transmissionTime";
 	private static final String REPEAT_KEY = "repeat";
@@ -44,6 +46,8 @@ public class BroadcastTranslator  {
         broadcast.setWidescreen(TranslatorUtils.toBoolean(dbObject, WIDESCREEN_KEY));
         broadcast.setSurround(TranslatorUtils.toBoolean(dbObject, SURROUND_KEY));
         broadcast.setLive(TranslatorUtils.toBoolean(dbObject, LIVE_KEY));
+        broadcast.setPremiere(TranslatorUtils.toBoolean(dbObject, PREMIER_KEY));
+        broadcast.setNewSeries(TranslatorUtils.toBoolean(dbObject, NEW_SERIES_KEY));
         
         return broadcast;
     }
@@ -67,6 +71,8 @@ public class BroadcastTranslator  {
         TranslatorUtils.from(dbObject, WIDESCREEN_KEY, entity.isWidescreen());
         TranslatorUtils.from(dbObject, SURROUND_KEY, entity.isSurround());
         TranslatorUtils.from(dbObject, LIVE_KEY, entity.isLive());
+        TranslatorUtils.from(dbObject, PREMIER_KEY, entity.isPremiere());
+        TranslatorUtils.from(dbObject, NEW_SERIES_KEY, entity.isNewSeries());
         return dbObject;
     }
 
