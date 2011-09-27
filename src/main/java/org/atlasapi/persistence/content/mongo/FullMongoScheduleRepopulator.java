@@ -4,6 +4,7 @@ import static org.atlasapi.persistence.content.ContentTable.CHILD_ITEMS;
 import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
 import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
 
+import java.util.List;
 import java.util.Map;
 
 import org.atlasapi.media.entity.Content;
@@ -16,6 +17,7 @@ import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleEntryBuilder;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -25,13 +27,13 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
     
     private final ContentLister contentLister;
     private final ScheduleWriter scheduleStore;
-    private final Iterable<Publisher> publishers;
+    private final List<Publisher> publishers;
     private final ScheduleEntryBuilder scheduleEntryBuilder = new ScheduleEntryBuilder();
 
-    public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> forPublishers) {
+    public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> publishers) {
         this.contentLister = contentLister;
         this.scheduleStore = scheduleStore;
-        this.publishers = forPublishers;
+        this.publishers = ImmutableList.copyOf(publishers);
     }
     
     @Override

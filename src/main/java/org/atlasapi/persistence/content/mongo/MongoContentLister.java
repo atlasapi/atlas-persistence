@@ -67,8 +67,8 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             criteria = ContentListingCriteria.defaultCriteria();
         }
         
-        Set<Publisher> publishers = criteria.getPublishers();
-        publishers = publishers == null || publishers.isEmpty() ? ImmutableSet.copyOf(Publisher.values()) : publishers;
+        List<Publisher> publishers = criteria.getPublishers();
+        publishers = publishers == null ? ImmutableList.copyOf(Publisher.values()) : publishers;
         
         String fromId = criteria.getProgress().getUri();
         ContentTable table = criteria.getProgress().getTable();
@@ -92,7 +92,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return true;
     }
     
-    private int countRows(List<ContentTable> sortedTables, Set<Publisher> publishers) {
+    private int countRows(List<ContentTable> sortedTables, Iterable<Publisher> publishers) {
         int total = 0;
         MongoQueryBuilder query = where();
         if(!publishers.equals(ImmutableSet.copyOf(Publisher.values()))) {
@@ -104,7 +104,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return total;
     }
 
-    private boolean listContent(String start, int total, AtomicInteger progress, Set<Publisher> publishers, ContentListingHandler handler, ContentTable table) {
+    private boolean listContent(String start, int total, AtomicInteger progress, Iterable<Publisher> publishers, ContentListingHandler handler, ContentTable table) {
         DBCollection collection = contentTables.collectionFor(table);
         while (true) {
             
@@ -125,7 +125,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         }
     }
 
-    private MongoQueryBuilder queryFor(String start, Set<Publisher> publishers) {
+    private MongoQueryBuilder queryFor(String start, Iterable<Publisher> publishers) {
         MongoQueryBuilder query = where().fieldIn("publisher", Iterables.transform(publishers, Publisher.TO_KEY));
         if (start != null) {
             query.fieldGreaterThan(MongoConstants.ID, start);

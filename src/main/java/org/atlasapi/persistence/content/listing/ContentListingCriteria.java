@@ -2,11 +2,11 @@ package org.atlasapi.persistence.content.listing;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.Set;
+import java.util.List;
 
 import org.atlasapi.media.entity.Publisher;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 
 public class ContentListingCriteria {
 
@@ -16,7 +16,7 @@ public class ContentListingCriteria {
     
     private ContentListingProgress progress = ContentListingProgress.START;
     
-    private Set<Publisher> publishers = null;
+    private List<Publisher> publishers = null;
     
     public ContentListingCriteria startingAt(ContentListingProgress progress) {
         this.progress = checkNotNull(progress);
@@ -24,12 +24,12 @@ public class ContentListingCriteria {
     }
     
     public ContentListingCriteria forPublisher(Publisher publisher) {
-        this.publishers = ImmutableSet.of(publisher);
+        this.publishers = ImmutableList.of(publisher);
         return this;
     }
     
-    public ContentListingCriteria forPublishers(Iterable<Publisher> publishers) {
-        this.publishers = ImmutableSet.copyOf(publishers);
+    public ContentListingCriteria forPublishers(List<Publisher> publishers) {
+        this.publishers = ImmutableList.copyOf(publishers);
         return this;
     }
     
@@ -37,7 +37,7 @@ public class ContentListingCriteria {
         return this.progress;
     }
     
-    public Set<Publisher> getPublishers() {
+    public List<Publisher> getPublishers() {
         return this.publishers;
     }
 }
