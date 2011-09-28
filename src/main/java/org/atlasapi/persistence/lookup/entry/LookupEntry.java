@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
-import org.atlasapi.media.entity.LookupRef;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;

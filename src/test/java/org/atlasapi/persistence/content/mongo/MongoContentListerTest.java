@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
-import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
 import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -14,6 +12,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentListingHandler;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -71,7 +70,7 @@ public class MongoContentListerTest {
         final List<Content> contents = Lists.newArrayList();
         ContentListingHandler handler = storingContentListingHandler(contents);
         
-        lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS), defaultCriteria(), handler);
+        lister.listContent(ImmutableSet.of(ContentCategory.TOP_LEVEL_ITEM), defaultCriteria(), handler);
         
         assertEquals(ImmutableList.of(item1, item2), contents);
         
@@ -83,7 +82,7 @@ public class MongoContentListerTest {
         final List<Content> contents = Lists.newArrayList();
         ContentListingHandler handler = storingContentListingHandler(contents);
         
-        lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, TOP_LEVEL_CONTAINERS), defaultCriteria(), handler);
+        lister.listContent(ContentCategory.TOP_LEVEL_CONTENT, defaultCriteria(), handler);
         
         assertEquals(ImmutableList.of(brand, item1, item2), contents);
         
@@ -108,7 +107,7 @@ public class MongoContentListerTest {
             }
         };
         
-        boolean finished = lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, TOP_LEVEL_CONTAINERS), defaultCriteria(), handler);
+        boolean finished = lister.listContent(ContentCategory.TOP_LEVEL_CONTENT, defaultCriteria(), handler);
         
         assertEquals(ImmutableList.of(brand), processedContents);
         assertFalse(finished);
@@ -120,8 +119,8 @@ public class MongoContentListerTest {
         final List<Content> contents = Lists.newArrayList();
         ContentListingHandler handler = storingContentListingHandler(contents);
         
-        ContentListingProgress progress = new ContentListingProgress("item1", TOP_LEVEL_ITEMS);
-        boolean finished = lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, TOP_LEVEL_CONTAINERS), defaultCriteria().startingAt(progress), handler);
+        ContentListingProgress progress = new ContentListingProgress("item1", ContentCategory.TOP_LEVEL_ITEM);
+        boolean finished = lister.listContent(ContentCategory.TOP_LEVEL_CONTENT, defaultCriteria().startingAt(progress), handler);
         
         assertEquals(ImmutableList.of(item2), contents);
         assertTrue(finished);

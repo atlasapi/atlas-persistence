@@ -1,23 +1,23 @@
 package org.atlasapi.persistence.content.listing;
 
 import org.atlasapi.media.entity.Identified;
-import org.atlasapi.persistence.content.ContentTable;
+import org.atlasapi.persistence.content.ContentCategory;
 
 public class ContentListingProgress {
     
     public static final ContentListingProgress START = new ContentListingProgress(null, null);
     
-    public static final ContentListingProgress progressFor(Identified ided, ContentTable table) {
+    public static final ContentListingProgress progressFor(Identified ided, ContentCategory table) {
         return new ContentListingProgress(ided.getCanonicalUri(), table);
     }
     
     private final String uri;
-    private final ContentTable table;
+    private final ContentCategory table;
 
     private int total = 0;
     private int count = 0;
 
-    public ContentListingProgress(String uri, ContentTable table) {
+    public ContentListingProgress(String uri, ContentCategory table) {
         this.uri = uri;
         this.table = table;
     }
@@ -26,7 +26,7 @@ public class ContentListingProgress {
         return uri;
     }
 
-    public ContentTable getTable() {
+    public ContentCategory getTable() {
         return table;
     }
     

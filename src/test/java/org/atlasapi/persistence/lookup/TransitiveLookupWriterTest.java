@@ -5,11 +5,11 @@ import junit.framework.TestCase;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.LookupRef.LookupType;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.lookup.entry.LookupRef;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -38,7 +38,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
-        assertEquals(LookupType.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).type());
+        assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).table());
 
         LookupEntry aliasEntry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of("testAlias")));
         assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.id());
@@ -46,7 +46,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(aliasEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(aliasEntry.equivalents()).publisher());
-        assertEquals(LookupType.TOP_LEVEL_ITEM, Iterables.getOnlyElement(aliasEntry.equivalents()).type());
+        assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(aliasEntry.equivalents()).table());
 
         assertNotNull(aliasEntry.created());
         assertNotNull(aliasEntry.updated());

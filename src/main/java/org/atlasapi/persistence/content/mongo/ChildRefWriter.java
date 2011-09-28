@@ -14,7 +14,7 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
-import org.atlasapi.persistence.content.ContentTable;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 
 import com.google.common.collect.ImmutableList;
@@ -32,8 +32,8 @@ public class ChildRefWriter {
 
     public ChildRefWriter(DatabasedMongo mongo) {
         MongoContentTables mongoTables = new MongoContentTables(mongo);
-        containers = mongoTables.collectionFor(ContentTable.TOP_LEVEL_CONTAINERS);
-        programmeGroups = mongoTables.collectionFor(ContentTable.PROGRAMME_GROUPS);
+        containers = mongoTables.collectionFor(ContentCategory.CONTAINER);
+        programmeGroups = mongoTables.collectionFor(ContentCategory.PROGRAMME_GROUP);
     }
 
     public void includeEpisodeInSeriesAndBrand(Episode episode) {

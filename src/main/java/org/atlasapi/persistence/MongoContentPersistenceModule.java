@@ -48,7 +48,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean KnownTypeContentResolver knownTypeContentResolver() {
-	    return new MongoContentResolver(new MongoContentTables(db));
+	    return new MongoContentResolver(db);
 	}
 	
 	public @Bean MongoLookupEntryStore lookupStore() {
