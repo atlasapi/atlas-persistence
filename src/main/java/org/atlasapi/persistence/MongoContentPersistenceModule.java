@@ -77,7 +77,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean ContentLister contentListener() {
-		return new MongoContentLister(new MongoContentTables(db));
+		return new MongoContentLister(db);
 	}
 	
     @Bean

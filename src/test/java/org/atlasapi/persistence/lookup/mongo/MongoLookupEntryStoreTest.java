@@ -90,22 +90,22 @@ public class MongoLookupEntryStoreTest {
         entryStore.ensureLookup(testEpisode);
 
         LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemUri")));
-        assertEquals(ContentCategory.CHILD_ITEM, newEntry.lookupRef().table());
+        assertEquals(ContentCategory.CHILD_ITEM, newEntry.lookupRef().category());
         assertTrue(newEntry.directEquivalents().contains(secondEntry.lookupRef()));
         assertTrue(newEntry.equivalents().contains(secondEntry.lookupRef()));
         assertEquals(firstEntry.created(), newEntry.created());
         
         LookupEntry aliasEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemAlias")));
-        assertEquals(ContentCategory.CHILD_ITEM, aliasEntry.lookupRef().table());
+        assertEquals(ContentCategory.CHILD_ITEM, aliasEntry.lookupRef().category());
         assertTrue(aliasEntry.equivalents().contains(secondEntry.lookupRef()));
         assertEquals(firstEntry.created(), aliasEntry.created());
         
         LookupEntry transtiveEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveUri")));
-        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.equivalents(), equalTo(newEntry.lookupRef())).table());
-        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.directEquivalents(), equalTo(newEntry.lookupRef())).table());
+        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.equivalents(), equalTo(newEntry.lookupRef())).category());
+        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.directEquivalents(), equalTo(newEntry.lookupRef())).category());
         assertEquals(transtiveEntry.created(), secondEntry.created());
         
         LookupEntry aliasTranstiveEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveAlias")));
-        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(aliasTranstiveEntry.equivalents(), equalTo(newEntry.lookupRef())).table());
+        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(aliasTranstiveEntry.equivalents(), equalTo(newEntry.lookupRef())).category());
     }
 }

@@ -38,7 +38,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
-        assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).table());
+        assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).category());
 
         LookupEntry aliasEntry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of("testAlias")));
         assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.id());
@@ -46,7 +46,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(aliasEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(aliasEntry.equivalents()).publisher());
-        assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(aliasEntry.equivalents()).table());
+        assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(aliasEntry.equivalents()).category());
 
         assertNotNull(aliasEntry.created());
         assertNotNull(aliasEntry.updated());

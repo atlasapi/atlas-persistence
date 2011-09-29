@@ -1,5 +1,10 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static org.atlasapi.persistence.content.ContentCategory.CHILD_ITEM;
+import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
+import static org.atlasapi.persistence.content.ContentCategory.PROGRAMME_GROUP;
+import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
+
 import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.collect.ImmutableMap;
@@ -12,10 +17,10 @@ public class MongoContentTables {
 
     public MongoContentTables(DatabasedMongo mongo) {
         this.tableMap = ImmutableMap.of(
-                ContentCategory.CONTAINER, mongo.collection("containers"),
-                ContentCategory.TOP_LEVEL_ITEM, mongo.collection("topLevelItems"),
-                ContentCategory.PROGRAMME_GROUP,mongo.collection("programmeGroups"),
-                ContentCategory.CHILD_ITEM, mongo.collection("children")
+                CONTAINER, mongo.collection(CONTAINER.tableName()),
+                TOP_LEVEL_ITEM, mongo.collection(TOP_LEVEL_ITEM.tableName()),
+                PROGRAMME_GROUP,mongo.collection(PROGRAMME_GROUP.tableName()),
+                CHILD_ITEM, mongo.collection(CHILD_ITEM.tableName())
         );
     }
     

@@ -71,7 +71,7 @@ public class LookupEntryTranslator {
             
             TranslatorUtils.from(dbo, ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
-            TranslatorUtils.from(dbo, TYPE, input.table().toString());
+            TranslatorUtils.from(dbo, TYPE, input.category().toString());
             
             return dbo;
         }
@@ -100,7 +100,7 @@ public class LookupEntryTranslator {
             String id = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, publisher, ContentCategory.fromString(type));
+            return new LookupRef(id, publisher, ContentCategory.valueOf(type));
         }
     };
 }

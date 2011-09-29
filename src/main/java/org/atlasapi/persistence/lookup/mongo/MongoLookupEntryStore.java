@@ -61,7 +61,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, described.getCanonicalUri())));
         if (existing == null) {
             store(newEntry);
-        } else if(!newEntry.lookupRef().table().equals(existing.lookupRef().table())) {
+        } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
             convertEntry(described, newEntry, existing);
         }
     }

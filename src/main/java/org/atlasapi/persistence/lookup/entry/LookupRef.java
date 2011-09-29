@@ -50,12 +50,12 @@ public class LookupRef {
     
     private final String id;
     private final Publisher publisher;
-    private final ContentCategory table;
+    private final ContentCategory category;
 
-    public LookupRef(String id, Publisher publisher, ContentCategory table) {
+    public LookupRef(String id, Publisher publisher, ContentCategory category) {
         this.id = id;
         this.publisher = publisher;
-        this.table = table;
+        this.category = category;
     }
 
     public String id() {
@@ -66,8 +66,8 @@ public class LookupRef {
         return publisher;
     }
 
-    public ContentCategory table() {
-        return table;
+    public ContentCategory category() {
+        return category;
     }
     
     @Override
@@ -89,6 +89,6 @@ public class LookupRef {
     
     @Override
     public String toString() {
-        return String.format("Equiv:%s(%s,%s)", id, publisher.title(), table);
+        return String.format("Equiv:%s(%s,%s)", id, publisher.title(), category);
     }
 }
