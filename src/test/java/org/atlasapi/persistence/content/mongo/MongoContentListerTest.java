@@ -23,9 +23,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.BasicDBObject;
 
 public class MongoContentListerTest {
 
@@ -42,6 +45,8 @@ public class MongoContentListerTest {
     
     @BeforeClass
     public static void writeTestContents() {
+        mongo.collection(TOP_LEVEL_ITEM.tableName()).ensureIndex(new BasicDBObject(ImmutableMap.of("publisher",1,MongoConstants.ID,1)));
+        mongo.collection(CONTAINER.tableName()).ensureIndex(new BasicDBObject(ImmutableMap.of("publisher",1,MongoConstants.ID,1)));
         NewLookupWriter lookupStore = new NewLookupWriter() {
             @Override
             public void ensureLookup(Described described) {
