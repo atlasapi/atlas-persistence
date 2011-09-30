@@ -128,9 +128,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         if(when != null) {
             query.fieldAfter("thisOrChildLastUpdated", when);
         }
-        DBObject resuilt = query.build();
-        System.out.println(resuilt);
-        return resuilt;
+        return query.build();
     }
 
     private List<Publisher> remainingPublishers(ContentListingCriteria criteria) {
