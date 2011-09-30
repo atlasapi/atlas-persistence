@@ -1,55 +1,45 @@
 package org.atlasapi.persistence.content.listing;
 
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.persistence.content.ContentTable;
+import static org.atlasapi.persistence.content.ContentCategory.categoryFor;
+
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
+
+import com.google.common.base.Objects;
 
 public class ContentListingProgress {
     
-    public static final ContentListingProgress START = new ContentListingProgress(null, null);
-    
-    public static final ContentListingProgress progressFor(Identified ided, ContentTable table) {
-        return new ContentListingProgress(ided.getCanonicalUri(), table);
+    public static final ContentListingProgress progressFrom(Content content) {
+        return new ContentListingProgress(categoryFor(content), content.getPublisher(), content.getCanonicalUri());
     }
+
+    public static final ContentListingProgress START = new ContentListingProgress(null, null, null);
     
-    private final String uri;
-    private final ContentTable table;
+    private final ContentCategory category;
+    private final Publisher publisher;
+    private final String initialId;
+    
+    public ContentListingProgress(ContentCategory table, Publisher publisher, String initialId) {
+        this.category = table;
+        this.publisher = publisher;
+        this.initialId = initialId;
+    }
 
-    private int total = 0;
-    private int count = 0;
+    public ContentCategory getCategory() {
+        return category;
+    }
 
-    public ContentListingProgress(String uri, ContentTable table) {
-        this.uri = uri;
-        this.table = table;
+    public Publisher getPublisher() {
+        return publisher;
     }
 
     public String getUri() {
-        return uri;
-    }
-
-    public ContentTable getTable() {
-        return table;
-    }
-    
-    public ContentListingProgress withCount(int count) {
-        this.count = count;
-        return this;
-    }
-    
-    public ContentListingProgress withTotal(int total) {
-        this.total = total;
-        return this;
-    }
-    
-    public int count() {
-        return this.count;
-    }
-    
-    public int total() {
-        return this.total;
+        return initialId;
     }
     
     @Override
     public String toString() {
-        return String.format("%s:%s (%s/%s)", table, uri, count, total);
+        return Objects.toStringHelper(this).add("category", category).add("publisher", publisher).add("id", initialId).toString();
     }
 }

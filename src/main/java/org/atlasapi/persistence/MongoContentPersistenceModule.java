@@ -48,7 +48,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean KnownTypeContentResolver knownTypeContentResolver() {
-	    return new MongoContentResolver(new MongoContentTables(db));
+	    return new MongoContentResolver(db);
 	}
 	
 	public @Bean MongoLookupEntryStore lookupStore() {
@@ -77,7 +77,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Bean ContentLister contentListener() {
-		return new MongoContentLister(new MongoContentTables(db));
+		return new MongoContentLister(db);
 	}
 	
     @Bean

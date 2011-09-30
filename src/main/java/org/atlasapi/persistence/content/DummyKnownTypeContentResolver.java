@@ -3,8 +3,8 @@ package org.atlasapi.persistence.content;
 import java.util.Map;
 
 import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
+import org.atlasapi.persistence.lookup.entry.LookupRef;
 
 import com.google.common.collect.Maps;
 

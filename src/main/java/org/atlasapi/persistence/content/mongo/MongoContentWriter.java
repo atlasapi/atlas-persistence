@@ -5,10 +5,6 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.persistence.content.ContentTable.CHILD_ITEMS;
-import static org.atlasapi.persistence.content.ContentTable.PROGRAMME_GROUPS;
-import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
-import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
 
 import java.util.Set;
 
@@ -22,6 +18,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
@@ -60,10 +57,10 @@ public class MongoContentWriter implements ContentWriter {
 
         MongoContentTables contentTables = new MongoContentTables(mongo);
         
-        children = contentTables.collectionFor(CHILD_ITEMS);
-        topLevelItems = contentTables.collectionFor(TOP_LEVEL_ITEMS);
-        containers = contentTables.collectionFor(TOP_LEVEL_CONTAINERS);
-        programmeGroups = contentTables.collectionFor(PROGRAMME_GROUPS);
+        children = contentTables.collectionFor(ContentCategory.CHILD_ITEM);
+        topLevelItems = contentTables.collectionFor(ContentCategory.TOP_LEVEL_ITEM);
+        containers = contentTables.collectionFor(ContentCategory.CONTAINER);
+        programmeGroups = contentTables.collectionFor(ContentCategory.PROGRAMME_GROUP);
         
         this.childRefWriter = new ChildRefWriter(mongo);
     }

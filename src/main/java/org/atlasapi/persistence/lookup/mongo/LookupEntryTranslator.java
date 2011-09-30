@@ -4,9 +4,10 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
 import java.util.Set;
 
-import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupRef;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -70,7 +71,7 @@ public class LookupEntryTranslator {
             
             TranslatorUtils.from(dbo, ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
-            TranslatorUtils.from(dbo, TYPE, input.type().toString());
+            TranslatorUtils.from(dbo, TYPE, input.category().toString());
             
             return dbo;
         }
@@ -99,7 +100,7 @@ public class LookupEntryTranslator {
             String id = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, publisher, LookupRef.LookupType.valueOf(type));
+            return new LookupRef(id, publisher, ContentCategory.valueOf(type));
         }
     };
 }
