@@ -38,8 +38,6 @@ import com.mongodb.DBObject;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder {
 
-    private static final DBObject SORT_BY_ID = new MongoSortBuilder().ascending(MongoConstants.ID).build(); 
-    
     private final ContainerTranslator containerTranslator = new ContainerTranslator();
     private final ItemTranslator itemTranslator = new ItemTranslator();
 
@@ -103,23 +101,36 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     }
                     ContentCategory table = tablesIt.next();
                     currentTranslator = TRANSLATORS.get(table);
-                    currentResults = contentTables.collectionFor(table).find(queryFor(uri, when, publisher)).sort(SORT_BY_ID);
+                    currentResults = contentTables.collectionFor(table).find(queryFor(uri, when, publisher)).sort(sortFor(uri, when));
                     uri = null;//only use the id for the first table.
                 }
                 return currentTranslator.apply(currentResults.next());
             }
         };
     }
+    
+    private DBObject sortFor(String uri, DateTime when) {
+        MongoSortBuilder sort = new MongoSortBuilder().ascending("publisher");
+        if(when != null) {
+            sort.ascending("thisOrChildLastUpdated");
+        }
+        if(!Strings.isNullOrEmpty(uri)) {
+            sort.ascending(MongoConstants.ID).build(); 
+        }
+        return sort.build();
+    }
 
     private DBObject queryFor(final String uri, final DateTime when, Publisher publisher) {
         MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key());
-        if(!Strings.isNullOrEmpty(uri)) {
+        if (!Strings.isNullOrEmpty(uri)) {
             query.fieldGreaterThan(ID, uri);
         }
         if(when != null) {
             query.fieldAfter("thisOrChildLastUpdated", when);
         }
-        return query.build();
+        DBObject resuilt = query.build();
+        System.out.println(resuilt);
+        return resuilt;
     }
 
     private List<Publisher> remainingPublishers(ContentListingCriteria criteria) {
