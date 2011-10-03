@@ -2,6 +2,8 @@ package org.atlasapi.persistence.content.schedule.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,6 +31,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -80,6 +83,111 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         }
     }
 
+    @Override
+    public void replaceScheduleBlock(Publisher publisher, Channel channel, Iterable<ItemRefAndBroadcast> itemsAndBroadcasts) {
+    	
+    	Interval interval = checkAndGetScheduleInterval(itemsAndBroadcasts, true);
+    	Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(channel, publisher, interval);
+    	
+    	for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
+	    	scheduleEntryBuilder.toScheduleEntryFromBroadcast(channel, publisher, itemAndBroadcast, entries);
+    	}
+    	for(ScheduleEntry entry : entries.values()) {
+    		writeCompleteEntry(entry);
+    	}
+    }
+    
+    private Interval checkAndGetScheduleInterval(Iterable<ItemRefAndBroadcast> itemsAndBroadcasts, boolean allowGaps)
+    {
+		List<Broadcast> broadcasts = Lists.newArrayList();
+		for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
+			broadcasts.add(itemAndBroadcast.getBroadcast());
+		}
+		
+		Collections.<Broadcast>sort(broadcasts, new Comparator<Broadcast>() {
+	
+			@Override
+			public int compare(Broadcast o1, Broadcast o2) {
+				if(o1.getTransmissionTime().equals(o2.getTransmissionTime())) {
+					return o1.getTransmissionEndTime().isBefore(o2.getTransmissionEndTime()) ? -1 : 1;
+				}
+				else {
+					return o1.getTransmissionTime().isBefore(o2.getTransmissionTime()) ? -1 : 1;
+				}
+			}
+		});
+	
+		DateTime currentEndTime = null;
+		String channel = null;
+		
+		for(Broadcast b : broadcasts) {
+			
+			if(channel != null && !channel.equals(b.getBroadcastOn())) {
+				throw new IllegalArgumentException("All broadcasts must be on the same channel");
+			}	
+			channel = b.getBroadcastOn();
+			
+			if(allowGaps) {
+				if(currentEndTime != null && b.getTransmissionTime().isBefore(currentEndTime)) {
+					throw new IllegalArgumentException("Overlapping periods found in schedule");
+				}
+			}
+			else {
+				if(currentEndTime != null && !(currentEndTime.equals(b.getTransmissionTime()))) {
+					throw new IllegalArgumentException("Schedule is not contiguous");
+				}
+			}
+			currentEndTime = b.getTransmissionEndTime();
+		}
+		
+		return new Interval(broadcasts.get(0).getTransmissionTime(), currentEndTime);
+    }
+   
+	private Map<String, ScheduleEntry> getAdjacentScheduleEntries(Channel channel,
+			Publisher publisher,
+			final Interval interval) {
+		
+        List<Interval> intervals = scheduleEntryBuilder.intervalsFor(interval.getStart(), interval.getEnd()); 
+        Set<String> requiredScheduleEntries = Sets.<String>newHashSet();
+
+	    String firstScheduleEntryKey = ScheduleEntry.toKey(intervals.get(0), channel, publisher);
+	    String lastScheduleEntryKey = ScheduleEntry.toKey(intervals.get(intervals.size() - 1), channel, publisher);
+	        
+	    requiredScheduleEntries.add(firstScheduleEntryKey);
+	    requiredScheduleEntries.add(lastScheduleEntryKey);
+	    Map<String, ScheduleEntry> scheduleEntries = Maps.newHashMap(Maps.uniqueIndex(translator.fromDbObjects(where().idIn(requiredScheduleEntries).find(collection)), ScheduleEntry.KEY));
+	    
+	    // For the first period, retain items that start before the interval 
+	    if(scheduleEntries.containsKey(firstScheduleEntryKey)) {
+		    ScheduleEntry firstEntry = filteredScheduleEntry(scheduleEntries.get(firstScheduleEntryKey), new Predicate<ItemRefAndBroadcast>() {
+				@Override
+				public boolean apply(ItemRefAndBroadcast i) {	
+					return (i.getBroadcast().getTransmissionTime().isBefore(interval.getStart()));
+				}
+			});
+		    scheduleEntries.put(firstScheduleEntryKey, firstEntry);
+	    }
+	  
+	    // For the last period, retain items that start on or after the end of the interval
+	    if(scheduleEntries.containsKey(lastScheduleEntryKey)) {
+		    ScheduleEntry lastEntry = filteredScheduleEntry(scheduleEntries.get(lastScheduleEntryKey), new Predicate<ItemRefAndBroadcast>() {
+				@Override
+				public boolean apply(ItemRefAndBroadcast i) {			
+					return ! i.getBroadcast().getTransmissionTime().isBefore(interval.getEnd());
+				}
+			});
+		    scheduleEntries.put(lastScheduleEntryKey, lastEntry);
+	    }
+	    return scheduleEntries;
+	}
+    
+	private ScheduleEntry filteredScheduleEntry(ScheduleEntry entry, Predicate<ItemRefAndBroadcast> filterPredicate)  {
+	
+		Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(entry.getItemRefsAndBroadcasts(), filterPredicate);
+		ScheduleEntry filteredEntry = new ScheduleEntry(entry.interval(), entry.channel(), entry.publisher(), filteredBroadcasts);
+		return filteredEntry;
+    }
+		
     @Override
     public Schedule schedule(DateTime from, DateTime to, Iterable<Channel> channels, Iterable<Publisher> publishers) {
         Map<Channel, List<Item>> channelMap = createChannelMap(channels);
