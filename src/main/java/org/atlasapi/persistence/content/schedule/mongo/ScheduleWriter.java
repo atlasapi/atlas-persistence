@@ -1,7 +1,10 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
+import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
+import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 
 public interface ScheduleWriter {
 
@@ -9,5 +12,8 @@ public interface ScheduleWriter {
     void writeScheduleFor(Iterable<? extends Item> items);
 
     void writeCompleteEntry(ScheduleEntry entry);
+
+	void replaceScheduleBlock(Publisher publisher, Channel channel,
+			Iterable<ItemRefAndBroadcast> itemsAndBroadcasts);
 
 }
