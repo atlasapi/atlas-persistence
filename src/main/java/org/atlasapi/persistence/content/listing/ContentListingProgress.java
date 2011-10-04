@@ -1,55 +1,73 @@
 package org.atlasapi.persistence.content.listing;
 
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.persistence.content.ContentTable;
+import static org.atlasapi.persistence.content.ContentCategory.categoryFor;
 
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
+
+import com.google.common.base.Objects;
+
+/**
+ * Represents the progress of a content listing operation. 
+ * 
+ * It stores the necessary state such that a task can be stopped and restarted.
+ *
+ * @see ContentLister
+ * @see ContentListingCriteria
+ * 
+ * @author Fred van den Driessche (fred@metabroadcast.com)
+ *
+ */
 public class ContentListingProgress {
-    
-    public static final ContentListingProgress START = new ContentListingProgress(null, null);
-    
-    public static final ContentListingProgress progressFor(Identified ided, ContentTable table) {
-        return new ContentListingProgress(ided.getCanonicalUri(), table);
+
+    public static final ContentListingProgress progressFrom(Content content) {
+        return new ContentListingProgress(categoryFor(content), content.getPublisher(), content.getCanonicalUri());
     }
-    
-    private final String uri;
-    private final ContentTable table;
 
-    private int total = 0;
-    private int count = 0;
+    public static final ContentListingProgress START = new ContentListingProgress(null, null, null);
 
-    public ContentListingProgress(String uri, ContentTable table) {
-        this.uri = uri;
-        this.table = table;
+    private final ContentCategory category;
+    private final Publisher publisher;
+    private final String initialId;
+
+    public ContentListingProgress(ContentCategory table, Publisher publisher, String initialId) {
+        this.category = table;
+        this.publisher = publisher;
+        this.initialId = initialId;
+    }
+
+    public ContentCategory getCategory() {
+        return category;
+    }
+
+    public Publisher getPublisher() {
+        return publisher;
     }
 
     public String getUri() {
-        return uri;
+        return initialId;
     }
 
-    public ContentTable getTable() {
-        return table;
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this).add("category", category).add("publisher", publisher).add("id", initialId).toString();
     }
-    
-    public ContentListingProgress withCount(int count) {
-        this.count = count;
-        return this;
-    }
-    
-    public ContentListingProgress withTotal(int total) {
-        this.total = total;
-        return this;
-    }
-    
-    public int count() {
-        return this.count;
-    }
-    
-    public int total() {
-        return this.total;
+
+    @Override
+    public boolean equals(Object that) {
+        if (this == that) {
+            return true;
+        }
+        if (that instanceof ContentListingProgress) {
+            ContentListingProgress other = (ContentListingProgress) that;
+            return Objects.equal(this.category, other.category) && Objects.equal(this.publisher, other.publisher) && Objects.equal(this.initialId, other.initialId);
+        }
+        return false;
     }
     
     @Override
-    public String toString() {
-        return String.format("%s:%s (%s/%s)", table, uri, count, total);
+    public int hashCode() {
+        return Objects.hashCode(category, publisher, initialId);
     }
 }

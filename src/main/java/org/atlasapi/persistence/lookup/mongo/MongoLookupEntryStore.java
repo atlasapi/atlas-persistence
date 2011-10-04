@@ -7,16 +7,16 @@ import static com.google.common.collect.Iterables.transform;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.media.entity.LookupRef.TO_ID;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
+import static org.atlasapi.persistence.lookup.entry.LookupRef.TO_ID;
 
 import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
-import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.lookup.entry.LookupRef;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -61,7 +61,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, described.getCanonicalUri())));
         if (existing == null) {
             store(newEntry);
-        } else if(!newEntry.lookupRef().type().equals(existing.lookupRef().type())) {
+        } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
             convertEntry(described, newEntry, existing);
         }
     }

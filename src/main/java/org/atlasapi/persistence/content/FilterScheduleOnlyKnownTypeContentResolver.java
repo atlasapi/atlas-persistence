@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.content;
 
-import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.persistence.lookup.entry.LookupRef;
 
 public class FilterScheduleOnlyKnownTypeContentResolver implements KnownTypeContentResolver {
     
