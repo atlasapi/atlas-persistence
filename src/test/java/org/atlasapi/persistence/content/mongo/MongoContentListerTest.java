@@ -1,11 +1,14 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_CONTAINERS;
-import static org.atlasapi.persistence.content.ContentTable.TOP_LEVEL_ITEMS;
+import static org.atlasapi.media.entity.Publisher.BBC;
+import static org.atlasapi.media.entity.Publisher.C4;
+import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
+import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
 import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
@@ -14,117 +17,94 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.listing.ContentListingHandler;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableMap;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.BasicDBObject;
 
 public class MongoContentListerTest {
 
-    private static final Item item1 = new Item("item1","item1curie",Publisher.BBC);
-    private static final Item item2 = new Item("item2", "item2curie",Publisher.C4);
-    
-    private static final Brand brand= new Brand("brand1", "brand2curie", Publisher.BBC);
+    private static final Item bbcItem1 = new Item("bbcItem1","bbcItem1curie",Publisher.BBC);
+    private static final Item bbcItem2 = new Item("bbcItem2", "bbcItem2curie",Publisher.BBC);
+    private static final Item c4Item1 = new Item("aC4Item1", "c4Item1curie",Publisher.C4);
+    private static final Item c4Item2 = new Item("aC4Item2", "c4Item2curie",Publisher.C4);
+    private static final Brand bbcBrand= new Brand("bbcBrand1", "bbcBrand1curie", Publisher.BBC);
+    private static final Brand c4Brand= new Brand("c4Brand1", "c4Brand1curie", Publisher.C4);
     
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
-    private static final MongoContentTables contentTables = new MongoContentTables(mongo);
     
-    private final MongoContentLister lister = new MongoContentLister(contentTables);
+    private final MongoContentLister lister = new MongoContentLister(mongo);
     
     @BeforeClass
     public static void writeTestContents() {
+        mongo.collection(TOP_LEVEL_ITEM.tableName()).ensureIndex(new BasicDBObject(ImmutableMap.of("publisher",1,MongoConstants.ID,1)));
+        mongo.collection(CONTAINER.tableName()).ensureIndex(new BasicDBObject(ImmutableMap.of("publisher",1,MongoConstants.ID,1)));
         NewLookupWriter lookupStore = new NewLookupWriter() {
             @Override
             public void ensureLookup(Described described) {
             }
         };
         MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore , new SystemClock());
-        writer.createOrUpdate(brand);
-        writer.createOrUpdate(item1);
-        writer.createOrUpdate(item2);
-    }
-    
-    private ContentListingHandler storingContentListingHandler(final List<Content> allContents) {
-        return new ContentListingHandler() {
-            @Override
-            public boolean handle(Iterable<? extends Content> contents, ContentListingProgress progress) {
-                Iterables.addAll(allContents, contents);
-                assertTrue(progress.count() > 0);
-                assertTrue(progress.total() > 0);
-                return true;
-            }
-        };
+        writer.createOrUpdate(bbcBrand);
+        writer.createOrUpdate(c4Brand);
+        writer.createOrUpdate(bbcItem1);
+        writer.createOrUpdate(bbcItem2);
+        writer.createOrUpdate(c4Item1);
+        writer.createOrUpdate(c4Item2);
     }
     
     @Test
     public void testListContentFromOneTable() {
         
-        final List<Content> contents = Lists.newArrayList();
-        ContentListingHandler handler = storingContentListingHandler(contents);
+        List<Content> contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM).forPublishers(ImmutableList.of(BBC,C4)).build()));
         
-        lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS), defaultCriteria(), handler);
-        
-        assertEquals(ImmutableList.of(item1, item2), contents);
+        assertEquals(ImmutableList.of(bbcItem1, bbcItem2, c4Item1, c4Item2), contents);
         
     }
     
     @Test
     public void testListContentFromTwoTables() {
         
-        final List<Content> contents = Lists.newArrayList();
-        ContentListingHandler handler = storingContentListingHandler(contents);
+        List<Content> contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).build()));
         
-        lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, TOP_LEVEL_CONTAINERS), defaultCriteria(), handler);
+        assertEquals(ImmutableList.of(bbcItem1, bbcItem2, bbcBrand, c4Item1, c4Item2, c4Brand), contents);
         
-        assertEquals(ImmutableList.of(brand, item1, item2), contents);
-        
-    }
-    
-    @Test
-    public void testStopsListContentWhenHandlerReturnsFalse() {
-        
-        final List<Content> processedContents = Lists.newArrayList();
-
-        ContentListingHandler handler = new ContentListingHandler() {
-            @Override
-            public boolean handle(Iterable<? extends Content> contents, ContentListingProgress progress) {
-                for (Content content : contents) {
-                    if (content.getCanonicalUri().equals("item1")) {
-                        return false;
-                    } else {
-                        processedContents.add(content);
-                    }
-                }
-                return true;
-            }
-        };
-        
-        boolean finished = lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, TOP_LEVEL_CONTAINERS), defaultCriteria(), handler);
-        
-        assertEquals(ImmutableList.of(brand), processedContents);
-        assertFalse(finished);
     }
 
     @Test
     public void testRestartListing() {
         
-        final List<Content> contents = Lists.newArrayList();
-        ContentListingHandler handler = storingContentListingHandler(contents);
-        
-        ContentListingProgress progress = new ContentListingProgress("item1", TOP_LEVEL_ITEMS);
-        boolean finished = lister.listContent(ImmutableSet.of(TOP_LEVEL_ITEMS, TOP_LEVEL_CONTAINERS), defaultCriteria().startingAt(progress), handler);
-        
-        assertEquals(ImmutableList.of(item2), contents);
-        assertTrue(finished);
+        ContentListingProgress progress = ContentListingProgress.START;
+        ImmutableList<Content> contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).startingAt(progress).build()));
+        assertThat(contents, is((equalTo(ImmutableList.of(bbcItem1, bbcItem2, bbcBrand, c4Item1, c4Item2, c4Brand)))));
+
+        progress = ContentListingProgress.progressFrom(bbcItem1);
+        contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).startingAt(progress).build()));
+        assertThat(contents, is((equalTo(ImmutableList.of(bbcItem2, bbcBrand, c4Item1, c4Item2, c4Brand)))));
+
+        progress = ContentListingProgress.progressFrom(bbcItem2);
+        contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).startingAt(progress).build()));
+        assertThat(contents, is((equalTo(ImmutableList.of(bbcBrand, c4Item1, c4Item2, c4Brand)))));
+
+        progress = ContentListingProgress.progressFrom(bbcBrand);
+        contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).startingAt(progress).build()));
+        assertThat(contents, is((equalTo(ImmutableList.of(c4Item1, c4Item2, c4Brand)))));
+
+        progress = ContentListingProgress.progressFrom(c4Item2);
+        contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).startingAt(progress).build()));
+        assertThat(contents, is((equalTo(ImmutableList.<Content>of(c4Brand)))));
+
+        progress = ContentListingProgress.progressFrom(c4Brand);
+        contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).startingAt(progress).build()));
+        assertThat(contents, is((equalTo(ImmutableList.<Content>of()))));
         
     }
 }
