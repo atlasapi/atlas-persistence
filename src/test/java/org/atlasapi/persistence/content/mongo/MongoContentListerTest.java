@@ -12,6 +12,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
+import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
@@ -19,16 +20,16 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.BasicDBObject;
 
 public class MongoContentListerTest {
 
@@ -43,22 +44,55 @@ public class MongoContentListerTest {
     
     private final MongoContentLister lister = new MongoContentLister(mongo);
     
+    private static final DateTime tenthOfTheTenth = new DateTime(2011,10,10,00,00,00,000,DateTimeZones.UTC);
+    private static final DateTime ELEVENTH_OF_THE_TENTH = new DateTime(2011,10,11,00,00,00,000,DateTimeZones.UTC);
+    
     @BeforeClass
     public static void writeTestContents() {
-        mongo.collection(TOP_LEVEL_ITEM.tableName()).ensureIndex(new BasicDBObject(ImmutableMap.of("publisher",1,MongoConstants.ID,1)));
-        mongo.collection(CONTAINER.tableName()).ensureIndex(new BasicDBObject(ImmutableMap.of("publisher",1,MongoConstants.ID,1)));
+
         NewLookupWriter lookupStore = new NewLookupWriter() {
             @Override
             public void ensureLookup(Described described) {
             }
         };
-        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore , new SystemClock());
+        
+        bbcItem1.setLastUpdated(tenthOfTheTenth);
+        bbcItem2.setLastUpdated(ELEVENTH_OF_THE_TENTH);
+        c4Item1.setLastUpdated(ELEVENTH_OF_THE_TENTH);
+        c4Item2.setLastUpdated(tenthOfTheTenth);
+        bbcBrand.setLastUpdated(tenthOfTheTenth);
+        c4Brand.setLastUpdated(ELEVENTH_OF_THE_TENTH);
+
+        bbcItem1.setTopicUris(ImmutableSet.of("topic1", "topic2", "topic3"));
+        bbcItem2.setTopicUris(ImmutableSet.<String>of());
+        c4Item1.setTopicUris(ImmutableSet.of("topic2", "topic3"));
+        c4Item2.setTopicUris(ImmutableSet.of("topic1", "topic3"));
+        bbcBrand.setTopicUris(ImmutableSet.of("topic1", "topic2"));
+        c4Brand.setTopicUris(ImmutableSet.of("topic1", "topic3"));
+        
+        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, new SystemClock());
         writer.createOrUpdate(bbcBrand);
         writer.createOrUpdate(c4Brand);
         writer.createOrUpdate(bbcItem1);
         writer.createOrUpdate(bbcItem2);
         writer.createOrUpdate(c4Item1);
         writer.createOrUpdate(c4Item2);
+    }
+    
+    @Test
+    public void testTopicListing() {
+        
+        ImmutableSet<Content> contents = ImmutableSet.copyOf(lister.contentForTopic("topic1", ContentQuery.MATCHES_EVERYTHING));
+        assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item2,bbcBrand,c4Brand))));
+        
+        
+        contents = ImmutableSet.copyOf(lister.contentForTopic("topic2", ContentQuery.MATCHES_EVERYTHING));
+        assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,bbcBrand))));
+        
+        
+        contents = ImmutableSet.copyOf(lister.contentForTopic("topic3", ContentQuery.MATCHES_EVERYTHING));
+        assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,c4Item2,c4Brand))));
+        
     }
     
     @Test
@@ -106,5 +140,26 @@ public class MongoContentListerTest {
         contents = ImmutableList.copyOf(lister.listContent(defaultCriteria().forContent(TOP_LEVEL_ITEM, CONTAINER).forPublishers(BBC,C4).startingAt(progress).build()));
         assertThat(contents, is((equalTo(ImmutableList.<Content>of()))));
         
+    }
+    
+    @Test
+    public void testLastUpdatedListing() {
+        ImmutableList<Content> contents = ImmutableList.copyOf(lister.updatedSince(BBC, tenthOfTheTenth.minusDays(1)));
+        assertThat(contents, is(equalTo(ImmutableList.of(bbcBrand, bbcItem1, bbcItem2))));
+
+        contents = ImmutableList.copyOf(lister.updatedSince(BBC, tenthOfTheTenth.plusHours(6)));
+        assertThat(contents, is(equalTo(ImmutableList.<Content>of(bbcItem2))));
+
+        contents = ImmutableList.copyOf(lister.updatedSince(BBC, ELEVENTH_OF_THE_TENTH.plusHours(6)));
+        assertThat(contents, is(equalTo(ImmutableList.<Content>of())));
+
+        contents = ImmutableList.copyOf(lister.updatedSince(C4, tenthOfTheTenth.minusDays(1)));
+        assertThat(contents, is(equalTo(ImmutableList.of(c4Brand, c4Item2, c4Item1))));
+        
+        contents = ImmutableList.copyOf(lister.updatedSince(C4, tenthOfTheTenth.plusHours(6)));
+        assertThat(contents, is(equalTo(ImmutableList.<Content>of(c4Brand, c4Item1))));
+        
+        contents = ImmutableList.copyOf(lister.updatedSince(C4, ELEVENTH_OF_THE_TENTH.plusHours(6)));
+        assertThat(contents, is(equalTo(ImmutableList.<Content>of())));
     }
 }
