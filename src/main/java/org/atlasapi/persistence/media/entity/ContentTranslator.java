@@ -7,6 +7,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -14,6 +15,7 @@ import com.mongodb.DBObject;
 public class ContentTranslator implements ModelTranslator<Content> {
 
 	public static String CLIPS_KEY = "clips";
+	public static String TOPICS_KEY = "topics";
 	
 	private ClipTranslator clipTranslator;
 	private final DescribedTranslator describedTranslator;
@@ -44,6 +46,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
 			entity.setClips(clips);
 		}
+		
+		if (dbObject.containsField(TOPICS_KEY)) {
+		    entity.setTopicUris(TranslatorUtils.toSet(dbObject, TOPICS_KEY));
+		}
 
 		return entity;
 	}
@@ -58,6 +64,13 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
 			dbObject.put(CLIPS_KEY, clipDbos);
 		}
+		
+		if (!entity.getTopics().isEmpty()) {
+		    BasicDBList topics = new BasicDBList();
+		    topics.addAll(entity.getTopics());
+		    dbObject.put(TOPICS_KEY, topics);
+		}
+		
         return dbObject;
 	}
 }
