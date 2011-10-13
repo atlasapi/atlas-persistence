@@ -12,6 +12,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -20,7 +21,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     private static final String LINKS_KEY = "links";
     private static final String PHRASES_KEY = "phrases";
-    public static final String CLIPS_KEY = "clips";
+	public static String CLIPS_KEY = "clips";
+	public static String TOPICS_KEY = "topics";
 	
 	private final ClipTranslator clipTranslator;
 	private final KeyPhraseTranslator keyPhraseTranslator;
@@ -47,6 +49,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeKeyPhrases(dbObject, entity);
         decodeRelatedLinks(dbObject, entity);
 
+        if (dbObject.containsField(TOPICS_KEY)) {
+            entity.setTopicUris(TranslatorUtils.toSet(dbObject, TOPICS_KEY));
+        }
+        
 		return entity;
 	}
 
@@ -92,6 +98,11 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		encodeClips(dbObject, entity);
         encodeKeyPhrases(dbObject, entity);
         encodeRelatedLinks(dbObject, entity);
+        if (!entity.getTopics().isEmpty()) {
+            BasicDBList topics = new BasicDBList();
+            topics.addAll(entity.getTopics());
+            dbObject.put(TOPICS_KEY, topics);
+        }
         return dbObject;
 	}
 
