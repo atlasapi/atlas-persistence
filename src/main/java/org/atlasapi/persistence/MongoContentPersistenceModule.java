@@ -19,6 +19,7 @@ import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
+import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -96,4 +97,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public @Bean TopicStore topicStore() {
         return new TopicCreatingTopicResolver(new MongoTopicStore(db), new MongoSequentialIdGenerator(db, "topic"));
     }
+
+    @Override
+    public @Bean TopicQueryResolver topicQueryResolver() {
+        return new MongoTopicStore(db);
+    }
+    
+    
 }

@@ -4,6 +4,7 @@ import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
+import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 
 public interface ContentPersistenceModule {
@@ -15,6 +16,8 @@ public interface ContentPersistenceModule {
 	ContentResolver contentResolver();
 	
 	TopicStore topicStore();
+	
+	TopicQueryResolver topicQueryResolver();
 
 	ShortUrlSaver shortUrlSaver();
 	
