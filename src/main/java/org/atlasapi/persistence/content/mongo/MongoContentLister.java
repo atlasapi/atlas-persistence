@@ -34,6 +34,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister {
@@ -67,20 +68,22 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return Iterators.concat(Iterators.transform(publishers.iterator(), new Function<Publisher, Iterator<Content>>() {
             @Override
             public Iterator<Content> apply(final Publisher publisher) {
-                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingQueryBuilder() {
+                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder() {
                     
-                    @Override
-                    public DBObject sortForCategory(ContentCategory category) {
-                        return new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build();
-                    }
-                    
-                    @Override
                     public DBObject queryForCategory(ContentCategory category) {
                         MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key());
                         if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
                             query.fieldGreaterThan(ID, uri);
                         }
                         return query.build();
+                    }
+
+                    @Override
+                    public DBCursor cursorFor(ContentCategory category) {
+                        return contentTables.collectionFor(category)
+                                .find(queryForCategory(category))
+                                .batchSize(100)
+                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build());
                     }
 
                 });
@@ -92,25 +95,36 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         }));
     }
     
+
+    private List<Publisher> remainingPublishers(ContentListingCriteria criteria) {
+        List<Publisher> publishers = criteria.getPublishers().isEmpty() ? ImmutableList.copyOf(Publisher.values()) : criteria.getPublishers();
+        Publisher currentPublisher = criteria.getProgress().getPublisher();
+        
+        return publishers.subList(currentPublisher == null ? 0 : publishers.indexOf(currentPublisher), publishers.size());
+    }
+
+    private List<ContentCategory> remainingTables(ContentListingCriteria criteria) {
+        List<ContentCategory> tables = criteria.getCategories().isEmpty() ? ImmutableList.copyOf(ContentCategory.values()) : criteria.getCategories();
+        ContentCategory currentTable = criteria.getProgress().getCategory();
+        
+        return tables.subList(currentTable == null ? 0 : tables.indexOf(currentTable), tables.size());
+    }
+    
     private static final List<ContentCategory> BRAND_SERIES_AND_ITEMS_TABLES = ImmutableList.of(CONTAINER, PROGRAMME_GROUP, TOP_LEVEL_ITEM, CHILD_ITEM);
     
     @Override
     public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {
-        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingQueryBuilder() {
-            
+        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
             @Override
-            public DBObject sortForCategory(ContentCategory category) {
-                return sort().ascending("publisher").ascending("thisOrChildLastUpdated").build();
-            }
-            
-            @Override
-            public DBObject queryForCategory(ContentCategory category) {
-                return where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when).build();
+            public DBCursor cursorFor(ContentCategory category) {
+                return contentTables.collectionFor(category)
+                            .find(where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when).build())
+                            .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build());
             }
         });
     }
 
-    private Iterator<Content> contentIterator(final List<ContentCategory> tables, final ListingQueryBuilder queryBuilder) {
+    private Iterator<Content> contentIterator(final List<ContentCategory> tables, final ListingCursorBuilder cursorBuilder) {
         return new AbstractIterator<Content>() {
 
             private final Iterator<ContentCategory> tablesIt = tables.iterator();
@@ -125,25 +139,11 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     }
                     ContentCategory table = tablesIt.next();
                     currentTranslator = TRANSLATORS.get(table);
-                    currentResults = contentTables.collectionFor(table).find(queryBuilder.queryForCategory(table)).sort(queryBuilder.sortForCategory(table));
+                    currentResults = cursorBuilder.cursorFor(table);
                 }
                 return currentTranslator.apply(currentResults.next());
             }
         };
-    }
-
-    private List<Publisher> remainingPublishers(ContentListingCriteria criteria) {
-        List<Publisher> publishers = criteria.getPublishers().isEmpty() ? ImmutableList.copyOf(Publisher.values()) : criteria.getPublishers();
-        Publisher currentPublisher = criteria.getProgress().getPublisher();
-        
-        return publishers.subList(currentPublisher == null ? 0 : publishers.indexOf(currentPublisher), publishers.size());
-    }
-
-    private List<ContentCategory> remainingTables(ContentListingCriteria criteria) {
-        List<ContentCategory> tables = criteria.getCategories().isEmpty() ? ImmutableList.copyOf(ContentCategory.values()) : criteria.getCategories();
-        ContentCategory currentTable = criteria.getProgress().getCategory();
-        
-        return tables.subList(currentTable == null ? 0 : tables.indexOf(currentTable), tables.size());
     }
 
     private final Function<DBObject, Container> TO_CONTAINER = new Function<DBObject, Container>() {
@@ -166,27 +166,19 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             TOP_LEVEL_ITEM, TO_ITEM, 
             CONTAINER, TO_CONTAINER);
 
-    private interface ListingQueryBuilder {
+    private interface ListingCursorBuilder {
         
-        DBObject queryForCategory(ContentCategory category);
-        
-        DBObject sortForCategory(ContentCategory category);
+        DBCursor cursorFor(ContentCategory category);
         
     }
     
     @Override
     //TODO: enable use of contentQuery?
     public Iterator<Content> contentForTopic(final String topicUri, ContentQuery contentQuery) {
-        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingQueryBuilder() {
-            
+        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
             @Override
-            public DBObject sortForCategory(ContentCategory category) {
-                return sort().ascending(ID).build();
-            }
-            
-            @Override
-            public DBObject queryForCategory(ContentCategory category) {
-                return where().fieldEquals("topics", topicUri).build();
+            public DBCursor cursorFor(ContentCategory category) {
+                return contentTables.collectionFor(category).find(where().fieldEquals("topics", topicUri).build()).sort(sort().ascending(ID).build());
             }
         });
     }
