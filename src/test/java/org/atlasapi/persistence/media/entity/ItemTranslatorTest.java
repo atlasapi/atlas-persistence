@@ -19,6 +19,7 @@ import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.Clock;
@@ -57,6 +58,8 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
+        item.setTopicUris(ImmutableList.of("topic1","topic2","topic3"));
+        
         ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
         
@@ -88,6 +91,8 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals(1, ls.size());
         DBObject l = (DBObject) ls.get(0);
         assertEquals(loc.getAvailable(), l.get("available"));
+        
+        assertEquals(item.getTopics(), dbObject.get("topics"));
     }
     
     public void testConvertToItem() throws Exception {
@@ -118,6 +123,8 @@ public class ItemTranslatorTest extends TestCase {
         Set<String> tags = Sets.newHashSet();
         tags.add("tag");
         item.setTags(tags);
+
+        item.setTopicUris(ImmutableList.of("topic1","topic2","topic3"));
         
         ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
@@ -153,6 +160,8 @@ public class ItemTranslatorTest extends TestCase {
         List<CrewMember> people = i.people();
         assertEquals(1, people.size());
         assertEquals("some guy", ((Actor) Iterables.getFirst(people, null)).character());
+        
+        assertEquals(item.getTopics(), i.getTopics());
     }
     
     @SuppressWarnings("unchecked")

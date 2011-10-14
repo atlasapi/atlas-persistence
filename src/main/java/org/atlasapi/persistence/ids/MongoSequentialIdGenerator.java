@@ -22,13 +22,13 @@ public class MongoSequentialIdGenerator implements IdGenerator {
     private final DBCollection collection;
     private final String idGroup;
     private final SubstitutionTableNumberCodec codec;
-    private final double initialId;
+    private final long initialId;
 
     public MongoSequentialIdGenerator(DatabasedMongo mongo, String idGroup) {
         this.collection = mongo.collection("id");
         this.idGroup = idGroup;
         this.codec = new SubstitutionTableNumberCodec();
-        this.initialId = Math.pow(codec.getAlphabet().size(), 3); //minimum id length 3 chars.
+        this.initialId = new Double(Math.pow(codec.getAlphabet().size(), 3)).longValue(); //minimum id length 3 chars.
         ensureFieldExists();
     }
 

@@ -20,7 +20,10 @@ public class TopicCreatingTopicResolver extends ForwardingTopicStore {
         if(topic.hasValue()) {
             return topic;
         } else {
-            return Maybe.just(new Topic(Topic.topicUriForId(idGenerator.generate())));
+            Topic newTopic = new Topic(Topic.topicUriForId(idGenerator.generate()));
+            newTopic.setNamespace(namespace);
+            newTopic.setValue(value);
+            return Maybe.just(newTopic);
         }
     }
 
