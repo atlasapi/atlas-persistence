@@ -101,7 +101,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     }
                     ContentCategory table = tablesIt.next();
                     currentTranslator = TRANSLATORS.get(table);
-                    currentResults = contentTables.collectionFor(table).find(queryFor(uri, when, publisher)).sort(sortFor(uri, when));
+                    currentResults = contentTables.collectionFor(table).find(queryFor(uri, when, publisher)).batchSize(100).sort(sortFor(uri, when));
                     uri = null;//only use the id for the first table.
                 }
                 return currentTranslator.apply(currentResults.next());
