@@ -28,7 +28,7 @@ public class MongoSequentialIdGenerator implements IdGenerator {
         this.collection = mongo.collection("id");
         this.idGroup = idGroup;
         this.codec = new SubstitutionTableNumberCodec();
-        this.initialId = new Double(Math.pow(codec.getAlphabet().size(), 3)).longValue(); //minimum id length 3 chars.
+        this.initialId = (long) Math.pow(codec.getAlphabet().size(), 3); //minimum id length 3 chars.
         ensureFieldExists();
     }
 
