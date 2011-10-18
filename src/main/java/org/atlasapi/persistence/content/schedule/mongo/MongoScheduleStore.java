@@ -46,7 +46,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	private final static Duration MAX_DURATION = Duration.standardDays(14);
 
 	
-	private final ScheduleEntryBuilder scheduleEntryBuilder = new ScheduleEntryBuilder();
+	private final ScheduleEntryBuilder scheduleEntryBuilder = new ScheduleEntryBuilder(Duration.standardDays(28));
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
 

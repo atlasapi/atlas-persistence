@@ -43,5 +43,11 @@ public class ManualScheduleRebuildModule {
         	.withName("C4 Mongo Schedule repopulator");
         
         scheduler.schedule(c4Repopulator, RepetitionRules.every(Duration.standardHours(1)).withOffset(Duration.standardMinutes(30)));
+        
+        ScheduledTask reduxRepopulator = 
+                new FullMongoScheduleRepopulator(lister, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC_REDUX), Duration.standardDays(30*365))
+        .withName("Redux Mongo Schedule repopulator");
+    
+        scheduler.schedule(reduxRepopulator, RepetitionRules.NEVER);
 	}
 }

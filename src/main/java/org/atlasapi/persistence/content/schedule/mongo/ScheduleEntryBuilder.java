@@ -22,7 +22,16 @@ import com.metabroadcast.common.time.DateTimeZones;
 public class ScheduleEntryBuilder {
     
     private final static long BIN_MILLIS = Duration.standardHours(1).getMillis();
-    private static final Duration MAX_BROADCAST_AGE = Duration.standardDays(28);
+    
+    private final Duration maxBroadcastAge;
+
+    public ScheduleEntryBuilder(Duration maxBroadcastAge) {
+        this.maxBroadcastAge = maxBroadcastAge;
+    }
+    
+    public ScheduleEntryBuilder() {
+        this(Duration.standardDays(28));
+    }
     
     public Map<String, ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
         Map<String, ScheduleEntry> entries = Maps.newHashMap();
@@ -58,7 +67,7 @@ public class ScheduleEntryBuilder {
     }
     
     List<Interval> intervalsFor(DateTime start, DateTime end) {
-        if (start.isBefore(new DateTime(DateTimeZones.UTC).minus(MAX_BROADCAST_AGE))) {
+        if (start.isBefore(new DateTime(DateTimeZones.UTC).minus(maxBroadcastAge))) {
             return ImmutableList.of();
         }
         
