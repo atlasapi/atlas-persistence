@@ -2,6 +2,7 @@ package org.atlasapi.persistence;
 
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -40,9 +41,16 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
 	
+	public MongoContentPersistenceModule() {}
+	
+	public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AdapterLog log) {
+        this.mongo = mongo;
+        this.db = db;
+        this.log = log;
+    }
 	
 	public @Bean ContentWriter contentWriter() {
-		return new MongoContentWriter(db, lookupStore(), new SystemClock());
+		return new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), new MongoContentWriter(db, lookupStore(), new SystemClock())) ;
 	}
 	
 	@Primary
@@ -102,6 +110,5 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public @Bean TopicQueryResolver topicQueryResolver() {
         return new MongoTopicStore(db);
     }
-    
     
 }

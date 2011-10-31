@@ -28,6 +28,7 @@ public class LookupEntryTranslator {
     private static final String LAST_UPDATED = "updated";
     private static final String FIRST_CREATED = "created";
     private static final String ALIASES = "aliases";
+    public static final String OPAQUE_ID = "id";
     
     public Function<LookupEntry, DBObject> TO_DBO = new Function<LookupEntry, DBObject>() {
         @Override
@@ -46,7 +47,8 @@ public class LookupEntryTranslator {
     public DBObject toDbo(LookupEntry entry) {
         BasicDBObject dbo = new BasicDBObject();
         
-        TranslatorUtils.from(dbo, ID, entry.id());
+        TranslatorUtils.from(dbo, ID, entry.uri());
+        TranslatorUtils.from(dbo, OPAQUE_ID, entry.id());
         TranslatorUtils.from(dbo, SELF, equivalentToDbo.apply(entry.lookupRef()));
         TranslatorUtils.fromSet(dbo, entry.aliases(), ALIASES);
         
@@ -82,7 +84,8 @@ public class LookupEntryTranslator {
             return null;
         }
         
-        String id = TranslatorUtils.toString(dbo, ID);
+        String uri = TranslatorUtils.toString(dbo, ID);
+        String id = TranslatorUtils.toString(dbo, OPAQUE_ID);
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
         Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
@@ -91,7 +94,7 @@ public class LookupEntryTranslator {
         
         Set<LookupRef> directEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, DIRECT), equivalentFromDbo));
         
-        return new LookupEntry(id, self, aliases, directEquivalents, equivs, created, updated);
+        return new LookupEntry(uri, id, self, aliases, directEquivalents, equivs, created, updated);
     }
 
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {

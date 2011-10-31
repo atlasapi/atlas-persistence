@@ -16,6 +16,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
 	public static String CLIPS_KEY = "clips";
 	public static String TOPICS_KEY = "topics";
+	public static String ID_KEY = "id";
 	
 	private ClipTranslator clipTranslator;
 	private final DescribedTranslator describedTranslator;
@@ -50,6 +51,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		if (dbObject.containsField(TOPICS_KEY)) {
 		    entity.setTopicUris(TranslatorUtils.toSet(dbObject, TOPICS_KEY));
 		}
+		
+		entity.setId(TranslatorUtils.toString(dbObject, ID_KEY));
 
 		return entity;
 	}
@@ -70,6 +73,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		    topics.addAll(entity.getTopics());
 		    dbObject.put(TOPICS_KEY, topics);
 		}
+		
+		TranslatorUtils.from(dbObject, ID_KEY, entity.getId());
 		
         return dbObject;
 	}

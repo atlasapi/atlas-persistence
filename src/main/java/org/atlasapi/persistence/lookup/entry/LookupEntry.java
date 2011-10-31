@@ -3,7 +3,7 @@ package org.atlasapi.persistence.lookup.entry;
 import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Content;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -15,16 +15,16 @@ import com.metabroadcast.common.time.DateTimeZones;
 
 public class LookupEntry {
     
-    public static LookupEntry lookupEntryFrom(Described d) {
+    public static LookupEntry lookupEntryFrom(Content c) {
         DateTime now = new DateTime(DateTimeZones.UTC);
-        LookupRef lookupRef = LookupRef.from(d);
-        return new LookupEntry(d.getCanonicalUri(), lookupRef, d.getAliases(), ImmutableSet.of(lookupRef), ImmutableSet.of(lookupRef), now, now);
+        LookupRef lookupRef = LookupRef.from(c);
+        return new LookupEntry(c.getCanonicalUri(), c.getId(), lookupRef, c.getAliases(), ImmutableSet.of(lookupRef), ImmutableSet.of(lookupRef), now, now);
     }
     
     public static Function<LookupEntry,String> TO_ID = new Function<LookupEntry, String>() {
         @Override
         public String apply(LookupEntry input) {
-            return input.id();
+            return input.uri();
         }
     };
     
@@ -49,6 +49,7 @@ public class LookupEntry {
         }
     };
     
+    private final String uri;
     private final String id;
     private final Set<String> aliases;
     
@@ -60,7 +61,8 @@ public class LookupEntry {
 
     private final LookupRef self;
 
-    public LookupEntry(String id, LookupRef self, Set<String> aliases, Set<LookupRef> directEquivs, Set<LookupRef> equivs, DateTime created, DateTime updated) {
+    public LookupEntry(String uri, String id, LookupRef self, Set<String> aliases, Set<LookupRef> directEquivs, Set<LookupRef> equivs, DateTime created, DateTime updated) {
+        this.uri = uri;
         this.id = id;
         this.self = self;
         this.aliases = aliases;
@@ -70,6 +72,10 @@ public class LookupEntry {
         this.updated = updated;
     }
 
+    public String uri() {
+        return uri;
+    }
+    
     public String id() {
         return id;
     }
@@ -79,7 +85,7 @@ public class LookupEntry {
     }
     
     public Set<String> identifiers() {
-        return ImmutableSet.<String>builder().add(id).addAll(aliases).build();
+        return ImmutableSet.<String>builder().add(uri).addAll(aliases).build();
     }
     
     public Set<LookupRef> equivalents() {
@@ -88,7 +94,7 @@ public class LookupEntry {
 
     public LookupEntry copyWithEquivalents(Iterable<LookupRef> newEquivs) {
         Set<LookupRef> equivs = ImmutableSet.<LookupRef>builder().addAll(newEquivs).add(self).build();
-        return new LookupEntry(id, self, aliases, directEquivalents, equivs, created, new DateTime(DateTimeZones.UTC));
+        return new LookupEntry(uri, id, self, aliases, directEquivalents, equivs, created, new DateTime(DateTimeZones.UTC));
     }
     
     public Set<LookupRef> directEquivalents() {
@@ -97,7 +103,7 @@ public class LookupEntry {
     
     public LookupEntry copyWithDirectEquivalents(Iterable<LookupRef> directEquivalents) {
         List<LookupRef> dequivs = ImmutableList.<LookupRef>builder().addAll(directEquivalents).add(self).build();
-        return new LookupEntry(id, self, aliases, ImmutableSet.copyOf(dequivs), equivs, created, new DateTime(DateTimeZones.UTC));
+        return new LookupEntry(uri, id, self, aliases, ImmutableSet.copyOf(dequivs), equivs, created, new DateTime(DateTimeZones.UTC));
     }
 
     public DateTime created() {
@@ -111,7 +117,7 @@ public class LookupEntry {
     public List<LookupEntry> entriesForIdentifiers() {
         List<LookupEntry> entries = Lists.newArrayList(this);
         for (String alias : aliases) {
-            entries.add(new LookupEntry(alias, self, ImmutableSet.<String>of(), ImmutableSet.<LookupRef>of(), this.equivs, created, updated));
+            entries.add(new LookupEntry(alias, id, self, ImmutableSet.<String>of(), ImmutableSet.<LookupRef>of(), this.equivs, created, updated));
         }
         return ImmutableList.copyOf(entries);
     }
@@ -127,19 +133,19 @@ public class LookupEntry {
         }
         if(that instanceof LookupEntry) {
             LookupEntry other = (LookupEntry) that;
-            return id.equals(other.id) && equivs.equals(other.equivs) && created.equals(other.created) && updated.equals(other.updated);
+            return uri.equals(other.uri) && equivs.equals(other.equivs) && created.equals(other.created) && updated.equals(other.updated);
         }
         return false;
     }
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(id, equivs, created, updated);
+        return Objects.hashCode(uri, equivs, created, updated);
     }
     
     @Override
     public String toString() {
-        return "Lookup entry for " + id;
+        return "Lookup entry for " + uri;
     }
 
 }

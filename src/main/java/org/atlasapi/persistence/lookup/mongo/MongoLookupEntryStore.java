@@ -12,7 +12,7 @@ import static org.atlasapi.persistence.lookup.entry.LookupRef.TO_ID;
 
 import java.util.Set;
 
-import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -41,13 +41,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public void store(LookupEntry entry) {
         for (LookupEntry idEntry : entry.entriesForIdentifiers()) {
-            lookup.update(MongoBuilders.where().idEquals(idEntry.id()).build(), translator.toDbo(idEntry), UPSERT, SINGLE);
+            lookup.update(MongoBuilders.where().idEquals(idEntry.uri()).build(), translator.toDbo(idEntry), UPSERT, SINGLE);
         }
     }
     
     @Override
-    public Iterable<LookupEntry> entriesFor(Iterable<String> ids) {
-        DBCursor found = lookup.find(where().idIn(ids).build());
+    public Iterable<LookupEntry> entriesForUris(Iterable<String> uris) {
+        DBCursor found = lookup.find(where().idIn(uris).build());
         if (found == null) {
             return ImmutableList.of();
         }
@@ -55,26 +55,35 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public void ensureLookup(Described described) {
-        LookupEntry newEntry = lookupEntryFrom(described);
+    public Iterable<LookupEntry> entriesForIds(Iterable<String> ids) {
+        DBCursor found = lookup.find(where().fieldIn(LookupEntryTranslator.OPAQUE_ID, ids).build());
+        if (found == null) {
+            return ImmutableList.of();
+        }
+        return Iterables.transform(found, translator.FROM_DBO);
+    }
+    
+    @Override
+    public void ensureLookup(Content content) {
+        LookupEntry newEntry = lookupEntryFrom(content);
         // Since most content will already have a lookup entry we read first to avoid locking the database
-        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, described.getCanonicalUri())));
+        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, content.getCanonicalUri())));
         if (existing == null) {
             store(newEntry);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
-            convertEntry(described, newEntry, existing);
+            convertEntry(content, newEntry, existing);
         }
     }
 
-    private void convertEntry(Described described, LookupEntry newEntry, LookupEntry existing) {
-        LookupRef ref = LookupRef.from(described);
+    private void convertEntry(Content content, LookupEntry newEntry, LookupEntry existing) {
+        LookupRef ref = LookupRef.from(content);
         Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
         Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
-        LookupEntry merged = new LookupEntry(newEntry.id(), ref, newEntry.aliases(), directEquivs, transitiveEquivs, existing.created(), newEntry.updated());
+        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliases(), directEquivs, transitiveEquivs, existing.created(), newEntry.updated());
         
         store(merged);
         
-        for (LookupEntry entry : entriesFor(transform(filter(transitiveEquivs, not(equalTo(ref))), TO_ID))) {
+        for (LookupEntry entry : entriesForUris(transform(filter(transitiveEquivs, not(equalTo(ref))), TO_ID))) {
             if(entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }
@@ -82,4 +91,5 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             store(entry);
         }
     }
+
 }
