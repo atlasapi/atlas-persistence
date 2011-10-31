@@ -35,10 +35,10 @@ public class MongoLookupEntryStoreTest {
         LookupEntry testEntry = LookupEntry.lookupEntryFrom(testItem);
         entryStore.store(testEntry);
         
-        Iterable<LookupEntry> uriEntry = entryStore.entriesFor(ImmutableList.of("testItemUri"));
+        Iterable<LookupEntry> uriEntry = entryStore.entriesForUris(ImmutableList.of("testItemUri"));
         assertEquals(testEntry, Iterables.getOnlyElement(uriEntry));
         
-        assertFalse(Iterables.isEmpty(entryStore.entriesFor(ImmutableList.of("testItemAlias"))));
+        assertFalse(Iterables.isEmpty(entryStore.entriesForUris(ImmutableList.of("testItemAlias"))));
     }
 
     @Test
@@ -49,13 +49,13 @@ public class MongoLookupEntryStoreTest {
         
         entryStore.ensureLookup(testItem);
         
-        LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("newItemUri")));
+        LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("newItemUri")));
         
         assertNotNull(firstEntry);
         
         entryStore.ensureLookup(testItem);
         
-        assertEquals(firstEntry.created(), Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("newItemUri"))).created());
+        assertEquals(firstEntry.created(), Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("newItemUri"))).created());
     }
     
     @Test
@@ -66,14 +66,14 @@ public class MongoLookupEntryStoreTest {
         
         entryStore.ensureLookup(testItem);
         
-        LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemUri")));
+        LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("oldItemUri")));
         
         Item transitiveItem = new Item("transitiveUri", "transitiveCurie", Publisher.PA);
         transitiveItem.addAlias("transitiveAlias");
         
         entryStore.ensureLookup(transitiveItem);
         
-        LookupEntry secondEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveUri")));
+        LookupEntry secondEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("transitiveUri")));
         
         ImmutableSet<LookupRef> secondRef = ImmutableSet.of(secondEntry.lookupRef());
         firstEntry = firstEntry.copyWithDirectEquivalents(secondRef).copyWithEquivalents(secondRef);
@@ -89,23 +89,23 @@ public class MongoLookupEntryStoreTest {
         
         entryStore.ensureLookup(testEpisode);
 
-        LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemUri")));
+        LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("oldItemUri")));
         assertEquals(ContentCategory.CHILD_ITEM, newEntry.lookupRef().category());
         assertTrue(newEntry.directEquivalents().contains(secondEntry.lookupRef()));
         assertTrue(newEntry.equivalents().contains(secondEntry.lookupRef()));
         assertEquals(firstEntry.created(), newEntry.created());
         
-        LookupEntry aliasEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("oldItemAlias")));
+        LookupEntry aliasEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("oldItemAlias")));
         assertEquals(ContentCategory.CHILD_ITEM, aliasEntry.lookupRef().category());
         assertTrue(aliasEntry.equivalents().contains(secondEntry.lookupRef()));
         assertEquals(firstEntry.created(), aliasEntry.created());
         
-        LookupEntry transtiveEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveUri")));
+        LookupEntry transtiveEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("transitiveUri")));
         assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.equivalents(), equalTo(newEntry.lookupRef())).category());
         assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.directEquivalents(), equalTo(newEntry.lookupRef())).category());
         assertEquals(transtiveEntry.created(), secondEntry.created());
         
-        LookupEntry aliasTranstiveEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of("transitiveAlias")));
+        LookupEntry aliasTranstiveEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("transitiveAlias")));
         assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(aliasTranstiveEntry.equivalents(), equalTo(newEntry.lookupRef())).category());
     }
 }

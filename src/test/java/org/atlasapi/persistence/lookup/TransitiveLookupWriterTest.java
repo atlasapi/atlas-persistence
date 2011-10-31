@@ -3,7 +3,7 @@ package org.atlasapi.persistence.lookup;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Brand;
-import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
@@ -26,10 +26,10 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         Item item = createItem("test");
 
-        writer.writeLookup(item, ImmutableSet.<Described> of());
+        writer.writeLookup(item, ImmutableSet.<Content> of());
 
-        LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of("testUri")));
-        assertEquals(item.getCanonicalUri(), uriEntry.id());
+        LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of("testUri")));
+        assertEquals(item.getCanonicalUri(), uriEntry.uri());
         assertEquals(item.getAliases(), uriEntry.aliases());
         assertEquals("testUri", Iterables.getOnlyElement(uriEntry.directEquivalents()).id());
 
@@ -40,8 +40,8 @@ public class TransitiveLookupWriterTest extends TestCase {
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
         assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).category());
 
-        LookupEntry aliasEntry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of("testAlias")));
-        assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.id());
+        LookupEntry aliasEntry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of("testAlias")));
+        assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.uri());
         assertEquals(ImmutableSet.of(), aliasEntry.directEquivalents());
 
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(aliasEntry.equivalents()).id());
@@ -65,12 +65,12 @@ public class TransitiveLookupWriterTest extends TestCase {
         Item item3 = createItem("test3");
 
         // Inserts reflexive entries for items 1, 2, 3
-        writer.writeLookup(item1, ImmutableSet.<Described> of());
-        writer.writeLookup(item2, ImmutableSet.<Described> of());
-        writer.writeLookup(item3, ImmutableSet.<Described> of());
+        writer.writeLookup(item1, ImmutableSet.<Content> of());
+        writer.writeLookup(item2, ImmutableSet.<Content> of());
+        writer.writeLookup(item3, ImmutableSet.<Content> of());
 
         // Make items 2 and 3 equivalent.
-        writer.writeLookup(item2, ImmutableSet.<Described> of(item3));
+        writer.writeLookup(item2, ImmutableSet.<Content> of(item3));
 
         hasEquivs("test1Uri", "test1Uri");
         hasDirectEquivs("test1Uri", "test1Uri");
@@ -89,7 +89,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         // Make items 1 and 2 equivalent, so all three are transitively
         // equivalent
-        writer.writeLookup(item1, ImmutableSet.<Described> of(item2));
+        writer.writeLookup(item1, ImmutableSet.<Content> of(item2));
 
         hasEquivs("test1Uri", "test2Uri", "test3Uri", "test1Uri");
         hasDirectEquivs("test1Uri", "test1Uri", "test2Uri");
@@ -108,7 +108,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         // Make item 1 equivalent to nothing. Item 1 just reflexive, item 2 and
         // 3 still equivalent.
-        writer.writeLookup(item1, ImmutableSet.<Described> of());
+        writer.writeLookup(item1, ImmutableSet.<Content> of());
 
         hasEquivs("test1Uri", "test1Uri");
         hasDirectEquivs("test1Uri", "test1Uri");
@@ -126,7 +126,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasDirectEquivs("test3Alias");
 
         // Make 1 and 2 equivalent again.
-        writer.writeLookup(item1, ImmutableSet.<Described> of(item2));
+        writer.writeLookup(item1, ImmutableSet.<Content> of(item2));
 
         hasEquivs("test1Uri", "test2Uri", "test3Uri", "test1Uri");
         hasDirectEquivs("test1Uri", "test1Uri", "test2Uri");
@@ -145,11 +145,11 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         // Add a new item, 4.
         Item item4 = createItem("test4");
-        writer.writeLookup(item4, ImmutableSet.<Described> of());
+        writer.writeLookup(item4, ImmutableSet.<Content> of());
 
         // Make 1 equivalent to just 4, instead of 2. 1 and 4 equivalent, 2 and
         // 3 equivalent.
-        writer.writeLookup(item1, ImmutableSet.<Described> of(item4));
+        writer.writeLookup(item1, ImmutableSet.<Content> of(item4));
 
         hasEquivs("test1Uri", "test1Uri", "test4Uri");
         hasDirectEquivs("test1Uri", "test1Uri", "test4Uri");
@@ -172,7 +172,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasDirectEquivs("test4Alias");
 
         // Make all items equivalent.
-        writer.writeLookup(item1, ImmutableSet.<Described> of(item3, item4));
+        writer.writeLookup(item1, ImmutableSet.<Content> of(item3, item4));
 
         hasEquivs("test1Uri", "test1Uri", "test2Uri", "test3Uri", "test4Uri");
         hasDirectEquivs("test1Uri", "test1Uri", "test3Uri", "test4Uri");
@@ -197,12 +197,12 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
 
     private void hasEquivs(String id, String... transitiveEquivs) {
-        LookupEntry entry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of(id)));
+        LookupEntry entry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of(id)));
         assertEquals(ImmutableSet.copyOf(transitiveEquivs), ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), LookupRef.TO_ID)));
     }
 
     private void hasDirectEquivs(String id, String... directEquivs) {
-        LookupEntry entry = Iterables.getOnlyElement(store.entriesFor(ImmutableList.of(id)));
+        LookupEntry entry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of(id)));
         assertEquals(ImmutableSet.copyOf(directEquivs), ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(), LookupRef.TO_ID)));
     }
 
@@ -216,7 +216,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         writer.writeLookup(left, ImmutableSet.of(right));
         
         writer.writeLookup(pivot, ImmutableSet.of(left));
-        writer.writeLookup(left, ImmutableSet.<Described>of());
+        writer.writeLookup(left, ImmutableSet.<Content>of());
         
         hasEquivs("pivot", "pivot");
         

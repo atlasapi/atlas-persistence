@@ -1,9 +1,9 @@
 package org.atlasapi.persistence.lookup;
 
-import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Content;
 
 public interface NewLookupWriter {
     
-    void ensureLookup(Described described);
+    void ensureLookup(Content content);
 
 }

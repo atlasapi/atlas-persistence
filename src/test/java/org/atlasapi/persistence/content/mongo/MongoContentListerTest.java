@@ -52,7 +52,7 @@ public class MongoContentListerTest {
 
         NewLookupWriter lookupStore = new NewLookupWriter() {
             @Override
-            public void ensureLookup(Described described) {
+            public void ensureLookup(Content described) {
             }
         };
         

@@ -20,7 +20,7 @@ public class LookupResolvingContentResolver implements ContentResolver {
     
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
-        Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesFor(canonicalUris), LookupEntry.TO_SELF);
+        Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesForUris(canonicalUris), LookupEntry.TO_SELF);
         ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(lookupRefs, Predicates.notNull()));
         ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);
         return resolvedContent.copyWithAllRequestedUris(canonicalUris);

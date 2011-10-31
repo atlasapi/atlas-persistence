@@ -8,7 +8,7 @@ import static org.junit.Assert.fail;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -33,7 +33,7 @@ public class MongoContentWriterTest {
     
     private final NewLookupWriter lookupWriter = new NewLookupWriter() {
         @Override
-        public void ensureLookup(Described described) {
+        public void ensureLookup(Content described) {
         }
     };
     

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -32,7 +33,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     @Override
-    public <T extends Described> void writeLookup(final T subject, Iterable<T> directEquivalents) {
+    public <T extends Content> void writeLookup(final T subject, Iterable<T> directEquivalents) {
         
         Set<Described> allItems = ImmutableSet.<Described>builder().add(subject).addAll(directEquivalents).build();
         
@@ -40,7 +41,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         final Set<String> canonUris = ImmutableSet.copyOf(Iterables.transform(allItems, TO_URI));
 
         //entry for the subject.
-        LookupEntry subjectEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of(subject.getCanonicalUri())), null);
+        LookupEntry subjectEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of(subject.getCanonicalUri())), null);
         
         if(subjectEntry != null && ImmutableSet.copyOf(Iterables.transform(subjectEntry.directEquivalents(),LookupRef.TO_ID)).equals(canonUris)) {
             return;
@@ -57,7 +58,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         lookups = Maps.newHashMap(Maps.transformValues(lookups, new Function<LookupEntry, LookupEntry>() {
             @Override
             public LookupEntry apply(LookupEntry entry) {
-                if (canonUris.contains(entry.id())) {
+                if (canonUris.contains(entry.uri())) {
                     return entry.copyWithDirectEquivalents(Sets.union(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
                 } else {
                     return entry.copyWithDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
@@ -106,17 +107,17 @@ public class TransitiveLookupWriter implements LookupWriter {
         return newLookups;
     }
     
-    private Set<LookupEntry> entriesFor(Iterable<? extends Described> equivalents) {
-        return ImmutableSet.copyOf(Iterables.transform(equivalents, new Function<Described, LookupEntry>() {
+    private Set<LookupEntry> entriesFor(Iterable<? extends Content> equivalents) {
+        return ImmutableSet.copyOf(Iterables.transform(equivalents, new Function<Content, LookupEntry>() {
             @Override
-            public LookupEntry apply(Described input) {
+            public LookupEntry apply(Content input) {
                 return getOrCreate(input);
             }
         }));
     }
 
-    private LookupEntry getOrCreate(Described subject) {
-        LookupEntry subjectEntry = Iterables.getOnlyElement(entryStore.entriesFor(ImmutableList.of(subject.getCanonicalUri())), null);
+    private LookupEntry getOrCreate(Content subject) {
+        LookupEntry subjectEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of(subject.getCanonicalUri())), null);
         return subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
     }
 
@@ -136,6 +137,6 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Set<LookupEntry> entriesForRefs(Iterable<LookupRef> refs) {
-        return ImmutableSet.copyOf(entryStore.entriesFor(Iterables.transform(refs, LookupRef.TO_ID)));
+        return ImmutableSet.copyOf(entryStore.entriesForUris(Iterables.transform(refs, LookupRef.TO_ID)));
     }
 }
