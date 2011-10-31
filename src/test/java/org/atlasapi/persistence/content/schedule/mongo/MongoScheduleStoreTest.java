@@ -5,6 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Channel;
@@ -16,6 +20,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.Schedule.ScheduleChannel;
 import org.atlasapi.media.entity.ScheduleEntry;
+import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.testing.StubContentResolver;
 import org.joda.time.DateTime;
@@ -25,6 +30,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -48,6 +54,7 @@ public class MongoScheduleStoreTest {
     
     private final Item item1 = new Item("item1", "item1", Publisher.BBC);
     private final Item item2 = new Episode("item2", "item2", Publisher.BBC);
+    private final Item item3 = new Episode("item3", "item3", Publisher.BBC);
     private final Brand brand1 = new Brand("brand1", "brand1", Publisher.BBC);
     
     private final Location availableLocation = new Location();
@@ -83,7 +90,7 @@ public class MongoScheduleStoreTest {
         
         when = System.currentTimeMillis();
 
-        contentResolver = new StubContentResolver().respondTo(item1).respondTo(item2);
+        contentResolver = new StubContentResolver().respondTo(item1).respondTo(item2).respondTo(item3);
         
         store = new MongoScheduleStore(database, contentResolver);
     }
@@ -129,6 +136,86 @@ public class MongoScheduleStoreTest {
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV));
         assertSchedule(schedule);
+    }
+    
+    @Test
+    public void shouldReplaceScheduleBlock() throws Exception {
+    	DateTime broadcast1Start = now.withMinuteOfHour(20);
+    	DateTime broadcast1End = broadcast1Start.plusMinutes(30);
+    	Broadcast b1 = new Broadcast(Channel.Channel_4_HD.uri(), broadcast1Start, broadcast1End);
+    	
+    	DateTime broadcast2End = broadcast1End.plusMinutes(45);
+    	Broadcast b2 = new Broadcast(Channel.Channel_4_HD.uri(), broadcast1End, broadcast2End);
+    	
+    	DateTime broadcast3End = broadcast2End.plusMinutes(60);
+    	Broadcast b3 = new Broadcast(Channel.Channel_4_HD.uri(), broadcast2End, broadcast3End);
+    	  
+    	Version v1 = new Version();
+    	Version v2 = new Version();
+    	Version v3 = new Version();
+    	
+    	v1.addBroadcast(b1);
+    	v2.addBroadcast(b2);
+    	v3.addBroadcast(b3);
+    	
+    	item1.addVersion(v1);
+    	item2.addVersion(v2);
+    	item3.addVersion(v3);
+    	
+    	List<ItemRefAndBroadcast> itemsAndBroadcasts = Lists.newArrayList();
+    	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item1, b1));
+    	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item2, b2));
+    	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item3, b3));
+    												  
+    	store.replaceScheduleBlock(Publisher.BBC, Channel.Channel_4_HD, itemsAndBroadcasts);
+    	Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel.Channel_4_HD), ImmutableSet.of(Publisher.BBC));
+    	
+    	assertEquals(1, schedule.scheduleChannels().size());
+        ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
+        
+        assertEquals(3, channel.items().size());
+        
+        assertEquals(item1.getCanonicalUri(), channel.items().get(0).getCanonicalUri());
+        assertEquals(item2.getCanonicalUri(), channel.items().get(1).getCanonicalUri());
+        assertEquals(item3.getCanonicalUri(), channel.items().get(2).getCanonicalUri());
+        
+        // Now replace the item being broadcast in the b2 slot
+        
+        Item item4 = itemWithBroadcast("item4", b2);
+        contentResolver = contentResolver.respondTo(item4);
+        List<ItemRefAndBroadcast> replacementItemAndBcast = Lists.newArrayList();
+        replacementItemAndBcast.add(new ItemRefAndBroadcast(item4, b2));
+        
+    	store.replaceScheduleBlock(Publisher.BBC, Channel.Channel_4_HD, replacementItemAndBcast);
+        Schedule updatedSchedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel.Channel_4_HD), ImmutableSet.of(Publisher.BBC));
+    	assertEquals(1, updatedSchedule.scheduleChannels().size());
+        ScheduleChannel replacementChannel = Iterables.getOnlyElement(updatedSchedule.scheduleChannels());
+        
+        assertEquals(3, replacementChannel.items().size());
+        
+        assertEquals(item1.getCanonicalUri(), replacementChannel.items().get(0).getCanonicalUri());
+        assertEquals(item4.getCanonicalUri(), replacementChannel.items().get(1).getCanonicalUri());
+        assertEquals(item3.getCanonicalUri(), replacementChannel.items().get(2).getCanonicalUri());
+          	
+    }
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void overlappingScheduleShouldError() throws Exception {
+    	Broadcast wrongBroadcast = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(3), now.minusHours(1));
+    	version3.setBroadcasts(ImmutableSet.of(wrongBroadcast));
+    	List<ItemRefAndBroadcast> itemsAndBroadcasts = Lists.newArrayList();
+    	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item1, broadcast1));
+    	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item3, wrongBroadcast));
+    	store.replaceScheduleBlock(Publisher.BBC, Channel.BBC_ONE, itemsAndBroadcasts);
+    }
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void multipleChannelsInScheduleReplaceShouldError() throws Exception {
+    
+    	List<ItemRefAndBroadcast> itemsAndBroadcasts = Lists.newArrayList();
+    	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item1, broadcast1));
+    	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item2, broadcast2));
+    	store.replaceScheduleBlock(Publisher.BBC, Channel.BBC_ONE, itemsAndBroadcasts);
     }
     
     @Test
