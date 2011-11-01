@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Currency;
 
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Policy.Platform;
 import org.atlasapi.media.entity.Policy.RevenueContract;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -33,6 +34,10 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         	entity.setAvailableCountries(Countries.fromCodes(TranslatorUtils.toList(dbObject, "availableCountries")));
         }
         
+        if(dbObject.containsField("platform")) {
+        	entity.setPlatform(Platform.fromKey(TranslatorUtils.toString(dbObject, "platform")));
+        }
+        
         return entity;
     }
 
@@ -53,6 +58,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
 
         if (entity.getAvailableCountries() != null) {
         	TranslatorUtils.fromList(dbObject, Countries.toCodes(entity.getAvailableCountries()), "availableCountries");
+        }
+        if(entity.getPlatform() != null) {
+        	TranslatorUtils.from(dbObject, "platform", entity.getPlatform().key());
         }
         return dbObject;
     }
