@@ -211,7 +211,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
             itemDbo.put(VERSIONS_KEY, list);
         }
         
-        TranslatorUtils.from(itemDbo, BLACK_AND_WHITE_KEY, entity.isBlackAndWhite());
+        TranslatorUtils.from(itemDbo, BLACK_AND_WHITE_KEY, entity.getBlackAndWhite());
         if (! entity.getCountriesOfOrigin().isEmpty()) {
             TranslatorUtils.fromIterable(itemDbo, Countries.toCodes(entity.getCountriesOfOrigin()), COUNTRIES_OF_ORIGIN_KEY);
         }
