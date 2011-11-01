@@ -49,7 +49,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	private final static Duration MAX_DURATION = Duration.standardDays(14);
 
 	
-	private final ScheduleEntryBuilder scheduleEntryBuilder = new ScheduleEntryBuilder();
+	private final ScheduleEntryBuilder scheduleEntryBuilder = new ScheduleEntryBuilder(Duration.standardDays(28));
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
 
@@ -86,7 +86,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     @Override
     public void replaceScheduleBlock(Publisher publisher, Channel channel, Iterable<ItemRefAndBroadcast> itemsAndBroadcasts) {
     	
-    	Interval interval = checkAndGetScheduleInterval(itemsAndBroadcasts, true);
+    	Interval interval = checkAndGetScheduleInterval(itemsAndBroadcasts, true, channel);
     	Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(channel, publisher, interval);
     	
     	for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
@@ -97,7 +97,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     	}
     }
     
-    private Interval checkAndGetScheduleInterval(Iterable<ItemRefAndBroadcast> itemsAndBroadcasts, boolean allowGaps)
+    private Interval checkAndGetScheduleInterval(Iterable<ItemRefAndBroadcast> itemsAndBroadcasts, boolean allowGaps, Channel expectedChannel)
     {
 		List<Broadcast> broadcasts = Lists.newArrayList();
 		for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
@@ -118,14 +118,12 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 		});
 	
 		DateTime currentEndTime = null;
-		String channel = null;
 		
 		for(Broadcast b : broadcasts) {
 			
-			if(channel != null && !channel.equals(b.getBroadcastOn())) {
+			if(expectedChannel != Channel.fromUri(b.getBroadcastOn()).requireValue()) {
 				throw new IllegalArgumentException("All broadcasts must be on the same channel");
 			}	
-			channel = b.getBroadcastOn();
 			
 			if(allowGaps) {
 				if(currentEndTime != null && b.getTransmissionTime().isBefore(currentEndTime)) {
