@@ -14,6 +14,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleEntryBuilder;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
+import org.joda.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -26,13 +27,18 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
     private final ContentLister contentLister;
     private final ScheduleWriter scheduleStore;
     private final List<Publisher> publishers;
-    private final ScheduleEntryBuilder scheduleEntryBuilder = new ScheduleEntryBuilder();
+    private final ScheduleEntryBuilder scheduleEntryBuilder;
     private int lastProcessed = 0;
 
-    public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> publishers) {
+    public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> publishers, Duration maxBroadcastAge) {
         this.contentLister = contentLister;
         this.scheduleStore = scheduleStore;
         this.publishers = ImmutableList.copyOf(publishers);
+        this.scheduleEntryBuilder = new ScheduleEntryBuilder(maxBroadcastAge);
+    }
+    
+    public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> publishers) {
+        this(contentLister, scheduleStore, publishers, Duration.standardDays(28));
     }
     
     @Override
