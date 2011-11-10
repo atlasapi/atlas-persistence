@@ -59,23 +59,22 @@ public class ScheduleEntryBuilder {
 			return;
 		}
 		
-	    for (Interval interval: intervalsFor(broadcast.getTransmissionTime(), broadcast.getTransmissionEndTime())) {
-	        String key = ScheduleEntry.toKey(interval, channel, publisher);
-
-	        if (entries.containsKey(key)) {
-	            ScheduleEntry entry = entries.get(key);
-	            entry.withItems(Iterables.concat(entry.getItemRefsAndBroadcasts(), ImmutableList.of(itemAndBroadcast)));
-	        } else {
-	            ScheduleEntry entry = new ScheduleEntry(interval, channel, publisher, ImmutableList.of(itemAndBroadcast));
-	            entries.put(key, entry);
-	        }
-	    }
+		if(!broadcast.getTransmissionTime().isBefore(new DateTime(DateTimeZones.UTC).minus(maxBroadcastAge))) {
+		    for (Interval interval: intervalsFor(broadcast.getTransmissionTime(), broadcast.getTransmissionEndTime())) {
+		        String key = ScheduleEntry.toKey(interval, channel, publisher);
+	
+		        if (entries.containsKey(key)) {
+		            ScheduleEntry entry = entries.get(key);
+		            entry.withItems(Iterables.concat(entry.getItemRefsAndBroadcasts(), ImmutableList.of(itemAndBroadcast)));
+		        } else {
+		            ScheduleEntry entry = new ScheduleEntry(interval, channel, publisher, ImmutableList.of(itemAndBroadcast));
+		            entries.put(key, entry);
+		        }
+		    }
+		}
 	}
     
     List<Interval> intervalsFor(DateTime start, DateTime end) {
-        if (start.isBefore(new DateTime(DateTimeZones.UTC).minus(maxBroadcastAge))) {
-            return ImmutableList.of();
-        }
         
         long startMillis = millisBackToNearestBin(start);
         long endMillis = end.getMillis();
