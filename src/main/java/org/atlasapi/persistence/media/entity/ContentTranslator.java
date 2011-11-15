@@ -5,6 +5,7 @@ import java.util.List;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.KeyPhrase;
+import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -17,12 +18,14 @@ import com.mongodb.DBObject;
 
 public class ContentTranslator implements ModelTranslator<Content> {
 
+    private static final String LINKS_KEY = "links";
     private static final String PHRASES_KEY = "phrases";
     public static final String CLIPS_KEY = "clips";
 	
 	private final ClipTranslator clipTranslator;
 	private final KeyPhraseTranslator keyPhraseTranslator;
 	private final DescribedTranslator describedTranslator;
+    private final RelatedLinkTranslator relatedLinkTranslator;
 	
 	public ContentTranslator() {
 		this(new DescribedTranslator(new DescriptionTranslator()), new ClipTranslator());
@@ -33,6 +36,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		this.describedTranslator = describedTranslator;
 		this.clipTranslator = clipTranslator;
 		this.keyPhraseTranslator = new KeyPhraseTranslator();
+		this.relatedLinkTranslator = new RelatedLinkTranslator();
 	}
 	
 	@Override
@@ -41,11 +45,24 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
 		decodeClips(dbObject, entity);
         decodeKeyPhrases(dbObject, entity);
+        decodeRelatedLinks(dbObject, entity);
 
 		return entity;
 	}
 
-	@SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
+    private void decodeRelatedLinks(DBObject dbObject, Content entity) {
+        if (dbObject.containsField(LINKS_KEY)) {
+            entity.setRelatedLinks(Iterables.transform((Iterable<DBObject>) dbObject.get(LINKS_KEY), new Function<DBObject, RelatedLink>() {
+                @Override
+                public RelatedLink apply(DBObject input) {
+                    return relatedLinkTranslator.fromDBObject(input);
+                }
+            }));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private void decodeKeyPhrases(DBObject dbObject, Content entity) {
         if (dbObject.containsField(PHRASES_KEY)) {
             entity.setKeyPhrases(Iterables.transform((Iterable<DBObject>) dbObject.get(PHRASES_KEY), new Function<DBObject, KeyPhrase>() {
@@ -74,8 +91,20 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		dbObject = describedTranslator.toDBObject(dbObject, entity);
 		encodeClips(dbObject, entity);
         encodeKeyPhrases(dbObject, entity);
+        encodeRelatedLinks(dbObject, entity);
         return dbObject;
 	}
+
+    private void encodeRelatedLinks(DBObject dbObject, Content entity) {
+        if (!entity.getRelatedLinks().isEmpty()) {
+            dbObject.put(LINKS_KEY, ImmutableSet.copyOf(Iterables.transform(entity.getRelatedLinks(), new Function<RelatedLink, DBObject>() {
+                @Override
+                public DBObject apply(RelatedLink input) {
+                    return relatedLinkTranslator.toDBObject(input);
+                }
+            })));
+        }
+    }
 
     private void encodeClips(DBObject dbObject, Content entity) {
         if (!entity.getClips().isEmpty()) {
