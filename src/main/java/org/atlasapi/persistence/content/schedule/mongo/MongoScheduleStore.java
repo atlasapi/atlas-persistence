@@ -2,7 +2,6 @@ package org.atlasapi.persistence.content.schedule.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
-import java.nio.channels.Channels;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -119,14 +118,12 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 		});
 	
 		DateTime currentEndTime = null;
-		String channel = null;
 		
 		for(Broadcast b : broadcasts) {
 			
 			if(expectedChannel != Channel.fromUri(b.getBroadcastOn()).requireValue()) {
 				throw new IllegalArgumentException("All broadcasts must be on the same channel");
 			}	
-			channel = b.getBroadcastOn();
 			
 			if(allowGaps) {
 				if(currentEndTime != null && b.getTransmissionTime().isBefore(currentEndTime)) {
