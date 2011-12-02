@@ -38,6 +38,12 @@ public class ManualScheduleRebuildModule {
 	    
         scheduler.schedule(bbcRepopulator, RepetitionRules.every(Duration.standardHours(2)));
         
+        ScheduledTask bbcFullRepopulator = 
+                new FullMongoScheduleRepopulator(lister, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC), Duration.standardDays(30*365))
+                .withName("Big BBC Mongo Schedule repopulator");
+            
+        scheduler.schedule(bbcFullRepopulator, RepetitionRules.NEVER);
+        
         ScheduledTask c4Repopulator = 
         	new FullMongoScheduleRepopulator(lister, scheduleStore, ImmutableList.<Publisher>of(Publisher.C4))
         	.withName("C4 Mongo Schedule repopulator");
@@ -48,6 +54,6 @@ public class ManualScheduleRebuildModule {
                 new FullMongoScheduleRepopulator(lister, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC_REDUX), Duration.standardDays(30*365))
         .withName("Redux Mongo Schedule repopulator");
     
-        scheduler.schedule(reduxRepopulator, RepetitionRules.NEVER);
+        scheduler.schedule(reduxRepopulator, RepetitionRules.every(Duration.standardHours(1)));
 	}
 }
