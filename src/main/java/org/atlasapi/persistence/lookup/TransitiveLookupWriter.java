@@ -59,12 +59,15 @@ public class TransitiveLookupWriter implements LookupWriter {
         lookups = Maps.newHashMap(Maps.transformValues(lookups, new Function<LookupEntry, LookupEntry>() {
             @Override
             public LookupEntry apply(LookupEntry entry) {
-                if (canonUris.contains(entry.id()) || !publishers.contains(entry.lookupRef().publisher())) {
+                //Only modify entries in the transitive closure of publishers that are argued
+                if (!publishers.contains(entry.lookupRef().publisher())) {
+                    return entry;
+                }
+                if (canonUris.contains(entry.id())) {
                     return entry.copyWithDirectEquivalents(Sets.union(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
                 } else {
                     return entry.copyWithDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
                 }
-                
             }
         }));
         
@@ -147,6 +150,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         return subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
     }
 
+    // Uses a work queue to pull out and mapp the transitive closures rooted at each entry in entries.
     private Map<LookupRef, LookupEntry> transitiveClosure(Set<LookupEntry> entries) {
         
         Queue<LookupEntry> toProcess = Lists.newLinkedList(entries);
@@ -156,7 +160,8 @@ public class TransitiveLookupWriter implements LookupWriter {
         while(!toProcess.isEmpty()) {
             LookupEntry current = toProcess.poll();
             found.put(current.lookupRef(), current);
-            toProcess.addAll(entriesForRefs(filter(current.directEquivalents(), not(in(found.keySet())))));
+            //add entries for equivalents that haven't been seen before to the work queue
+            toProcess.addAll(entriesForRefs(filter(current.equivalents(), not(in(found.keySet())))));
         }
         
         return found;
