@@ -150,7 +150,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         return subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
     }
 
-    // Uses a work queue to pull out and mapp the transitive closures rooted at each entry in entries.
+    // Uses a work queue to pull out and map the transitive closures rooted at each entry in entries.
     private Map<LookupRef, LookupEntry> transitiveClosure(Set<LookupEntry> entries) {
         
         Queue<LookupEntry> toProcess = Lists.newLinkedList(entries);
