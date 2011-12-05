@@ -59,7 +59,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         lookups = Maps.newHashMap(Maps.transformValues(lookups, new Function<LookupEntry, LookupEntry>() {
             @Override
             public LookupEntry apply(LookupEntry entry) {
-                //Only modify entries in the transitive closure of publishers that are argued
+                //Only modify direct equivalents of entries in the transitive closure of publishers that are argued
                 if (!publishers.contains(entry.lookupRef().publisher())) {
                     return entry;
                 }

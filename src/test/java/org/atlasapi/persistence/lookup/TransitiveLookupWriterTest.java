@@ -266,4 +266,31 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasDirectEquivs(fiveItem, fiveItem, paItem);
         
     }
+    
+    public void testDoesntBreakEquivalenceForContentOfIgnoredPublishersWhenLinkingItemIsNotSubject() {
+        
+        Item paItem = createItem("paItem2",Publisher.PA);
+        Item pnItem = createItem("pnItem2",Publisher.PREVIEW_NETWORKS);
+        Item bbcItem = createItem("bbcItem2",Publisher.BBC);
+    
+        writer.writeLookup(paItem, ImmutableSet.<Described> of(), ImmutableSet.of(Publisher.PA));
+        writer.writeLookup(pnItem, ImmutableSet.<Described> of(), ImmutableSet.of(Publisher.PREVIEW_NETWORKS));
+        writer.writeLookup(bbcItem, ImmutableSet.<Described> of(), ImmutableSet.of(Publisher.BBC));
+
+        //Make PA and BBC equivalent
+        writer.writeLookup(paItem, ImmutableSet.of(bbcItem), ImmutableSet.of(Publisher.PA, Publisher.BBC));
+        
+        writer.writeLookup(pnItem, ImmutableSet.of(paItem), ImmutableSet.of(Publisher.PREVIEW_NETWORKS, Publisher.PA));
+        
+        hasEquivs(paItem, paItem, bbcItem, pnItem);
+        hasDirectEquivs(paItem, paItem, bbcItem, pnItem);
+        
+        hasEquivs(bbcItem, bbcItem, paItem, pnItem);
+        hasDirectEquivs(bbcItem, paItem, bbcItem);
+        
+        hasEquivs(pnItem, pnItem, paItem, bbcItem);
+        hasDirectEquivs(pnItem, paItem, pnItem);
+        
+    }
+    
 }
