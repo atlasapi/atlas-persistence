@@ -11,11 +11,13 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.entry.LookupRef;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -32,9 +34,9 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     @Override
-    public <T extends Described> void writeLookup(final T subject, Iterable<T> directEquivalents) {
+    public <T extends Described> void writeLookup(final T subject, Iterable<T> directEquivalents, final Set<Publisher> publishers) {
         
-        Set<Described> allItems = ImmutableSet.<Described>builder().add(subject).addAll(directEquivalents).build();
+        Set<Described> allItems = filterContentPublishers(ImmutableSet.<Described>builder().add(subject).addAll(directEquivalents).build(), publishers);
         
         //canonical URIs of subject and directEquivalents
         final Set<String> canonUris = ImmutableSet.copyOf(Iterables.transform(allItems, TO_URI));
@@ -57,7 +59,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         lookups = Maps.newHashMap(Maps.transformValues(lookups, new Function<LookupEntry, LookupEntry>() {
             @Override
             public LookupEntry apply(LookupEntry entry) {
-                if (canonUris.contains(entry.id())) {
+                if (canonUris.contains(entry.id()) || !publishers.contains(entry.lookupRef().publisher())) {
                     return entry.copyWithDirectEquivalents(Sets.union(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
                 } else {
                     return entry.copyWithDirectEquivalents(Sets.difference(entry.directEquivalents(), ImmutableSet.of(LookupRef.from(subject))));
@@ -66,7 +68,14 @@ public class TransitiveLookupWriter implements LookupWriter {
             }
         }));
         
-        lookups.put(subjectEntry.lookupRef(), subjectEntry.copyWithDirectEquivalents(Iterables.transform(allItems, LookupRef.FROM_DESCRIBED)));
+        /* Update the subject content entry. Included:
+         *  refs of publishers not argued.
+         *  refs for all content argued as equivalent.
+         */
+        lookups.put(subjectEntry.lookupRef(), subjectEntry.copyWithDirectEquivalents(Iterables.concat(
+                retainRefsNotInPublishers(subjectEntry.directEquivalents(), publishers), 
+                Iterables.transform(allItems, LookupRef.FROM_DESCRIBED)
+        )));
         
         //For each lookup, recompute its transitive closure. 
         Set<LookupEntry> newLookups = recomputeTransitiveClosures(lookups.values());
@@ -76,6 +85,24 @@ public class TransitiveLookupWriter implements LookupWriter {
             entryStore.store(entry);
         }
 
+    }
+
+    private Iterable<LookupRef> retainRefsNotInPublishers(Set<LookupRef> directEquivalents, final Set<Publisher> publishers) {
+        return Iterables.filter(directEquivalents, new Predicate<LookupRef>() {
+            @Override
+            public boolean apply(LookupRef input) {
+                return !publishers.contains(input.publisher());
+            }
+        });
+    }
+    
+    private Set<Described> filterContentPublishers(Set<Described> content, final Set<Publisher> publishers) {
+        return Sets.filter(content, new Predicate<Described>() {
+            @Override
+            public boolean apply(Described input) {
+                return publishers.contains(input.getPublisher());
+            }
+        });
     }
 
     private Set<LookupEntry> recomputeTransitiveClosures(Iterable<LookupEntry> lookups) {
