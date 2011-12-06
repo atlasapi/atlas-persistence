@@ -15,7 +15,7 @@ import com.mongodb.DBObject;
 public class TopicTranslator implements ModelTranslator<Topic> {
 
     public static final String VALUE = "value";
-    public static final String NAMESPACE = "ns";
+    public static final String NAMESPACE = "namespace";
     public static final String TOPIC_TYPE = "topicType";
     public static final String PUBLISHERS = "publishers";
     

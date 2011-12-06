@@ -167,7 +167,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             CONTAINER, TO_CONTAINER);
 
     private interface ListingCursorBuilder {
+        
         DBCursor cursorFor(ContentCategory category);
+        
     }
     
     @Override

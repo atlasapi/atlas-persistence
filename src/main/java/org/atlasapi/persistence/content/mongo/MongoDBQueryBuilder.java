@@ -56,6 +56,7 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Topic;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.DateTime;
 
@@ -290,6 +291,9 @@ class MongoDBQueryBuilder {
 
 	private static List<String> entityPath(Attribute<?> attribute) {
 		Class<? extends Identified> entity = attribute.target();
+		if (Topic.class.isAssignableFrom(entity)) {
+		    return ImmutableList.of();
+		}
 		if (Item.class.isAssignableFrom(entity)) {
 			return ImmutableList.of("contents");
 		}

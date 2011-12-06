@@ -102,7 +102,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		encodeClips(dbObject, entity);
         encodeKeyPhrases(dbObject, entity);
         encodeRelatedLinks(dbObject, entity);
-        
         if (!entity.getTopics().isEmpty()) {
             BasicDBList topics = new BasicDBList();
             topics.addAll(entity.getTopics());
