@@ -226,7 +226,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 continue;
             }
             for (Broadcast broadcast : allBroadcasts) {
-                if (scheduleBroadcast.equals(broadcast)) {
+                if (scheduleBroadcast.equals(broadcast) && broadcast.isActivelyPublished()) {
                     version.setBroadcasts(Sets.newHashSet(broadcast));
                     found = true;
                 }
