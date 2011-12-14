@@ -12,7 +12,7 @@ public class RestrictionTranslator implements ModelTranslator<Restriction> {
 	private static final String MINIMUM_AGE = "minimumAge";
 	private static final String RESTRICTED = "restricted";
 	
-	private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
+	private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 
 	@Override
 	public DBObject toDBObject(DBObject dbObject, Restriction model) {

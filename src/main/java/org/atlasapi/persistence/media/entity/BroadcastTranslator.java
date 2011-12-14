@@ -36,8 +36,8 @@ public class BroadcastTranslator  {
         Broadcast broadcast = new Broadcast(broadcastOn, transmissionTime, Duration.standardSeconds(duration), activelyPublished).withId(id);
         
         broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
-        broadcast.setAliases(TranslatorUtils.toSet(dbObject, DescriptionTranslator.ALIASES));
-        broadcast.setLastUpdated(TranslatorUtils.toDateTime(dbObject, DescriptionTranslator.LAST_UPDATED));
+        broadcast.setAliases(TranslatorUtils.toSet(dbObject, IdentifiedTranslator.ALIASES));
+        broadcast.setLastUpdated(TranslatorUtils.toDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED));
         broadcast.setRepeat(TranslatorUtils.toBoolean(dbObject, REPEAT_KEY));
         broadcast.setSubtitled(TranslatorUtils.toBoolean(dbObject, SUBTITLED_KEY));
         broadcast.setSigned(TranslatorUtils.toBoolean(dbObject, SIGNED_KEY));
@@ -59,8 +59,8 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromLocalDate(dbObject, "scheduleDate", entity.getScheduleDate());
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_TIME_KEY, entity.getTransmissionTime());
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_END_TIME_KEY, entity.getTransmissionEndTime());
-        TranslatorUtils.fromSet(dbObject, entity.getAliases(), DescriptionTranslator.ALIASES);
-        TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
+        TranslatorUtils.fromSet(dbObject, entity.getAliases(), IdentifiedTranslator.ALIASES);
+        TranslatorUtils.fromDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED, entity.getLastUpdated());
         TranslatorUtils.from(dbObject, "activelyPublished", entity.isActivelyPublished());
         TranslatorUtils.from(dbObject, "id", entity.getId());
         TranslatorUtils.from(dbObject, REPEAT_KEY, entity.getRepeat());

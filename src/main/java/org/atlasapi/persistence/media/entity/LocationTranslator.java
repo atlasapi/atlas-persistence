@@ -14,7 +14,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
 	
     public static final String POLICY = "policy";
     
-    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
+    private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 	private final PolicyTranslator policyTranslator = new PolicyTranslator();
     
     @Override
@@ -35,7 +35,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         entity.setTransportSubType(readEnum(TransportSubType.class, dbObject, "transportSubType"));
         
         entity.setUri((String) dbObject.get("uri"));
-        entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, DescriptionTranslator.LAST_UPDATED));
+        entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED));
         
         DBObject policyObject = (DBObject) dbObject.get(POLICY);
         if (policyObject != null) {
@@ -70,7 +70,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         }
         
         TranslatorUtils.from(dbObject, "uri", entity.getUri());
-        TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
+        TranslatorUtils.fromDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED, entity.getLastUpdated());
         
         if (entity.getPolicy() != null) {
         	DBObject policyObject = policyTranslator.toDBObject(new BasicDBObject(), entity.getPolicy());

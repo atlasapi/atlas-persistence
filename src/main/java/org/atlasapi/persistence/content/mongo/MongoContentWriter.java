@@ -22,7 +22,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
 
@@ -72,7 +72,7 @@ public class MongoContentWriter implements ContentWriter {
         setThisOrChildLastUpdated(item);
         item.setLastFetched(clock.now());
         
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.CANONICAL_URI, item.getCanonicalUri());
             
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
         	return;
@@ -154,7 +154,7 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.CANONICAL_URI, container.getCanonicalUri());
         
         collection.update(where.build(), set(containerDbo), true, false);
 

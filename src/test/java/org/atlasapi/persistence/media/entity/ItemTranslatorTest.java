@@ -60,7 +60,7 @@ public class ItemTranslatorTest extends TestCase {
         ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
         
-        assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
+        assertEquals("canonicalUri", dbObject.get(IdentifiedTranslator.CANONICAL_URI));
         assertEquals("title", dbObject.get("title"));
         
         List<String> t = (List<String>) dbObject.get("tags");
@@ -181,7 +181,7 @@ public class ItemTranslatorTest extends TestCase {
         assertNull(dbo.get(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY));
         assertLastUpdatedNull(dbo);
         
-        assertNull(Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("people")).get(DescriptionTranslator.LAST_UPDATED));
+        assertNull(Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("people")).get(IdentifiedTranslator.LAST_UPDATED));
         
         DBObject versionDbo = Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("versions"));
         assertLastUpdatedNull(versionDbo);
@@ -200,7 +200,7 @@ public class ItemTranslatorTest extends TestCase {
     }
     
     public void assertLastUpdatedNull(DBObject dbo) {
-        assertNull(dbo.get(DescriptionTranslator.LAST_UPDATED));
+        assertNull(dbo.get(IdentifiedTranslator.LAST_UPDATED));
     }
 
     public void createModel(Item item) {

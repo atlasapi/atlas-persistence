@@ -17,7 +17,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
 	
     static final String LOCATIONS_KEY = "availableAt";
     
-    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
+    private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
     private final LocationTranslator locationTranslator = new LocationTranslator();
 
     @SuppressWarnings("unchecked")

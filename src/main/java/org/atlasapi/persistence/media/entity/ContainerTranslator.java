@@ -97,7 +97,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         // don't include the last-fetched time in the hash
         dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
         dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
-        dbObject.removeField(DescriptionTranslator.LAST_UPDATED);
+        dbObject.removeField(IdentifiedTranslator.LAST_UPDATED);
         dbObject.removeField(CHILDREN_KEY);
         dbObject.removeField(FULL_SERIES_KEY);
         return String.valueOf(dbObject.hashCode());

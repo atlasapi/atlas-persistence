@@ -8,7 +8,7 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-public class DescriptionTranslator implements ModelTranslator<Identified> {
+public class IdentifiedTranslator implements ModelTranslator<Identified> {
    
 	public static final String CURIE = "curie";
 	
