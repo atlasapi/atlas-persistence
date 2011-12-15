@@ -13,6 +13,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
@@ -34,15 +35,16 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
 
 	private final ContentTranslator contentTranslator;
-    private final VersionTranslator versionTranslator = new VersionTranslator();
+    private final VersionTranslator versionTranslator;
     private final CrewMemberTranslator crewMemberTranslator = new CrewMemberTranslator();
     
-    ItemTranslator(ContentTranslator contentTranslator) {
+    ItemTranslator(ContentTranslator contentTranslator, NumberToShortStringCodec idCodec) {
 		this.contentTranslator = contentTranslator;
+		this.versionTranslator = new VersionTranslator(idCodec);
     }
     
-    public ItemTranslator() {
-    	this(new ContentTranslator());
+    public ItemTranslator(NumberToShortStringCodec idCodec) {
+    	this(new ContentTranslator(idCodec), idCodec);
     }
     
     public Item fromDB(DBObject dbObject) {

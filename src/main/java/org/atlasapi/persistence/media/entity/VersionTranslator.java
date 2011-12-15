@@ -8,11 +8,16 @@ import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.segment.SegmentEvent;
+import org.atlasapi.media.segment.SegmentEventTranslator;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
@@ -22,12 +27,18 @@ public class VersionTranslator implements ModelTranslator<Version> {
 	static final String ENCODINGS_KEY = "manifestedAs";
     static final String BROADCASTS_KEY = "broadcasts";
     private static final String PROVIDER_KEY = "provider";
+    private static final String SEGMENT_EVENTS_KEY = "segmentEvents";
 	
 	private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
     private final EncodingTranslator encodingTranslator = new EncodingTranslator();
     private final RestrictionTranslator restrictionTranslator = new RestrictionTranslator();
+    private final SegmentEventTranslator segmentEventTranslator;
 
+    public VersionTranslator(NumberToShortStringCodec idCodec) {
+        this.segmentEventTranslator = new SegmentEventTranslator(idCodec);
+    }
+    
     @Override
     public Version fromDBObject(DBObject dbObject, Version entity) {
         if (entity == null) {
@@ -72,6 +83,16 @@ public class VersionTranslator implements ModelTranslator<Version> {
             entity.setManifestedAs(encodings);
         }
         
+        list = TranslatorUtils.toDBObjectList(dbObject, SEGMENT_EVENTS_KEY);
+        if (list != null && !list.isEmpty()) {
+            entity.setSegmentEvents(Lists.transform(list, new Function<DBObject, SegmentEvent>() {
+                @Override
+                public SegmentEvent apply(DBObject input) {
+                    return segmentEventTranslator.fromDBObject(input, null);
+                }
+            }));
+        }
+        
         return entity;
     }
 
@@ -111,6 +132,18 @@ public class VersionTranslator implements ModelTranslator<Version> {
             }
             if (! list.isEmpty()) {
                 dbObject.put(ENCODINGS_KEY, list);
+            }
+        }
+        
+        if (!entity.getSegmentEvents().isEmpty()) {
+            BasicDBList list = new BasicDBList();
+            for (SegmentEvent event : entity.getSegmentEvents()) {
+                if (event != null) {
+                    list.add(segmentEventTranslator.toDBObject(null, event));
+                }
+            }
+            if (!list.isEmpty()) {
+                dbObject.put(SEGMENT_EVENTS_KEY, list);
             }
         }
         

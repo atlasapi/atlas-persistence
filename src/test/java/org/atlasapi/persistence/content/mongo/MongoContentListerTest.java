@@ -52,7 +52,7 @@ public class MongoContentListerTest {
             public void ensureLookup(Described described) {
             }
         };
-        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore , new SystemClock());
+        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, new SystemClock());
         writer.createOrUpdate(bbcBrand);
         writer.createOrUpdate(c4Brand);
         writer.createOrUpdate(bbcItem1);

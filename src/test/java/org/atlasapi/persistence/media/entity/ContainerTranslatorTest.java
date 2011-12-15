@@ -12,12 +12,13 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
 public class ContainerTranslatorTest extends TestCase {
-
-	ContainerTranslator bt = new ContainerTranslator();
+    
+	ContainerTranslator bt = new ContainerTranslator(new SubstitutionTableNumberCodec());
     
     @SuppressWarnings("unchecked")
     public void testFromBrand() throws Exception {

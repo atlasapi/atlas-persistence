@@ -9,6 +9,7 @@ import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
 
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
@@ -17,7 +18,7 @@ public class VersionTranslatorTest extends TestCase {
 	
 	private final Clock clock = new SystemClock();
 	
-    VersionTranslator vt = new VersionTranslator();
+    VersionTranslator vt = new VersionTranslator(new SubstitutionTableNumberCodec());
     
     public void testFromVersion() throws Exception {
         Version version = new Version();

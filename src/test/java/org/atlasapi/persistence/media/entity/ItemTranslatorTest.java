@@ -21,6 +21,7 @@ import org.joda.time.LocalDate;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
@@ -29,6 +30,7 @@ import com.mongodb.DBObject;
 public class ItemTranslatorTest extends TestCase {
 	
 	private final Clock clock = new SystemClock();
+    private final ItemTranslator itemTranslator = new ItemTranslator(new SubstitutionTableNumberCodec());
     
     @SuppressWarnings("unchecked")
     public void testConvertFromItem() throws Exception {
@@ -41,7 +43,6 @@ public class ItemTranslatorTest extends TestCase {
         Encoding enc = new Encoding();
         enc.setAdvertisingDuration(1);
         enc.addAvailableAt(loc);
-        
         
         Duration duration = Duration.standardSeconds(1);
         Broadcast br = new Broadcast("channel", clock.now(), duration);
@@ -57,8 +58,7 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator();
-        DBObject dbObject = it.toDBObject(null, item);
+        DBObject dbObject = itemTranslator.toDBObject(null, item);
         
         assertEquals("canonicalUri", dbObject.get(IdentifiedTranslator.CANONICAL_URI));
         assertEquals("title", dbObject.get("title"));
@@ -119,10 +119,9 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        ItemTranslator it = new ItemTranslator();
-        DBObject dbObject = it.toDBObject(null, item);
+        DBObject dbObject = itemTranslator.toDBObject(null, item);
         
-        Item i = it.fromDBObject(dbObject, null);
+        Item i = itemTranslator.fromDBObject(dbObject, null);
         assertEquals(i.getCanonicalUri(), item.getCanonicalUri());
         assertEquals(i.getCurie(), item.getCurie());
         
@@ -165,9 +164,8 @@ public class ItemTranslatorTest extends TestCase {
         createModel(clip);
         item.addClip(clip);
         
-        ItemTranslator translator =  new ItemTranslator();
-        DBObject dbo = translator.toDB(item);
-        translator.removeUpdateTimeFromItem(dbo);
+        DBObject dbo = itemTranslator.toDB(item);
+        itemTranslator.removeUpdateTimeFromItem(dbo);
         
         assertTimesAreNull(dbo);
         

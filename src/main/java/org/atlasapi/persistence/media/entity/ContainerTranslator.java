@@ -14,6 +14,7 @@ import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
@@ -39,8 +40,8 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         }
     });
 
-    public ContainerTranslator() {
-        this.contentTranslator = new ContentTranslator();
+    public ContainerTranslator(NumberToShortStringCodec idCodec) {
+        this.contentTranslator = new ContentTranslator(idCodec);
         this.childRefTranslator = new ChildRefTranslator();
     }
 

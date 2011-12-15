@@ -19,6 +19,7 @@ import org.atlasapi.persistence.media.entity.ContainerTranslator;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -28,12 +29,13 @@ public class ChildRefWriter {
     private final DBCollection containers;
     private final DBCollection programmeGroups;
     
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ContainerTranslator containerTranslator;
 
     public ChildRefWriter(DatabasedMongo mongo) {
         MongoContentTables mongoTables = new MongoContentTables(mongo);
-        containers = mongoTables.collectionFor(ContentCategory.CONTAINER);
-        programmeGroups = mongoTables.collectionFor(ContentCategory.PROGRAMME_GROUP);
+        this.containers = mongoTables.collectionFor(ContentCategory.CONTAINER);
+        this.programmeGroups = mongoTables.collectionFor(ContentCategory.PROGRAMME_GROUP);
+        this.containerTranslator = new ContainerTranslator(new SubstitutionTableNumberCodec());
     }
 
     public void includeEpisodeInSeriesAndBrand(Episode episode) {

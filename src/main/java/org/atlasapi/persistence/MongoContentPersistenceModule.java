@@ -1,5 +1,10 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.media.segment.IdSettingSegmentWriter;
+import org.atlasapi.media.segment.MongoSegmentResolver;
+import org.atlasapi.media.segment.MongoSegmentWriter;
+import org.atlasapi.media.segment.SegmentResolver;
+import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
@@ -7,13 +12,13 @@ import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentTables;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
+import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
@@ -23,6 +28,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.time.SystemClock;
@@ -88,5 +94,15 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     MongoIOProbe mongoIoSetProbe() {
         return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
+    }
+
+    @Override
+    public @Bean SegmentWriter segmentWriter() {
+        return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
+    }
+
+    @Override
+    public @Bean SegmentResolver segmentResolver() {
+        return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
     }
 }

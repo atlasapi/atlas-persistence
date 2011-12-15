@@ -7,6 +7,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.Lists;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -18,8 +19,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	private ClipTranslator clipTranslator;
 	private final DescribedTranslator describedTranslator;
 	
-	public ContentTranslator() {
-		this(new DescribedTranslator(new IdentifiedTranslator()), new ClipTranslator());
+	public ContentTranslator(NumberToShortStringCodec idCodec) {
+		this(new DescribedTranslator(new IdentifiedTranslator()), new ClipTranslator(idCodec));
 	}
 	
 	public ContentTranslator(DescribedTranslator describedTranslator, ClipTranslator clipTranslator) {
