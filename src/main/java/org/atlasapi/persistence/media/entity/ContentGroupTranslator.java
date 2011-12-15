@@ -15,7 +15,7 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
 	private final ChildRefTranslator childTranslator;
 
 	public ContentGroupTranslator() {
-		this(new DescribedTranslator(new DescriptionTranslator()));
+		this(new DescribedTranslator(new IdentifiedTranslator()));
 	}
 	
 	public ContentGroupTranslator(DescribedTranslator contentTranslator) {

@@ -19,9 +19,9 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String TYPE_KEY = "type";
 	public static final String LAST_FETCHED_KEY = "lastFetched";
 	
-	private final DescriptionTranslator descriptionTranslator;
+	private final IdentifiedTranslator descriptionTranslator;
 
-	public DescribedTranslator(DescriptionTranslator descriptionTranslator) {
+	public DescribedTranslator(IdentifiedTranslator descriptionTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
 	}
 	

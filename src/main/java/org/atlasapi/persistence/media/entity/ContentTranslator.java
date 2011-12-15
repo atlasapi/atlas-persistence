@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -30,8 +31,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	private final DescribedTranslator describedTranslator;
     private final RelatedLinkTranslator relatedLinkTranslator;
 	
-	public ContentTranslator() {
-		this(new DescribedTranslator(new DescriptionTranslator()), new ClipTranslator());
+	public ContentTranslator(NumberToShortStringCodec idCodec) {
+		this(new DescribedTranslator(new IdentifiedTranslator()), new ClipTranslator(idCodec));
 	}
 	
 	//TODO: why not use collaborators interface here? ModelTranslator<Described> etc...

@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -44,7 +45,7 @@ public class MongoContentWriterTest {
     private final DBCollection containers = mongo.collection("containers");
     private final DBCollection programmeGroups = mongo.collection("programmeGroups");
     
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ContainerTranslator containerTranslator = new ContainerTranslator(new SubstitutionTableNumberCodec());
     
     @After
     public void clearDb() {

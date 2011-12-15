@@ -14,6 +14,7 @@ import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
@@ -39,8 +40,8 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         }
     });
 
-    public ContainerTranslator() {
-        this.contentTranslator = new ContentTranslator();
+    public ContainerTranslator(NumberToShortStringCodec idCodec) {
+        this.contentTranslator = new ContentTranslator(idCodec);
         this.childRefTranslator = new ChildRefTranslator();
     }
 
@@ -97,7 +98,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         // don't include the last-fetched time in the hash
         dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
         dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
-        dbObject.removeField(DescriptionTranslator.LAST_UPDATED);
+        dbObject.removeField(IdentifiedTranslator.LAST_UPDATED);
         dbObject.removeField(CHILDREN_KEY);
         dbObject.removeField(FULL_SERIES_KEY);
         return String.valueOf(dbObject.hashCode());

@@ -3,14 +3,15 @@ package org.atlasapi.persistence.media.entity;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.persistence.ModelTranslator;
 
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.mongodb.DBObject;
 
 public class ClipTranslator implements ModelTranslator<Clip> {
    
 	private final ItemTranslator itemTranslator;
 	
-	public ClipTranslator() {
-		itemTranslator = new ItemTranslator(new ContentTranslator(new DescribedTranslator(new DescriptionTranslator()), this));
+	public ClipTranslator(NumberToShortStringCodec idCodec) {
+		itemTranslator = new ItemTranslator(new ContentTranslator(new DescribedTranslator(new IdentifiedTranslator()), this), idCodec);
 	}
     
     @Override

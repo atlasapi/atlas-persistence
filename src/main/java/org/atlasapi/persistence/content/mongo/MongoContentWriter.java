@@ -22,12 +22,14 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
@@ -41,8 +43,8 @@ public class MongoContentWriter implements ContentWriter {
     private final Clock clock;
     private final NewLookupWriter lookupStore;
 
-    private final ItemTranslator itemTranslator = new ItemTranslator();
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ItemTranslator itemTranslator;
+    private final ContainerTranslator containerTranslator;
 
     private ChildRefWriter childRefWriter;
 
@@ -63,6 +65,9 @@ public class MongoContentWriter implements ContentWriter {
         programmeGroups = contentTables.collectionFor(ContentCategory.PROGRAMME_GROUP);
         
         this.childRefWriter = new ChildRefWriter(mongo);
+        NumberToShortStringCodec idCodec = new SubstitutionTableNumberCodec();
+        this.itemTranslator = new ItemTranslator(idCodec);
+        this.containerTranslator = new ContainerTranslator(idCodec);
     }
 
     @Override
@@ -72,7 +77,7 @@ public class MongoContentWriter implements ContentWriter {
         setThisOrChildLastUpdated(item);
         item.setLastFetched(clock.now());
         
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.CANONICAL_URI, item.getCanonicalUri());
             
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
         	return;
@@ -154,7 +159,7 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.CANONICAL_URI, container.getCanonicalUri());
         
         collection.update(where.build(), set(containerDbo), true, false);
 

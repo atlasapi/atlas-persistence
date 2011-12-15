@@ -12,12 +12,13 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
 
 public class ContainerTranslatorTest extends TestCase {
-
-	ContainerTranslator bt = new ContainerTranslator();
+    
+	ContainerTranslator bt = new ContainerTranslator(new SubstitutionTableNumberCodec());
     
     @SuppressWarnings("unchecked")
     public void testFromBrand() throws Exception {
@@ -29,7 +30,7 @@ public class ContainerTranslatorTest extends TestCase {
         brand.setGenres(genres);
         
         DBObject obj = bt.toDBObject(null, brand);
-        assertEquals("canonicalUri", obj.get(DescriptionTranslator.CANONICAL_URI));
+        assertEquals("canonicalUri", obj.get(IdentifiedTranslator.CANONICAL_URI));
         
         List<String> i = (List<String>) obj.get("genres");
         assertEquals(1, i.size());

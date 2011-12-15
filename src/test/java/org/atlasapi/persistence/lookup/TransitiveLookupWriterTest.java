@@ -64,7 +64,7 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
 
     public void testWriteLookup() {
-        
+
         Item paItem = createItem("test1", Publisher.PA);
         Item bbcItem = createItem("test2", Publisher.BBC);
         Item c4Item = createItem("test3", Publisher.C4);

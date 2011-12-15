@@ -17,6 +17,7 @@ import org.atlasapi.persistence.media.entity.ItemTranslator;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -24,12 +25,15 @@ import com.mongodb.DBObject;
 
 public class MongoContentResolver implements KnownTypeContentResolver {
 
-    private final ItemTranslator itemTranslator = new ItemTranslator();
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
+    private final ItemTranslator itemTranslator;
+    private final ContainerTranslator containerTranslator;
     private final MongoContentTables contentTables;
 
     public MongoContentResolver(DatabasedMongo mongo) {
         this.contentTables = new MongoContentTables(mongo);
+        SubstitutionTableNumberCodec idCodec = new SubstitutionTableNumberCodec();
+        this.containerTranslator = new ContainerTranslator(idCodec);
+        this.itemTranslator = new ItemTranslator(idCodec);
     }
 
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {

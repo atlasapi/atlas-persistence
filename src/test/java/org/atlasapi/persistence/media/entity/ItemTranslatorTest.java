@@ -22,6 +22,7 @@ import org.joda.time.LocalDate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
@@ -30,6 +31,7 @@ import com.mongodb.DBObject;
 public class ItemTranslatorTest extends TestCase {
 	
 	private final Clock clock = new SystemClock();
+    private final ItemTranslator itemTranslator = new ItemTranslator(new SubstitutionTableNumberCodec());
     
     @SuppressWarnings("unchecked")
     public void testConvertFromItem() throws Exception {
@@ -42,7 +44,6 @@ public class ItemTranslatorTest extends TestCase {
         Encoding enc = new Encoding();
         enc.setAdvertisingDuration(1);
         enc.addAvailableAt(loc);
-        
         
         Duration duration = Duration.standardSeconds(1);
         Broadcast br = new Broadcast("channel", clock.now(), duration);
@@ -60,10 +61,9 @@ public class ItemTranslatorTest extends TestCase {
         
         item.setTopicUris(ImmutableList.of("topic1","topic2","topic3"));
         
-        ItemTranslator it = new ItemTranslator();
-        DBObject dbObject = it.toDBObject(null, item);
+        DBObject dbObject = itemTranslator.toDBObject(null, item);
         
-        assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
+        assertEquals("canonicalUri", dbObject.get(IdentifiedTranslator.CANONICAL_URI));
         assertEquals("title", dbObject.get("title"));
         
         List<String> t = (List<String>) dbObject.get("tags");
@@ -126,10 +126,9 @@ public class ItemTranslatorTest extends TestCase {
 
         item.setTopicUris(ImmutableList.of("topic1","topic2","topic3"));
         
-        ItemTranslator it = new ItemTranslator();
-        DBObject dbObject = it.toDBObject(null, item);
+        DBObject dbObject = itemTranslator.toDBObject(null, item);
         
-        Item i = it.fromDBObject(dbObject, null);
+        Item i = itemTranslator.fromDBObject(dbObject, null);
         assertEquals(i.getCanonicalUri(), item.getCanonicalUri());
         assertEquals(i.getCurie(), item.getCurie());
         
@@ -174,9 +173,8 @@ public class ItemTranslatorTest extends TestCase {
         createModel(clip);
         item.addClip(clip);
         
-        ItemTranslator translator =  new ItemTranslator();
-        DBObject dbo = translator.toDB(item);
-        translator.removeUpdateTimeFromItem(dbo);
+        DBObject dbo = itemTranslator.toDB(item);
+        itemTranslator.removeUpdateTimeFromItem(dbo);
         
         assertTimesAreNull(dbo);
         
@@ -190,7 +188,7 @@ public class ItemTranslatorTest extends TestCase {
         assertNull(dbo.get(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY));
         assertLastUpdatedNull(dbo);
         
-        assertNull(Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("people")).get(DescriptionTranslator.LAST_UPDATED));
+        assertNull(Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("people")).get(IdentifiedTranslator.LAST_UPDATED));
         
         DBObject versionDbo = Iterables.getOnlyElement((Iterable<DBObject>) dbo.get("versions"));
         assertLastUpdatedNull(versionDbo);
@@ -209,7 +207,7 @@ public class ItemTranslatorTest extends TestCase {
     }
     
     public void assertLastUpdatedNull(DBObject dbo) {
-        assertNull(dbo.get(DescriptionTranslator.LAST_UPDATED));
+        assertNull(dbo.get(IdentifiedTranslator.LAST_UPDATED));
     }
 
     public void createModel(Item item) {

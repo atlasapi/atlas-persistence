@@ -1,5 +1,10 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.media.segment.IdSettingSegmentWriter;
+import org.atlasapi.media.segment.MongoSegmentResolver;
+import org.atlasapi.media.segment.MongoSegmentWriter;
+import org.atlasapi.media.segment.SegmentResolver;
+import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
@@ -27,6 +32,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.time.SystemClock;
@@ -111,4 +117,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoTopicStore(db);
     }
     
+    public @Bean SegmentWriter segmentWriter() {
+        return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
+    }
+
+    @Override
+    public @Bean SegmentResolver segmentResolver() {
+        return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
+    }
 }

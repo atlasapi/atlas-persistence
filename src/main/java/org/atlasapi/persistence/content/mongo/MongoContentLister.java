@@ -30,6 +30,7 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
@@ -39,13 +40,16 @@ import com.mongodb.DBObject;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister {
 
-    private final ContainerTranslator containerTranslator = new ContainerTranslator();
-    private final ItemTranslator itemTranslator = new ItemTranslator();
+    private final ContainerTranslator containerTranslator;
+    private final ItemTranslator itemTranslator;
 
     private final MongoContentTables contentTables;
 
     public MongoContentLister(DatabasedMongo mongo) {
         this.contentTables = new MongoContentTables(mongo);
+        SubstitutionTableNumberCodec idCodec = new SubstitutionTableNumberCodec();
+        this.containerTranslator = new ContainerTranslator(idCodec);
+        this.itemTranslator = new ItemTranslator(idCodec);
     }
     
     @Override

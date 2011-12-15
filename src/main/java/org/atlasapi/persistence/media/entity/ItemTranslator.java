@@ -13,6 +13,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
@@ -34,15 +35,16 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
 
 	private final ContentTranslator contentTranslator;
-    private final VersionTranslator versionTranslator = new VersionTranslator();
+    private final VersionTranslator versionTranslator;
     private final CrewMemberTranslator crewMemberTranslator = new CrewMemberTranslator();
     
-    ItemTranslator(ContentTranslator contentTranslator) {
+    ItemTranslator(ContentTranslator contentTranslator, NumberToShortStringCodec idCodec) {
 		this.contentTranslator = contentTranslator;
+		this.versionTranslator = new VersionTranslator(idCodec);
     }
     
-    public ItemTranslator() {
-    	this(new ContentTranslator());
+    public ItemTranslator(NumberToShortStringCodec idCodec) {
+    	this(new ContentTranslator(idCodec), idCodec);
     }
     
     public Item fromDB(DBObject dbObject) {
@@ -127,7 +129,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     public void removeUpdateTimeFromItem(DBObject dbObject) {
         dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
         dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
-        dbObject.removeField(DescriptionTranslator.LAST_UPDATED);
+        dbObject.removeField(IdentifiedTranslator.LAST_UPDATED);
 
         Iterable<DBObject> versions = (Iterable<DBObject>) dbObject.get(VERSIONS_KEY);
         if (versions != null) {
@@ -148,12 +150,12 @@ public class ItemTranslator implements ModelTranslator<Item> {
     private Set<DBObject> removeUpdateTimeFromVersions(Iterable<DBObject> versions) {
         Set<DBObject> unorderedVersions = Sets.newHashSet();
         for (DBObject versionDbo : versions) {
-            versionDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+            versionDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
             Iterable<DBObject> broadcasts = (Iterable<DBObject>) versionDbo.get(VersionTranslator.BROADCASTS_KEY);
             if (broadcasts != null) {
                 Set<DBObject> unorderedBroadcasts = Sets.newHashSet();
                 for (DBObject broadcastDbo : broadcasts) {
-                    broadcastDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+                    broadcastDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
                     unorderedBroadcasts.add(broadcastDbo);
                 }
                 versionDbo.put(VersionTranslator.BROADCASTS_KEY, unorderedBroadcasts);
@@ -171,15 +173,15 @@ public class ItemTranslator implements ModelTranslator<Item> {
     private Set<DBObject> removeUpdateTimesFromEncodings(Iterable<DBObject> encodings) {
         Set<DBObject> unorderedEncodings = Sets.newHashSet();
         for (DBObject encodingDbo : encodings) {
-            encodingDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+            encodingDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
             Iterable<DBObject> locations = (Iterable<DBObject>) encodingDbo.get(EncodingTranslator.LOCATIONS_KEY);
             if (locations != null) {
                 Set<DBObject> unorderedLocations = Sets.newHashSet();
                 for (DBObject locationDbo : locations) {
-                    locationDbo.removeField(DescriptionTranslator.LAST_UPDATED);
+                    locationDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
                     DBObject policy = (DBObject) locationDbo.get(LocationTranslator.POLICY);
                     if(policy != null) {
-                        policy.removeField(DescriptionTranslator.LAST_UPDATED);
+                        policy.removeField(IdentifiedTranslator.LAST_UPDATED);
                     }
                     unorderedLocations.add(locationDbo);
                 }
