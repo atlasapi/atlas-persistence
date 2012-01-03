@@ -62,7 +62,7 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromSet(dbObject, entity.getAliases(), DescriptionTranslator.ALIASES);
         TranslatorUtils.fromDateTime(dbObject, DescriptionTranslator.LAST_UPDATED, entity.getLastUpdated());
         TranslatorUtils.from(dbObject, "activelyPublished", entity.isActivelyPublished());
-        TranslatorUtils.from(dbObject, "id", entity.getId());
+        TranslatorUtils.from(dbObject, "id", entity.getSourceId());
         TranslatorUtils.from(dbObject, REPEAT_KEY, entity.getRepeat());
         TranslatorUtils.from(dbObject, SUBTITLED_KEY, entity.getSubtitled());
         TranslatorUtils.from(dbObject, SIGNED_KEY, entity.getSigned());

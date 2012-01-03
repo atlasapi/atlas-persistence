@@ -1,5 +1,7 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.persistence.channels.ChannelResolver;
+import org.atlasapi.persistence.channels.MongoChannelStore;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
@@ -7,7 +9,6 @@ import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentTables;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
@@ -36,7 +37,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired Mongo mongo;
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
-	
+	private @Autowired ChannelResolver channelResolver;
 	
 	public @Bean ContentWriter contentWriter() {
 		return new MongoContentWriter(db, lookupStore(), new SystemClock());
@@ -57,7 +58,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Bean MongoScheduleStore scheduleStore() {
 	    try {
-            return new MongoScheduleStore(db, contentResolver());
+            return new MongoScheduleStore(db, contentResolver(), channelResolver);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -88,5 +89,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     MongoIOProbe mongoIoSetProbe() {
         return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
+    }
+    
+    @Bean
+    public ChannelResolver channelResolver() {
+    	return new MongoChannelStore(db);
     }
 }

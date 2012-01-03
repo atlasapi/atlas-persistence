@@ -23,7 +23,7 @@ public class ContentGroupTranslatorTest extends TestCase {
         
         
         DBObject obj = pt.toDBObject(null, playlist);
-        assertEquals("uri", obj.get(DescriptionTranslator.CANONICAL_URI));
+        assertEquals("uri", obj.get(DescriptionTranslator.ID));
     }
     
     public void testToPlaylist() throws Exception {

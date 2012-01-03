@@ -135,8 +135,8 @@ public class VersionTranslator implements ModelTranslator<Version> {
 					return channelCmp;
 				}
 			}
-			if (a.getId() != null && b.getId() != null) {
-				int idCmp = a.getId().compareTo(b.getId());
+			if (a.getSourceId() != null && b.getSourceId() != null) {
+				int idCmp = a.getSourceId().compareTo(b.getSourceId());
 				if (idCmp != 0) {
 					return idCmp;
 				}

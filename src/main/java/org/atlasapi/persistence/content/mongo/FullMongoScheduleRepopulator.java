@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
+import org.atlasapi.persistence.channels.ChannelResolver;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleEntryBuilder;
@@ -30,15 +31,15 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
     private final ScheduleEntryBuilder scheduleEntryBuilder;
     private int lastProcessed = 0;
 
-    public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> publishers, Duration maxBroadcastAge) {
+    public FullMongoScheduleRepopulator(ContentLister contentLister, ChannelResolver channelResolver, ScheduleWriter scheduleStore, Iterable<Publisher> publishers, Duration maxBroadcastAge) {
         this.contentLister = contentLister;
         this.scheduleStore = scheduleStore;
         this.publishers = ImmutableList.copyOf(publishers);
-        this.scheduleEntryBuilder = new ScheduleEntryBuilder(maxBroadcastAge);
+        this.scheduleEntryBuilder = new ScheduleEntryBuilder(channelResolver, maxBroadcastAge);
     }
     
-    public FullMongoScheduleRepopulator(ContentLister contentLister, ScheduleWriter scheduleStore, Iterable<Publisher> publishers) {
-        this(contentLister, scheduleStore, publishers, Duration.standardDays(28));
+    public FullMongoScheduleRepopulator(ContentLister contentLister, ChannelResolver channelResolver, ScheduleWriter scheduleStore, Iterable<Publisher> publishers) {
+        this(contentLister, channelResolver, scheduleStore, publishers, Duration.standardDays(28));
     }
     
     @Override

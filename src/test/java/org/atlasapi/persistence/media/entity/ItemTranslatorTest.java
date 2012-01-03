@@ -60,7 +60,7 @@ public class ItemTranslatorTest extends TestCase {
         ItemTranslator it = new ItemTranslator();
         DBObject dbObject = it.toDBObject(null, item);
         
-        assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.CANONICAL_URI));
+        assertEquals("canonicalUri", dbObject.get(DescriptionTranslator.ID));
         assertEquals("title", dbObject.get("title"));
         
         List<String> t = (List<String>) dbObject.get("tags");
@@ -216,7 +216,7 @@ public class ItemTranslatorTest extends TestCase {
         version.setLastUpdated(clock.now());
         item.addVersion(version);
         
-        Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), clock.now(), clock.now());
+        Broadcast broadcast = new Broadcast("http://www.bbc.co.uk/bbcone", clock.now(), clock.now());
         broadcast.setLastUpdated(clock.now());
         version.addBroadcast(broadcast);
         

@@ -72,7 +72,7 @@ public class MongoContentWriter implements ContentWriter {
         setThisOrChildLastUpdated(item);
         item.setLastFetched(clock.now());
         
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, item.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.ID, item.getCanonicalUri());
             
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
         	return;
@@ -154,7 +154,7 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
-        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.CANONICAL_URI, container.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(DescriptionTranslator.ID, container.getCanonicalUri());
         
         collection.update(where.build(), set(containerDbo), true, false);
 
