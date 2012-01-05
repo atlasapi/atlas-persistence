@@ -1,11 +1,11 @@
-package org.atlasapi.persistence.channels;
+package org.atlasapi.media.channel;
 
 import java.util.List;
 import java.util.Map;
 
-import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.OldChannel;
 import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.OldChannel;
 import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.collect.ImmutableBiMap;

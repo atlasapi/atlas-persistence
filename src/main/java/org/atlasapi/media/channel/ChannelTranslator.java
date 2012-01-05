@@ -1,10 +1,11 @@
-package org.atlasapi.persistence.media.entity;
+package org.atlasapi.media.channel;
 
-import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
@@ -38,6 +39,10 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 
 	@Override
 	public Channel fromDBObject(DBObject dbObject, Channel model) {
+	    if (dbObject == null) {
+	        return null;
+	    }
+	    
 		if (model == null) {
 			model = new Channel();
 		}

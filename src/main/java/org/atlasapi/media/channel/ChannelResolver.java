@@ -1,8 +1,8 @@
-package org.atlasapi.persistence.channels;
+package org.atlasapi.media.channel;
 
 import java.util.Map;
 
-import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.channel.Channel;
 
 import com.metabroadcast.common.base.Maybe;
 
@@ -14,6 +14,9 @@ public interface ChannelResolver {
 	Maybe<Channel> fromId(long id);
 	
 	Maybe<Channel> fromUri(String uri);
+	
+	Iterable<Channel> forIds(Iterable<Long> ids);
+	
 	Iterable<Channel> all();
 	
 	/**

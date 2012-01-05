@@ -1,7 +1,9 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.persistence.channels.ChannelResolver;
-import org.atlasapi.persistence.channels.MongoChannelStore;
+import org.atlasapi.media.channel.ChannelGroupStore;
+import org.atlasapi.media.channel.ChannelResolver;
+import org.atlasapi.media.channel.MongoChannelGroupStore;
+import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
@@ -94,5 +96,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     public ChannelResolver channelResolver() {
     	return new MongoChannelStore(db);
+    }
+    
+    @Bean
+    public ChannelGroupStore channelGroupStore() {
+        return new MongoChannelGroupStore(db);
     }
 }

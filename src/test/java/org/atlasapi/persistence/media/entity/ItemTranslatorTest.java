@@ -5,9 +5,9 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Encoding;

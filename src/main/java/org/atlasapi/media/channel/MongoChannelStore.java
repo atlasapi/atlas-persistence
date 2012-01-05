@@ -1,25 +1,26 @@
-package org.atlasapi.persistence.channels;
+package org.atlasapi.media.channel;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
-import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.channel.Channel;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
-import org.atlasapi.persistence.media.entity.ChannelTranslator;
 import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class MongoChannelStore implements ChannelResolver, ChannelWriter {
@@ -40,18 +41,18 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 	
 	@Override
 	public Maybe<Channel> fromId(long id) {
-		DBObject dbo = collection.findOne(where().fieldEquals(MongoConstants.ID, id).build());
-		if(dbo == null) {
-			return Maybe.nothing();
-		}
-		return Maybe.just(translator.fromDBObject(dbo, null));
+		return Maybe.fromPossibleNullValue(translator.fromDBObject(collection.findOne(where().idEquals(id).build()), null));
 	}
 
 	@Override
 	public Iterable<Channel> all() {
-		DBCursor it = collection.find();
-		return Iterables.transform(it, DB_TO_CHANNEL_TRANSLATOR);
+		return Iterables.transform(collection.find(), DB_TO_CHANNEL_TRANSLATOR);
 	}
+
+    @Override
+    public Iterable<Channel> forIds(Iterable<Long> ids) {
+        return Iterables.transform(collection.find(new BasicDBObject(ID,new BasicDBObject(IN, ids))), DB_TO_CHANNEL_TRANSLATOR);
+    }
 
 	@Override
 	public Maybe<Channel> fromUri(String uri) {
@@ -81,36 +82,22 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 	}
 
 
-	@Override
-	public Map<String, Channel> forAliases(String aliasPrefix) {
-		
-		Builder<String, Channel> channelMap = ImmutableMap.builder();
-		for(Channel channel : Iterables.filter(all(), hasAliasPrefixedWith(aliasPrefix))) {
-			for(String alias : channel.getAliases()) {
-				if(alias.startsWith(aliasPrefix)) {
-					channelMap.put(alias, channel);
-				}
-			}
-		}
-		return channelMap.build();
-	}
-	
-	private Predicate<Channel> hasAliasPrefixedWith(final String aliasPrefix) {
-		return new Predicate<Channel>() {
-			
-			@Override
-			public boolean apply(Channel input) {
-				for(String alias : input.getAliases()) {
-					if(alias.startsWith(aliasPrefix)) {
-						return true;
-					}
-				}
-				return false;
-			}	
-		};
-	}
-	
-	private Function<DBObject, Channel> DB_TO_CHANNEL_TRANSLATOR = new Function<DBObject, Channel>() {
+    @Override
+    public Map<String, Channel> forAliases(String aliasPrefix) {
+        final Pattern prefixPattern = Pattern.compile(String.format("^%s", Pattern.quote(aliasPrefix)));
+
+        Iterable<Channel> aliasedChannels = Iterables.transform(collection.find(new BasicDBObject("aliases", prefixPattern)), DB_TO_CHANNEL_TRANSLATOR);
+
+        Builder<String, Channel> channelMap = ImmutableMap.builder();
+        for (Channel channel : aliasedChannels) {
+            for (String alias : Iterables.filter(channel.getAliases(), Predicates.contains(prefixPattern))) {
+                channelMap.put(alias, channel);
+            }
+        }
+        return channelMap.build();
+    }
+    
+	private final Function<DBObject, Channel> DB_TO_CHANNEL_TRANSLATOR = new Function<DBObject, Channel>() {
 
 		@Override
 		public Channel apply(DBObject input) {

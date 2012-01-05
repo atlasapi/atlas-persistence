@@ -3,7 +3,8 @@ package org.atlasapi.persistence.channels;
 import java.util.Collection;
 import java.util.Map;
 
-import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelResolver;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -73,5 +74,10 @@ public class DummyChannelResolver implements ChannelResolver {
 	public Map<String, Channel> forAliases(String aliasPrefix) {
 		throw new UnsupportedOperationException();
 	}
+
+    @Override
+    public Iterable<Channel> forIds(Iterable<Long> ids) {
+        throw new UnsupportedOperationException();
+    }
 	
 }
