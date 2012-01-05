@@ -18,7 +18,7 @@ public class LookupEntry {
     public static LookupEntry lookupEntryFrom(Content c) {
         DateTime now = new DateTime(DateTimeZones.UTC);
         LookupRef lookupRef = LookupRef.from(c);
-        return new LookupEntry(c.getCanonicalUri(), c.getId(), lookupRef, c.getAliases(), ImmutableSet.of(lookupRef), ImmutableSet.of(lookupRef), now, now);
+        return new LookupEntry(c.getCanonicalUri(), c.getStringId(), lookupRef, c.getAliases(), ImmutableSet.of(lookupRef), ImmutableSet.of(lookupRef), now, now);
     }
     
     public static Function<LookupEntry,String> TO_ID = new Function<LookupEntry, String>() {

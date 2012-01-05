@@ -7,7 +7,6 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Encoding;
@@ -63,7 +62,7 @@ public class ItemTranslatorTest extends TestCase {
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
         
-        assertEquals("canonicalUri", dbObject.get(IdentifiedTranslator.CANONICAL_URI));
+        assertEquals("canonicalUri", dbObject.get(IdentifiedTranslator.ID));
         assertEquals("title", dbObject.get("title"));
         
         List<String> t = (List<String>) dbObject.get("tags");
@@ -223,7 +222,7 @@ public class ItemTranslatorTest extends TestCase {
         version.setLastUpdated(clock.now());
         item.addVersion(version);
         
-        Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), clock.now(), clock.now());
+        Broadcast broadcast = new Broadcast("http://www.bbc.co.uk/bbcone", clock.now(), clock.now());
         broadcast.setLastUpdated(clock.now());
         version.addBroadcast(broadcast);
         

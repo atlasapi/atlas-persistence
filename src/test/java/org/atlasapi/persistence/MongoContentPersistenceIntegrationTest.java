@@ -52,12 +52,12 @@ public class MongoContentPersistenceIntegrationTest {
 
         Maybe<Identified> maybeContent = knownTypeContentResolver.findByLookupRefs(ImmutableSet.of(entry.lookupRef())).get(uri);
         assertThat((Item) maybeContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) maybeContent.requireValue()).getId(), is(equalTo(id)));
+        assertThat(((Item) maybeContent.requireValue()).getStringId(), is(equalTo(id)));
         assertThat(((Item) maybeContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
 
         Maybe<Identified> moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(uri);
         assertThat((Item) moreContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) moreContent.requireValue()).getId(), is(equalTo(id)));
+        assertThat(((Item) moreContent.requireValue()).getStringId(), is(equalTo(id)));
         assertThat(((Item) moreContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
         
         String newTitle = "Changed title";
@@ -68,7 +68,7 @@ public class MongoContentPersistenceIntegrationTest {
         
         moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(uri);
         assertThat((Item) moreContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) moreContent.requireValue()).getId(), is(equalTo(id)));
+        assertThat(((Item) moreContent.requireValue()).getStringId(), is(equalTo(id)));
         assertThat(((Item) moreContent.requireValue()).getTitle(), is(equalTo(newTitle)));
         
     }

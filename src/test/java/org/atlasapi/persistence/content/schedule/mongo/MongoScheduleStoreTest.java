@@ -9,25 +9,29 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.Schedule.ScheduleChannel;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.channels.DummyChannelResolver;
 import org.atlasapi.persistence.testing.StubContentResolver;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -40,13 +44,18 @@ public class MongoScheduleStoreTest {
 
     private MongoScheduleStore store;
     
+    private final Channel BBC_ONE = new Channel(Publisher.BBC, "BBC One", "bbcone", MediaType.VIDEO, "http://www.bbc.co.uk/bbcone");
+    private final Channel BBC_TWO = new Channel(Publisher.BBC, "BBC Two", "bbctwo", MediaType.VIDEO, "http://www.bbc.co.uk/bbctwo");
+    private final Channel Channel_4_HD = new Channel(Publisher.C4, "Channel 4", "channel4", MediaType.VIDEO, "http://www.channel4.com");
+    private final Channel AL_JAZEERA_ENGLISH = new Channel(Publisher.C4, "Al Jazeera English", "aljazeera", MediaType.VIDEO, "http://www.aljazeera.com/");
+    
     private final DateTime now = new DateTime(DateTimeZones.UTC);
-    private final Broadcast broadcast1 = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(4), now.minusHours(2));
-    private final Broadcast broadcast2 = new Broadcast(Channel.BBC_TWO.uri(), now.minusHours(4), now.minusHours(1));
-    private final Broadcast broadcast3 = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(2), now.minusHours(1));
-    private final Broadcast broadcast4 = new Broadcast(Channel.BBC_TWO.uri(), now.minusHours(1), now);
+    private final Broadcast broadcast1 = new Broadcast(BBC_ONE.uri(), now.minusHours(4), now.minusHours(2));
+    private final Broadcast broadcast2 = new Broadcast(BBC_TWO.uri(), now.minusHours(4), now.minusHours(1));
+    private final Broadcast broadcast3 = new Broadcast(BBC_ONE.uri(), now.minusHours(2), now.minusHours(1));
+    private final Broadcast broadcast4 = new Broadcast(BBC_TWO.uri(), now.minusHours(1), now);
 
-    private final Broadcast veryOldBroadcast = new Broadcast(Channel.BBC_TWO.uri(), now.minusYears(1).minusHours(1), now.minusYears(1));
+    private final Broadcast veryOldBroadcast = new Broadcast(BBC_TWO.uri(), now.minusYears(1).minusHours(1), now.minusYears(1));
     
     private final Version version1 = new Version();
     private final Version version2 = new Version();
@@ -92,7 +101,8 @@ public class MongoScheduleStoreTest {
 
         contentResolver = new StubContentResolver().respondTo(item1).respondTo(item2).respondTo(item3);
         
-        store = new MongoScheduleStore(database, contentResolver);
+        ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
+        store = new MongoScheduleStore(database, contentResolver, channelResolver);
     }
     
     @After
@@ -105,14 +115,14 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC));
         assertSchedule(schedule);
     }
 
     @Test
     public void testShouldIgnoreBroadcastsOverAYearOld() throws Exception {
   
-    	Item item = itemWithBroadcast("id", new Broadcast(Channel.BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
+    	Item item = itemWithBroadcast("id", new Broadcast(BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
     	store.writeScheduleFrom(item);
 
         assertEquals(1, Iterables.size(database.collection("schedule").find()));
@@ -134,7 +144,7 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV));
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV));
         assertSchedule(schedule);
     }
     
@@ -142,13 +152,13 @@ public class MongoScheduleStoreTest {
     public void shouldReplaceScheduleBlock() throws Exception {
     	DateTime broadcast1Start = now.withMinuteOfHour(20);
     	DateTime broadcast1End = broadcast1Start.plusMinutes(30);
-    	Broadcast b1 = new Broadcast(Channel.Channel_4_HD.uri(), broadcast1Start, broadcast1End);
+    	Broadcast b1 = new Broadcast(Channel_4_HD.uri(), broadcast1Start, broadcast1End);
     	
     	DateTime broadcast2End = broadcast1End.plusMinutes(45);
-    	Broadcast b2 = new Broadcast(Channel.Channel_4_HD.uri(), broadcast1End, broadcast2End);
+    	Broadcast b2 = new Broadcast(Channel_4_HD.uri(), broadcast1End, broadcast2End);
     	
     	DateTime broadcast3End = broadcast2End.plusMinutes(60);
-    	Broadcast b3 = new Broadcast(Channel.Channel_4_HD.uri(), broadcast2End, broadcast3End);
+    	Broadcast b3 = new Broadcast(Channel_4_HD.uri(), broadcast2End, broadcast3End);
     	  
     	Version v1 = new Version();
     	Version v2 = new Version();
@@ -167,8 +177,8 @@ public class MongoScheduleStoreTest {
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item2, b2));
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item3, b3));
     												  
-    	store.replaceScheduleBlock(Publisher.BBC, Channel.Channel_4_HD, itemsAndBroadcasts);
-    	Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel.Channel_4_HD), ImmutableSet.of(Publisher.BBC));
+    	store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, itemsAndBroadcasts);
+    	Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC));
     	
     	assertEquals(1, schedule.scheduleChannels().size());
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
@@ -186,8 +196,8 @@ public class MongoScheduleStoreTest {
         List<ItemRefAndBroadcast> replacementItemAndBcast = Lists.newArrayList();
         replacementItemAndBcast.add(new ItemRefAndBroadcast(item4, b2));
         
-    	store.replaceScheduleBlock(Publisher.BBC, Channel.Channel_4_HD, replacementItemAndBcast);
-        Schedule updatedSchedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel.Channel_4_HD), ImmutableSet.of(Publisher.BBC));
+    	store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, replacementItemAndBcast);
+        Schedule updatedSchedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC));
     	assertEquals(1, updatedSchedule.scheduleChannels().size());
         ScheduleChannel replacementChannel = Iterables.getOnlyElement(updatedSchedule.scheduleChannels());
         
@@ -201,12 +211,12 @@ public class MongoScheduleStoreTest {
     
     @Test(expected=IllegalArgumentException.class)
     public void overlappingScheduleShouldError() throws Exception {
-    	Broadcast wrongBroadcast = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(3), now.minusHours(1));
+    	Broadcast wrongBroadcast = new Broadcast(BBC_ONE.uri(), now.minusHours(3), now.minusHours(1));
     	version3.setBroadcasts(ImmutableSet.of(wrongBroadcast));
     	List<ItemRefAndBroadcast> itemsAndBroadcasts = Lists.newArrayList();
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item1, broadcast1));
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item3, wrongBroadcast));
-    	store.replaceScheduleBlock(Publisher.BBC, Channel.BBC_ONE, itemsAndBroadcasts);
+    	store.replaceScheduleBlock(Publisher.BBC, BBC_ONE, itemsAndBroadcasts);
     }
     
     @Test(expected=IllegalArgumentException.class)
@@ -215,33 +225,33 @@ public class MongoScheduleStoreTest {
     	List<ItemRefAndBroadcast> itemsAndBroadcasts = Lists.newArrayList();
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item1, broadcast1));
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item2, broadcast2));
-    	store.replaceScheduleBlock(Publisher.BBC, Channel.BBC_ONE, itemsAndBroadcasts);
+    	store.replaceScheduleBlock(Publisher.BBC, BBC_ONE, itemsAndBroadcasts);
     }
     
     @Test
     public void wrongChannelShouldBeFiltered() throws Exception {
-        Broadcast broadcast = new Broadcast(Channel.AL_JAZEERA_ENGLISH.uri(), now.minusHours(2), now.minusHours(3));
+        Broadcast broadcast = new Broadcast(AL_JAZEERA_ENGLISH.uri(), now.minusHours(2), now.minusHours(3));
         version1.addBroadcast(broadcast);
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC));
         assertSchedule(schedule);
     }
     
     @Test
     public void wrongIntervalShouldBeFiltered() throws Exception {
-        Broadcast broadcast = new Broadcast(Channel.BBC_ONE.uri(), now.minusHours(6), now.minusHours(5));
+        Broadcast broadcast = new Broadcast(BBC_ONE.uri(), now.minusHours(6), now.minusHours(5));
         version1.addBroadcast(broadcast);
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE, Channel.BBC_TWO), ImmutableSet.of(Publisher.BBC));
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC));
         assertSchedule(schedule);
         
-        schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(Channel.BBC_ONE), ImmutableSet.of(Publisher.BBC));
+        schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC));
         
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
         Item item1 = Iterables.getOnlyElement(channel.items());
@@ -257,7 +267,7 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(copy);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(Channel.BBC_ONE), ImmutableSet.of(Publisher.BBC));
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC));
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
         Item item1 = Iterables.getOnlyElement(channel.items());
         Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
@@ -287,7 +297,7 @@ public class MongoScheduleStoreTest {
             assertTrue(item2 instanceof Episode);
             Broadcast broadcast2 = ScheduleEntry.BROADCAST.apply(item2);
             
-            if (channel.channel() == Channel.BBC_ONE) {
+            if (channel.channel() == BBC_ONE) {
                 assertEquals(now.minusHours(4), broadcast1.getTransmissionTime());
                 assertEquals(now.minusHours(2), broadcast2.getTransmissionTime());
             } else {

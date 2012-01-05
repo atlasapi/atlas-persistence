@@ -9,8 +9,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
@@ -48,16 +49,19 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
 	private final static Duration MAX_DURATION = Duration.standardDays(14);
 
-	
-	private final ScheduleEntryBuilder scheduleEntryBuilder = new ScheduleEntryBuilder(Duration.standardDays(28));
+	private final ScheduleEntryBuilder scheduleEntryBuilder;
     private final DBCollection collection;
-    private final ScheduleEntryTranslator translator = new ScheduleEntryTranslator();
+    private final ScheduleEntryTranslator translator;
 
     private final ContentResolver resolver;
+    private final ChannelResolver channelResolver;
 
-    public MongoScheduleStore(DatabasedMongo db, ContentResolver resolver) {
+    public MongoScheduleStore(DatabasedMongo db, ContentResolver resolver, ChannelResolver channelResolver) {
         this.resolver = resolver;
         collection = db.collection("schedule");
+        this.channelResolver = channelResolver;
+        this.scheduleEntryBuilder = new ScheduleEntryBuilder(channelResolver, Duration.standardDays(28));
+        translator = new ScheduleEntryTranslator(channelResolver);
     }
     
     @Override
@@ -121,7 +125,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 		
 		for(Broadcast b : broadcasts) {
 			
-			if(expectedChannel != Channel.fromUri(b.getBroadcastOn()).requireValue()) {
+			if(!expectedChannel.equals(channelResolver.fromUri(b.getBroadcastOn()).requireValue())) {
 				throw new IllegalArgumentException("All broadcasts must be on the same channel");
 			}	
 			
@@ -343,11 +347,5 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
 	void writeScheduleFrom(Item item1) {
 		writeScheduleFor(ImmutableList.of(item1));
-	}
-	
-	public static void main(String[] args) {
-	    Interval interval = new Interval(new DateTime("2011-04-19T08:00:00.0000Z"), new DateTime("2011-04-19T11:00:00.000Z"));
-	    List<String> keys = keys(ImmutableList.of(interval), ImmutableList.of(Channel.BBC_RADIO_THREECOUNTIES), ImmutableList.of(Publisher.BBC));
-	    System.out.println(keys);
 	}
 }

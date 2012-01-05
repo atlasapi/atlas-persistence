@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
-import org.atlasapi.media.entity.Channel;
+import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;

@@ -30,7 +30,7 @@ public class ContainerTranslatorTest extends TestCase {
         brand.setGenres(genres);
         
         DBObject obj = bt.toDBObject(null, brand);
-        assertEquals("canonicalUri", obj.get(IdentifiedTranslator.CANONICAL_URI));
+        assertEquals("canonicalUri", obj.get(IdentifiedTranslator.ID));
         
         List<String> i = (List<String>) obj.get("genres");
         assertEquals(1, i.size());

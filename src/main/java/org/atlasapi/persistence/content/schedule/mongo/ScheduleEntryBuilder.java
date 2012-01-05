@@ -4,8 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
@@ -25,12 +26,15 @@ public class ScheduleEntryBuilder {
     
     private final Duration maxBroadcastAge;
 
-    public ScheduleEntryBuilder(Duration maxBroadcastAge) {
+	private ChannelResolver channelResolver;
+
+    public ScheduleEntryBuilder(ChannelResolver channelResolver, Duration maxBroadcastAge) {
         this.maxBroadcastAge = maxBroadcastAge;
+        this.channelResolver = channelResolver;
     }
     
-    public ScheduleEntryBuilder() {
-        this(Duration.standardDays(28));
+    public ScheduleEntryBuilder(ChannelResolver channelResolver) {
+        this(channelResolver, Duration.standardDays(28));
     }
     
     public Map<String, ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
@@ -41,7 +45,7 @@ public class ScheduleEntryBuilder {
                 for (Broadcast broadcast : version.getBroadcasts()) {  
                     ItemRefAndBroadcast itemAndBroadcast = new ItemRefAndBroadcast(item, broadcast);
                     
-                    Channel channel = Channel.fromUri(broadcast.getBroadcastOn()).requireValue();
+                    Channel channel = channelResolver.fromUri(broadcast.getBroadcastOn()).requireValue();
                     Publisher publisher = item.getPublisher();
                     
                     toScheduleEntryFromBroadcast(channel, publisher, itemAndBroadcast, entries);

@@ -22,7 +22,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
 	public static String CLIPS_KEY = "clips";
 	public static String TOPICS_KEY = "topics";
-	public static String ID_KEY = "id";
+	private static String ID_KEY = "id";
     private static final String LINKS_KEY = "links";
     private static final String PHRASES_KEY = "phrases";
 	
@@ -109,7 +109,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
             dbObject.put(TOPICS_KEY, topics);
         }
         
-        TranslatorUtils.from(dbObject, ID_KEY, entity.getId());
+        TranslatorUtils.from(dbObject, ID_KEY, entity.getStringId());
         
         return dbObject;
 	}

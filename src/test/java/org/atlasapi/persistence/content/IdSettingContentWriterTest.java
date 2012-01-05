@@ -75,7 +75,7 @@ public class IdSettingContentWriterTest {
 
             @Override
             public boolean matchesSafely(Item item) {
-                return item.getId().equals(id);
+                return item.getStringId().equals(id);
             }
         };
     }
@@ -127,7 +127,7 @@ public class IdSettingContentWriterTest {
 
             @Override
             public boolean matchesSafely(Container item) {
-                return item.getId().equals(id);
+                return item.getStringId().equals(id);
             }
         };
     }

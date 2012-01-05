@@ -2,8 +2,9 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Channel;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
@@ -25,7 +26,12 @@ public class ScheduleEntryTranslator {
     private static final String ITEM_REFS_AND_BROADCAST_KEY = "itemsAndBroadcasts";
     
     private final BroadcastTranslator broadcastTranslator = new BroadcastTranslator();
+	private ChannelResolver channelResolver;
 
+    public ScheduleEntryTranslator(ChannelResolver channelResolver) {
+    	this.channelResolver = channelResolver;
+    }
+    
     public DBObject toDb(ScheduleEntry entry) {
         DBObject dbObject = new BasicDBObject();
         dbObject.put(MongoConstants.ID, entry.toKey());
@@ -57,7 +63,7 @@ public class ScheduleEntryTranslator {
     @SuppressWarnings("unchecked")
     public ScheduleEntry fromDb(DBObject object) {
         Publisher publisher = Publisher.fromKey((String) object.get("publisher")).requireValue();
-        Channel channel = Channel.fromKey((String) object.get("channel")).requireValue();
+        Channel channel = channelResolver.fromKey((String) object.get("channel")).requireValue();
         DateTime start = TranslatorUtils.toDateTime(object, "intervalStart");
         DateTime end = TranslatorUtils.toDateTime(object, "intervalEnd");
         Interval interval = new Interval(start, end);

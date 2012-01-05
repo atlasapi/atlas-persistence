@@ -18,6 +18,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.segment.DescriptionTranslator;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -77,7 +78,7 @@ public class MongoContentWriter implements ContentWriter {
         setThisOrChildLastUpdated(item);
         item.setLastFetched(clock.now());
         
-        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.CANONICAL_URI, item.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.ID, item.getCanonicalUri());
             
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
         	return;
@@ -159,7 +160,7 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
-        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.CANONICAL_URI, container.getCanonicalUri());
+        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.ID, container.getCanonicalUri());
         
         collection.update(where.build(), set(containerDbo), true, false);
 

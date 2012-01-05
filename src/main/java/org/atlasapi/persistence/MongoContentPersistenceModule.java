@@ -5,6 +5,10 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.media.channel.ChannelGroupStore;
+import org.atlasapi.media.channel.ChannelResolver;
+import org.atlasapi.media.channel.MongoChannelGroupStore;
+import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
@@ -55,6 +59,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.log = log;
     }
 	
+	private @Autowired ChannelResolver channelResolver;
+	
 	public @Bean ContentWriter contentWriter() {
 		return new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), new MongoContentWriter(db, lookupStore(), new SystemClock())) ;
 	}
@@ -74,7 +80,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Bean MongoScheduleStore scheduleStore() {
 	    try {
-            return new MongoScheduleStore(db, contentResolver());
+            return new MongoScheduleStore(db, contentResolver(), channelResolver);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -124,5 +130,15 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Override
     public @Bean SegmentResolver segmentResolver() {
         return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
+    }
+        
+    @Bean
+    public ChannelResolver channelResolver() {
+    	return new MongoChannelStore(db);
+    }
+    
+    @Bean
+    public ChannelGroupStore channelGroupStore() {
+        return new MongoChannelGroupStore(db);
     }
 }
