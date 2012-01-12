@@ -102,7 +102,7 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 	@Override
 	public Maybe<Channel> fromUri(final String uri) {
 		
-		return Maybe.fromPossibleNullValue(Iterables.getFirst(Iterables.filter(cache.asMap().values(), new Predicate<Channel>() {
+		Maybe<Channel> channel = Maybe.fromPossibleNullValue(Iterables.getFirst(Iterables.filter(cache.asMap().values(), new Predicate<Channel>() {
 
 			@Override
 			public boolean apply(Channel input) {
@@ -110,6 +110,11 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 			}
 			
 		}), null));
+		
+		if(channel.isNothing()) {
+			System.out.println(String.format("Cannot find channel for URI %s", uri));
+		}
+		return channel;
 	}
 	
 	@Override
