@@ -2,24 +2,29 @@ package org.atlasapi.media.channel;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import org.atlasapi.media.channel.Channel;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
-import org.atlasapi.persistence.media.entity.DescriptionTranslator;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Throwables;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
@@ -32,11 +37,41 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 
 	private MongoSequentialIdGenerator idGenerator;
 	private SubstitutionTableNumberCodec codec;
+	private Cache<Long, Channel> cache;
 	
 	public MongoChannelStore(DatabasedMongo mongo) {
 		this.collection = mongo.collection(COLLECTION);
 		this.idGenerator = new MongoSequentialIdGenerator(mongo, COLLECTION);
 		this.codec = new SubstitutionTableNumberCodec();
+		this.cache = initializeCache();					
+	}
+	
+	private Cache<Long, Channel> initializeCache() {
+		
+		Cache<Long, Channel> cache = CacheBuilder.newBuilder()
+		.expireAfterWrite(10, TimeUnit.MINUTES)
+		.build(new CacheLoader<Long, Channel>() {
+
+			@Override
+			public Channel load(Long id) throws Exception {
+				DBObject dbo = collection.findOne(where().fieldEquals(ID, id).build());
+				if(dbo == null) {
+					throw new IllegalArgumentException(String.format("Channel ID %d not found", id));
+				}
+				return translator.fromDBObject(dbo, null);
+			}
+		});
+		
+		cache.asMap().putAll(Maps.uniqueIndex(Iterables.transform(collection.find(), DB_TO_CHANNEL_TRANSLATOR), new Function<Channel, Long>() {
+
+			@Override
+			public Long apply(Channel input) {
+				return input.getId();
+			}
+				
+		}));
+		
+		return cache;
 	}
 	
 	@Override
@@ -46,30 +81,47 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 
 	@Override
 	public Iterable<Channel> all() {
-		return Iterables.transform(collection.find(), DB_TO_CHANNEL_TRANSLATOR);
+		return cache.asMap().values();
 	}
 
     @Override
     public Iterable<Channel> forIds(Iterable<Long> ids) {
-        return Iterables.transform(collection.find(new BasicDBObject(ID,new BasicDBObject(IN, ids))), DB_TO_CHANNEL_TRANSLATOR);
+    	com.google.common.collect.ImmutableList.Builder<Channel> channels = ImmutableList.builder();
+    	for(Long id: ids) {
+    		try {
+    			channels.add(cache.get(id));
+    		}
+    		catch(ExecutionException e) {
+    			Throwables.propagate(e);
+    		}
+    	}
+    	return channels.build();
+        
     }
 
 	@Override
 	public Maybe<Channel> fromUri(String uri) {
-		DBObject dbo = collection.findOne(where().fieldEquals(DescriptionTranslator.CANONICAL_URL, uri).build());
-		if(dbo == null) {
-			return Maybe.nothing();
-		}
-		return Maybe.just(translator.fromDBObject(dbo, null));
+		
+		return Maybe.fromPossibleNullValue(Iterables.getFirst(Iterables.filter(cache.asMap().values(), new Predicate<Channel>() {
+
+			@Override
+			public boolean apply(Channel input) {
+				return input.getCanonicalUri().equals(input);
+			}
+			
+		}), null));
 	}
 	
 	@Override
 	public Maybe<Channel> fromKey(String key) {
-		DBObject dbo = collection.findOne(where().fieldEquals(ChannelTranslator.KEY, key).build());
-		if(dbo == null) {
-			return Maybe.nothing();
-		}
-		return Maybe.just(translator.fromDBObject(dbo, null));
+		return Maybe.fromPossibleNullValue(Iterables.getFirst(Iterables.filter(cache.asMap().values(), new Predicate<Channel>() {
+
+			@Override
+			public boolean apply(Channel input) {
+				return input.key().equals(input);
+			}
+			
+		}), null));
 	}
 
 	@Override
@@ -79,6 +131,7 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 			channel.setId(codec.decode(idGenerator.generate()).longValue());
 		}
 		collection.insert(translator.toDBObject(null, channel));
+		cache.asMap().put(channel.getId(), channel);
 	}
 
 
@@ -86,10 +139,8 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
     public Map<String, Channel> forAliases(String aliasPrefix) {
         final Pattern prefixPattern = Pattern.compile(String.format("^%s", Pattern.quote(aliasPrefix)));
 
-        Iterable<Channel> aliasedChannels = Iterables.transform(collection.find(new BasicDBObject("aliases", prefixPattern)), DB_TO_CHANNEL_TRANSLATOR);
-
         Builder<String, Channel> channelMap = ImmutableMap.builder();
-        for (Channel channel : aliasedChannels) {
+        for (Channel channel : cache.asMap().values()) {
             for (String alias : Iterables.filter(channel.getAliases(), Predicates.contains(prefixPattern))) {
                 channelMap.put(alias, channel);
             }
