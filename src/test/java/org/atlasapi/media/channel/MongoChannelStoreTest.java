@@ -31,18 +31,19 @@ public class MongoChannelStoreTest {
     
     @BeforeClass
     public static void setUp() {
-        store.write(channel(1234L, "uri1", "test/1","test/2"));
-        store.write(channel(1235L, "uri2", "asdf/1"));
-        store.write(channel(1236L, "uri3", "test/3","asdf/2"));
+        store.write(channel(1234L, "uri1", "key1", "test/1","test/2"));
+        store.write(channel(1235L, "uri2", "key2", "asdf/1"));
+        store.write(channel(1236L, "uri3", "key3", "test/3","asdf/2"));
     }
     
-    private static Channel channel(long id, String uri, String... alias) {
+    private static Channel channel(long id, String uri, String key, String... alias) {
         Channel channel = new Channel();
         channel.setId(id);
         channel.setCanonicalUri(uri);
         channel.setAliases(ImmutableSet.copyOf(alias));
         channel.setPublisher(Publisher.BBC);
         channel.setMediaType(MediaType.VIDEO);
+        channel.setKey(key);
         return channel;
     }
 
@@ -93,5 +94,15 @@ public class MongoChannelStoreTest {
         assertThat(aliases.get(prefix+1).getId(),is(1234L));
         assertThat(aliases.get(prefix+2).getId(),is(1234L));
         assertThat(aliases.get(prefix+3).getId(),is(1236L));
+    }
+    
+    @Test 
+    public void testRetrievesChannelByURI() {
+    	assertThat(store.fromUri("uri1").requireValue().getId(), is(1234L));
+    }
+    
+    @Test 
+    public void testRetrievesChannelByKey() {
+    	assertThat(store.fromKey("key1").requireValue().getId(), is(1234L));
     }
 }
