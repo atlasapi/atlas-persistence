@@ -12,6 +12,7 @@ import java.util.Map;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.joda.time.Duration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -27,13 +28,14 @@ public class MongoChannelStoreTest {
 
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     
-    private static final MongoChannelStore store = new MongoChannelStore(mongo);
+    private static final MongoChannelStore store = new MongoChannelStore(mongo, Duration.standardSeconds(1));
     
     @BeforeClass
-    public static void setUp() {
+    public static void setUp() throws InterruptedException {
         store.write(channel(1234L, "uri1", "key1", "test/1","test/2"));
         store.write(channel(1235L, "uri2", "key2", "asdf/1"));
         store.write(channel(1236L, "uri3", "key3", "test/3","asdf/2"));
+        Thread.sleep(1200);
     }
     
     private static Channel channel(long id, String uri, String key, String... alias) {
