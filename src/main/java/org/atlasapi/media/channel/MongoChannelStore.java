@@ -100,25 +100,25 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
     }
 
 	@Override
-	public Maybe<Channel> fromUri(String uri) {
+	public Maybe<Channel> fromUri(final String uri) {
 		
 		return Maybe.fromPossibleNullValue(Iterables.getFirst(Iterables.filter(cache.asMap().values(), new Predicate<Channel>() {
 
 			@Override
 			public boolean apply(Channel input) {
-				return input.getCanonicalUri().equals(input);
+				return input.getCanonicalUri().equals(uri);
 			}
 			
 		}), null));
 	}
 	
 	@Override
-	public Maybe<Channel> fromKey(String key) {
+	public Maybe<Channel> fromKey(final String key) {
 		return Maybe.fromPossibleNullValue(Iterables.getFirst(Iterables.filter(cache.asMap().values(), new Predicate<Channel>() {
 
 			@Override
 			public boolean apply(Channel input) {
-				return input.key().equals(input);
+				return input.key().equals(key);
 			}
 			
 		}), null));
