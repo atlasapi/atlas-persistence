@@ -62,7 +62,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	private @Autowired ChannelResolver channelResolver;
 	
 	public @Bean ContentWriter contentWriter() {
-		return new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), new MongoContentWriter(db, lookupStore(), new SystemClock())) ;
+		return new MongoContentWriter(db, lookupStore(), new SystemClock());
 	}
 	
 	@Primary
