@@ -35,7 +35,7 @@ public class MongoChannelStoreTest {
         store.write(channel(1234L, "uri1", "key1", "test/1","test/2"));
         store.write(channel(1235L, "uri2", "key2", "asdf/1"));
         store.write(channel(1236L, "uri3", "key3", "test/3","asdf/2"));
-        Thread.sleep(1200);
+        Thread.sleep(2000);
     }
     
     private static Channel channel(long id, String uri, String key, String... alias) {
