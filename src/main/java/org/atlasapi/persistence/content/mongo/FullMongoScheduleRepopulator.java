@@ -51,19 +51,25 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
         Iterator<Content> items = contentLister.listContent(defaultCriteria().forContent(ImmutableList.copyOf(ContentCategory.ITEMS)).forPublishers(publishers).build());
         Iterator<List<Content>> itemLists = Iterators.partition(items, 100);
         
+        int errors = 0;
         while (itemLists.hasNext()) {
-            Map<String, ScheduleEntry> entries = scheduleEntryBuilder.toScheduleEntries(Iterables.filter(itemLists.next(), Item.class));
-
-            for (ScheduleEntry entry : entries.values()) {
-                ScheduleEntry existingEntry = scheduleEntries.get(entry.toKey());
-                if (existingEntry == null) {
-                    scheduleEntries.put(entry.toKey(), entry);
-                } else {
-                    existingEntry.withItems(Iterables.concat(existingEntry.getItemRefsAndBroadcasts(), entry.getItemRefsAndBroadcasts()));
-                }
-                
-                reportStatus(String.format("Building schedule entries. Processed %s (%s)", processed, lastProcessed));
-            }
+        	try {
+	            Map<String, ScheduleEntry> entries = scheduleEntryBuilder.toScheduleEntries(Iterables.filter(itemLists.next(), Item.class));
+	
+	            for (ScheduleEntry entry : entries.values()) {
+	                ScheduleEntry existingEntry = scheduleEntries.get(entry.toKey());
+	                if (existingEntry == null) {
+	                    scheduleEntries.put(entry.toKey(), entry);
+	                } else {
+	                    existingEntry.withItems(Iterables.concat(existingEntry.getItemRefsAndBroadcasts(), entry.getItemRefsAndBroadcasts()));
+	                }	        
+	            }
+        	}
+        	catch(Exception e) {
+        		errors++;
+        		e.printStackTrace();
+        	}
+        	reportStatus(String.format("Building schedule entries. Processed %s (%s), %s errors", processed, lastProcessed, errors));
             
         }
         
