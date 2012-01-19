@@ -774,6 +774,11 @@ public class MongoChannelInitialPopulateFromEnums {
 			.put( OldChannel.JACK_FM, 1488)
 			.put( OldChannel.FOURFM, 1489)
 			.put( OldChannel.AMAZING_RADIO, 1490)
+			.put( OldChannel.BBC_RADIO_THREECOUNTIES, 1191)
+			.put( OldChannel.BBC_RADIO_WM, 570)
+			.put( OldChannel.BBC_RADIO_LONDON, 462)
+			.put( OldChannel.SKY_LIVINGIT, 1070)
+			.put( OldChannel.SKY_LIVING_LOVES, 1578)
 	       
 	        .build();
 	  
