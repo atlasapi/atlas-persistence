@@ -3,7 +3,7 @@ package org.atlasapi.persistence;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
@@ -48,7 +48,7 @@ public class MongoContentPersistenceIntegrationTest {
         Iterable<LookupEntry> entries = lookupStore.entriesForUris(ImmutableSet.of(item.getCanonicalUri()));
         LookupEntry entry = Iterables.getOnlyElement(entries);
         String id = entry.id();
-        assertThat(id, is(notNullValue()));
+        assertThat(id, is(nullValue()));
 
         Maybe<Identified> maybeContent = knownTypeContentResolver.findByLookupRefs(ImmutableSet.of(entry.lookupRef())).get(uri);
         assertThat((Item) maybeContent.requireValue(), is(equalTo(item)));
@@ -68,7 +68,8 @@ public class MongoContentPersistenceIntegrationTest {
         
         moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(uri);
         assertThat((Item) moreContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) moreContent.requireValue()).getStringId(), is(equalTo(id)));
+        //ID setting is currently disabled, so this check is not valid
+        //assertThat(((Item) moreContent.requireValue()).getStringId(), is(equalTo(id)));
         assertThat(((Item) moreContent.requireValue()).getTitle(), is(equalTo(newTitle)));
         
     }
