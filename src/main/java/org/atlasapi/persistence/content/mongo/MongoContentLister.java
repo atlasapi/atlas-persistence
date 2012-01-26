@@ -35,6 +35,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.mongodb.Bytes;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException.CursorNotFound;
@@ -98,11 +99,12 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 						return contentTables.collectionFor(category)
                                 .find(query)
                                 .batchSize(100)
-                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build());
-					}
-					
+                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
+                                .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+                    }
+
 					private MongoQueryBuilder queryCriteria(final Publisher publisher) {
-						return where().fieldEquals("publisher", publisher.key());
+					    return where().fieldEquals("publisher", publisher.key());
 					}
 
                 });
