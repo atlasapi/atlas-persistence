@@ -35,9 +35,9 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
-import com.mongodb.Bytes;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.MongoException.CursorNotFound;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister {
 
@@ -76,7 +76,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                 return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder() {
                     
                     public DBObject queryForCategory(ContentCategory category) {
-                        MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key());
+                        MongoQueryBuilder query = queryCriteria(publisher);
                         if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
                             query.fieldGreaterThan(ID, uri);
                         }
@@ -85,12 +85,24 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 
                     @Override
                     public DBCursor cursorFor(ContentCategory category) {
-                        return contentTables.collectionFor(category)
-                                .find(queryForCategory(category))
-                                .batchSize(100)
-                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
-                                .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+                        return cursorFor(category, queryForCategory(category));
                     }
+
+					@Override
+					public DBCursor cursorForGreaterThan(ContentCategory category, Content greaterThan) {
+						return cursorFor(category, queryCriteria(publisher).fieldGreaterThan(ID, greaterThan.getCanonicalUri()).build());
+					}
+					
+					private DBCursor cursorFor(ContentCategory category, DBObject query) {
+						return contentTables.collectionFor(category)
+                                .find(query)
+                                .batchSize(100)
+                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build());
+					}
+					
+					private MongoQueryBuilder queryCriteria(final Publisher publisher) {
+						return where().fieldEquals("publisher", publisher.key());
+					}
 
                 });
                 
@@ -123,10 +135,27 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
             @Override
             public DBCursor cursorFor(ContentCategory category) {
-                return contentTables.collectionFor(category)
-                            .find(where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when).build())
-                            .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build());
+                return cursorFor(category, queryCriteria());
             }
+
+            @Override
+            public DBCursor cursorForGreaterThan(ContentCategory category, Content greaterThan) {
+            	return cursorFor(category, queryCriteria()
+            					.fieldGreaterThan("publisher", greaterThan.getPublisher().key())
+            					.fieldGreaterThan("thisOrChildLastUpdated", greaterThan.getThisOrChildLastUpdated()));
+            				
+            }
+            
+            private DBCursor cursorFor(ContentCategory category, MongoQueryBuilder queryCriteria) {
+            	return contentTables.collectionFor(category)
+            			.find(queryCriteria.build())
+            			.sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build());
+            }
+
+			private MongoQueryBuilder queryCriteria() {
+				return where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when);
+			}
+            
         });
     }
 
@@ -136,18 +165,31 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             private final Iterator<ContentCategory> tablesIt = tables.iterator();
             private Iterator<DBObject> currentResults = Iterators.emptyIterator();
             private Function<DBObject, ? extends Content> currentTranslator;
+            private Content currentContent = null;
+            private ContentCategory currentCategory = null;
             
             @Override
             protected Content computeNext() {
-                while (!currentResults.hasNext()) {
+            	boolean hasNext;
+            	try {
+            		hasNext = currentResults.hasNext();
+            	}
+            	catch(CursorNotFound e) {
+            		currentResults = cursorBuilder.cursorForGreaterThan(currentCategory, currentContent);
+            		hasNext = currentResults.hasNext();
+            	}
+            	
+                while (!hasNext) {
                     if (!tablesIt.hasNext()) {
                         return endOfData();
                     }
-                    ContentCategory table = tablesIt.next();
-                    currentTranslator = TRANSLATORS.get(table);
-                    currentResults = cursorBuilder.cursorFor(table);
-                }
-                return currentTranslator.apply(currentResults.next());
+                    currentCategory = tablesIt.next();
+                    currentTranslator = TRANSLATORS.get(currentCategory);
+                    currentResults = cursorBuilder.cursorFor(currentCategory);
+                    hasNext = currentResults.hasNext();
+                }           
+                currentContent = currentTranslator.apply(currentResults.next());
+                return currentContent;
             }
         };
     }
@@ -175,6 +217,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     private interface ListingCursorBuilder {
         
         DBCursor cursorFor(ContentCategory category);
+        DBCursor cursorForGreaterThan(ContentCategory categtory, Content startingAt);
         
     }
     
@@ -184,8 +227,22 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
             @Override
             public DBCursor cursorFor(ContentCategory category) {
-                return contentTables.collectionFor(category).find(where().fieldEquals("topics.topic", topicId).build()).sort(sort().ascending(ID).build());
+                return cursorFor(category, queryCriteria());
             }
+            
+            @Override
+            public DBCursor cursorForGreaterThan(ContentCategory category, Content greaterThan) {
+            	return cursorFor(category, queryCriteria().fieldGreaterThan(ID, greaterThan.getCanonicalUri()));
+            }
+
+            private DBCursor cursorFor(ContentCategory category, MongoQueryBuilder query) {
+            	return contentTables.collectionFor(category).find(query.build()).sort(sort().ascending(ID).build());
+            }
+
+			private MongoQueryBuilder queryCriteria() {
+				return where().fieldEquals("topics.topic", topicId);
+			}
+            
         });
     }
 
