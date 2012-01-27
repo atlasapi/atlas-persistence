@@ -162,7 +162,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             LookupEntry current = toProcess.poll();
             found.put(current.lookupRef(), current);
             //add entries for equivalents that haven't been seen before to the work queue
-            toProcess.addAll(entriesForRefs(filter(current.equivalents(), not(in(found.keySet())))));
+            toProcess.addAll(entriesForRefs(filter(current.directEquivalents(), not(in(found.keySet())))));
         }
         
         return found;
