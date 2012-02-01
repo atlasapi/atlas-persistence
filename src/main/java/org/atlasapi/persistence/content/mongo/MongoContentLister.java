@@ -241,7 +241,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             }
 
 			private MongoQueryBuilder queryCriteria() {
-				return where().fieldEquals("topics", topicUri);
+				return where().fieldEquals("topics.topic", topicUri);
 			}
             
         });
