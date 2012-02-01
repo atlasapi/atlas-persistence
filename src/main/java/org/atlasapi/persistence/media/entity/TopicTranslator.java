@@ -17,7 +17,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
     public static final String VALUE = "value";
     public static final String NAMESPACE = "namespace";
     public static final String TOPIC_TYPE = "topicType";
-    public static final String PUBLISHERS = "publishers";
+    public static final String PUBLISHER = "publisher";
     
     private DescribedTranslator describedTranslator;
 
@@ -40,7 +40,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
         TranslatorUtils.from(dbObject, TOPIC_TYPE, model.getType().key());
         TranslatorUtils.from(dbObject, NAMESPACE, model.getNamespace());
         TranslatorUtils.from(dbObject, VALUE, model.getValue());
-        TranslatorUtils.fromIterable(dbObject, Iterables.transform(model.getPublishers(), Publisher.TO_KEY), PUBLISHERS);
+        TranslatorUtils.from(dbObject, PUBLISHER, Publisher.TO_KEY.apply(model.getPublisher()));
         
         return dbObject;
     }
@@ -60,14 +60,9 @@ public class TopicTranslator implements ModelTranslator<Topic> {
         model.setType(Topic.Type.fromKey(TranslatorUtils.toString(dbObject, TOPIC_TYPE)));
         model.setNamespace(TranslatorUtils.toString(dbObject, NAMESPACE));
         model.setValue(TranslatorUtils.toString(dbObject, VALUE));
-        model.setPublishers(Iterables.filter(Iterables.transform(TranslatorUtils.toSet(dbObject, PUBLISHERS), new Function<String, Publisher>() {
-            @Override
-            public Publisher apply(String input) {
-                return Publisher.fromKey(input).valueOrDefault(null);
-            }
-        }),Predicates.notNull()));
+        model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER)).valueOrNull());
 
         return model;
     }
-
+ 
 }
