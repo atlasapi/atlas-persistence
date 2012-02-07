@@ -22,7 +22,7 @@ public class TopicRefTranslator {
 	}
 	
 	public TopicRef fromDBObject(DBObject dbo) {
-		return new TopicRef(TranslatorUtils.toString(dbo, TOPIC_KEY), 
+		return new TopicRef(TranslatorUtils.toLong(dbo, TOPIC_KEY), 
 				TranslatorUtils.toFloat(dbo, WEIGHTING_KEY),
 				TranslatorUtils.toBoolean(dbo, SUPERVISED_KEY));
 	}

@@ -44,9 +44,11 @@ public class MongoSequentialIdGenerator implements IdGenerator {
 
     @Override
     public String generate() {
-        DBObject findAndModify = collection.findAndModify(new MongoQueryBuilder().idEquals(idGroup).build(), update().incField(VALUE_KEY, 1).build());
+        return codec.encode(BigInteger.valueOf(generateRaw()));
+    }
 
-        return codec.encode(BigInteger.valueOf(TranslatorUtils.toLong(findAndModify, VALUE_KEY)));
+    public long generateRaw() {
+        return TranslatorUtils.toLong(collection.findAndModify(new MongoQueryBuilder().idEquals(idGroup).build(), update().incField(VALUE_KEY, 1).build()), VALUE_KEY);
     }
 
 }

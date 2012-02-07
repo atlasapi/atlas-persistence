@@ -9,7 +9,7 @@ import com.metabroadcast.common.base.Maybe;
 
 public interface TopicQueryResolver {
 
-    Maybe<Topic> topicForUri(String uri);
+    Maybe<Topic> topicForId(Long id);
 
     Iterable<Topic> topicsForUris(Iterable<String> uris);
     
@@ -23,7 +23,7 @@ public interface TopicQueryResolver {
         }
         
         @Override
-        public Maybe<Topic> topicForUri(String uri) {
+        public Maybe<Topic> topicForId(Long id) {
             return Maybe.nothing();
         }
 
