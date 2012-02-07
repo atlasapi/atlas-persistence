@@ -2,8 +2,11 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
+import javax.swing.text.html.parser.Entity;
+
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.persistence.ModelTranslator;
@@ -30,6 +33,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 	private final KeyPhraseTranslator keyPhraseTranslator;
 	private final DescribedTranslator describedTranslator;
     private final RelatedLinkTranslator relatedLinkTranslator;
+	private final TopicRefTranslator contentTopicTranslator;
 	
 	public ContentTranslator(NumberToShortStringCodec idCodec) {
 		this(new DescribedTranslator(new IdentifiedTranslator()), new ClipTranslator(idCodec));
@@ -41,6 +45,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		this.clipTranslator = clipTranslator;
 		this.keyPhraseTranslator = new KeyPhraseTranslator();
 		this.relatedLinkTranslator = new RelatedLinkTranslator();
+		this.contentTopicTranslator = new TopicRefTranslator();
 	}
 	
 	@Override
@@ -50,16 +55,25 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		decodeClips(dbObject, entity);
         decodeKeyPhrases(dbObject, entity);
         decodeRelatedLinks(dbObject, entity);
-
-        if (dbObject.containsField(TOPICS_KEY)) {
-            entity.setTopicUris(TranslatorUtils.toSet(dbObject, TOPICS_KEY));
-        }
-        
+        decodeTopics(dbObject, entity);
+                
         entity.setId(TranslatorUtils.toString(dbObject, ID_KEY));
 
         return entity;
 	}
 
+	@SuppressWarnings("unchecked")
+	private void decodeTopics(DBObject dbObject, Content entity) {
+		if(dbObject.containsField(TOPICS_KEY)) {
+			entity.setTopicRefs(Iterables.transform((Iterable<DBObject>) dbObject.get(TOPICS_KEY), new Function<DBObject, TopicRef>() {
+				@Override
+				public TopicRef apply(DBObject input) {
+					return contentTopicTranslator.fromDBObject(input);
+				}
+			}));
+		}
+	}
+	
     @SuppressWarnings("unchecked")
     private void decodeRelatedLinks(DBObject dbObject, Content entity) {
         if (dbObject.containsField(LINKS_KEY)) {
@@ -103,15 +117,22 @@ public class ContentTranslator implements ModelTranslator<Content> {
 		encodeClips(dbObject, entity);
         encodeKeyPhrases(dbObject, entity);
         encodeRelatedLinks(dbObject, entity);
-        if (!entity.getTopics().isEmpty()) {
-            BasicDBList topics = new BasicDBList();
-            topics.addAll(entity.getTopics());
-            dbObject.put(TOPICS_KEY, topics);
-        }
+        encodeTopics(dbObject, entity);
         
         TranslatorUtils.from(dbObject, ID_KEY, entity.getStringId());
         
         return dbObject;
+	}
+	
+	private void encodeTopics(DBObject dbObject, Content entity) {
+		if(!entity.getTopicRefs().isEmpty()) {
+			dbObject.put(TOPICS_KEY, ImmutableSet.copyOf(Iterables.transform(entity.getTopicRefs(), new Function<TopicRef, DBObject>() {
+                @Override
+                public DBObject apply(TopicRef input) {
+                    return contentTopicTranslator.toDBObject(input);
+                }
+            })));
+		}
 	}
 
     private void encodeRelatedLinks(DBObject dbObject, Content entity) {
