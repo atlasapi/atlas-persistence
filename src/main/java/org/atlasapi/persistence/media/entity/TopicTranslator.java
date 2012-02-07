@@ -3,9 +3,6 @@ package org.atlasapi.persistence.media.entity;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -22,7 +19,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
     private DescribedTranslator describedTranslator;
 
     public TopicTranslator() {
-        this.describedTranslator = new DescribedTranslator(new IdentifiedTranslator());
+        this.describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true));
     }
     
     public DBObject toDBObject(Topic model) {
@@ -52,7 +49,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
     @Override
     public Topic fromDBObject(DBObject dbObject, Topic model) {
         if (model == null) {
-            model = new Topic(TranslatorUtils.toString(dbObject, MongoConstants.ID));
+            model = new Topic(TranslatorUtils.toLong(dbObject, MongoConstants.ID));
         }
         
         describedTranslator.fromDBObject(dbObject, model);

@@ -226,7 +226,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     
     @Override
     //TODO: enable use of contentQuery?
-    public Iterator<Content> contentForTopic(final String topicUri, ContentQuery contentQuery) {
+    public Iterator<Content> contentForTopic(final Long topicId, ContentQuery contentQuery) {
         return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
             @Override
             public DBCursor cursorFor(ContentCategory category) {
@@ -243,7 +243,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             }
 
 			private MongoQueryBuilder queryCriteria() {
-				return where().fieldEquals("topics.topic", topicUri);
+				return where().fieldEquals("topics.topic", topicId);
 			}
             
         });

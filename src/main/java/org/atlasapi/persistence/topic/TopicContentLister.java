@@ -7,6 +7,6 @@ import org.atlasapi.media.entity.Content;
 
 public interface TopicContentLister {
 
-    Iterator<Content> contentForTopic(String topicUri, ContentQuery contentQuery); 
+    Iterator<Content> contentForTopic(Long topicId, ContentQuery contentQuery); 
     
 }

@@ -18,12 +18,11 @@ public class TopicRefTranslatorTest {
 	@Test
 	public void encodeAndDecodeTopicRef() {
 		
-	   	MongoTestHelper.ensureMongoIsRunning();
         DBCollection collection = MongoTestHelper.anEmptyTestDatabase().collection("test");
  
         TopicRefTranslator translator = new TopicRefTranslator();
         
-        TopicRef topicRef = new TopicRef("http://foo/bar", 0.01f, true);
+        TopicRef topicRef = new TopicRef(1l, 0.01f, true);
         DBObject dbObject = translator.toDBObject(topicRef);
         dbObject.put(MongoConstants.ID, "test");
 		collection.save(dbObject);

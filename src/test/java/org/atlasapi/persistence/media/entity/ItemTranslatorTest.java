@@ -62,8 +62,8 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        TopicRef topic1 = new TopicRef("topic1", 0.01f, true);
-        TopicRef topic2 = new TopicRef("topic2", 0.02f, false);
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
+        TopicRef topic2 = new TopicRef(2l, 0.02f, false);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
@@ -138,8 +138,8 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        TopicRef topic1 = new TopicRef("topic1", 0.01f, true);
-        TopicRef topic2 = new TopicRef("topic2", 0.02f, false);
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
+        TopicRef topic2 = new TopicRef(2l, 0.02f, false);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
