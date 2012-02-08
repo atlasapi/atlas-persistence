@@ -11,14 +11,14 @@ public interface TopicQueryResolver {
 
     Maybe<Topic> topicForId(Long id);
 
-    Iterable<Topic> topicsForUris(Iterable<String> uris);
+    Iterable<Topic> topicsForIds(Iterable<Long> ids);
     
     Iterable<Topic> topicsFor(ContentQuery query);
     
     public static final TopicQueryResolver NULL_RESOLVER = new TopicQueryResolver() {
         
         @Override
-        public Iterable<Topic> topicsForUris(Iterable<String> uris) {
+        public Iterable<Topic> topicsForIds(Iterable<Long> ids) {
             return ImmutableList.of();
         }
         
