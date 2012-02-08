@@ -44,8 +44,8 @@ public class MongoTopicStore implements TopicStore, TopicQueryResolver {
     }
 
     @Override
-    public Maybe<Topic> topicForUri(String uri) {
-        return topicForQuery(where().idEquals(uri).build());
+    public Maybe<Topic> topicForId(Long id) {
+        return topicForQuery(where().idEquals(id).build());
     }
 
     private Maybe<Topic> topicForQuery(DBObject query) {

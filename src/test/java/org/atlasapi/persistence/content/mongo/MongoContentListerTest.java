@@ -15,6 +15,7 @@ import java.util.List;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
@@ -61,13 +62,16 @@ public class MongoContentListerTest {
         c4Item2.setLastUpdated(tenthOfTheTenth);
         bbcBrand.setLastUpdated(tenthOfTheTenth);
         c4Brand.setLastUpdated(ELEVENTH_OF_THE_TENTH);
+        
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
+        TopicRef topic2 = new TopicRef(2l, 0.01f, true);
+        TopicRef topic3 = new TopicRef(3l, 0.01f, true);
 
-        bbcItem1.setTopicUris(ImmutableSet.of("topic1", "topic2", "topic3"));
-        bbcItem2.setTopicUris(ImmutableSet.<String>of());
-        c4Item1.setTopicUris(ImmutableSet.of("topic2", "topic3"));
-        c4Item2.setTopicUris(ImmutableSet.of("topic1", "topic3"));
-        bbcBrand.setTopicUris(ImmutableSet.of("topic1", "topic2"));
-        c4Brand.setTopicUris(ImmutableSet.of("topic1", "topic3"));
+        bbcItem1.setTopicRefs(ImmutableSet.of(topic1, topic2, topic3));
+        c4Item1.setTopicRefs(ImmutableSet.of(topic2, topic3));
+        c4Item2.setTopicRefs(ImmutableSet.of(topic1, topic3));
+        bbcBrand.setTopicRefs(ImmutableSet.of(topic1, topic2));
+        c4Brand.setTopicRefs(ImmutableSet.of(topic1, topic3));
         
         MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, new SystemClock());
         writer.createOrUpdate(bbcBrand);
@@ -81,15 +85,15 @@ public class MongoContentListerTest {
     @Test
     public void testTopicListing() {
         
-        ImmutableSet<Content> contents = ImmutableSet.copyOf(lister.contentForTopic("topic1", ContentQuery.MATCHES_EVERYTHING));
+        ImmutableSet<Content> contents = ImmutableSet.copyOf(lister.contentForTopic(1l, ContentQuery.MATCHES_EVERYTHING));
         assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item2,bbcBrand,c4Brand))));
         
         
-        contents = ImmutableSet.copyOf(lister.contentForTopic("topic2", ContentQuery.MATCHES_EVERYTHING));
+        contents = ImmutableSet.copyOf(lister.contentForTopic(2l, ContentQuery.MATCHES_EVERYTHING));
         assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,bbcBrand))));
         
         
-        contents = ImmutableSet.copyOf(lister.contentForTopic("topic3", ContentQuery.MATCHES_EVERYTHING));
+        contents = ImmutableSet.copyOf(lister.contentForTopic(3l, ContentQuery.MATCHES_EVERYTHING));
         assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,c4Item2,c4Brand))));
         
     }

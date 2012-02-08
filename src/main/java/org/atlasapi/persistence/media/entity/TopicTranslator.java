@@ -3,9 +3,6 @@ package org.atlasapi.persistence.media.entity;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -17,12 +14,12 @@ public class TopicTranslator implements ModelTranslator<Topic> {
     public static final String VALUE = "value";
     public static final String NAMESPACE = "namespace";
     public static final String TOPIC_TYPE = "topicType";
-    public static final String PUBLISHERS = "publishers";
+    public static final String PUBLISHER = "publisher";
     
     private DescribedTranslator describedTranslator;
 
     public TopicTranslator() {
-        this.describedTranslator = new DescribedTranslator(new IdentifiedTranslator());
+        this.describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true));
     }
     
     public DBObject toDBObject(Topic model) {
@@ -40,7 +37,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
         TranslatorUtils.from(dbObject, TOPIC_TYPE, model.getType().key());
         TranslatorUtils.from(dbObject, NAMESPACE, model.getNamespace());
         TranslatorUtils.from(dbObject, VALUE, model.getValue());
-        TranslatorUtils.fromIterable(dbObject, Iterables.transform(model.getPublishers(), Publisher.TO_KEY), PUBLISHERS);
+        TranslatorUtils.from(dbObject, PUBLISHER, Publisher.TO_KEY.apply(model.getPublisher()));
         
         return dbObject;
     }
@@ -52,7 +49,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
     @Override
     public Topic fromDBObject(DBObject dbObject, Topic model) {
         if (model == null) {
-            model = new Topic(TranslatorUtils.toString(dbObject, MongoConstants.ID));
+            model = new Topic(TranslatorUtils.toLong(dbObject, MongoConstants.ID));
         }
         
         describedTranslator.fromDBObject(dbObject, model);
@@ -60,14 +57,9 @@ public class TopicTranslator implements ModelTranslator<Topic> {
         model.setType(Topic.Type.fromKey(TranslatorUtils.toString(dbObject, TOPIC_TYPE)));
         model.setNamespace(TranslatorUtils.toString(dbObject, NAMESPACE));
         model.setValue(TranslatorUtils.toString(dbObject, VALUE));
-        model.setPublishers(Iterables.filter(Iterables.transform(TranslatorUtils.toSet(dbObject, PUBLISHERS), new Function<String, Publisher>() {
-            @Override
-            public Publisher apply(String input) {
-                return Publisher.fromKey(input).valueOrDefault(null);
-            }
-        }),Predicates.notNull()));
+        model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER)).valueOrNull());
 
         return model;
     }
-
+ 
 }

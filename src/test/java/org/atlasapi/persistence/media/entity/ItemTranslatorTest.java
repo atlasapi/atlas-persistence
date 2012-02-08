@@ -8,6 +8,7 @@ import junit.framework.TestCase;
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Clip;
+import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
@@ -22,9 +23,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
+import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
 public class ItemTranslatorTest extends TestCase {
@@ -58,7 +62,9 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        item.setTopicUris(ImmutableList.of("topic1","topic2","topic3"));
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
+        TopicRef topic2 = new TopicRef(2l, 0.02f, false);
+        item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
         
@@ -91,10 +97,19 @@ public class ItemTranslatorTest extends TestCase {
         DBObject l = (DBObject) ls.get(0);
         assertEquals(loc.getAvailable(), l.get("available"));
         
-        assertEquals(item.getTopics(), dbObject.get("topics"));
+        Set<DBObject> ts = (Set<DBObject>) dbObject.get("topics");
+		assertEquals(2, ts.size());
+        DBObject t1 = (DBObject) ts.iterator().next();
+        assertEquals(topic1.getTopic(), t1.get("topic"));
+        assertEquals(topic1.getWeighting(), t1.get("weighting"));
+        assertEquals(topic1.isSupervised(), t1.get("supervised"));
+        
     }
     
     public void testConvertToItem() throws Exception {
+    	MongoTestHelper.ensureMongoIsRunning();
+        DBCollection collection = MongoTestHelper.anEmptyTestDatabase().collection("test");
+        
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
         
@@ -122,12 +137,16 @@ public class ItemTranslatorTest extends TestCase {
         Set<String> tags = Sets.newHashSet();
         tags.add("tag");
         item.setTags(tags);
-
-        item.setTopicUris(ImmutableList.of("topic1","topic2","topic3"));
+        
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
+        TopicRef topic2 = new TopicRef(2l, 0.02f, false);
+        item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
         
-        Item i = itemTranslator.fromDBObject(dbObject, null);
+        collection.save(dbObject);
+        Item i = itemTranslator.fromDBObject(collection.findOne(new MongoQueryBuilder().idEquals(item.getCanonicalUri()).build()), null);
+
         assertEquals(i.getCanonicalUri(), item.getCanonicalUri());
         assertEquals(i.getCurie(), item.getCurie());
         
@@ -159,7 +178,7 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals(1, people.size());
         assertEquals("some guy", ((Actor) Iterables.getFirst(people, null)).character());
         
-        assertEquals(item.getTopics(), i.getTopics());
+        assertEquals(item.getTopicRefs(), i.getTopicRefs());
     }
     
     @SuppressWarnings("unchecked")
