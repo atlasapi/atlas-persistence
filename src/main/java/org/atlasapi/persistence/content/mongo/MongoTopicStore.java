@@ -18,6 +18,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
@@ -62,8 +64,8 @@ public class MongoTopicStore implements TopicStore, TopicQueryResolver {
     }
 
     @Override
-    public Iterable<Topic> topicsForUris(Iterable<String> uris) {
-        DBCursor dbos = collection.find(where().fieldIn(ID, uris).build());
+    public Iterable<Topic> topicsForIds(Iterable<Long> ids) {
+        DBCursor dbos = collection.find(new BasicDBObject(MongoConstants.ID, new BasicDBObject(MongoConstants.IN, ids)));
         return transform(dbos);
     }
 
