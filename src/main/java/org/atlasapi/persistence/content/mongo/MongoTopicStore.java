@@ -38,11 +38,11 @@ public class MongoTopicStore implements TopicStore, TopicQueryResolver {
 
     @Override
     public void write(Topic topic) {
-        checkNotNull(topic.getCanonicalUri(), "Can't persist topic with no URI");
+        checkNotNull(topic.getId(), "Can't persist topic with no ID");
 
         DBObject dbo = translator.toDBObject(topic);
 
-        collection.update(where().idEquals((String) dbo.get(ID)).build(), dbo, UPSERT, SINGLE);
+        collection.update(where().idEquals((Long)dbo.get(ID)).build(), dbo, UPSERT, SINGLE);
     }
 
     @Override
