@@ -18,8 +18,6 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
@@ -81,8 +79,7 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
     }
 
     private Iterable<DBObject> availablityWindowsForChildrenOf(Container container, DateTime time) {
-//        DBObject query = where().fieldEquals(containerKey, container.getCanonicalUri()).fieldAfter(availabilityEndKey, time).build();
-        DBObject query = BasicDBObjectBuilder.start(containerKey, container.getCanonicalUri()).add(availabilityEndKey, new BasicDBObject(MongoConstants.GREATER_THAN, time.toDate())).get();
+        DBObject query = where().fieldEquals(containerKey, container.getCanonicalUri()).fieldAfter(availabilityEndKey, time).build();
         return children.find(query,fields);
     }
     
