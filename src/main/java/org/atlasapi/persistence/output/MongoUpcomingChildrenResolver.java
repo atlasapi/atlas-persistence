@@ -26,7 +26,7 @@ public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
     private final String broadcasts = "broadcasts";
     private final String transmissionEndTime = "transmissionEndTime";
     
-    private final String transmissionEndTimeKey = String.format("%s%s%s", versions, broadcasts, transmissionEndTime);
+    private final String transmissionEndTimeKey = String.format("%s.%s.%s", versions, broadcasts, transmissionEndTime);
     private final String containerKey = "container";
     
     private final DBObject fields = select().field(transmissionEndTimeKey).build();
@@ -67,7 +67,8 @@ public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
     }
 
     private Iterable<DBObject> availablityWindowsForChildrenOf(Container container, DateTime time) {
-        return children.find(where().fieldEquals(containerKey, container.getCanonicalUri()).fieldAfter(transmissionEndTime, time).build(),fields);
+        DBObject query = where().fieldEquals(containerKey, container.getCanonicalUri()).fieldAfter(transmissionEndTimeKey, time).build();
+        return children.find(query,fields);
     }
     
 }
