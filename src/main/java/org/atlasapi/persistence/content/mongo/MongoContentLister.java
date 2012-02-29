@@ -98,9 +98,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 					private DBCursor cursorFor(ContentCategory category, DBObject query) {
 						return contentTables.collectionFor(category)
                                 .find(query)
-                                .batchSize(100)
-                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
-                                .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build());
                     }
 
 					private MongoQueryBuilder queryCriteria(final Publisher publisher) {
