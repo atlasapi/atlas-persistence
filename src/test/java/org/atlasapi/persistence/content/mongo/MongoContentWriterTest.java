@@ -17,6 +17,7 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.joda.time.DateTime;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Iterables;
@@ -30,7 +31,7 @@ import com.mongodb.DBCollection;
 
 public class MongoContentWriterTest {
 
-    private final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+    private static DatabasedMongo mongo;
     
     private final NewLookupWriter lookupWriter = new NewLookupWriter() {
         @Override
@@ -46,6 +47,11 @@ public class MongoContentWriterTest {
     private final DBCollection programmeGroups = mongo.collection("programmeGroups");
     
     private final ContainerTranslator containerTranslator = new ContainerTranslator(new SubstitutionTableNumberCodec());
+    
+    @BeforeClass
+    public static void setUp() {
+        mongo = MongoTestHelper.anEmptyTestDatabase();
+    }
     
     @After
     public void clearDb() {
@@ -205,5 +211,34 @@ public class MongoContentWriterTest {
         assertNull(topLevelItems.findOne(item.getCanonicalUri()));
         assertNotNull(children.findOne(item.getCanonicalUri()));
         
+    }
+    
+    @Test
+    public void testConvertingTopLevelSeriesToBrandedSeries() {
+
+        Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+        
+        contentWriter.createOrUpdate(series);
+
+        Series retrievedTopLevelSeries = (Series) containerTranslator.fromDB(containers.findOne(series.getCanonicalUri()));
+        Series retrievedSeries = (Series) containerTranslator.fromDB(programmeGroups.findOne(series.getCanonicalUri()));
+        
+        assertNotNull(retrievedTopLevelSeries);
+        assertNotNull(retrievedSeries);
+        
+        Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC);
+        
+        series.setParent(brand);
+        
+        contentWriter.createOrUpdate(brand);
+        contentWriter.createOrUpdate(series);
+        
+        Brand retrievedBrand = (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
+
+        assertNull("top-level series not null", containers.findOne(series.getCanonicalUri()));
+        assertNotNull(programmeGroups.findOne(series.getCanonicalUri()));
+        assertNotNull(retrievedBrand);
+        assertTrue(retrievedBrand.getSeriesRefs().size() == 1);
     }
 }

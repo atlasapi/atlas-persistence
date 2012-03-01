@@ -6,13 +6,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupRef;
+import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -20,11 +24,23 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.mongodb.BasicDBObject;
 
 public class MongoLookupEntryStoreTest {
 
-    private final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
-    private final MongoLookupEntryStore entryStore = new MongoLookupEntryStore(mongo);
+    private static DatabasedMongo mongo;
+    private static MongoLookupEntryStore entryStore;
+    
+    @BeforeClass
+    public static void setUp() {
+        mongo = MongoTestHelper.anEmptyTestDatabase();
+        entryStore = new MongoLookupEntryStore(mongo);
+    }
+    
+    @After 
+    public void clear() {
+        mongo.collection("lookup").remove(new BasicDBObject());
+    }
     
     @Test
     public void testStore() {
@@ -107,5 +123,26 @@ public class MongoLookupEntryStoreTest {
         
         LookupEntry aliasTranstiveEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of("transitiveAlias")));
         assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(aliasTranstiveEntry.equivalents(), equalTo(newEntry.lookupRef())).category());
+    }
+    
+    @Test
+    public void testEnsureLookupChangesTypeForNonTopLevelSeries() {
+        
+        Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        
+        entryStore.ensureLookup(series);
+        
+        LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of(series.getCanonicalUri())));
+        
+        assertEquals(ContentCategory.CONTAINER, newEntry.lookupRef().category());
+        
+        series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setParent(new Brand("brandUri","brandCurie",Publisher.BBC));
+
+        entryStore.ensureLookup(series);
+        
+        LookupEntry changedEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of(series.getCanonicalUri())));
+        
+        assertEquals(ContentCategory.PROGRAMME_GROUP, changedEntry.lookupRef().category());
     }
 }
