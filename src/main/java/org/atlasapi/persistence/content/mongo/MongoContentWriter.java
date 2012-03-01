@@ -139,6 +139,8 @@ public class MongoContentWriter implements ContentWriter {
             if(((Series) container).getParent() != null) {
                 Series series = (Series)container;
                 childRefWriter.includeSeriesInTopLevelContainer(series);
+                //this isn't a top-level series so ensure it's not in the container table.
+                containers.remove(where().idEquals(series.getCanonicalUri()).build());
                 return;
             }
             
