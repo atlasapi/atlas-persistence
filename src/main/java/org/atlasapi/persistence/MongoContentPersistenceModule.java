@@ -5,7 +5,7 @@ import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.media.product.IdSettingProductStore;
-import org.atlasapi.media.product.MongoProductStore;
+import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.IdSettingSegmentWriter;
 import org.atlasapi.media.segment.MongoSegmentResolver;
@@ -20,6 +20,7 @@ import org.atlasapi.persistence.content.mongo.MongoContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
+import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
@@ -146,11 +147,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Bean
     public ProductStore productStore() {
-        return new IdSettingProductStore(productResolver(), new MongoSequentialIdGenerator(db, "product"));
+        return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
     }
 
     @Bean
-    public MongoProductStore productResolver() {
+    public ProductResolver productResolver() {
         return new MongoProductStore(db);
     }
 }

@@ -1,14 +1,18 @@
-package org.atlasapi.media.product;
+package org.atlasapi.persistence.content.mongo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.media.product.ProductTranslator.CONTENT_KEY;
+import static org.atlasapi.persistence.media.entity.ProductTranslator.CONTENT_KEY;
 
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.product.Product;
+import org.atlasapi.media.product.ProductResolver;
+import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+import org.atlasapi.persistence.media.entity.ProductTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;

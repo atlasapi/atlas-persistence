@@ -1,8 +1,10 @@
-package org.atlasapi.media.product;
+package org.atlasapi.persistence.content.mongo;
 
 import static org.junit.Assert.*;
 
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.product.Product;
+import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
