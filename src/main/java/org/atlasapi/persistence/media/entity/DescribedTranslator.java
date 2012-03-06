@@ -14,6 +14,7 @@ import com.mongodb.DBObject;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
+    public static final String PUBLISHER_KEY = "publisher";
     private static final String SCHEDULE_ONLY_KEY = "scheduleOnly";
     public static final String THIS_OR_CHILD_LAST_UPDATED_KEY = "thisOrChildLastUpdated";
     public static final String TYPE_KEY = "type";
@@ -41,7 +42,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		Boolean scheduleOnly = TranslatorUtils.toBoolean(dbObject, SCHEDULE_ONLY_KEY);
 		entity.setScheduleOnly(scheduleOnly != null ? scheduleOnly : false);
 
-		String publisherKey = (String) dbObject.get("publisher");
+		String publisherKey = (String) dbObject.get(PUBLISHER_KEY);
 		if (publisherKey != null) {
 			entity.setPublisher(Publisher.fromKey(publisherKey).valueOrDefault(null));
 		}
@@ -81,7 +82,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.fromDateTime(dbObject, LAST_FETCHED_KEY, entity.getLastFetched());
         
         if (entity.getPublisher() != null) {
-        	TranslatorUtils.from(dbObject, "publisher", entity.getPublisher().key());
+        	TranslatorUtils.from(dbObject, PUBLISHER_KEY, entity.getPublisher().key());
         }
         
         TranslatorUtils.fromSet(dbObject, entity.getTags(), "tags");
