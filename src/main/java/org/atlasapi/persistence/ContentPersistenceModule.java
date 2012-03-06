@@ -1,5 +1,7 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.media.product.ProductResolver;
+import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.persistence.content.ContentResolver;
@@ -26,5 +28,9 @@ public interface ContentPersistenceModule {
 	SegmentWriter segmentWriter();
 	
 	SegmentResolver segmentResolver();
+	
+	ProductStore productStore();
+	
+	ProductResolver productResolver();
 	
 }
