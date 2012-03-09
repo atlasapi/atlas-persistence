@@ -14,7 +14,7 @@ import com.google.common.collect.Maps;
 public class InMemoryLookupEntryStore implements LookupEntryStore {
 
     private Map<String,LookupEntry> uriStore;
-    private Map<String,LookupEntry> idStore;
+    private Map<Long,LookupEntry> idStore;
 
     public InMemoryLookupEntryStore() {
         uriStore = Maps.newConcurrentMap();
@@ -40,7 +40,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIds(Iterable<String> ids) {
+    public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
         return Iterables.filter(Iterables.transform(ids, Functions.forMap(idStore, null)), Predicates.notNull());
     }
 }
