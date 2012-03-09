@@ -14,11 +14,11 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content;
 
-public class DataRetrievalException extends RuntimeException {
+public class DataStorageException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
-	public DataRetrievalException(Exception iae) {
+	public DataStorageException(Exception iae) {
 		super(iae);
 	}
 

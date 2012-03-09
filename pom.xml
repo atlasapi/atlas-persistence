@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.atlasapi</groupId>
     <artifactId>atlas-persistence</artifactId>
@@ -14,9 +14,32 @@
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
-                        <fork>true</fork>
-                        <compilerArguments><J>-Xss1M</J></compilerArguments>
+                    <fork>true</fork>
+                    <compilerArguments>
+                        <J>-Xss1M</J>
+                    </compilerArguments>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <excludes>
+                                <exclude>org/atlasapi/persistence/content/cassandra/integration/*.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
  
@@ -28,6 +51,38 @@
             </extension>
         </extensions>
     </build>
+    
+    <profiles>
+
+        <profile>
+            <id>cassandra-test</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>false</skip>
+                                    <includes>
+                                        <include>org/atlasapi/persistence/content/cassandra/integration/*.java</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     
     <description></description>
     <dependencies>
@@ -47,9 +102,29 @@
             <version>${common.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>10.0.1</version>
+        </dependency>
+        <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
             <version>1.8.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>1.9.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax</artifactId>
+            <version>0.8.9</version>
         </dependency>
     </dependencies>
 
