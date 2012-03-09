@@ -28,7 +28,7 @@ public class LookupEntryTranslator {
     private static final String LAST_UPDATED = "updated";
     private static final String FIRST_CREATED = "created";
     private static final String ALIASES = "aliases";
-    public static final String OPAQUE_ID = "id";
+    public static final String OPAQUE_ID = "aid";
     
     public Function<LookupEntry, DBObject> TO_DBO = new Function<LookupEntry, DBObject>() {
         @Override
@@ -85,7 +85,7 @@ public class LookupEntryTranslator {
         }
         
         String uri = TranslatorUtils.toString(dbo, ID);
-        String id = TranslatorUtils.toString(dbo, OPAQUE_ID);
+        Long id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
         Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));

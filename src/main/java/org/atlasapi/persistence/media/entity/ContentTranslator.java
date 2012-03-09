@@ -2,21 +2,19 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
-import javax.swing.text.html.parser.Entity;
-
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.RelatedLink;
+import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -25,7 +23,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
 	public static String CLIPS_KEY = "clips";
 	public static String TOPICS_KEY = "topics";
-	private static String ID_KEY = "id";
+	private static String ID_KEY = "aid";
     private static final String LINKS_KEY = "links";
     private static final String PHRASES_KEY = "phrases";
 	
@@ -57,7 +55,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeRelatedLinks(dbObject, entity);
         decodeTopics(dbObject, entity);
                 
-        entity.setId(TranslatorUtils.toString(dbObject, ID_KEY));
+        entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
 
         return entity;
 	}
@@ -119,7 +117,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeRelatedLinks(dbObject, entity);
         encodeTopics(dbObject, entity);
         
-        TranslatorUtils.from(dbObject, ID_KEY, entity.getStringId());
+        TranslatorUtils.from(dbObject, ID_KEY, entity.getId());
         
         return dbObject;
 	}
