@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content.cassandra.json;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.intl.Country;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Set;
 import org.atlasapi.media.entity.Clip;
@@ -52,28 +53,28 @@ public class ContentMapper {
 
     public <T extends Content> void serialize(T entity, ColumnWriter writer) throws Exception {
         String type = entity.getClass().getName();
-        writer.write("type", type);
+        writer.write("type", type.getBytes(Charset.forName("UTF-8")));
 
-        String main = mapper.writeValueAsString(entity);
+        byte[] main = mapper.writeValueAsBytes(entity);
         writer.write("obj", main);
 
-        String clips = mapper.writeValueAsString(entity.getClips());
+        byte[] clips = mapper.writeValueAsBytes(entity.getClips());
         writer.write("clips", clips);
 
-        String keyPhrases = mapper.writeValueAsString(entity.getKeyPhrases());
+        byte[] keyPhrases = mapper.writeValueAsBytes(entity.getKeyPhrases());
         writer.write("keyPhrases", keyPhrases);
 
-        String relatedLinks = mapper.writeValueAsString(entity.getRelatedLinks());
+        byte[] relatedLinks = mapper.writeValueAsBytes(entity.getRelatedLinks());
         writer.write("relatedLinks", relatedLinks);
 
-        String topicRefs = mapper.writeValueAsString(entity.getTopicRefs());
+        byte[] topicRefs = mapper.writeValueAsBytes(entity.getTopicRefs());
         writer.write("topicRefs", topicRefs);
 
         serializeItemSpecificFields(entity, writer);
     }
 
     public <T extends Content> T deserialize(ColumnReader reader) throws Exception {
-        Class type = Class.forName(reader.read("type"));
+        Class type = Class.forName(new String(reader.read("type"), Charset.forName("UTF-8")));
 
         T entity = (T) mapper.readValue(reader.read("obj"), type);
 
@@ -98,10 +99,10 @@ public class ContentMapper {
         if (value instanceof Item) {
             Item item = (Item) value;
 
-            String people = mapper.writerWithType(TypeFactory.defaultInstance().constructCollectionType(List.class, CrewMember.class)).writeValueAsString(item.getPeople());
+            byte[] people = mapper.writerWithType(TypeFactory.defaultInstance().constructCollectionType(List.class, CrewMember.class)).writeValueAsBytes(item.getPeople());
             writer.write("people", people);
 
-            String versions = mapper.writeValueAsString(item.getVersions());
+            byte[] versions = mapper.writeValueAsBytes(item.getVersions());
             writer.write("versions", versions);
         }
     }

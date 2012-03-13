@@ -14,8 +14,8 @@ public class CassandraColumnReader implements ColumnReader {
     }
     
     @Override
-    public String read(String key) {
-        return columns.getColumnByName(key).getStringValue();
+    public byte[] read(String key) {
+        return columns.getColumnByName(key).getByteArrayValue();
     }
     
 }

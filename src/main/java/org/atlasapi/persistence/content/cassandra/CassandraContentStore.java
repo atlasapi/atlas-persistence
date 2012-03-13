@@ -52,6 +52,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
         AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
+                setMaxBlockedThreadsPerHost(10).
                 setMaxConnsPerHost(25).
                 setConnectTimeout(10000).
                 setSeeds(Joiner.on(",").join(seeds))).

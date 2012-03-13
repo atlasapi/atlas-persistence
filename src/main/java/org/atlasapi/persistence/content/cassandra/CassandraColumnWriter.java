@@ -14,7 +14,7 @@ public class CassandraColumnWriter implements ColumnWriter {
     }
 
     @Override
-    public void write(String key, String value) {
+    public void write(String key, byte[] value) {
         this.mutation.putColumn(key, value, null);
     }
 }
