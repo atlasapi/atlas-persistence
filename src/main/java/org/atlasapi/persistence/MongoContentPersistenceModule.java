@@ -1,14 +1,14 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.media.channel.ChannelGroupStore;
+import org.atlasapi.media.channel.ChannelResolver;
+import org.atlasapi.media.channel.MongoChannelGroupStore;
+import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.media.segment.IdSettingSegmentWriter;
 import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
-import org.atlasapi.media.channel.ChannelGroupStore;
-import org.atlasapi.media.channel.ChannelResolver;
-import org.atlasapi.media.channel.MongoChannelGroupStore;
-import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
@@ -32,6 +32,7 @@ import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -51,6 +52,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
 	
+	private @Value("${ids.generate}") String generateIds;
+	
 	public MongoContentPersistenceModule() {}
 	
 	public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AdapterLog log) {
@@ -62,7 +65,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	private @Autowired ChannelResolver channelResolver;
 	
 	public @Bean ContentWriter contentWriter() {
-		return new MongoContentWriter(db, lookupStore(), new SystemClock());
+		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
+		if (Boolean.valueOf(generateIds)) {
+		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
+		}
+        return contentWriter;
 	}
 	
 	@Primary

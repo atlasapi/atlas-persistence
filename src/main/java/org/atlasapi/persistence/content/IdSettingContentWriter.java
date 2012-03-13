@@ -32,7 +32,7 @@ public class IdSettingContentWriter implements ContentWriter {
         Iterable<LookupEntry> entries = lookupStore.entriesForUris(ImmutableList.of(content.getCanonicalUri()));
 
         if (Iterables.isEmpty(entries)) {
-            content.setId(generator.generate());
+            content.setId(generator.generateRaw());
         } else { //ensures an adapter can't override and assign a new id for the content.
             LookupEntry entry = Iterables.getOnlyElement(entries);
             content.setId(entry.id());

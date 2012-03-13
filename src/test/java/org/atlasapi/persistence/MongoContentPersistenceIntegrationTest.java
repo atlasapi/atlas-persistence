@@ -47,22 +47,22 @@ public class MongoContentPersistenceIntegrationTest {
         
         Iterable<LookupEntry> entries = lookupStore.entriesForUris(ImmutableSet.of(item.getCanonicalUri()));
         LookupEntry entry = Iterables.getOnlyElement(entries);
-        String id = entry.id();
+        Long id = entry.id();
         assertThat(id, is(nullValue()));
 
         Maybe<Identified> maybeContent = knownTypeContentResolver.findByLookupRefs(ImmutableSet.of(entry.lookupRef())).get(uri);
         assertThat((Item) maybeContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) maybeContent.requireValue()).getStringId(), is(equalTo(id)));
+        assertThat(((Item) maybeContent.requireValue()).getId(), is(equalTo(id)));
         assertThat(((Item) maybeContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
 
         Maybe<Identified> moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(uri);
         assertThat((Item) moreContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) moreContent.requireValue()).getStringId(), is(equalTo(id)));
+        assertThat(((Item) moreContent.requireValue()).getId(), is(equalTo(id)));
         assertThat(((Item) moreContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
         
         String newTitle = "Changed title";
         item.setTitle(newTitle);
-        item.setId("Another ID that will be ignored");
+        item.setId(1234L);
         
         contentWriter.createOrUpdate(item);
         

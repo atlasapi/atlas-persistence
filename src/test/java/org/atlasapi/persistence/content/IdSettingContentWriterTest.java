@@ -11,12 +11,15 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
+import org.jmock.integration.junit4.JMock;
 import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
+import org.junit.runner.RunWith;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.ids.IdGenerator;
 
+@RunWith(JMock.class)
 public class IdSettingContentWriterTest {
 
     private final Mockery context = new Mockery();
@@ -31,11 +34,11 @@ public class IdSettingContentWriterTest {
         
         final Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
             
-        final String newId = "newId";
+        final long newId = 1234l;
         
         context.checking(new Expectations(){{
             oneOf(lookupStore).entriesForUris(with(hasItem(item.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
-            oneOf(idGenerator).generate();will(returnValue(newId));
+            oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(itemWithId(newId)));
         }});
         
@@ -48,16 +51,16 @@ public class IdSettingContentWriterTest {
     public void testUpdatingItemDoesntGenerateNewId() {
         
         final Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
-        final String oldId = "oldId";
+        final long oldId = 1234;
         item.setId(oldId);
         
         context.checking(new Expectations(){{
             oneOf(lookupStore).entriesForUris(with(hasItem(item.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(item))));
-            never(idGenerator).generate();
+            never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(itemWithId(oldId)));
         }});
         
-        item.setId("anotherId");
+        item.setId(1235l);
         
         writer.createOrUpdate(item);
         
@@ -65,7 +68,7 @@ public class IdSettingContentWriterTest {
         
     }
 
-    private Matcher<Item> itemWithId(final String id) {
+    private Matcher<Item> itemWithId(final long id) {
         return new TypeSafeMatcher<Item>() {
 
             @Override
@@ -75,7 +78,7 @@ public class IdSettingContentWriterTest {
 
             @Override
             public boolean matchesSafely(Item item) {
-                return item.getStringId().equals(id);
+                return item.getId().equals(id);
             }
         };
     }
@@ -85,11 +88,11 @@ public class IdSettingContentWriterTest {
         
         final Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
             
-        final String newId = "newId";
+        final long newId = 1234;
         
         context.checking(new Expectations(){{
             oneOf(lookupStore).entriesForUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
-            oneOf(idGenerator).generate();will(returnValue(newId));
+            oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(containerWithId(newId)));
         }});
         
@@ -102,12 +105,12 @@ public class IdSettingContentWriterTest {
     public void testUpdatingContainerDoesntGenerateNewId() {
         
         final Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
-        final String oldId = "oldId";
+        final long oldId = 1234l;
         container.setId(oldId);
         
         context.checking(new Expectations(){{
             oneOf(lookupStore).entriesForUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(container))));
-            never(idGenerator).generate();
+            never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(containerWithId(oldId)));
         }});
         
@@ -117,7 +120,7 @@ public class IdSettingContentWriterTest {
         
     }
     
-    private Matcher<Container> containerWithId(final String id) {
+    private Matcher<Container> containerWithId(final long id) {
         return new TypeSafeMatcher<Container>() {
 
             @Override
@@ -127,7 +130,7 @@ public class IdSettingContentWriterTest {
 
             @Override
             public boolean matchesSafely(Container item) {
-                return item.getStringId().equals(id);
+                return item.getId().equals(id);
             }
         };
     }

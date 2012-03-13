@@ -18,7 +18,7 @@ public class LookupEntry {
     public static LookupEntry lookupEntryFrom(Content c) {
         DateTime now = new DateTime(DateTimeZones.UTC);
         LookupRef lookupRef = LookupRef.from(c);
-        return new LookupEntry(c.getCanonicalUri(), c.getStringId(), lookupRef, c.getAliases(), ImmutableSet.of(lookupRef), ImmutableSet.of(lookupRef), now, now);
+        return new LookupEntry(c.getCanonicalUri(), c.getId(), lookupRef, c.getAliases(), ImmutableSet.of(lookupRef), ImmutableSet.of(lookupRef), now, now);
     }
     
     public static Function<LookupEntry,String> TO_ID = new Function<LookupEntry, String>() {
@@ -50,7 +50,7 @@ public class LookupEntry {
     };
     
     private final String uri;
-    private final String id;
+    private final Long id;
     private final Set<String> aliases;
     
     private final Set<LookupRef> directEquivalents;
@@ -61,7 +61,7 @@ public class LookupEntry {
 
     private final LookupRef self;
 
-    public LookupEntry(String uri, String id, LookupRef self, Set<String> aliases, Set<LookupRef> directEquivs, Set<LookupRef> equivs, DateTime created, DateTime updated) {
+    public LookupEntry(String uri, Long id, LookupRef self, Set<String> aliases, Set<LookupRef> directEquivs, Set<LookupRef> equivs, DateTime created, DateTime updated) {
         this.uri = uri;
         this.id = id;
         this.self = self;
@@ -76,7 +76,7 @@ public class LookupEntry {
         return uri;
     }
     
-    public String id() {
+    public Long id() {
         return id;
     }
 

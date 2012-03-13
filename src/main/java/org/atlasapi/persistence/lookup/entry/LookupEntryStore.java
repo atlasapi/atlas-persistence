@@ -10,6 +10,6 @@ public interface LookupEntryStore {
     
     Iterable<LookupEntry> entriesForUris(Iterable<String> uris);
     
-    Iterable<LookupEntry> entriesForIds(Iterable<String> ids);
+    Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
     
 }
