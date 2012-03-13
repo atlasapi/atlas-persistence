@@ -11,6 +11,7 @@ import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -31,6 +32,7 @@ import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -50,6 +52,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
 	
+	private @Value("${ids.generate}") String generateIds;
+	
 	public MongoContentPersistenceModule() {}
 	
 	public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AdapterLog log) {
@@ -62,7 +66,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Bean ContentWriter contentWriter() {
 		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
-		//TODO: uncomment to generate Ids & update integration test: contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
+		if (Boolean.valueOf(generateIds)) {
+		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
+		}
         return contentWriter;
 	}
 	
