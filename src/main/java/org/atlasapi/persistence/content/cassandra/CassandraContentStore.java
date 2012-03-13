@@ -37,9 +37,9 @@ import org.atlasapi.persistence.content.cassandra.json.ContentMapper;
  */
 public class CassandraContentStore implements ContentWriter, ContentResolver {
 
-    private static final String CLUSTER = "Atlas";
-    private static final String KEYSPACE = "Atlas";
-    private static final ColumnFamily<String, String> CONTENT_CF = new ColumnFamily<String, String>(
+    public static final String CLUSTER = "Atlas";
+    public static final String KEYSPACE = "Atlas";
+    public static final ColumnFamily<String, String> CONTENT_CF = new ColumnFamily<String, String>(
             "Content",
             StringSerializer.get(),
             StringSerializer.get());
@@ -51,7 +51,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
     public CassandraContentStore(int port, List<String> seeds) {
         AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
-                withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).setMaxConnsPerHost(1).
+                withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
+                setMaxConnsPerHost(25).
+                setConnectTimeout(10000).
                 setSeeds(Joiner.on(",").join(seeds))).
                 withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
                 buildKeyspace(ThriftFamilyFactory.getInstance());
@@ -88,6 +90,8 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
                 Content found = readContent(uri);
                 if (found != null) {
                     results.put(uri, Maybe.<Identified>just(found));
+                } else {
+                    results.put(uri, Maybe.<Identified>nothing());
                 }
             }
             return new ResolvedContent(results);
@@ -133,16 +137,11 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
 
         ColumnList<String> columns = result.getResult();
 
-        return contentMapper.deserialize(new CassandraColumnReader(columns));
-    }
-
-    private Item readItem(String key) throws Exception {
-        OperationResult<ColumnList<String>> result = keyspace.prepareQuery(CONTENT_CF).getKey(key).execute();
-        // FIXME: blocking operation, better use the async call later.
-
-        ColumnList<String> columns = result.getResult();
-
-        return contentMapper.<Item>deserialize(new CassandraColumnReader(columns));
+        if (!columns.isEmpty()) {
+            return contentMapper.deserialize(new CassandraColumnReader(columns));
+        } else {
+            return null;
+        }
     }
 
     private Container readContainer(String key) throws Exception {
@@ -151,6 +150,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
 
         ColumnList<String> columns = result.getResult();
 
-        return contentMapper.<Container>deserialize(new CassandraColumnReader(columns));
+        if (!columns.isEmpty()) {
+            return contentMapper.<Container>deserialize(new CassandraColumnReader(columns));
+        } else {
+            return null;
+        }
     }
 }

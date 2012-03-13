@@ -1,95 +1,151 @@
 package org.atlasapi.persistence.content.cassandra.json;
 
-import java.io.IOException;
+import com.google.common.collect.ImmutableList;
+import com.metabroadcast.common.intl.Country;
+import java.util.List;
+import java.util.Set;
+import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Content.Clips;
-import org.atlasapi.media.entity.Content.KeyPhrases;
-import org.atlasapi.media.entity.Content.RelatedLinks;
-import org.atlasapi.media.entity.Content.TopicRefs;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.Version;
+import org.atlasapi.media.entity.CrewMember;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.KeyPhrase;
+import org.atlasapi.media.entity.RelatedLink;
+import org.atlasapi.media.entity.TopicRef;
+import org.atlasapi.media.entity.Version;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonTypeInfo;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.codehaus.jackson.map.introspect.VisibilityChecker;
-import org.codehaus.jackson.map.module.SimpleModule;
-import org.codehaus.jackson.map.ser.std.SerializerBase;
+import org.codehaus.jackson.map.type.TypeFactory;
 
 /**
  */
 public class ContentMapper {
 
-    private final ObjectMapper contentMapper;
-    private final ObjectMapper childrenMapper;
+    private final ObjectMapper mapper;
 
     public ContentMapper() {
-        this.contentMapper = new ObjectMapper();
-        this.childrenMapper = new ObjectMapper();
-        
-        this.contentMapper.setVisibilityChecker(VisibilityChecker.Std.defaultInstance().
+        this.mapper = new ObjectMapper();
+
+        this.mapper.setSerializationInclusion(JsonSerialize.Inclusion.NON_NULL);
+
+        this.mapper.setVisibilityChecker(VisibilityChecker.Std.defaultInstance().
+                withSetterVisibility(JsonAutoDetect.Visibility.NONE).
+                withGetterVisibility(JsonAutoDetect.Visibility.NONE).
+                withIsGetterVisibility(JsonAutoDetect.Visibility.NONE).
                 withCreatorVisibility(JsonAutoDetect.Visibility.ANY).
                 withFieldVisibility(JsonAutoDetect.Visibility.ANY));
-        this.childrenMapper.setVisibilityChecker(VisibilityChecker.Std.defaultInstance().
-                withCreatorVisibility(JsonAutoDetect.Visibility.ANY).
-                withFieldVisibility(JsonAutoDetect.Visibility.ANY));
-        
-        SimpleModule module = new SimpleModule("Atlas", Version.unknownVersion());
-        module.addSerializer(new IgnoringSerializer(Content.Clips.class));
-        module.addSerializer(new IgnoringSerializer(Content.KeyPhrases.class));
-        module.addSerializer(new IgnoringSerializer(Content.RelatedLinks.class));
-        module.addSerializer(new IgnoringSerializer(Content.TopicRefs.class));
-        contentMapper.registerModule(module);
+
+        this.mapper.getSerializationConfig().addMixInAnnotations(Content.class, ContentDescriptor.class);
+        this.mapper.getDeserializationConfig().addMixInAnnotations(Content.class, ContentDescriptor.class);
+        this.mapper.getSerializationConfig().addMixInAnnotations(Item.class, ItemDescriptor.class);
+        this.mapper.getDeserializationConfig().addMixInAnnotations(Item.class, ItemDescriptor.class);
+        this.mapper.getSerializationConfig().addMixInAnnotations(Country.class, CountryDescriptor.class);
+        this.mapper.getDeserializationConfig().addMixInAnnotations(Country.class, CountryDescriptor.class);
+        this.mapper.getSerializationConfig().addMixInAnnotations(CrewMember.class, CrewMemberDescriptor.class);
+        this.mapper.getDeserializationConfig().addMixInAnnotations(CrewMember.class, CrewMemberDescriptor.class);
     }
 
-    public <T extends Content> void serialize(T value, ColumnWriter writer) throws Exception {
-        String type = value.getClass().getName();
+    public <T extends Content> void serialize(T entity, ColumnWriter writer) throws Exception {
+        String type = entity.getClass().getName();
         writer.write("type", type);
-        
-        String main = contentMapper.writeValueAsString(value);
+
+        String main = mapper.writeValueAsString(entity);
         writer.write("obj", main);
-        
-        String clips = childrenMapper.writeValueAsString(new Clips(value.getClips()));
+
+        String clips = mapper.writeValueAsString(entity.getClips());
         writer.write("clips", clips);
-        
-        String keyPhrases = childrenMapper.writeValueAsString(new KeyPhrases(value.getKeyPhrases()));
+
+        String keyPhrases = mapper.writeValueAsString(entity.getKeyPhrases());
         writer.write("keyPhrases", keyPhrases);
-        
-        String relatedLinks = childrenMapper.writeValueAsString(new RelatedLinks(value.getRelatedLinks()));
+
+        String relatedLinks = mapper.writeValueAsString(entity.getRelatedLinks());
         writer.write("relatedLinks", relatedLinks);
-        
-        String topicRefs = childrenMapper.writeValueAsString(new TopicRefs(value.getTopicRefs()));
+
+        String topicRefs = mapper.writeValueAsString(entity.getTopicRefs());
         writer.write("topicRefs", topicRefs);
+
+        serializeItemSpecificFields(entity, writer);
     }
-    
+
     public <T extends Content> T deserialize(ColumnReader reader) throws Exception {
         Class type = Class.forName(reader.read("type"));
-        
-        T entity = (T) contentMapper.readValue(reader.read("obj"), type);
-        
-        Content.Clips clips = childrenMapper.readValue(reader.read("clips"), Clips.class);
-        entity.setClips(clips.values);
-        
-        Content.KeyPhrases keyPhrases = childrenMapper.readValue(reader.read("keyPhrases"), KeyPhrases.class);
-        entity.setClips(clips.values);
-        
-        RelatedLinks relatedLinks = childrenMapper.readValue(reader.read("relatedLinks"), RelatedLinks.class);
-        entity.setRelatedLinks(relatedLinks.values);
-        
-        TopicRefs topicRefs = childrenMapper.readValue(reader.read("topicRefs"), TopicRefs.class);
-        entity.setTopicRefs(topicRefs.values);
-        
+
+        T entity = (T) mapper.readValue(reader.read("obj"), type);
+
+        List clips = mapper.readValue(reader.read("clips"), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
+        entity.setClips(clips);
+
+        Set keyPhrases = mapper.readValue(reader.read("keyPhrases"), TypeFactory.defaultInstance().constructCollectionType(Set.class, KeyPhrase.class));
+        entity.setKeyPhrases(keyPhrases);
+
+        Set relatedLinks = mapper.readValue(reader.read("relatedLinks"), TypeFactory.defaultInstance().constructCollectionType(Set.class, RelatedLink.class));
+        entity.setRelatedLinks(relatedLinks);
+
+        List topicRefs = mapper.readValue(reader.read("topicRefs"), TypeFactory.defaultInstance().constructCollectionType(List.class, TopicRef.class));
+        entity.setTopicRefs(topicRefs);
+
+        deserializeItemSpecificFields(entity, reader);
+
         return entity;
     }
-    
-    protected static class IgnoringSerializer extends SerializerBase {
 
-        public IgnoringSerializer(Class clazz) {
-            super(clazz);
+    private <T extends Content> void serializeItemSpecificFields(T value, ColumnWriter writer) throws Exception {
+        if (value instanceof Item) {
+            Item item = (Item) value;
+
+            String people = mapper.writerWithType(TypeFactory.defaultInstance().constructCollectionType(List.class, CrewMember.class)).writeValueAsString(item.getPeople());
+            writer.write("people", people);
+
+            String versions = mapper.writeValueAsString(item.getVersions());
+            writer.write("versions", versions);
         }
-        
-        @Override
-        public void serialize(Object value, JsonGenerator generator, SerializerProvider provider) throws IOException, JsonGenerationException {
+    }
+
+    private <T extends Content> void deserializeItemSpecificFields(T entity, ColumnReader reader) throws Exception {
+        if (entity instanceof Item) {
+            Item item = (Item) entity;
+
+            List people = mapper.readValue(reader.read("people"), TypeFactory.defaultInstance().constructCollectionType(List.class, CrewMember.class));
+            item.setPeople(people);
+
+            Set versions = mapper.readValue(reader.read("versions"), TypeFactory.defaultInstance().constructCollectionType(Set.class, Version.class));
+            item.setVersions(versions);
         }
+    }
+
+    private static abstract class ContentDescriptor {
+
+        @JsonIgnore
+        ImmutableList<Clip> clips;
+        @JsonIgnore
+        Set<KeyPhrase> keyPhrases;
+        @JsonIgnore
+        Set<RelatedLink> relatedLinks;
+        @JsonIgnore
+        ImmutableList<TopicRef> topicRefs;
+    }
+
+    private static abstract class ItemDescriptor {
+
+        @JsonIgnore
+        Set<Version> versions;
+        @JsonIgnore
+        List<CrewMember> people;
+    }
+
+    private static abstract class CountryDescriptor {
+
+        @JsonCreator
+        CountryDescriptor(@JsonProperty(value = "code") String code, @JsonProperty(value = "name") String name) {
+        }
+    }
+
+    @JsonTypeInfo(use=JsonTypeInfo.Id.CLASS, include=JsonTypeInfo.As.PROPERTY, property="@class")
+    private static abstract class CrewMemberDescriptor {
     }
 }
