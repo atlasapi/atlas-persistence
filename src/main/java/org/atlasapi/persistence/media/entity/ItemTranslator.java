@@ -3,24 +3,38 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
+import org.atlasapi.media.entity.ReleaseDate;
+import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
+import org.atlasapi.media.entity.Subtitles;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
+import org.joda.time.LocalDate;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
+import com.metabroadcast.common.intl.Country;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
     
+    private static final String FILM_RELEASES_KEY = "releases";
+    private static final String FILM_CERTIFICATES_KEY = "certificates";
+    private static final String FILM_SUBTITLES_KEY = "subtitles";
+    private static final String FILM_LANGUAGES_KEY = "languages";
     private static final String PART_NUMBER = "partNumber";
     private static final String EPISODE_NUMBER = "episodeNumber";
     private static final String SERIES_NUMBER = "seriesNumber";
@@ -37,6 +51,28 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator;
     private final CrewMemberTranslator crewMemberTranslator = new CrewMemberTranslator();
+    
+    private final Function<DBObject, Subtitles> subtitlesFromDbo = new Function<DBObject, Subtitles>() {
+        @Override
+        public Subtitles apply(DBObject input) {
+            return new Subtitles(TranslatorUtils.toString(input, "language"));
+        }
+    };
+    private final Function<DBObject, Certificate> certificateFromDbo = new Function<DBObject, Certificate>() {
+        @Override
+        public Certificate apply(DBObject input) {
+            return new Certificate(TranslatorUtils.toString(input, "class"),Countries.fromCode(TranslatorUtils.toString(input, "country")));
+        }
+    };
+    private final Function<DBObject, ReleaseDate> releaseDateFromDbo = new Function<DBObject, ReleaseDate>() {
+        @Override
+        public ReleaseDate apply(DBObject input) {
+            LocalDate date = TranslatorUtils.toLocalDate(input, "date");
+            Country country = Countries.fromCode(TranslatorUtils.toString(input, "country"));
+            ReleaseType type = ReleaseType.valueOf(TranslatorUtils.toString(input, "type"));
+            return new ReleaseDate(date, country, type);
+        }
+    };
     
     ItemTranslator(ContentTranslator contentTranslator, NumberToShortStringCodec idCodec) {
 		this.contentTranslator = contentTranslator;
@@ -108,6 +144,18 @@ public class ItemTranslator implements ModelTranslator<Item> {
             Film film = (Film) item;
             film.setYear(TranslatorUtils.toInteger(dbObject, FILM_YEAR_KEY));
             film.setWebsiteUrl(TranslatorUtils.toString(dbObject, FILM_WEBSITE_URL_KEY));
+            if (dbObject.containsField(FILM_LANGUAGES_KEY)) {
+                film.setLanguages(TranslatorUtils.toSet(dbObject, FILM_LANGUAGES_KEY));
+            }
+            if (dbObject.containsField(FILM_SUBTITLES_KEY)) {
+                film.setSubtitles(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_SUBTITLES_KEY), subtitlesFromDbo));
+            }
+            if (dbObject.containsField(FILM_LANGUAGES_KEY)) {
+                film.setCertificates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_CERTIFICATES_KEY), certificateFromDbo));
+            } 
+            if (dbObject.containsField(FILM_RELEASES_KEY)) {
+                film.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
+            }
         }
         
         item.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
@@ -243,6 +291,18 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		    Film film = (Film) entity;
 		    TranslatorUtils.from(itemDbo, FILM_YEAR_KEY, film.getYear());
 		    TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
+		    if (!film.getLanguages().isEmpty()) {
+		        TranslatorUtils.fromSet(itemDbo, film.getLanguages(), FILM_LANGUAGES_KEY);
+		    }
+		    if (!film.getSubtitles().isEmpty()) {
+		        TranslatorUtils.from(itemDbo, FILM_SUBTITLES_KEY, subtitleDbo(film.getSubtitles()));
+		    }
+		    if (!film.getReleaseDates().isEmpty()) {
+		        TranslatorUtils.from(itemDbo, FILM_RELEASES_KEY, releaseDbo(film.getReleaseDates()));
+		    }
+		    if (!film.getCertificates().isEmpty()) {
+		        TranslatorUtils.from(itemDbo, FILM_CERTIFICATES_KEY, certificateDbo(film.getCertificates()));
+		    }
 		}
 		
 		if (! entity.people().isEmpty()) {
@@ -254,5 +314,43 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		}
 		
         return itemDbo;
+    }
+
+    private Set<DBObject> certificateDbo(Set<Certificate> certificates) {
+        return ImmutableSet.copyOf(Iterables.transform(certificates, new Function<Certificate, DBObject>() {
+
+            @Override
+            public DBObject apply(Certificate input) {
+                BasicDBObject dbo = new BasicDBObject();
+                TranslatorUtils.from(dbo, "class", input.classification());
+                TranslatorUtils.from(dbo, "country", input.country().code());
+                return dbo;
+            }
+        }));
+    }
+
+    private Set<DBObject> releaseDbo(Set<ReleaseDate> releaseDates) {
+        return ImmutableSet.copyOf(Iterables.transform(releaseDates, new Function<ReleaseDate, DBObject>() {
+
+            @Override
+            public DBObject apply(ReleaseDate input) {
+                BasicDBObject dbo = new BasicDBObject();
+                TranslatorUtils.fromLocalDate(dbo, "date", input.date());
+                TranslatorUtils.from(dbo, "country", input.country().code());
+                TranslatorUtils.from(dbo, "type", input.type().toString());
+                return dbo;
+            }
+        }));
+    }
+
+    private Set<DBObject> subtitleDbo(Set<Subtitles> subtitles) {
+        return ImmutableSet.copyOf(Iterables.transform(subtitles, new Function<Subtitles, DBObject>() {
+            @Override
+            public DBObject apply(Subtitles input) {
+                BasicDBObject dbo = new BasicDBObject();
+                TranslatorUtils.from(dbo, "language", input.code());
+                return dbo;
+            }
+        }));
     }
 }

@@ -24,7 +24,8 @@ import com.mongodb.DBObject;
 
 public class VersionTranslator implements ModelTranslator<Version> {
     
-	static final String ENCODINGS_KEY = "manifestedAs";
+	private static final String THREE_D_KEY = "threeD";
+    static final String ENCODINGS_KEY = "manifestedAs";
     static final String BROADCASTS_KEY = "broadcasts";
     private static final String PROVIDER_KEY = "provider";
     private static final String SEGMENT_EVENTS_KEY = "segmentEvents";
@@ -56,6 +57,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
 		}
 		
         entity.setPublishedDuration((Integer) dbObject.get("publishedDuration"));
+        entity.set3d(TranslatorUtils.toBoolean(dbObject, THREE_D_KEY));
 
         if(dbObject.get("restriction") != null) {
         	entity.setRestriction(restrictionTranslator.fromDBObject((DBObject) dbObject.get("restriction"), null));
@@ -102,7 +104,8 @@ public class VersionTranslator implements ModelTranslator<Version> {
         
         TranslatorUtils.from(dbObject, "duration", entity.getDuration());
         TranslatorUtils.from(dbObject, "publishedDuration", entity.getPublishedDuration());
-
+        TranslatorUtils.from(dbObject, THREE_D_KEY, entity.is3d());
+        
         if(entity.getRestriction() != null && entity.getRestriction().hasRestrictionInformation()) {
         	dbObject.put("restriction", restrictionTranslator.toDBObject(null, entity.getRestriction()));
         }
