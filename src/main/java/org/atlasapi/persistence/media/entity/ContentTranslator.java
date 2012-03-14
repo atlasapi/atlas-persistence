@@ -54,8 +54,12 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeKeyPhrases(dbObject, entity);
         decodeRelatedLinks(dbObject, entity);
         decodeTopics(dbObject, entity);
-                
-        entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
+        
+        try {
+            entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
+        } catch (ClassCastException e) {
+            entity.setId(TranslatorUtils.toDouble(dbObject, ID_KEY).longValue());
+        }
 
         return entity;
 	}

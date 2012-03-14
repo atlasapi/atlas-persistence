@@ -85,7 +85,13 @@ public class LookupEntryTranslator {
         }
         
         String uri = TranslatorUtils.toString(dbo, ID);
-        Long id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
+        
+        Long id;
+        try {
+            id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
+        } catch (ClassCastException cce) {
+            id = TranslatorUtils.toDouble(dbo, OPAQUE_ID).longValue();
+        }
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
         Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
