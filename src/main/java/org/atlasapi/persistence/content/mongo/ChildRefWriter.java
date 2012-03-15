@@ -16,6 +16,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.base.Maybe;
@@ -75,6 +76,7 @@ public class ChildRefWriter {
                 Brand brand = (Brand) container;
                 List<ChildRef> merged = mergeChildRefs(series.childRef(), brand.getSeriesRefs());
                 brand.setSeriesRefs(merged);
+                brand.setThisOrChildLastUpdated(laterOf(brand.getThisOrChildLastUpdated(), series.getThisOrChildLastUpdated()));
                 containers.save(containerTranslator.toDBO(container, true));
             } else {
                 throw new IllegalStateException(String.format("Container %s for series child ref %s is not brand", containerUri, series.getCanonicalUri()));
@@ -82,6 +84,16 @@ public class ChildRefWriter {
         } else {
             throw new IllegalStateException(String.format("Container %s not found in %s for series child ref %s", containerUri, containers.getName(), series.getCanonicalUri()));
         }
+    }
+
+    private DateTime laterOf(DateTime left, DateTime right) {
+        if (left == null) {
+            return right;
+        }
+        if (right == null) {
+            return left;
+        }
+        return left.isAfter(right) ? left : right;
     }
 
     public void includeItemInTopLevelContainer(Item item) {
@@ -101,6 +113,7 @@ public class ChildRefWriter {
 
     private void addChildRef(ChildRef ref, DBCollection collection, Container container) {
         List<ChildRef> merged = mergeChildRefs(ref, container.getChildRefs());
+        container.setThisOrChildLastUpdated(laterOf(container.getThisOrChildLastUpdated(), ref.getUpdated()));
         container.setChildRefs(merged);
         collection.save(containerTranslator.toDBO(container, true));
     }
