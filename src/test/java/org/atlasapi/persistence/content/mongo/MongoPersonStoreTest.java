@@ -65,13 +65,13 @@ public class MongoPersonStoreTest {
         for (int i=0; i<10; i++) {
             Item item = new Item("item"+i, "item"+i, Publisher.BBC);
             items.add(item.getCanonicalUri());
-            person.addContents(item.childRef());
+            person.addContent(item.childRef());
             store.updatePersonItems(person);
         }
         
         for (int i=0; i<10; i++) {
             Item item = new Item("item"+i, "item"+i, Publisher.BBC);
-            person.addContents(item.childRef());
+            person.addContent(item.childRef());
             store.updatePersonItems(person);
         }
         
