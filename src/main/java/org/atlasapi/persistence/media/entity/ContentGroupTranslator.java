@@ -15,12 +15,19 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
     private final ChildRefTranslator childTranslator;
 
     public ContentGroupTranslator() {
-        this.contentTranslator = new DescribedTranslator(new IdentifiedTranslator(true));
+        this(true);
+    }
+    
+    protected ContentGroupTranslator(boolean useAtlasIdAsId) {
+        this.contentTranslator = new DescribedTranslator(new IdentifiedTranslator(useAtlasIdAsId));
         this.childTranslator = new ChildRefTranslator();
     }
 
     @Override
     public ContentGroup fromDBObject(DBObject dbObject, ContentGroup entity) {
+        if (entity == null) {
+            entity = new ContentGroup();
+        }
         contentTranslator.fromDBObject(dbObject, entity);
         entity.setType(ContentGroup.Type.valueOf(TranslatorUtils.toString(dbObject, GROUP_TYPE_KEY)));
         entity.setContents(childTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, CONTENT_URIS_KEY)));

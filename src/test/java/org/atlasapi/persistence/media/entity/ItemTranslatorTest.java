@@ -30,6 +30,7 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import org.atlasapi.media.entity.ContentGroupRef;
 
 public class ItemTranslatorTest extends TestCase {
 	
@@ -142,6 +143,9 @@ public class ItemTranslatorTest extends TestCase {
         TopicRef topic2 = new TopicRef(2l, 0.02f, false);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
+        ContentGroupRef contentGroup1 = new ContentGroupRef(1L, "uri");
+        item.addContentGroupRef(contentGroup1);
+        
         DBObject dbObject = itemTranslator.toDBObject(null, item);
         
         collection.save(dbObject);
@@ -179,6 +183,8 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals("some guy", ((Actor) Iterables.getFirst(people, null)).character());
         
         assertEquals(item.getTopicRefs(), i.getTopicRefs());
+        
+        assertEquals(item.getContentGroupRefs(), i.getContentGroupRefs());
     }
     
     @SuppressWarnings("unchecked")

@@ -48,6 +48,10 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
 import com.mongodb.MongoReplicaSetProbe;
 import com.mongodb.WriteConcern;
+import org.atlasapi.persistence.content.ContentGroupResolver;
+import org.atlasapi.persistence.content.ContentGroupWriter;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
@@ -67,6 +71,15 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 	
 	private @Autowired ChannelResolver channelResolver;
+    
+    public @Bean ContentGroupWriter contentGroupWriter() {
+		ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
+		return contentGroupWriter;
+	}
+	
+	public @Bean ContentGroupResolver contentGroupResolver() {
+	    return new MongoContentGroupResolver(db);
+	}
 	
 	public @Bean ContentWriter contentWriter() {
 		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
