@@ -144,7 +144,7 @@ public class ItemTranslatorTest extends TestCase {
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         ContentGroupRef contentGroup1 = new ContentGroupRef(1L, "uri");
-        item.addContentGroupRef(contentGroup1);
+        item.addContentGroup(contentGroup1);
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
         
