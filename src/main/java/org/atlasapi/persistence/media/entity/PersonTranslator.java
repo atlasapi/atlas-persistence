@@ -15,7 +15,7 @@ import com.mongodb.DBObject;
 
 public class PersonTranslator implements ModelTranslator<Person> {
     
-    private ContentGroupTranslator contentGroupTranslator = new ContentGroupTranslator();
+    private ContentGroupTranslator contentGroupTranslator = new ContentGroupTranslator(false);
     private ChildRefTranslator childRefTranslator = new ChildRefTranslator();
     
     @Override
