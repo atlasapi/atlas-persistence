@@ -1,5 +1,8 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -15,7 +18,9 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,6 +52,7 @@ public class MongoContentWriterTest {
     private final DBCollection programmeGroups = mongo.collection("programmeGroups");
     
     private final ContainerTranslator containerTranslator = new ContainerTranslator(new SubstitutionTableNumberCodec());
+    private final ItemTranslator itemTranslator = new ItemTranslator(new SubstitutionTableNumberCodec());
     
     @BeforeClass
     public static void setUp() {
@@ -117,7 +123,7 @@ public class MongoContentWriterTest {
             fail("Expected an exception");
         } catch (IllegalStateException e) {
             
-            Brand retrievedBrand = (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
+            Brand retrievedBrand = retrieveBrand(brand);
             
             assertTrue(retrievedBrand.getChildRefs().isEmpty());
             
@@ -146,12 +152,12 @@ public class MongoContentWriterTest {
         
         assertNotNull(children.findOne(item.getCanonicalUri()));
         
-        Series retrievedSeries = (Series) containerTranslator.fromDB(programmeGroups.findOne(series.getCanonicalUri()));
+        Series retrievedSeries = retrieveSeries(series);
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
         
         assertNull(containers.findOne(series.getCanonicalUri()));
         
-        Brand retrievedBrand = (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
+        Brand retrievedBrand = retrieveBrand(brand);
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getChildRefs()).getUri());
         assertEquals(series.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getSeriesRefs()).getUri());
     }
@@ -173,7 +179,7 @@ public class MongoContentWriterTest {
         
         assertNotNull(children.findOne(item.getCanonicalUri()));
         
-        Series retrievedSeries = (Series) containerTranslator.fromDB(programmeGroups.findOne(series.getCanonicalUri()));
+        Series retrievedSeries = retrieveSeries(series);
         assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
         
         assertNotNull(containers.findOne(series.getCanonicalUri()));
@@ -221,8 +227,8 @@ public class MongoContentWriterTest {
         
         contentWriter.createOrUpdate(series);
 
-        Series retrievedTopLevelSeries = (Series) containerTranslator.fromDB(containers.findOne(series.getCanonicalUri()));
-        Series retrievedSeries = (Series) containerTranslator.fromDB(programmeGroups.findOne(series.getCanonicalUri()));
+        Series retrievedTopLevelSeries = retrieveTopLevelSeries(series);
+        Series retrievedSeries = retrieveSeries(series);
         
         assertNotNull(retrievedTopLevelSeries);
         assertNotNull(retrievedSeries);
@@ -234,11 +240,76 @@ public class MongoContentWriterTest {
         contentWriter.createOrUpdate(brand);
         contentWriter.createOrUpdate(series);
         
-        Brand retrievedBrand = (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
+        Brand retrievedBrand = retrieveBrand(brand);
 
         assertNull("top-level series not null", containers.findOne(series.getCanonicalUri()));
         assertNotNull(programmeGroups.findOne(series.getCanonicalUri()));
         assertNotNull(retrievedBrand);
         assertTrue(retrievedBrand.getSeriesRefs().size() == 1);
+    }
+    
+    @Test
+    public void testThisOrChildLastUpdatedFieldIsKeptInSync() {
+        
+        DateTime brandLastUpdated = new DateTime(100, DateTimeZones.UTC);
+        DateTime seriesLastUpdated = new DateTime(200, DateTimeZones.UTC);
+        DateTime episodeLastUpdated = new DateTime(300, DateTimeZones.UTC);
+
+        Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
+        brand.setLastUpdated(brandLastUpdated);
+        
+        contentWriter.createOrUpdate(brand);
+        
+        assertThat(retrieveBrand(brand).getThisOrChildLastUpdated(), is(equalTo(brandLastUpdated)));
+        
+        Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setLastUpdated(seriesLastUpdated );
+        series.setParent(brand);
+        
+        contentWriter.createOrUpdate(series);
+        
+        assertThat(retrieveSeries(series).getThisOrChildLastUpdated(), is(equalTo(seriesLastUpdated)));
+        assertThat(retrieveBrand(brand).getThisOrChildLastUpdated(), is(equalTo(seriesLastUpdated)));
+        
+        Episode episode = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        episode.setLastUpdated(episodeLastUpdated);
+        episode.setSeries(series);
+        episode.setContainer(brand);
+        
+        contentWriter.createOrUpdate(episode);
+        
+        assertThat(retrieveEpisode(episode).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated)));
+        assertThat(retrieveSeries(series).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated)));
+        assertThat(retrieveBrand(brand).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated)));
+        
+        Episode episode2 = new Episode("itemUri2", "itemCurie2", Publisher.BBC);
+        DateTime episodeLastUpdated2 = new DateTime(250, DateTimeZones.UTC);
+        episode2.setLastUpdated(episodeLastUpdated2);
+        episode2.setSeries(series);
+        episode2.setContainer(brand);
+        
+        contentWriter.createOrUpdate(episode2);
+        
+        assertThat(retrieveEpisode(episode).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated)));
+        assertThat(retrieveEpisode(episode2).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated2)));
+        assertThat(retrieveSeries(series).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated)));
+        assertThat(retrieveBrand(brand).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated)));
+        
+    }
+
+    public Brand retrieveBrand(Brand brand) {
+        return (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
+    }
+
+    public Series retrieveSeries(Series series) {
+        return (Series) containerTranslator.fromDB(programmeGroups.findOne(series.getCanonicalUri()));
+    }
+
+    public Series retrieveTopLevelSeries(Series series) {
+        return (Series) containerTranslator.fromDB(containers.findOne(series.getCanonicalUri()));
+    }
+    
+    private Episode retrieveEpisode(Episode episode) {
+        return (Episode) itemTranslator.fromDB(children.findOne(episode.getCanonicalUri()));
     }
 }
