@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content.mongo;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -80,5 +81,22 @@ public class MongoContentGroupPersistenceTest {
         found = (ContentGroup) resolver.findByCanonicalUris(ImmutableList.of("group")).getFirstValue().requireValue();
 
         assertEquals(contentGroup.getThisOrChildLastUpdated(), found.getThisOrChildLastUpdated());
+    }
+    
+    @Test
+    public void testWriteContentGroupAndFindAll() {
+        ContentGroup contentGroup1 = new ContentGroup("group1", Publisher.BBC);
+        ChildRef child1 = new ChildRef("child1", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        contentGroup1.addContents(ImmutableList.of(child1));
+        
+        ContentGroup contentGroup2 = new ContentGroup("group2", Publisher.BBC);
+        ChildRef child2 = new ChildRef("child2", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        contentGroup2.addContents(ImmutableList.of(child2));
+
+        writer.createOrUpdate(contentGroup1);
+        writer.createOrUpdate(contentGroup2);
+
+        Iterable<ContentGroup> results = resolver.findAll();
+        assertEquals(2, Iterables.size(results));
     }
 }

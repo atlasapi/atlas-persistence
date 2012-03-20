@@ -11,6 +11,9 @@ import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.media.entity.ContentGroupTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import com.mongodb.DBCursor;
+import java.util.HashSet;
+import java.util.Set;
 
 public class MongoContentGroupResolver implements ContentGroupResolver {
 
@@ -51,5 +54,18 @@ public class MongoContentGroupResolver implements ContentGroupResolver {
         }
 
         return results.build();
+    }
+
+    @Override
+    public Iterable<ContentGroup> findAll() {
+        Set<ContentGroup> results = new HashSet<ContentGroup>();
+
+        DBCursor cursor = contentGroups.find();
+        for (DBObject current : cursor) {
+            ContentGroup contentGroup = contentGroupTranslator.fromDBObject(current, new ContentGroup());
+            results.add(contentGroup);
+        }
+
+        return results;
     }
 }
