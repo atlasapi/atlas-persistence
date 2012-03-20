@@ -3,10 +3,10 @@ package org.atlasapi.persistence.output;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CURIE;
 
-import org.atlasapi.media.entity.ParentRef;
+import org.atlasapi.media.content.ParentRef;
+import org.atlasapi.media.content.util.ContentCategory;
 import org.atlasapi.media.entity.simple.BrandSummary;
 import org.atlasapi.media.entity.simple.SeriesSummary;
-import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Optional;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;

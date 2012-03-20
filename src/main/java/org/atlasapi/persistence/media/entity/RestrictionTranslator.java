@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Restriction;
+import org.atlasapi.media.content.Restriction;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;

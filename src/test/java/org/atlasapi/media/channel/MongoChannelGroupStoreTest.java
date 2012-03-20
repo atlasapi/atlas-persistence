@@ -6,7 +6,7 @@ import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertTrue;
 
 import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Publisher;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

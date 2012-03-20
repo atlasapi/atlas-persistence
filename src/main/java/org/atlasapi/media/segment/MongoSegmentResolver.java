@@ -8,7 +8,7 @@ import static org.atlasapi.media.segment.SegmentTranslator.SOURCE_ID_KEY;
 
 import java.util.Map;
 
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Publisher;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;

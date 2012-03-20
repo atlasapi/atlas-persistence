@@ -2,11 +2,11 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
-import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.KeyPhrase;
-import org.atlasapi.media.entity.RelatedLink;
-import org.atlasapi.media.entity.TopicRef;
+import org.atlasapi.media.content.Clip;
+import org.atlasapi.media.content.Content;
+import org.atlasapi.media.content.ContentGroupRef;
+import org.atlasapi.media.content.KeyPhrase;
+import org.atlasapi.media.content.RelatedLink;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -19,7 +19,7 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroupRef;
+import org.atlasapi.media.topic.TopicRef;
 
 public class ContentTranslator implements ModelTranslator<Content> {
 

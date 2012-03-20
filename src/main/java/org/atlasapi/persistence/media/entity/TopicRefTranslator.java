@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.TopicRef;
+import org.atlasapi.media.topic.TopicRef;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;

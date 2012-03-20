@@ -5,17 +5,17 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
-import org.atlasapi.media.entity.Actor;
-import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.TopicRef;
-import org.atlasapi.media.entity.CrewMember;
-import org.atlasapi.media.entity.Encoding;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Location;
-import org.atlasapi.media.entity.Policy;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.content.Actor;
+import org.atlasapi.media.content.Broadcast;
+import org.atlasapi.media.content.Clip;
+import org.atlasapi.media.content.ContentGroupRef;
+import org.atlasapi.media.content.CrewMember;
+import org.atlasapi.media.content.Encoding;
+import org.atlasapi.media.content.Item;
+import org.atlasapi.media.content.Location;
+import org.atlasapi.media.content.Policy;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.Version;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
@@ -30,7 +30,7 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroupRef;
+import org.atlasapi.media.topic.TopicRef;
 
 public class ItemTranslatorTest extends TestCase {
 	

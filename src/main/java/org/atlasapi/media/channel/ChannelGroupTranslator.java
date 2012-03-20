@@ -3,7 +3,7 @@ package org.atlasapi.media.channel;
 import java.util.Set;
 
 import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 

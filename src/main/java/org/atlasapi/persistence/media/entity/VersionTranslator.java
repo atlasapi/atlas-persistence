@@ -3,11 +3,11 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Encoding;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Restriction;
-import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.content.Broadcast;
+import org.atlasapi.media.content.Encoding;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.Restriction;
+import org.atlasapi.media.content.Version;
 import org.atlasapi.media.segment.SegmentEvent;
 import org.atlasapi.media.segment.SegmentEventTranslator;
 import org.atlasapi.persistence.ModelTranslator;

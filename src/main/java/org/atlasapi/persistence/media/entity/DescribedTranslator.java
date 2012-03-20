@@ -1,11 +1,11 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Described;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Specialization;
+import org.atlasapi.media.content.Described;
+import org.atlasapi.media.content.EntityType;
+import org.atlasapi.media.content.Identified;
+import org.atlasapi.media.content.MediaType;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.Specialization;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;

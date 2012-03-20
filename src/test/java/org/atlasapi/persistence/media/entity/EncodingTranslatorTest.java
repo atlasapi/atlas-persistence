@@ -2,8 +2,8 @@ package org.atlasapi.persistence.media.entity;
 
 import junit.framework.TestCase;
 
-import org.atlasapi.media.entity.Encoding;
-import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.content.Encoding;
+import org.atlasapi.media.content.Location;
 
 import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.MongoTestHelper;

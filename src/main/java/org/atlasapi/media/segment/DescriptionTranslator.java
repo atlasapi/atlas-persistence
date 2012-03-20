@@ -1,8 +1,8 @@
 package org.atlasapi.media.segment;
 
-import static org.atlasapi.media.entity.Description.description;
+import static org.atlasapi.media.content.Description.description;
 
-import org.atlasapi.media.entity.Description;
+import org.atlasapi.media.content.Description;
 
 import com.google.common.base.Strings;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;

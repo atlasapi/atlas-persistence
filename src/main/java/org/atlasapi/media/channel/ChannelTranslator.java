@@ -2,9 +2,9 @@ package org.atlasapi.media.channel;
 
 import static com.google.common.collect.Iterables.transform;
 
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Identified;
+import org.atlasapi.media.content.MediaType;
+import org.atlasapi.media.content.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 

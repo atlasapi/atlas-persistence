@@ -3,7 +3,8 @@ package org.atlasapi.persistence.media.entity;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroupRef;
+
+import org.atlasapi.media.content.ContentGroupRef;
 
 public class ContentGroupRefTranslator {
 

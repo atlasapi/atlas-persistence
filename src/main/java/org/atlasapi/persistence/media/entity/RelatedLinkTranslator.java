@@ -1,9 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
-import static org.atlasapi.media.entity.RelatedLink.relatedLink;
+import static org.atlasapi.media.content.RelatedLink.relatedLink;
 
-import org.atlasapi.media.entity.RelatedLink;
-import org.atlasapi.media.entity.RelatedLink.LinkType;
+import org.atlasapi.media.content.RelatedLink;
+import org.atlasapi.media.content.RelatedLink.LinkType;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;

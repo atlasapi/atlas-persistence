@@ -3,7 +3,7 @@ package org.atlasapi.media.segment;
 import java.math.BigInteger;
 
 import org.atlasapi.media.SegmentType;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Publisher;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.Duration;
 

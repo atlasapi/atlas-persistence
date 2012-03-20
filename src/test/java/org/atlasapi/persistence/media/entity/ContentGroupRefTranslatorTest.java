@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.TopicRef;
 import org.junit.Test;
 
 import com.metabroadcast.common.persistence.MongoTestHelper;
@@ -8,7 +7,9 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroupRef;
+
+import org.atlasapi.media.content.ContentGroupRef;
+import org.atlasapi.media.topic.TopicRef;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

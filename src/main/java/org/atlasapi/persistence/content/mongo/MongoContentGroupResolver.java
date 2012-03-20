@@ -1,13 +1,15 @@
 package org.atlasapi.persistence.content.mongo;
 
-import org.atlasapi.persistence.content.ResolvedContent;
-import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroup;
-import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.ContentGroupResolver;
+
+import org.atlasapi.media.content.ContentGroup;
+import org.atlasapi.media.content.ContentGroupResolver;
+import org.atlasapi.media.content.MongoContentTables;
+import org.atlasapi.media.content.ResolvedContent;
+import org.atlasapi.media.content.ResolvedContent.ResolvedContentBuilder;
+import org.atlasapi.media.content.util.ContentCategory;
 import org.atlasapi.persistence.media.entity.ContentGroupTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;

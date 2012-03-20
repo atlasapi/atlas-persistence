@@ -2,11 +2,11 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.Set;
 
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Identified;
+import org.atlasapi.media.content.LookupRef;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.util.ContentCategory;
 import org.atlasapi.persistence.ModelTranslator;
-import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;

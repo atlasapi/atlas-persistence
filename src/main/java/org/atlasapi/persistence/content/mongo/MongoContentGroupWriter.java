@@ -1,12 +1,14 @@
 package org.atlasapi.persistence.content.mongo;
 
-import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.Clock;
 import com.mongodb.DBCollection;
-import org.atlasapi.media.entity.ContentGroup;
-import org.atlasapi.persistence.content.ContentGroupWriter;
+
+import org.atlasapi.media.content.ContentGroup;
+import org.atlasapi.media.content.ContentGroupWriter;
+import org.atlasapi.media.content.MongoContentTables;
+import org.atlasapi.media.content.util.ContentCategory;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.media.entity.ContentGroupTranslator;
 import static com.google.common.base.Preconditions.checkNotNull;

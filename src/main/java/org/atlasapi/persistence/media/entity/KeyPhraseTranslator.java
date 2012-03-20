@@ -1,7 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.KeyPhrase;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.KeyPhrase;
+import org.atlasapi.media.content.Publisher;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObjectBuilder;

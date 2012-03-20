@@ -9,9 +9,9 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Identified;
+import org.atlasapi.media.content.MediaType;
+import org.atlasapi.media.content.Publisher;
 import org.joda.time.Duration;
 import org.junit.BeforeClass;
 import org.junit.Test;

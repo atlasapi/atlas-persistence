@@ -2,8 +2,8 @@ package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.TransportSubType;
 import org.atlasapi.media.TransportType;
-import org.atlasapi.media.entity.Location;
-import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.content.Location;
+import org.atlasapi.media.content.Policy;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;

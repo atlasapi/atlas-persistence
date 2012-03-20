@@ -3,7 +3,7 @@ package org.atlasapi.persistence.shorturls;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.content.Identified;
 
 import com.google.common.base.Strings;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
