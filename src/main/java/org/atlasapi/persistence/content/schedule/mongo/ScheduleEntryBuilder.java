@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Broadcast;
@@ -18,9 +20,12 @@ import org.joda.time.Interval;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.time.DateTimeZones;
 
 public class ScheduleEntryBuilder {
+    
+    private final Log log = LogFactory.getLog(ScheduleEntryBuilder.class);
     
     private final static long BIN_MILLIS = Duration.standardHours(1).getMillis();
     
@@ -44,11 +49,14 @@ public class ScheduleEntryBuilder {
             for (Version version : item.nativeVersions()) {
                 for (Broadcast broadcast : version.getBroadcasts()) {  
                     ItemRefAndBroadcast itemAndBroadcast = new ItemRefAndBroadcast(item, broadcast);
-                    
-                    Channel channel = channelResolver.fromUri(broadcast.getBroadcastOn()).requireValue();
                     Publisher publisher = item.getPublisher();
                     
-                    toScheduleEntryFromBroadcast(channel, publisher, itemAndBroadcast, entries);
+                    Maybe<Channel> channel = channelResolver.fromUri(broadcast.getBroadcastOn());
+                    if (channel.hasValue()) {
+                        toScheduleEntryFromBroadcast(channel.requireValue(), publisher, itemAndBroadcast, entries);
+                    } else {
+                        log.warn("No channel for " + broadcast.getTransmissionTime().toString() + " of " + item.getCanonicalUri());
+                    }
                 }
             }
         }
