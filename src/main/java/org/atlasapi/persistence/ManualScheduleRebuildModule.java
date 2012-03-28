@@ -41,7 +41,7 @@ public class ManualScheduleRebuildModule {
         scheduler.schedule(bbcRepopulator, RepetitionRules.every(Duration.standardHours(2)));
         
         ScheduledTask bbcFullRepopulator = 
-                new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC), Duration.standardDays(30*365))
+                new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC), Duration.standardDays(100*365))
                 .withName("Big BBC Mongo Schedule repopulator");
             
         scheduler.schedule(bbcFullRepopulator, RepetitionRules.NEVER);
