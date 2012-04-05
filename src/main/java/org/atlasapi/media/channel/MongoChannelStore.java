@@ -7,7 +7,6 @@ import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
-import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.Duration;
 
 import com.google.common.base.Function;
