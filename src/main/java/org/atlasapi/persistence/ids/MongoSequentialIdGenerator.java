@@ -3,16 +3,18 @@ package org.atlasapi.persistence.ids;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.update;
 
 import java.math.BigInteger;
+import java.net.UnknownHostException;
 
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 
 public class MongoSequentialIdGenerator implements IdGenerator {
@@ -48,7 +50,11 @@ public class MongoSequentialIdGenerator implements IdGenerator {
     }
 
     public long generateRaw() {
-        return TranslatorUtils.toLong(collection.findAndModify(new MongoQueryBuilder().idEquals(idGroup).build(), update().incField(VALUE_KEY, 1).build()), VALUE_KEY);
+        DBObject result = collection.findAndModify(new MongoQueryBuilder().idEquals(idGroup).build(), update().incField(VALUE_KEY, 1).build());
+        Object id = result.get(VALUE_KEY);
+        if (id instanceof Long) {
+            return (Long) id;
+        }
+        return ((Double)id).longValue();
     }
-
 }
