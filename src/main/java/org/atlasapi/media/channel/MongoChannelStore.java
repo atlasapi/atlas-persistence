@@ -26,7 +26,7 @@ import com.mongodb.DBObject;
 
 public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 
-	private static final String COLLECTION = "channels";
+	public static final String COLLECTION = "channels";
 	
 	private final DBCollection collection;
 	private static final ChannelTranslator translator = new ChannelTranslator();
