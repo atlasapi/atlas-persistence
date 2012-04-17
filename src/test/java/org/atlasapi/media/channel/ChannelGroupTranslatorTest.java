@@ -20,7 +20,7 @@ public class ChannelGroupTranslatorTest {
     public void testEncodesAndDecodedChannelGroup() {
         
         ChannelGroup channelGroup = new ChannelGroup();
-        channelGroup.setCountries(ImmutableSet.of(Countries.US,Countries.GB));
+        channelGroup.setAvailableCountries(ImmutableSet.of(Countries.US,Countries.GB));
         channelGroup.setTitle("Title");
         channelGroup.setPublisher(Publisher.BBC);
         channelGroup.setChannels(ImmutableList.of(1234L, 1235L, 1236L));
@@ -29,7 +29,7 @@ public class ChannelGroupTranslatorTest {
         
         ChannelGroup decoded = channelGroupTranslator.fromDBObject(encoded, null);
         
-        assertThat(decoded.getCountries(), is(equalTo(channelGroup.getCountries())));
+        assertThat(decoded.getAvailableCountries(), is(equalTo(channelGroup.getAvailableCountries())));
         assertThat(decoded.getPublisher(), is(equalTo(channelGroup.getPublisher())));
         assertThat(decoded.getTitle(), is(equalTo(channelGroup.getTitle())));
         assertThat(decoded.getChannels(), is(equalTo(channelGroup.getChannels())));
