@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
+import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.Test;
 
@@ -24,6 +25,7 @@ public class ChannelGroupTranslatorTest {
         channelGroup.setTitle("Title");
         channelGroup.setPublisher(Publisher.BBC);
         channelGroup.setChannels(ImmutableList.of(1234L, 1235L, 1236L));
+        channelGroup.setType(ChannelGroupType.PLATFORM);
         
         DBObject encoded = channelGroupTranslator.toDBObject(null, channelGroup);
         
