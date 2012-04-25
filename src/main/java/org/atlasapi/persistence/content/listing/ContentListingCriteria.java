@@ -9,6 +9,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 /**
@@ -45,8 +46,8 @@ public class ContentListingCriteria {
             return this;
         }
         
-        public Builder forContent(List<ContentCategory> categories) {
-            this.categories.addAll(categories);
+        public Builder forContent(Iterable<ContentCategory> categories) {
+            Iterables.addAll(this.categories, categories);
             return this;
         }
         
