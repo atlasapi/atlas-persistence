@@ -58,14 +58,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
 		model.setTitle((String) dbObject.get(TITLE));
 		model.setKey((String) dbObject.get(KEY));
-<<<<<<< HEAD
-		model.setAvailableOn(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
-=======
-<<<<<<< HEAD
-=======
 		model.setAvailableFrom(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
->>>>>>> 4c84c0d... Update channel and group translators to cope with model changes
->>>>>>> Update channel and group translators to cope with model changes
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
 		model.setBroadcaster(broadcaster != null ? Publisher.fromKey(broadcaster).valueOrNull() : null);
