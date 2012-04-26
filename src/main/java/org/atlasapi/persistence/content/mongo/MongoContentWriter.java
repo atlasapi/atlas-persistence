@@ -11,6 +11,7 @@ import java.util.Set;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
+import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
@@ -18,7 +19,6 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.media.segment.DescriptionTranslator;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -177,6 +177,10 @@ public class MongoContentWriter implements ContentWriter {
     
     private void setThisOrChildLastUpdated(Item item) {
         DateTime thisOrChildLastUpdated = thisOrChildLastUpdated(null, item.getLastUpdated());
+        
+        for (Clip clip : item.getClips()) {
+            thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, clip.getLastUpdated());
+        }
 
         for (Version version : item.getVersions()) {
             thisOrChildLastUpdated = thisOrChildLastUpdated(thisOrChildLastUpdated, version.getLastUpdated());
