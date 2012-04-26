@@ -2,6 +2,7 @@ package org.atlasapi.media.channel;
 
 import java.util.Set;
 
+import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
@@ -14,6 +15,7 @@ import com.mongodb.DBObject;
 
 public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
 
+    private static final String TYPE_KEY = "type";
     private static final String SOURCE_KEY = "source";
     private static final String TITLE_KEY = "title";
     private static final String COUNTRIES_KEY = "countries";
@@ -33,10 +35,12 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             TranslatorUtils.from(dbObject, SOURCE_KEY, model.getPublisher().key());
         }
         
+        TranslatorUtils.from(dbObject, TYPE_KEY, model.getType().key());
+        
         TranslatorUtils.from(dbObject, TITLE_KEY, model.getTitle());
         
-        if (model.getCountries() != null) {
-            TranslatorUtils.fromSet(dbObject, Countries.toCodes(model.getCountries()), COUNTRIES_KEY);
+        if (model.getAvailableCountries() != null) {
+            TranslatorUtils.fromSet(dbObject, Countries.toCodes(model.getAvailableCountries()), COUNTRIES_KEY);
         }
         
         if (model.getChannels() != null && !model.getChannels().isEmpty()) {
@@ -64,11 +68,13 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             model.setPublisher(Publisher.fromKey(source).valueOrNull());
         }
         
+        model.setType(ChannelGroupType.fromKey(TranslatorUtils.toString(dbObject, TYPE_KEY)));
+        
         model.setTitle(TranslatorUtils.toString(dbObject, TITLE_KEY));
         
         Set<String> countryCodes = TranslatorUtils.toSet(dbObject, COUNTRIES_KEY);
         if (countryCodes != null) {
-            model.setCountries(Countries.fromCodes(countryCodes));
+            model.setAvailableCountries(Countries.fromCodes(countryCodes));
         }
         
         if (dbObject.containsField(CHANNELS_KEY)) {

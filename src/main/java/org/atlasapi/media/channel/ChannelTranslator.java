@@ -39,7 +39,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.mediaType().name());
 		TranslatorUtils.from(dbObject, PUBLISHER, model.publisher().key());
 		TranslatorUtils.from(dbObject, BROADCASTER, model.broadcaster() != null ? model.broadcaster().key() : null);
-		TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableOn(), Publisher.TO_KEY)), AVAILABLE_ON);
+		TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableFrom(), Publisher.TO_KEY)), AVAILABLE_ON);
 		TranslatorUtils.from(dbObject, KEY, model.key());
 		return dbObject;
 	}
@@ -58,7 +58,14 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
 		model.setTitle((String) dbObject.get(TITLE));
 		model.setKey((String) dbObject.get(KEY));
+<<<<<<< HEAD
 		model.setAvailableOn(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
+=======
+<<<<<<< HEAD
+=======
+		model.setAvailableFrom(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
+>>>>>>> 4c84c0d... Update channel and group translators to cope with model changes
+>>>>>>> Update channel and group translators to cope with model changes
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
 		model.setBroadcaster(broadcaster != null ? Publisher.fromKey(broadcaster).valueOrNull() : null);
