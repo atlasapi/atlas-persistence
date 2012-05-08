@@ -71,6 +71,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
         keyspace = context.getEntity();
     }
 
+    public void close() {
+        context.shutdown();
+    }
+
     @Override
     public void createOrUpdate(Item item) {
         try {
@@ -172,8 +176,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 Item item = mapper.readValue(columns.getResult().getColumnByName(ITEM_COLUMN).getByteArrayValue(), Item.class);
-                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), new TypeReference<Set<Clip>>(){});
-                Set<Version> versions = mapper.readValue(columns.getResult().getColumnByName(VERSIONS_COLUMN).getByteArrayValue(), new TypeReference<Set<Version>>(){});
+                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), new TypeReference<Set<Clip>>() {
+                });
+                Set<Version> versions = mapper.readValue(columns.getResult().getColumnByName(VERSIONS_COLUMN).getByteArrayValue(), new TypeReference<Set<Version>>() {
+                });
                 item.setClips(clips);
                 item.setVersions(versions);
                 return item;
@@ -191,8 +197,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 Container container = mapper.readValue(columns.getResult().getColumnByName(ITEM_COLUMN).getByteArrayValue(), Container.class);
-                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), new TypeReference<Set<Clip>>(){});
-                Set<ChildRef> children = mapper.readValue(columns.getResult().getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), new TypeReference<Set<ChildRef>>(){});
+                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), new TypeReference<Set<Clip>>() {
+                });
+                Set<ChildRef> children = mapper.readValue(columns.getResult().getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), new TypeReference<Set<ChildRef>>() {
+                });
                 container.setClips(clips);
                 container.setChildRefs(children);
                 return container;
