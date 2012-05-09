@@ -17,7 +17,7 @@ public class CassandraPersistenceModule {
     private @Value("${cassandra.connectionTimeout}") int connectionTimeout;
     private @Value("${cassandra.requestTimeout}") int requestTimeout;
     
-    private @Bean CassandraContentStore cassandraContentStore() {
+    public @Bean CassandraContentStore cassandraContentStore() {
         return new CassandraContentStore(Lists.newArrayList(Splitter.on(',').split(seeds)), port, Runtime.getRuntime().availableProcessors() * 10, connectionTimeout, requestTimeout);
     }
 }
