@@ -1,57 +1,48 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.Set;
 
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.ContentGroup;
-import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 
-import com.google.common.collect.Sets;
-import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBObject;
+import org.atlasapi.media.entity.ChildRef;
+import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.SortKey;
+import org.joda.time.DateTime;
 
 public class ContentGroupTranslatorTest extends TestCase {
-	
-    private final PersonTranslator pt = new PersonTranslator();
-    
-    public void testFromPlaylist() throws Exception {
-        Person playlist = new Person();
-        playlist.setCanonicalUri("uri");
-        playlist.setFirstSeen(new SystemClock().now());
-        
-        
-        DBObject obj = pt.toDBObject(null, playlist);
-        assertEquals("uri", obj.get(IdentifiedTranslator.ID));
+
+    private final ContentGroupTranslator translator = new ContentGroupTranslator();
+
+    public void testFromGroup() throws Exception {
+        ContentGroup group = new ContentGroup();
+        group.setId(1L);
+        group.setCanonicalUri("uri");
+
+
+        DBObject obj = translator.toDBObject(null, group);
+        assertEquals(1L, obj.get(IdentifiedTranslator.ID));
+        assertEquals("uri", obj.get(IdentifiedTranslator.CANONICAL_URL));
     }
-    
-    public void testToPlaylist() throws Exception {
-        Person playlist = new Person();
-        playlist.setCanonicalUri("uri");
-        playlist.setFirstSeen(new SystemClock().now());
-        playlist.setDescription("description");
-        playlist.setTitle("title");
-        playlist.setPublisher(Publisher.BBC);
-        
-        Set<String> genres = Sets.newHashSet();
-        genres.add("genre");
-        playlist.setGenres(genres);
-        
-        Set<String> tags = Sets.newHashSet();
-        tags.add("tag");
-        playlist.setGenres(tags);
-        
-        DBObject obj = pt.toDBObject(null, playlist);
-        
-        ContentGroup p = pt.fromDBObject(obj, null);
-        assertEquals(playlist.getCanonicalUri(), p.getCanonicalUri());
-        assertEquals(playlist.getFirstSeen(), p.getFirstSeen());
-        assertEquals(playlist.getDescription(), p.getDescription());
-        assertEquals(playlist.getTitle(), p.getTitle());
-        assertEquals(playlist.getPublisher(), p.getPublisher());
-        assertEquals(playlist.getContents(), p.getContents());
-        assertEquals(playlist.getGenres(), p.getGenres());
-        assertEquals(playlist.getTags(), p.getTags());
+
+    public void testToGroup() throws Exception {
+        ContentGroup group = new ContentGroup();
+        group.setCanonicalUri("uri");
+        group.setDescription("description");
+        group.setTitle("title");
+        group.setPublisher(Publisher.BBC);
+        group.addContent(new ChildRef("child", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM));
+
+        DBObject obj = translator.toDBObject(null, group);
+
+        ContentGroup to = translator.fromDBObject(obj, new ContentGroup());
+
+        assertEquals(group.getCanonicalUri(), to.getCanonicalUri());
+        assertEquals(group.getDescription(), to.getDescription());
+        assertEquals(group.getTitle(), to.getTitle());
+        assertEquals(group.getPublisher(), to.getPublisher());
+        assertEquals(group.getContents(), to.getContents());
     }
 }

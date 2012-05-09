@@ -4,6 +4,7 @@ import static org.atlasapi.persistence.content.ContentCategory.CHILD_ITEM;
 import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
 import static org.atlasapi.persistence.content.ContentCategory.PROGRAMME_GROUP;
 import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
+import static org.atlasapi.persistence.content.ContentCategory.CONTENT_GROUP;
 
 import org.atlasapi.persistence.content.ContentCategory;
 
@@ -17,6 +18,7 @@ public class MongoContentTables {
 
     public MongoContentTables(DatabasedMongo mongo) {
         this.tableMap = ImmutableMap.of(
+                CONTENT_GROUP, mongo.collection(CONTENT_GROUP.tableName()),
                 CONTAINER, mongo.collection(CONTAINER.tableName()),
                 TOP_LEVEL_ITEM, mongo.collection(TOP_LEVEL_ITEM.tableName()),
                 PROGRAMME_GROUP,mongo.collection(PROGRAMME_GROUP.tableName()),
