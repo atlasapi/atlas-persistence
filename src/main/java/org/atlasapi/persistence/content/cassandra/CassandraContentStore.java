@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
@@ -66,11 +68,13 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
         this.requestTimeout = requestTimeout;
     }
 
+    @PostConstruct
     public void init() {
         context.start();
         keyspace = context.getEntity();
     }
 
+    @PreDestroy
     public void close() {
         context.shutdown();
     }
