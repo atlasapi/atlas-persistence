@@ -180,7 +180,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 Item item = mapper.readValue(columns.getResult().getColumnByName(ITEM_COLUMN).getByteArrayValue(), Item.class);
-                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Clip.class));
+                List<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
                 Set<Version> versions = mapper.readValue(columns.getResult().getColumnByName(VERSIONS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Version.class));
                 item.setClips(clips);
                 item.setVersions(versions);
@@ -199,8 +199,8 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 Container container = mapper.readValue(columns.getResult().getColumnByName(ITEM_COLUMN).getByteArrayValue(), Container.class);
-                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Clip.class));
-                Set<ChildRef> children = mapper.readValue(columns.getResult().getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, ChildRef.class));
+                List<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
+                List<ChildRef> children = mapper.readValue(columns.getResult().getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, ChildRef.class));
                 container.setClips(clips);
                 container.setChildRefs(children);
                 return container;
