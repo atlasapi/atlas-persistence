@@ -1,11 +1,11 @@
 package org.atlasapi.persistence.content.cassandra;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -180,10 +180,8 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 Item item = mapper.readValue(columns.getResult().getColumnByName(ITEM_COLUMN).getByteArrayValue(), Item.class);
-                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), new TypeReference<Set<Clip>>() {
-                });
-                Set<Version> versions = mapper.readValue(columns.getResult().getColumnByName(VERSIONS_COLUMN).getByteArrayValue(), new TypeReference<Set<Version>>() {
-                });
+                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Clip.class));
+                Set<Version> versions = mapper.readValue(columns.getResult().getColumnByName(VERSIONS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Version.class));
                 item.setClips(clips);
                 item.setVersions(versions);
                 return item;
@@ -201,10 +199,8 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 Container container = mapper.readValue(columns.getResult().getColumnByName(ITEM_COLUMN).getByteArrayValue(), Container.class);
-                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), new TypeReference<Set<Clip>>() {
-                });
-                Set<ChildRef> children = mapper.readValue(columns.getResult().getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), new TypeReference<Set<ChildRef>>() {
-                });
+                Set<Clip> clips = mapper.readValue(columns.getResult().getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Clip.class));
+                Set<ChildRef> children = mapper.readValue(columns.getResult().getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, ChildRef.class));
                 container.setClips(clips);
                 container.setChildRefs(children);
                 return container;
