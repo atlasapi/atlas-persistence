@@ -43,6 +43,8 @@ import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.serialization.json.JsonFactory;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
+import org.atlasapi.serialization.json.ContainerConfiguration;
+import org.atlasapi.serialization.json.ItemConfiguration;
 
 /**
  */
@@ -121,7 +123,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
 
-        FilterProvider filters = new SimpleFilterProvider().addFilter("Item", SimpleBeanPropertyFilter.serializeAllExcept("clips", "versions"));
+        FilterProvider filters = new SimpleFilterProvider().addFilter(ItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ItemConfiguration.CLIPS_FILTER, ItemConfiguration.VERSIONS_FILTER));
         ObjectWriter writer = mapper.writer(filters);
         byte[] itemBytes = writer.writeValueAsBytes(item);
         byte[] clipsBytes = writer.writeValueAsBytes(item.getClips());
@@ -144,7 +146,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
 
-        FilterProvider filters = new SimpleFilterProvider().addFilter("Container", SimpleBeanPropertyFilter.serializeAllExcept("clips", "subItems"));
+        FilterProvider filters = new SimpleFilterProvider().addFilter(ContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ContainerConfiguration.CLIPS_FILTER, ContainerConfiguration.SUB_ITEMS_FILTER));
         ObjectWriter writer = mapper.writer(filters);
         byte[] containerBytes = writer.writeValueAsBytes(container);
         byte[] clipsBytes = writer.writeValueAsBytes(container.getClips());
