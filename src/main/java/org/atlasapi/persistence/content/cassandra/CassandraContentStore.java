@@ -115,11 +115,16 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         try {
             Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
             for (String uri : canonicalUris) {
-                Content found = readContent(uri);
+                Content foundContent = readContent(uri);
+                Content foundContainer = readContainer(uri);
                 //
-                if (found != null) {
-                    results.put(uri, Maybe.<Identified>just(found));
-                } else {
+                if (foundContent != null) {
+                    results.put(uri, Maybe.<Identified>just(foundContent));
+                } 
+                if (foundContainer != null) {
+                    results.put(uri, Maybe.<Identified>just(foundContainer));
+                } 
+                if (!results.containsKey(uri)) {
                     results.put(uri, Maybe.<Identified>nothing());
                 }
             }
@@ -269,7 +274,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private Container unmarshalContainer(ColumnList<String> columns) throws IOException {
-        Container container = mapper.readValue(columns.getColumnByName(ITEM_COLUMN).getByteArrayValue(), Container.class);
+        Container container = mapper.readValue(columns.getColumnByName(CONTAINER_COLUMN).getByteArrayValue(), Container.class);
         List<Clip> clips = mapper.readValue(columns.getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
         List<ChildRef> children = mapper.readValue(columns.getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, ChildRef.class));
         container.setClips(clips);
