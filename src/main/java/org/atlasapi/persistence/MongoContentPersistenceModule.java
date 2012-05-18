@@ -48,6 +48,8 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
 import com.mongodb.MongoReplicaSetProbe;
 import com.mongodb.WriteConcern;
+import org.atlasapi.persistence.content.listing.ContentLister;
+import org.atlasapi.persistence.topic.TopicContentLister;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
@@ -110,8 +112,16 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 		return new MongoShortUrlSaver(db);
 	}
 	
-	public @Bean MongoContentLister contentListener() {
+	public @Bean MongoContentLister mongoContentLister() {
 		return new MongoContentLister(db);
+	}
+    
+    public @Bean ContentLister contentLister() {
+		return mongoContentLister();
+	}
+    
+    public @Bean TopicContentLister topicContentLister() {
+		return mongoContentLister();
 	}
 	
     @Bean
