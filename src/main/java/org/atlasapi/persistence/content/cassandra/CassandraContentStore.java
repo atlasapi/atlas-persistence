@@ -172,18 +172,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private void writeItem(Item item) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-
-        FilterProvider filters = new SimpleFilterProvider().addFilter(ItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ItemConfiguration.CLIPS_FILTER, ItemConfiguration.VERSIONS_FILTER));
-        ObjectWriter writer = mapper.writer(filters);
-        byte[] itemBytes = writer.writeValueAsBytes(item);
-        byte[] clipsBytes = writer.writeValueAsBytes(item.getClips());
-        byte[] versionsBytes = writer.writeValueAsBytes(item.getVersions());
-
-        mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
-                putColumn(ITEM_COLUMN, itemBytes, null).
-                putColumn(CLIPS_COLUMN, clipsBytes, null).
-                putColumn(VERSIONS_COLUMN, versionsBytes, null);
-
+        marshalItem(item, mutation);
         Future<OperationResult<Void>> result = mutation.executeAsync();
         try {
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -195,18 +184,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private void writeContainer(Container container) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-
-        FilterProvider filters = new SimpleFilterProvider().addFilter(ContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ContainerConfiguration.CLIPS_FILTER, ContainerConfiguration.SUB_ITEMS_FILTER));
-        ObjectWriter writer = mapper.writer(filters);
-        byte[] containerBytes = writer.writeValueAsBytes(container);
-        byte[] clipsBytes = writer.writeValueAsBytes(container.getClips());
-        byte[] subItemsBytes = writer.writeValueAsBytes(container.getChildRefs());
-
-        mutation.withRow(CONTAINER_CF, container.getCanonicalUri().toString()).
-                putColumn(CONTAINER_COLUMN, containerBytes, null).
-                putColumn(CLIPS_COLUMN, clipsBytes, null).
-                putColumn(CHILDREN_COLUMN, subItemsBytes, null);
-
+        marshalContainer(container, mutation);
         Future<OperationResult<Void>> result = mutation.executeAsync();
         try {
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -252,6 +230,30 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
+    }
+    
+    private void marshalItem(Item item, MutationBatch mutation) throws IOException {
+        FilterProvider filters = new SimpleFilterProvider().addFilter(ItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ItemConfiguration.CLIPS_FILTER, ItemConfiguration.VERSIONS_FILTER));
+        ObjectWriter writer = mapper.writer(filters);
+        byte[] itemBytes = writer.writeValueAsBytes(item);
+        byte[] clipsBytes = writer.writeValueAsBytes(item.getClips());
+        byte[] versionsBytes = writer.writeValueAsBytes(item.getVersions());
+        mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
+                putColumn(ITEM_COLUMN, itemBytes, null).
+                putColumn(CLIPS_COLUMN, clipsBytes, null).
+                putColumn(VERSIONS_COLUMN, versionsBytes, null);
+    }
+    
+    private void marshalContainer(Container container, MutationBatch mutation) throws IOException {
+        FilterProvider filters = new SimpleFilterProvider().addFilter(ContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ContainerConfiguration.CLIPS_FILTER, ContainerConfiguration.SUB_ITEMS_FILTER));
+        ObjectWriter writer = mapper.writer(filters);
+        byte[] containerBytes = writer.writeValueAsBytes(container);
+        byte[] clipsBytes = writer.writeValueAsBytes(container.getClips());
+        byte[] subItemsBytes = writer.writeValueAsBytes(container.getChildRefs());
+        mutation.withRow(CONTAINER_CF, container.getCanonicalUri().toString()).
+                putColumn(CONTAINER_COLUMN, containerBytes, null).
+                putColumn(CLIPS_COLUMN, clipsBytes, null).
+                putColumn(CHILDREN_COLUMN, subItemsBytes, null);
     }
     
     private Content unmarshalItem(ColumnList<String> columns) throws IOException {
