@@ -51,6 +51,7 @@ import com.mongodb.WriteConcern;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.listing.ContentLister;
+import org.atlasapi.persistence.content.mongo.LastUpdatedContentFinder;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.topic.TopicContentLister;
@@ -134,6 +135,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
     
     public @Bean TopicContentLister topicContentLister() {
+		return mongoContentLister();
+	}
+    
+    public @Bean LastUpdatedContentFinder lastUpdatedContentFinder() {
 		return mongoContentLister();
 	}
 	
