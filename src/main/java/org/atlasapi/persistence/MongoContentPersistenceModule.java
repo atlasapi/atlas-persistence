@@ -49,6 +49,7 @@ import com.mongodb.Mongo;
 import com.mongodb.MongoReplicaSetProbe;
 import com.mongodb.WriteConcern;
 import org.atlasapi.persistence.content.listing.ContentLister;
+import org.atlasapi.persistence.content.mongo.LastUpdatedContentFinder;
 import org.atlasapi.persistence.topic.TopicContentLister;
 
 @Configuration
@@ -121,6 +122,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
     
     public @Bean TopicContentLister topicContentLister() {
+		return mongoContentLister();
+	}
+    
+    public @Bean LastUpdatedContentFinder lastUpdatedContentFinder() {
 		return mongoContentLister();
 	}
 	
