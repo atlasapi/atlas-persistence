@@ -24,6 +24,7 @@ import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
+import com.netflix.astyanax.query.AllRowsQuery;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import java.io.IOException;
 import java.util.HashMap;
@@ -114,11 +115,16 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         try {
             Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
             for (String uri : canonicalUris) {
-                Content found = readContent(uri);
+                Content foundContent = readContent(uri);
+                Content foundContainer = readContainer(uri);
                 //
-                if (found != null) {
-                    results.put(uri, Maybe.<Identified>just(found));
-                } else {
+                if (foundContent != null) {
+                    results.put(uri, Maybe.<Identified>just(foundContent));
+                } 
+                if (foundContainer != null) {
+                    results.put(uri, Maybe.<Identified>just(foundContainer));
+                } 
+                if (!results.containsKey(uri)) {
                     results.put(uri, Maybe.<Identified>nothing());
                 }
             }
@@ -127,41 +133,43 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
     }
-    
+
     @Override
     public Iterator<Content> listContent(ContentListingCriteria criteria) {
         try {
             Iterator<Content> items = Iterators.emptyIterator();
             Iterator<Content> containers = Iterators.emptyIterator();
             if (criteria.getCategories().contains(ContentCategory.CHILD_ITEM) || criteria.getCategories().contains(ContentCategory.TOP_LEVEL_ITEM)) {
-             OperationResult<Rows<String, String>> result = keyspace.prepareQuery(ITEMS_CF).getAllRows().execute();
-             items = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
+                AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(ITEMS_CF).getAllRows();
+                allRowsQuery.setRowLimit(100);
+                OperationResult<Rows<String, String>> result = allRowsQuery.execute();
+                items = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
 
                     @Override
                     public Content apply(Row input) {
                         try {
-                        return unmarshalItem(input.getColumns());
-                        } catch(Exception ex) {
+                            return unmarshalItem(input.getColumns());
+                        } catch (Exception ex) {
                             return null;
                         }
                     }
-                 
-             });
+                });
             }
             if (criteria.getCategories().contains(ContentCategory.CONTAINER)) {
-             OperationResult<Rows<String, String>> result = keyspace.prepareQuery(CONTAINER_CF).getAllRows().execute();
-             containers = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
+                AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(CONTAINER_CF).getAllRows();
+                allRowsQuery.setRowLimit(100);
+                OperationResult<Rows<String, String>> result = allRowsQuery.execute();
+                containers = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
 
                     @Override
                     public Content apply(Row input) {
                         try {
-                        return unmarshalContainer(input.getColumns());
-                        } catch(Exception ex) {
+                            return unmarshalContainer(input.getColumns());
+                        } catch (Exception ex) {
                             return null;
                         }
                     }
-                 
-             });
+                });
             }
             return Iterators.concat(containers, items);
         } catch (Exception ex) {
@@ -172,18 +180,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private void writeItem(Item item) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-
-        FilterProvider filters = new SimpleFilterProvider().addFilter(ItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ItemConfiguration.CLIPS_FILTER, ItemConfiguration.VERSIONS_FILTER));
-        ObjectWriter writer = mapper.writer(filters);
-        byte[] itemBytes = writer.writeValueAsBytes(item);
-        byte[] clipsBytes = writer.writeValueAsBytes(item.getClips());
-        byte[] versionsBytes = writer.writeValueAsBytes(item.getVersions());
-
-        mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
-                putColumn(ITEM_COLUMN, itemBytes, null).
-                putColumn(CLIPS_COLUMN, clipsBytes, null).
-                putColumn(VERSIONS_COLUMN, versionsBytes, null);
-
+        marshalItem(item, mutation);
         Future<OperationResult<Void>> result = mutation.executeAsync();
         try {
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -195,18 +192,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private void writeContainer(Container container) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-
-        FilterProvider filters = new SimpleFilterProvider().addFilter(ContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ContainerConfiguration.CLIPS_FILTER, ContainerConfiguration.SUB_ITEMS_FILTER));
-        ObjectWriter writer = mapper.writer(filters);
-        byte[] containerBytes = writer.writeValueAsBytes(container);
-        byte[] clipsBytes = writer.writeValueAsBytes(container.getClips());
-        byte[] subItemsBytes = writer.writeValueAsBytes(container.getChildRefs());
-
-        mutation.withRow(CONTAINER_CF, container.getCanonicalUri().toString()).
-                putColumn(CONTAINER_COLUMN, containerBytes, null).
-                putColumn(CLIPS_COLUMN, clipsBytes, null).
-                putColumn(CHILDREN_COLUMN, subItemsBytes, null);
-
+        marshalContainer(container, mutation);
         Future<OperationResult<Void>> result = mutation.executeAsync();
         try {
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -253,7 +239,31 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
     }
-    
+
+    private void marshalItem(Item item, MutationBatch mutation) throws IOException {
+        FilterProvider filters = new SimpleFilterProvider().addFilter(ItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ItemConfiguration.CLIPS_FILTER, ItemConfiguration.VERSIONS_FILTER));
+        ObjectWriter writer = mapper.writer(filters);
+        byte[] itemBytes = writer.writeValueAsBytes(item);
+        byte[] clipsBytes = writer.writeValueAsBytes(item.getClips());
+        byte[] versionsBytes = writer.writeValueAsBytes(item.getVersions());
+        mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
+                putColumn(ITEM_COLUMN, itemBytes, null).
+                putColumn(CLIPS_COLUMN, clipsBytes, null).
+                putColumn(VERSIONS_COLUMN, versionsBytes, null);
+    }
+
+    private void marshalContainer(Container container, MutationBatch mutation) throws IOException {
+        FilterProvider filters = new SimpleFilterProvider().addFilter(ContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ContainerConfiguration.CLIPS_FILTER, ContainerConfiguration.SUB_ITEMS_FILTER));
+        ObjectWriter writer = mapper.writer(filters);
+        byte[] containerBytes = writer.writeValueAsBytes(container);
+        byte[] clipsBytes = writer.writeValueAsBytes(container.getClips());
+        byte[] subItemsBytes = writer.writeValueAsBytes(container.getChildRefs());
+        mutation.withRow(CONTAINER_CF, container.getCanonicalUri().toString()).
+                putColumn(CONTAINER_COLUMN, containerBytes, null).
+                putColumn(CLIPS_COLUMN, clipsBytes, null).
+                putColumn(CHILDREN_COLUMN, subItemsBytes, null);
+    }
+
     private Content unmarshalItem(ColumnList<String> columns) throws IOException {
         Item item = mapper.readValue(columns.getColumnByName(ITEM_COLUMN).getByteArrayValue(), Item.class);
         List<Clip> clips = mapper.readValue(columns.getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
@@ -262,9 +272,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         item.setVersions(versions);
         return item;
     }
-    
+
     private Container unmarshalContainer(ColumnList<String> columns) throws IOException {
-        Container container = mapper.readValue(columns.getColumnByName(ITEM_COLUMN).getByteArrayValue(), Container.class);
+        Container container = mapper.readValue(columns.getColumnByName(CONTAINER_COLUMN).getByteArrayValue(), Container.class);
         List<Clip> clips = mapper.readValue(columns.getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
         List<ChildRef> children = mapper.readValue(columns.getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, ChildRef.class));
         container.setClips(clips);
