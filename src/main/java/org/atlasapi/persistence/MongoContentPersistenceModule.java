@@ -14,6 +14,7 @@ import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
@@ -83,6 +84,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Primary @Bean ContentWriter contentWriter() {
 		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
+		contentWriter = new EquivalenceWritingContentWriter(contentWriter, lookupStore());
 		if (Boolean.valueOf(generateIds)) {
 		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
 		}

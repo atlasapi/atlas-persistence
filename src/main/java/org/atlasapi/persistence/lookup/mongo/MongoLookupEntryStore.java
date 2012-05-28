@@ -9,16 +9,16 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
-import static org.atlasapi.persistence.lookup.entry.LookupRef.TO_ID;
+import static org.atlasapi.media.entity.LookupRef.TO_ID;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
 
 import java.util.Set;
 
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.atlasapi.persistence.lookup.entry.LookupRef;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -82,8 +82,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     private void convertEntry(Content content, LookupEntry newEntry, LookupEntry existing) {
         LookupRef ref = LookupRef.from(content);
         Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
+        Set<LookupRef> explicit = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.explicitEquivalents()).build();
         Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
-        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliases(), directEquivs, transitiveEquivs, existing.created(), newEntry.updated());
+        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated());
         
         store(merged);
         

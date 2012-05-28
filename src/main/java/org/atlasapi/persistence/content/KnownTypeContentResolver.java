@@ -1,7 +1,6 @@
 package org.atlasapi.persistence.content;
 
-import org.atlasapi.persistence.content.ResolvedContent;
-import org.atlasapi.persistence.lookup.entry.LookupRef;
+import org.atlasapi.media.entity.LookupRef;
 
 /**
  * Retrieve content from a known internal content table
