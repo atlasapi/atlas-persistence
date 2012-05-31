@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -145,37 +146,31 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     private void encodeContentGroups(DBObject dbObject, Content entity) {
         if (!entity.getContentGroupRefs().isEmpty()) {
-            dbObject.put(CONTENT_GROUP_KEY, ImmutableSet.copyOf(Iterables.transform(entity.getContentGroupRefs(), new Function<ContentGroupRef, DBObject>() {
-
-                @Override
-                public DBObject apply(ContentGroupRef input) {
-                    return contentGroupRefTranslator.toDBObject(input);
-                }
-            })));
+            BasicDBList values = new BasicDBList();
+            for(ContentGroupRef contentGroupRef : entity.getContentGroupRefs()) {
+                values.add(contentGroupRefTranslator.toDBObject(contentGroupRef));
+            }
+            dbObject.put(CONTENT_GROUP_KEY, values);
         }
     }
 
     private void encodeTopics(DBObject dbObject, Content entity) {
         if (!entity.getTopicRefs().isEmpty()) {
-            dbObject.put(TOPICS_KEY, ImmutableSet.copyOf(Iterables.transform(entity.getTopicRefs(), new Function<TopicRef, DBObject>() {
-
-                @Override
-                public DBObject apply(TopicRef input) {
-                    return contentTopicTranslator.toDBObject(input);
-                }
-            })));
+            BasicDBList values = new BasicDBList();
+            for(TopicRef topicRef : entity.getTopicRefs()) {
+                values.add(contentTopicTranslator.toDBObject(topicRef));
+            }
+            dbObject.put(TOPICS_KEY, values);
         }
     }
 
     private void encodeRelatedLinks(DBObject dbObject, Content entity) {
         if (!entity.getRelatedLinks().isEmpty()) {
-            dbObject.put(LINKS_KEY, ImmutableSet.copyOf(Iterables.transform(entity.getRelatedLinks(), new Function<RelatedLink, DBObject>() {
-
-                @Override
-                public DBObject apply(RelatedLink input) {
-                    return relatedLinkTranslator.toDBObject(input);
-                }
-            })));
+            BasicDBList values = new BasicDBList(); 
+            for(RelatedLink link : entity.getRelatedLinks()) {
+                values.add(relatedLinkTranslator.toDBObject(link));
+            }
+            dbObject.put(LINKS_KEY, values);
         }
     }
 
@@ -191,13 +186,11 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     private void encodeKeyPhrases(DBObject dbObject, Content entity) {
         if (!entity.getKeyPhrases().isEmpty()) {
-            dbObject.put(PHRASES_KEY, ImmutableSet.copyOf(Iterables.transform(entity.getKeyPhrases(), new Function<KeyPhrase, DBObject>() {
-
-                @Override
-                public DBObject apply(KeyPhrase input) {
-                    return keyPhraseTranslator.toDBObject(input);
-                }
-            })));
+            BasicDBList values = new BasicDBList();
+            for(KeyPhrase phrase : entity.getKeyPhrases()) {
+                values.add(keyPhraseTranslator.toDBObject(phrase));
+            }
+            dbObject.put(PHRASES_KEY, values);
         }
     }
 }
