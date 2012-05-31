@@ -26,6 +26,8 @@ import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
@@ -41,6 +43,8 @@ import com.mongodb.DBObject;
 
 public class MongoContentWriter implements ContentWriter {
 
+    private final Logger log = LoggerFactory.getLogger(MongoContentWriter.class);
+    
     private final Clock clock;
     private final NewLookupWriter lookupStore;
 
@@ -79,16 +83,19 @@ public class MongoContentWriter implements ContentWriter {
         item.setLastFetched(clock.now());
         
         MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.ID, item.getCanonicalUri());
-            
+
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
+            log.debug("Item {} hash not changed. Not writing.", item.getCanonicalUri());
         	return;
         } 
+        
+        log.debug("Item {} hash changed so writing to db", item.getCanonicalUri());
         
         DBObject itemDbo = itemTranslator.toDB(item);
         
 		if (item instanceof Episode) {
             if (item.getContainer() == null) {
-                throw new IllegalArgumentException("Episodes must have containers");
+                throw new IllegalArgumentException(String.format("Episodes must have containers: Episode %s", item.getCanonicalUri()));
             }
 
             childRefWriter.includeEpisodeInSeriesAndBrand((Episode) item);
@@ -125,10 +132,13 @@ public class MongoContentWriter implements ContentWriter {
         
         setThisOrChildLastUpdated(container);
         container.setLastFetched(clock.now());
-        
+
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
+            log.debug("Container {} hash not changed. Not writing.", container.getCanonicalUri());
             return;
         } 
+        
+        log.debug("Container {} hash changed so writing to db", container.getCanonicalUri());
 
         DBObject containerDbo = containerTranslator.toDB(container);
 
