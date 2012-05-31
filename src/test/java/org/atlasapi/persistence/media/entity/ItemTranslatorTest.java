@@ -98,7 +98,7 @@ public class ItemTranslatorTest extends TestCase {
         DBObject l = (DBObject) ls.get(0);
         assertEquals(loc.getAvailable(), l.get("available"));
         
-        Set<DBObject> ts = (Set<DBObject>) dbObject.get("topics");
+        List<DBObject> ts = (List<DBObject>) dbObject.get("topics");
 		assertEquals(2, ts.size());
         DBObject t1 = (DBObject) ts.iterator().next();
         assertEquals(topic1.getTopic(), t1.get("topic"));
