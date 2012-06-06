@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.topic;
 
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 
 import com.metabroadcast.common.base.Maybe;
@@ -17,19 +18,32 @@ public class TopicCreatingTopicResolver extends ForwardingTopicStore {
     
     public Maybe<Topic> topicFor(String namespace, String value) {
         Maybe<Topic> topic = delegate().topicFor(namespace, value);
-        if(topic.hasValue()) {
-            return topic;
-        } else {
-            Topic newTopic = new Topic(idGenerator.generateRaw());
-            newTopic.setNamespace(namespace);
-            newTopic.setValue(value);
-            return Maybe.just(newTopic);
-        }
+        return topicOrNewTopic(topic, null, namespace, value);
     }
 
     @Override
     protected TopicStore delegate() {
         return delegate;
     }
+
+	@Override
+	public Maybe<Topic> topicFor(Publisher publisher, String namespace,
+			String value) {
+		Maybe<Topic> topic = delegate().topicFor(publisher, namespace, value);
+		return topicOrNewTopic(topic, publisher, namespace, value);
+	}
+
+	private Maybe<Topic> topicOrNewTopic(Maybe<Topic> topic,
+			Publisher publisher, String namespace, String value) {
+		if(topic.hasValue()) {
+            return topic;
+        } else {
+            Topic newTopic = new Topic(idGenerator.generateRaw());
+            newTopic.setNamespace(namespace);
+            newTopic.setValue(value);
+            newTopic.setPublisher(publisher);
+            return Maybe.just(newTopic);
+        }
+	}
         
 }
