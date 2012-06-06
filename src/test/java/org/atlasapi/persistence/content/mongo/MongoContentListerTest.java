@@ -15,6 +15,7 @@ import java.util.List;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -26,6 +27,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -85,17 +87,19 @@ public class MongoContentListerTest {
     @Test
     public void testTopicListing() {
         
-        ImmutableSet<Content> contents = ImmutableSet.copyOf(lister.contentForTopic(1l, ContentQuery.MATCHES_EVERYTHING));
-        assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item2,bbcBrand,c4Brand))));
+        ImmutableSet<String> contents = ImmutableSet.copyOf(lister.contentUrisForTopic(1l, ContentQuery.MATCHES_EVERYTHING));
+        assertThat(contents, is(equalTo(urisOf(bbcItem1,c4Item2,bbcBrand,c4Brand))));
         
+        contents = ImmutableSet.copyOf(lister.contentUrisForTopic(2l, ContentQuery.MATCHES_EVERYTHING));
+        assertThat(contents, is(equalTo(urisOf(bbcItem1,c4Item1,bbcBrand))));
         
-        contents = ImmutableSet.copyOf(lister.contentForTopic(2l, ContentQuery.MATCHES_EVERYTHING));
-        assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,bbcBrand))));
+        contents = ImmutableSet.copyOf(lister.contentUrisForTopic(3l, ContentQuery.MATCHES_EVERYTHING));
+        assertThat(contents, is(equalTo(urisOf(bbcItem1,c4Item1,c4Item2,c4Brand))));
         
-        
-        contents = ImmutableSet.copyOf(lister.contentForTopic(3l, ContentQuery.MATCHES_EVERYTHING));
-        assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,c4Item2,c4Brand))));
-        
+    }
+    
+    private ImmutableSet<String> urisOf(Content...contents) {
+        return ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(contents), Identified.TO_URI));
     }
     
     @Test

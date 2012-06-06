@@ -21,7 +21,7 @@ import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
-import org.atlasapi.persistence.topic.TopicContentLister;
+import org.atlasapi.persistence.topic.TopicContentUriLister;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -35,11 +35,12 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException.CursorNotFound;
 
-public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister {
+public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentUriLister {
 
     private final ContainerTranslator containerTranslator;
     private final ItemTranslator itemTranslator;
@@ -73,7 +74,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return Iterators.concat(Iterators.transform(publishers.iterator(), new Function<Publisher, Iterator<Content>>() {
             @Override
             public Iterator<Content> apply(final Publisher publisher) {
-                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder() {
+                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
                     
                     public DBObject queryForCategory(ContentCategory category) {
                         MongoQueryBuilder query = queryCriteria(publisher);
@@ -104,6 +105,12 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 						return where().fieldEquals("publisher", publisher.key());
 					}
 
+                    @Override
+                    public Function<DBObject, Content> translatorForCategory(
+                            ContentCategory category) {
+                        return TRANSLATORS.get(category);
+                    }
+
                 });
                 
             }
@@ -132,7 +139,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     
     @Override
     public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {
-        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
+        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<Content>() {
             @Override
             public DBCursor cursorFor(ContentCategory category) {
                 return cursorFor(category, queryCriteria());
@@ -155,21 +162,26 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 			private MongoQueryBuilder queryCriteria() {
 				return where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when);
 			}
+
+            @Override
+            public Function<DBObject, Content> translatorForCategory(ContentCategory category) {
+                return TRANSLATORS.get(category);
+            }
             
         });
     }
 
-    private Iterator<Content> contentIterator(final List<ContentCategory> tables, final ListingCursorBuilder cursorBuilder) {
-        return new AbstractIterator<Content>() {
+    private <T> Iterator<T> contentIterator(final List<ContentCategory> tables, final ListingCursorBuilder<T> cursorBuilder) {
+        return new AbstractIterator<T>() {
 
             private final Iterator<ContentCategory> tablesIt = tables.iterator();
             private Iterator<DBObject> currentResults = Iterators.emptyIterator();
-            private Function<DBObject, ? extends Content> currentTranslator;
-            private Content currentContent = null;
+            private Function<DBObject, T> currentTranslator;
+            private T currentContent = null;
             private ContentCategory currentCategory = null;
             
             @Override
-            protected Content computeNext() {
+            protected T computeNext() {
             	boolean hasNext;
             	try {
             		hasNext = currentResults.hasNext();
@@ -184,7 +196,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                         return endOfData();
                     }
                     currentCategory = tablesIt.next();
-                    currentTranslator = TRANSLATORS.get(currentCategory);
+                    currentTranslator = cursorBuilder.translatorForCategory(currentCategory);
                     currentResults = cursorBuilder.cursorFor(currentCategory);
                     hasNext = currentResults.hasNext();
                 }           
@@ -194,56 +206,71 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         };
     }
 
-    private final Function<DBObject, Container> TO_CONTAINER = new Function<DBObject, Container>() {
+    private final Function<DBObject, Content> TO_CONTAINER = new Function<DBObject, Content>() {
         @Override
         public Container apply(DBObject input) {
             return containerTranslator.fromDBObject(input, null);
         }
     };
     
-    private final Function<DBObject, Item> TO_ITEM = new Function<DBObject, Item>() {
+    private final Function<DBObject, Content> TO_ITEM = new Function<DBObject, Content>() {
         @Override
         public Item apply(DBObject input) {
             return itemTranslator.fromDBObject(input, null);
         }
     };
 
-    private final ImmutableMap<ContentCategory, Function<DBObject, ? extends Content>> TRANSLATORS = ImmutableMap.<ContentCategory, Function<DBObject, ? extends Content>>of(
+    private final ImmutableMap<ContentCategory, Function<DBObject, Content>> TRANSLATORS = ImmutableMap.<ContentCategory, Function<DBObject, Content>>of(
             CHILD_ITEM, TO_ITEM, 
             PROGRAMME_GROUP, TO_CONTAINER, 
             TOP_LEVEL_ITEM, TO_ITEM, 
             CONTAINER, TO_CONTAINER);
 
-    private interface ListingCursorBuilder {
+    private interface ListingCursorBuilder<T> {
         
         DBCursor cursorFor(ContentCategory category);
-        DBCursor cursorForGreaterThan(ContentCategory categtory, Content startingAt);
+        DBCursor cursorForGreaterThan(ContentCategory categtory, T startingAt);
+        Function<DBObject, T> translatorForCategory(ContentCategory category);
         
     }
     
-    @Override
     //TODO: enable use of contentQuery?
-    public Iterator<Content> contentForTopic(final Long topicId, ContentQuery contentQuery) {
-        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
+    @Override
+    public Iterable<String> contentUrisForTopic(final Long topicId, ContentQuery contentQuery) {
+        return new Iterable<String>(){
             @Override
-            public DBCursor cursorFor(ContentCategory category) {
-                return cursorFor(category, queryCriteria());
-            }
-            
-            @Override
-            public DBCursor cursorForGreaterThan(ContentCategory category, Content greaterThan) {
-            	return cursorFor(category, queryCriteria().fieldGreaterThan(ID, greaterThan.getCanonicalUri()));
-            }
+            public Iterator<String> iterator() {
+                return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<String>() {
+                    @Override
+                    public DBCursor cursorFor(ContentCategory category) {
+                        return cursorFor(category, queryCriteria());
+                    }
+                    
+                    @Override
+                    public DBCursor cursorForGreaterThan(ContentCategory category, String greaterThan) {
+                        return cursorFor(category, queryCriteria().fieldGreaterThan(ID, greaterThan));
+                    }
 
-            private DBCursor cursorFor(ContentCategory category, MongoQueryBuilder query) {
-            	return contentTables.collectionFor(category).find(query.build()).sort(sort().ascending(ID).build());
-            }
+                    private DBCursor cursorFor(ContentCategory category, MongoQueryBuilder query) {
+                        return contentTables.collectionFor(category).find(query.build(), new BasicDBObject(ID,1)).sort(sort().ascending(ID).build());
+                    }
 
-			private MongoQueryBuilder queryCriteria() {
-				return where().fieldEquals("topics.topic", topicId);
-			}
-            
-        });
+                    private MongoQueryBuilder queryCriteria() {
+                        return where().fieldEquals("topics.topic", topicId);
+                    }
+
+                    @Override
+                    public Function<DBObject, String> translatorForCategory(ContentCategory category) {
+                        return new Function<DBObject, String>(){
+                            @Override
+                            public String apply(DBObject input) {
+                                return (String) input.get(ID);
+                            }
+                        };
+                    }
+                });
+            }
+        };
     }
 
 }
