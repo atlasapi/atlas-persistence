@@ -294,15 +294,11 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		    if (!film.getLanguages().isEmpty()) {
 		        TranslatorUtils.fromSet(itemDbo, film.getLanguages(), FILM_LANGUAGES_KEY);
 		    }
-		    if (!film.getSubtitles().isEmpty()) {
-		        TranslatorUtils.from(itemDbo, FILM_SUBTITLES_KEY, subtitleDbo(film.getSubtitles()));
-		    }
-		    if (!film.getReleaseDates().isEmpty()) {
-		        TranslatorUtils.from(itemDbo, FILM_RELEASES_KEY, releaseDbo(film.getReleaseDates()));
-		    }
-		    if (!film.getCertificates().isEmpty()) {
-		        TranslatorUtils.from(itemDbo, FILM_CERTIFICATES_KEY, certificateDbo(film.getCertificates()));
-		    }
+		    
+		    encodeSubtitles(itemDbo, film.getSubtitles());
+		    encodeReleases(itemDbo, film.getReleaseDates());
+		    encodeCertificates(itemDbo, film.getCertificates());
+		    
 		}
 		
 		if (! entity.people().isEmpty()) {
@@ -316,41 +312,42 @@ public class ItemTranslator implements ModelTranslator<Item> {
         return itemDbo;
     }
 
-    private Set<DBObject> certificateDbo(Set<Certificate> certificates) {
-        return ImmutableSet.copyOf(Iterables.transform(certificates, new Function<Certificate, DBObject>() {
-
-            @Override
-            public DBObject apply(Certificate input) {
-                BasicDBObject dbo = new BasicDBObject();
-                TranslatorUtils.from(dbo, "class", input.classification());
-                TranslatorUtils.from(dbo, "country", input.country().code());
-                return dbo;
+    private void encodeCertificates(DBObject dbo, Set<Certificate> certificates) {
+        if(!certificates.isEmpty()) {
+            BasicDBList values = new BasicDBList();
+            for(Certificate releaseDate : certificates) {
+                DBObject certDbo = new BasicDBObject();
+                TranslatorUtils.from(certDbo, "class", releaseDate.classification());
+                TranslatorUtils.from(certDbo, "country", releaseDate.country().code());
+                values.add(certDbo);
             }
-        }));
+            dbo.put(FILM_CERTIFICATES_KEY, values);
+        }  
+    }
+    
+    private void encodeReleases(DBObject dbo, Set<ReleaseDate> releaseDates) {
+        if(!releaseDates.isEmpty()) {
+            BasicDBList values = new BasicDBList();
+            for(ReleaseDate releaseDate : releaseDates) {
+                DBObject releaseDateDbo = new BasicDBObject();
+                TranslatorUtils.fromLocalDate(releaseDateDbo, "date", releaseDate.date());
+                TranslatorUtils.from(releaseDateDbo, "country", releaseDate.country().code());
+                TranslatorUtils.from(releaseDateDbo, "type", releaseDate.type().toString());
+                values.add(releaseDateDbo);
+            }
+            dbo.put(FILM_RELEASES_KEY, values);
+        }        
     }
 
-    private Set<DBObject> releaseDbo(Set<ReleaseDate> releaseDates) {
-        return ImmutableSet.copyOf(Iterables.transform(releaseDates, new Function<ReleaseDate, DBObject>() {
-
-            @Override
-            public DBObject apply(ReleaseDate input) {
-                BasicDBObject dbo = new BasicDBObject();
-                TranslatorUtils.fromLocalDate(dbo, "date", input.date());
-                TranslatorUtils.from(dbo, "country", input.country().code());
-                TranslatorUtils.from(dbo, "type", input.type().toString());
-                return dbo;
+    private void encodeSubtitles(DBObject dbo, Set<Subtitles> subtitles) {
+        if(!subtitles.isEmpty()) {
+            BasicDBList values = new BasicDBList();
+            for(Subtitles subtitle : subtitles) {
+                DBObject subtitleDbo = new BasicDBObject();
+                subtitleDbo.put("language", subtitle.code());
+                values.add(subtitleDbo);
             }
-        }));
-    }
-
-    private Set<DBObject> subtitleDbo(Set<Subtitles> subtitles) {
-        return ImmutableSet.copyOf(Iterables.transform(subtitles, new Function<Subtitles, DBObject>() {
-            @Override
-            public DBObject apply(Subtitles input) {
-                BasicDBObject dbo = new BasicDBObject();
-                TranslatorUtils.from(dbo, "language", input.code());
-                return dbo;
-            }
-        }));
+            dbo.put(FILM_SUBTITLES_KEY, values);
+        }
     }
 }
