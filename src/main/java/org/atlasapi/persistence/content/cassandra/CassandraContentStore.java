@@ -49,12 +49,12 @@ import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.serialization.json.JsonFactory;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.serialization.json.ContainerConfiguration;
 import org.atlasapi.serialization.json.ItemConfiguration;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
 
 /**
  */
@@ -120,10 +120,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 //
                 if (foundContent != null) {
                     results.put(uri, Maybe.<Identified>just(foundContent));
-                } 
+                }
                 if (foundContainer != null) {
                     results.put(uri, Maybe.<Identified>just(foundContainer));
-                } 
+                }
                 if (!results.containsKey(uri)) {
                     results.put(uri, Maybe.<Identified>nothing());
                 }
@@ -140,7 +140,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
             Iterator<Content> items = Iterators.emptyIterator();
             Iterator<Content> containers = Iterators.emptyIterator();
             if (criteria.getCategories().contains(ContentCategory.CHILD_ITEM) || criteria.getCategories().contains(ContentCategory.TOP_LEVEL_ITEM)) {
-                AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(ITEMS_CF).getAllRows();
+                AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(ITEMS_CF).setConsistencyLevel(ConsistencyLevel.CL_QUORUM).getAllRows();
                 allRowsQuery.setRowLimit(100);
                 OperationResult<Rows<String, String>> result = allRowsQuery.execute();
                 items = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
@@ -156,7 +156,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 });
             }
             if (criteria.getCategories().contains(ContentCategory.CONTAINER)) {
-                AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(CONTAINER_CF).getAllRows();
+                AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(CONTAINER_CF).setConsistencyLevel(ConsistencyLevel.CL_QUORUM).getAllRows();
                 allRowsQuery.setRowLimit(100);
                 OperationResult<Rows<String, String>> result = allRowsQuery.execute();
                 containers = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
@@ -214,7 +214,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
 
     private Content readContent(String id) throws Exception {
         try {
-            Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(ITEMS_CF).getKey(id.toString()).executeAsync();
+            Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(ITEMS_CF).
+                    setConsistencyLevel(ConsistencyLevel.CL_QUORUM).
+                    getKey(id.toString()).
+                    executeAsync();
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 return unmarshalItem(columns.getResult());
@@ -228,7 +231,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
 
     private Container readContainer(String id) throws Exception {
         try {
-            Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(CONTAINER_CF).getKey(id.toString()).executeAsync();
+            Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(CONTAINER_CF).
+                    setConsistencyLevel(ConsistencyLevel.CL_QUORUM).
+                    getKey(id.toString()).
+                    executeAsync();
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
                 return unmarshalContainer(columns.getResult());
