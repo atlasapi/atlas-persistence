@@ -81,28 +81,27 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	    return new MongoContentGroupResolver(db);
 	}
 	
-	public @Bean ContentWriter contentWriter() {
+	public @Primary @Bean ContentWriter contentWriter() {
 		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
 		if (Boolean.valueOf(generateIds)) {
 		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
 		}
         return contentWriter;
 	}
-	
-	@Primary
-	public @Bean ContentResolver contentResolver() {
+
+	public @Primary @Bean ContentResolver contentResolver() {
 	    return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
 	}
 	
-	public @Bean KnownTypeContentResolver knownTypeContentResolver() {
+	public @Primary @Bean KnownTypeContentResolver knownTypeContentResolver() {
 	    return new MongoContentResolver(db);
 	}
 	
-	public @Bean MongoLookupEntryStore lookupStore() {
+	public @Primary @Bean MongoLookupEntryStore lookupStore() {
 	    return new MongoLookupEntryStore(db);
 	}
 	
-	public @Bean MongoScheduleStore scheduleStore() {
+	public @Primary @Bean MongoScheduleStore scheduleStore() {
 	    try {
             return new MongoScheduleStore(db, contentResolver(), channelResolver);
         } catch (Exception e) {
@@ -110,23 +109,54 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         }
 	}
 	
-	public @Bean ItemsPeopleWriter itemsPeopleWriter() {
+	public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
 	    return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
 	}
 	
-	public @Bean MongoPersonStore personStore() {
+	public @Primary @Bean MongoPersonStore personStore() {
 	    return new MongoPersonStore(db);
 	}
 
-	@Override
-	public @Bean ShortUrlSaver shortUrlSaver() {
+	public @Primary @Bean ShortUrlSaver shortUrlSaver() {
 		return new MongoShortUrlSaver(db);
 	}
 	
-	public @Bean MongoContentLister contentListener() {
+	public @Primary @Bean MongoContentLister contentLister() {
 		return new MongoContentLister(db);
-	}
-	
+    }
+
+    public @Primary @Bean TopicStore topicStore() {
+        return new TopicCreatingTopicResolver(new MongoTopicStore(db), new MongoSequentialIdGenerator(db, "topic"));
+    }
+
+    public @Primary @Bean TopicQueryResolver topicQueryResolver() {
+        return new MongoTopicStore(db);
+    }
+    
+    public @Primary @Bean SegmentWriter segmentWriter() {
+        return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
+    }
+
+    public @Primary @Bean SegmentResolver segmentResolver() {
+        return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
+    }
+        
+    public @Primary @Bean ChannelResolver channelResolver() {
+    	return new MongoChannelStore(db);
+    }
+    
+    public @Primary @Bean ChannelGroupStore channelGroupStore() {
+        return new MongoChannelGroupStore(db);
+    }
+
+    public @Primary @Bean ProductStore productStore() {
+        return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
+    }
+
+    public @Primary @Bean ProductResolver productResolver() {
+        return new MongoProductStore(db);
+    }
+    
     @Bean
     MongoReplicaSetProbe mongoReplicaSetProbe() {
         return new MongoReplicaSetProbe(mongo);
@@ -135,44 +165,5 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     MongoIOProbe mongoIoSetProbe() {
         return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
-    }
-
-    @Override
-    public @Bean TopicStore topicStore() {
-        return new TopicCreatingTopicResolver(new MongoTopicStore(db), new MongoSequentialIdGenerator(db, "topic"));
-    }
-
-    @Override
-    public @Bean TopicQueryResolver topicQueryResolver() {
-        return new MongoTopicStore(db);
-    }
-    
-    public @Bean SegmentWriter segmentWriter() {
-        return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
-    }
-
-    @Override
-    public @Bean SegmentResolver segmentResolver() {
-        return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
-    }
-        
-    @Bean
-    public ChannelResolver channelResolver() {
-    	return new MongoChannelStore(db);
-    }
-    
-    @Bean
-    public ChannelGroupStore channelGroupStore() {
-        return new MongoChannelGroupStore(db);
-    }
-
-    @Bean
-    public ProductStore productStore() {
-        return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
-    }
-
-    @Bean
-    public ProductResolver productResolver() {
-        return new MongoProductStore(db);
     }
 }
