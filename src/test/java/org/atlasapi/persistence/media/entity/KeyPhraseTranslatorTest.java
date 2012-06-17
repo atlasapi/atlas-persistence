@@ -4,8 +4,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
-import org.atlasapi.media.entity.KeyPhrase;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.KeyPhrase;
+import org.atlasapi.media.content.Publisher;
 import org.junit.Test;
 
 import com.mongodb.DBObject;

@@ -2,7 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import junit.framework.TestCase;
 
-import org.atlasapi.media.entity.Equiv;
+import org.atlasapi.media.content.Equiv;
 
 import com.mongodb.DBObject;
 

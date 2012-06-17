@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Clip;
+import org.atlasapi.media.content.Clip;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.ids.NumberToShortStringCodec;

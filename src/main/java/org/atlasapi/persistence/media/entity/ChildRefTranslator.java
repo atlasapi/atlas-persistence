@@ -2,8 +2,8 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
-import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.content.ChildRef;
+import org.atlasapi.media.content.EntityType;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;

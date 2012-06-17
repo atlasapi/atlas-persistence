@@ -2,9 +2,9 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.Currency;
 
-import org.atlasapi.media.entity.Policy;
-import org.atlasapi.media.entity.Policy.Platform;
-import org.atlasapi.media.entity.Policy.RevenueContract;
+import org.atlasapi.media.content.Policy;
+import org.atlasapi.media.content.Policy.Platform;
+import org.atlasapi.media.content.Policy.RevenueContract;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.currency.Price;

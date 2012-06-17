@@ -1,11 +1,11 @@
 package org.atlasapi.persistence.media.entity;
 
-import static org.atlasapi.media.entity.RelatedLink.unknownTypeLink;
+import static org.atlasapi.media.content.RelatedLink.unknownTypeLink;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import org.atlasapi.media.entity.RelatedLink;
+import org.atlasapi.media.content.RelatedLink;
 import org.junit.Test;
 
 import com.mongodb.DBObject;

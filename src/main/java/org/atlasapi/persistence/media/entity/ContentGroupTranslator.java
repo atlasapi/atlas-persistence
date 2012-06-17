@@ -1,7 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.ContentGroup;
-import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.content.ContentGroup;
+import org.atlasapi.media.content.EntityType;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;

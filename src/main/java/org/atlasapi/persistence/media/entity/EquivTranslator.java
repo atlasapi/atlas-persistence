@@ -4,7 +4,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 import java.util.Set;
 
-import org.atlasapi.media.entity.Equiv;
+import org.atlasapi.media.content.Equiv;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;

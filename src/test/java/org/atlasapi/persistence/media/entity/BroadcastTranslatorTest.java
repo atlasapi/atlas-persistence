@@ -2,7 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import junit.framework.TestCase;
 
-import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.content.Broadcast;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 

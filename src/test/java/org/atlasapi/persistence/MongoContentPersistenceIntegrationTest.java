@@ -5,12 +5,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.ContentResolver;
-import org.atlasapi.persistence.content.ContentWriter;
-import org.atlasapi.persistence.content.KnownTypeContentResolver;
+import org.atlasapi.media.content.ContentResolver;
+import org.atlasapi.media.content.ContentWriter;
+import org.atlasapi.media.content.Identified;
+import org.atlasapi.media.content.Item;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.util.KnownTypeContentResolver;
 import org.atlasapi.persistence.logging.MongoLoggingAdapter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;

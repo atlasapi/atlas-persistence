@@ -3,17 +3,17 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Certificate;
-import org.atlasapi.media.entity.CrewMember;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.Episode;
-import org.atlasapi.media.entity.Film;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.ParentRef;
-import org.atlasapi.media.entity.ReleaseDate;
-import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
-import org.atlasapi.media.entity.Subtitles;
-import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.content.Certificate;
+import org.atlasapi.media.content.CrewMember;
+import org.atlasapi.media.content.EntityType;
+import org.atlasapi.media.content.Episode;
+import org.atlasapi.media.content.Film;
+import org.atlasapi.media.content.Item;
+import org.atlasapi.media.content.ParentRef;
+import org.atlasapi.media.content.ReleaseDate;
+import org.atlasapi.media.content.Subtitles;
+import org.atlasapi.media.content.Version;
+import org.atlasapi.media.content.ReleaseDate.ReleaseType;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.LocalDate;
 

@@ -3,8 +3,8 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Encoding;
-import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.content.Encoding;
+import org.atlasapi.media.content.Location;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.Sets;

@@ -4,6 +4,20 @@ import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
+import org.atlasapi.media.content.ContentGroupResolver;
+import org.atlasapi.media.content.ContentGroupWriter;
+import org.atlasapi.media.content.ContentResolver;
+import org.atlasapi.media.content.ContentWriter;
+import org.atlasapi.media.content.MongoContentLister;
+import org.atlasapi.media.content.MongoContentResolver;
+import org.atlasapi.media.content.MongoContentWriter;
+import org.atlasapi.media.content.MongoPersonStore;
+import org.atlasapi.media.content.MongoProductStore;
+import org.atlasapi.media.content.MongoTopicStore;
+import org.atlasapi.media.content.util.EquivalenceWritingContentWriter;
+import org.atlasapi.media.content.util.IdSettingContentWriter;
+import org.atlasapi.media.content.util.KnownTypeContentResolver;
+import org.atlasapi.media.content.util.LookupResolvingContentResolver;
 import org.atlasapi.media.product.IdSettingProductStore;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
@@ -12,30 +26,20 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
-import org.atlasapi.persistence.content.ContentResolver;
-import org.atlasapi.persistence.content.ContentWriter;
-import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
-import org.atlasapi.persistence.content.IdSettingContentWriter;
-import org.atlasapi.persistence.content.KnownTypeContentResolver;
-import org.atlasapi.persistence.content.LookupResolvingContentResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentLister;
-import org.atlasapi.persistence.content.mongo.MongoContentResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentWriter;
-import org.atlasapi.persistence.content.mongo.MongoPersonStore;
-import org.atlasapi.persistence.content.mongo.MongoProductStore;
-import org.atlasapi.persistence.content.mongo.MongoTopicStore;
+import org.atlasapi.media.topic.TopicQueryResolver;
+import org.atlasapi.media.topic.TopicStore;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
-import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
+import org.atlasapi.persistence.content.schedule.MongoScheduleStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
-import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.lookup.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
-import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
-import org.atlasapi.persistence.topic.TopicQueryResolver;
-import org.atlasapi.persistence.topic.TopicStore;
+import org.atlasapi.persistence.topic.util.TopicCreatingTopicResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -49,10 +53,6 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
 import com.mongodb.MongoReplicaSetProbe;
 import com.mongodb.WriteConcern;
-import org.atlasapi.persistence.content.ContentGroupResolver;
-import org.atlasapi.persistence.content.ContentGroupWriter;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
@@ -135,6 +135,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoTopicStore(db);
     }
     
+    @Override
     public @Primary @Bean SegmentWriter segmentWriter() {
         return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
     }
@@ -150,11 +151,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public @Primary @Bean ChannelGroupStore channelGroupStore() {
         return new MongoChannelGroupStore(db);
     }
-
+    
+    @Override
     public @Primary @Bean ProductStore productStore() {
         return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
     }
-
+    
+    @Override
     public @Primary @Bean ProductResolver productResolver() {
         return new MongoProductStore(db);
     }

@@ -2,7 +2,14 @@ package org.atlasapi.persistence.content.mongo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.atlasapi.media.entity.Publisher;
+
+import org.atlasapi.media.content.ChildRef;
+import org.atlasapi.media.content.ContentGroup;
+import org.atlasapi.media.content.EntityType;
+import org.atlasapi.media.content.MongoContentTables;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.SortKey;
+import org.atlasapi.media.content.util.ContentCategory;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Test;
@@ -11,11 +18,6 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBCollection;
-import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.ContentGroup;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.SortKey;
-import org.atlasapi.persistence.content.ContentCategory;
 
 import static org.junit.Assert.*;
 

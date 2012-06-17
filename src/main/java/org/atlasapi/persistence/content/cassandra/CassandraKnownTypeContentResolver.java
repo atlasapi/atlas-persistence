@@ -1,8 +1,8 @@
 package org.atlasapi.persistence.content.cassandra;
 
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.persistence.content.KnownTypeContentResolver;
-import org.atlasapi.persistence.content.ResolvedContent;
+import org.atlasapi.media.content.LookupRef;
+import org.atlasapi.media.content.ResolvedContent;
+import org.atlasapi.media.content.util.KnownTypeContentResolver;
 
 import com.google.common.collect.Iterables;
 

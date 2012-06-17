@@ -1,9 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Actor;
-import org.atlasapi.media.entity.CrewMember;
-import org.atlasapi.media.entity.CrewMember.Role;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Actor;
+import org.atlasapi.media.content.CrewMember;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.CrewMember.Role;
 
 import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;

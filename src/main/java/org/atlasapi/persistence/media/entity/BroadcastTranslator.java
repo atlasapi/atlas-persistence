@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.content.Broadcast;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 

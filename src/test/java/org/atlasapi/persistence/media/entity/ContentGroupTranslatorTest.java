@@ -3,13 +3,13 @@ package org.atlasapi.persistence.media.entity;
 
 import junit.framework.TestCase;
 
-import org.atlasapi.media.entity.ContentGroup;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.ChildRef;
+import org.atlasapi.media.content.ContentGroup;
+import org.atlasapi.media.content.EntityType;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.SortKey;
 
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.SortKey;
 import org.joda.time.DateTime;
 
 public class ContentGroupTranslatorTest extends TestCase {

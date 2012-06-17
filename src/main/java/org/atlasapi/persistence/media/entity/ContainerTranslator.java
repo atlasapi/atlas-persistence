@@ -3,13 +3,13 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Comparator;
 import java.util.List;
 
-import org.atlasapi.media.entity.Brand;
-import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.ParentRef;
-import org.atlasapi.media.entity.Series;
-import org.atlasapi.media.entity.SortKey;
+import org.atlasapi.media.content.Brand;
+import org.atlasapi.media.content.ChildRef;
+import org.atlasapi.media.content.Container;
+import org.atlasapi.media.content.EntityType;
+import org.atlasapi.media.content.ParentRef;
+import org.atlasapi.media.content.Series;
+import org.atlasapi.media.content.SortKey;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ImmutableList;

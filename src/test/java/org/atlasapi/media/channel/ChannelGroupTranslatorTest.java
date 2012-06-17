@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
-import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.content.Publisher;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;

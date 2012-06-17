@@ -2,11 +2,11 @@ package org.atlasapi.persistence.media.entity;
 
 import junit.framework.TestCase;
 
-import org.atlasapi.media.entity.Broadcast;
-import org.atlasapi.media.entity.Encoding;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Restriction;
-import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.content.Broadcast;
+import org.atlasapi.media.content.Encoding;
+import org.atlasapi.media.content.Publisher;
+import org.atlasapi.media.content.Restriction;
+import org.atlasapi.media.content.Version;
 import org.joda.time.Duration;
 
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
