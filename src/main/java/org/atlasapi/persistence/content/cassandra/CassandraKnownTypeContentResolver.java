@@ -1,9 +1,10 @@
 package org.atlasapi.persistence.content.cassandra;
 
-import com.google.common.collect.Iterables;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
-import org.atlasapi.persistence.lookup.entry.LookupRef;
+
+import com.google.common.collect.Iterables;
 
 /**
  */
