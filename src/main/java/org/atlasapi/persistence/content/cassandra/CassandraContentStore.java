@@ -52,9 +52,9 @@ import org.atlasapi.serialization.json.JsonFactory;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
-import org.atlasapi.serialization.json.ContainerConfiguration;
-import org.atlasapi.serialization.json.ItemConfiguration;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
+import org.atlasapi.serialization.json.configuration.model.FilteredContainerConfiguration;
+import org.atlasapi.serialization.json.configuration.model.FilteredItemConfiguration;
 
 /**
  */
@@ -247,7 +247,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private void marshalItem(Item item, MutationBatch mutation) throws IOException {
-        FilterProvider filters = new SimpleFilterProvider().addFilter(ItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ItemConfiguration.CLIPS_FILTER, ItemConfiguration.VERSIONS_FILTER));
+        FilterProvider filters = new SimpleFilterProvider().addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER));
         ObjectWriter writer = mapper.writer(filters);
         byte[] itemBytes = writer.writeValueAsBytes(item);
         byte[] clipsBytes = writer.writeValueAsBytes(item.getClips());
@@ -259,15 +259,15 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private void marshalContainer(Container container, MutationBatch mutation) throws IOException {
-        FilterProvider filters = new SimpleFilterProvider().addFilter(ContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(ContainerConfiguration.CLIPS_FILTER, ContainerConfiguration.SUB_ITEMS_FILTER));
+        FilterProvider filters = new SimpleFilterProvider().addFilter(FilteredContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContainerConfiguration.CLIPS_FILTER, FilteredContainerConfiguration.CHILD_REFS_FILTER));
         ObjectWriter writer = mapper.writer(filters);
         byte[] containerBytes = writer.writeValueAsBytes(container);
         byte[] clipsBytes = writer.writeValueAsBytes(container.getClips());
-        byte[] subItemsBytes = writer.writeValueAsBytes(container.getChildRefs());
+        byte[] childrenBytes = writer.writeValueAsBytes(container.getChildRefs());
         mutation.withRow(CONTAINER_CF, container.getCanonicalUri().toString()).
                 putColumn(CONTAINER_COLUMN, containerBytes, null).
                 putColumn(CLIPS_COLUMN, clipsBytes, null).
-                putColumn(CHILDREN_COLUMN, subItemsBytes, null);
+                putColumn(CHILDREN_COLUMN, childrenBytes, null);
     }
 
     private Content unmarshalItem(ColumnList<String> columns) throws IOException {
