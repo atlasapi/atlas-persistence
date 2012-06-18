@@ -1,8 +1,6 @@
 package org.atlasapi.persistence.content.cassandra;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -68,6 +66,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private Keyspace keyspace;
 
     public CassandraContentStore(String environment, List<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
+        this.mapper.setFilters(new SimpleFilterProvider().
+                addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER)).
+                addFilter(FilteredContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContainerConfiguration.CLIPS_FILTER, FilteredContainerConfiguration.CHILD_REFS_FILTER)));
         this.context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
@@ -247,11 +248,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private void marshalItem(Item item, MutationBatch mutation) throws IOException {
-        FilterProvider filters = new SimpleFilterProvider().addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER));
-        ObjectWriter writer = mapper.writer(filters);
-        byte[] itemBytes = writer.writeValueAsBytes(item);
-        byte[] clipsBytes = writer.writeValueAsBytes(item.getClips());
-        byte[] versionsBytes = writer.writeValueAsBytes(item.getVersions());
+        byte[] itemBytes = mapper.writeValueAsBytes(item);
+        byte[] clipsBytes = mapper.writeValueAsBytes(item.getClips());
+        byte[] versionsBytes = mapper.writeValueAsBytes(item.getVersions());
         mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
                 putColumn(ITEM_COLUMN, itemBytes, null).
                 putColumn(CLIPS_COLUMN, clipsBytes, null).
@@ -259,11 +258,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private void marshalContainer(Container container, MutationBatch mutation) throws IOException {
-        FilterProvider filters = new SimpleFilterProvider().addFilter(FilteredContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContainerConfiguration.CLIPS_FILTER, FilteredContainerConfiguration.CHILD_REFS_FILTER));
-        ObjectWriter writer = mapper.writer(filters);
-        byte[] containerBytes = writer.writeValueAsBytes(container);
-        byte[] clipsBytes = writer.writeValueAsBytes(container.getClips());
-        byte[] childrenBytes = writer.writeValueAsBytes(container.getChildRefs());
+        byte[] containerBytes = mapper.writeValueAsBytes(container);
+        byte[] clipsBytes = mapper.writeValueAsBytes(container.getClips());
+        byte[] childrenBytes = mapper.writeValueAsBytes(container.getChildRefs());
         mutation.withRow(CONTAINER_CF, container.getCanonicalUri().toString()).
                 putColumn(CONTAINER_COLUMN, containerBytes, null).
                 putColumn(CLIPS_COLUMN, clipsBytes, null).
