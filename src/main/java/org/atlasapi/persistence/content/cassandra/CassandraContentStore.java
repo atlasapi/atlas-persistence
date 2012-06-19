@@ -216,7 +216,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private Content readContent(String id) throws Exception {
         try {
             Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(ITEMS_CF).
-                    setConsistencyLevel(ConsistencyLevel.CL_QUORUM).
+                    setConsistencyLevel(ConsistencyLevel.CL_ONE).
                     getKey(id.toString()).
                     executeAsync();
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -233,7 +233,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private Container readContainer(String id) throws Exception {
         try {
             Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(CONTAINER_CF).
-                    setConsistencyLevel(ConsistencyLevel.CL_QUORUM).
+                    setConsistencyLevel(ConsistencyLevel.CL_ONE).
                     getKey(id.toString()).
                     executeAsync();
             OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
