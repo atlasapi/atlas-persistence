@@ -43,6 +43,9 @@ import org.atlasapi.persistence.topic.TopicStore;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
+import org.atlasapi.persistence.event.RecentChangeStore;
+import org.atlasapi.persistence.event.mongo.MongoRecentChangesStore;
+import org.springframework.context.annotation.Bean;
 
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
@@ -63,6 +66,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private final MongoSegmentResolver segmentResolver;
     private final MongoChannelGroupStore channelGroupStore;
     private final MongoProductStore productStore;
+    private final MongoRecentChangesStore changesStore;
 
     public MongoContentPersistenceModule(DatabasedMongo db) {
         AdapterLog log = new SystemOutAdapterLog();
@@ -83,6 +87,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.segmentResolver = new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
         this.channelGroupStore = new MongoChannelGroupStore(db);
         this.productStore = new MongoProductStore(db);
+        this.changesStore = new MongoRecentChangesStore(db);
     }
 	
     public ContentGroupWriter contentGroupWriter() {
@@ -173,4 +178,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return productStore;
     }
 
+    @Bean
+    public RecentChangeStore recentChangesStore() {
+        return changesStore;
+    }
 }
