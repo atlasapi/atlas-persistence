@@ -14,6 +14,7 @@ import org.atlasapi.persistence.content.ScheduleResolver;
 import org.atlasapi.persistence.content.mongo.LastUpdatedContentFinder;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
+import org.atlasapi.persistence.event.RecentChangeStore;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicContentLister;
@@ -60,4 +61,5 @@ public interface ContentPersistenceModule {
 	
 	TopicContentLister topicContentLister();
 	
+    RecentChangeStore recentChangesStore();
 }
