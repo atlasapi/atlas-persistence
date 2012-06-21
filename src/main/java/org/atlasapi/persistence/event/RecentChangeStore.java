@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.event;
 
-import org.atlasapi.persistence.messaging.event.EntityUpdatedEvent;
+import org.atlasapi.messaging.event.EntityUpdatedEvent;
 
 public interface RecentChangeStore {
 

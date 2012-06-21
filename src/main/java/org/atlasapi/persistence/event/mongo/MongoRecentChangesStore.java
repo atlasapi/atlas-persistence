@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.event.mongo;
 
-import org.atlasapi.persistence.messaging.event.EntityUpdatedEvent;
+import org.atlasapi.messaging.event.EntityUpdatedEvent;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
