@@ -16,9 +16,13 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.entry.LookupRef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -28,6 +32,7 @@ import com.google.common.collect.Sets;
 
 public class TransitiveLookupWriter implements LookupWriter {
 
+    private static final Logger log = LoggerFactory.getLogger(TransitiveLookupWriter.class);
     private final LookupEntryStore entryStore;
 
     public TransitiveLookupWriter(LookupEntryStore entryStore) {
@@ -36,6 +41,7 @@ public class TransitiveLookupWriter implements LookupWriter {
 
     @Override
     public <T extends Content> void writeLookup(final T subject, Iterable<T> directEquivalents, final Set<Publisher> publishers) {
+        Preconditions.checkArgument(Strings.emptyToNull(subject.getCanonicalUri()) != null, "Invalid subject URI");
         
         Set<Described> allItems = filterContentPublishers(ImmutableSet.<Described>builder().add(subject).addAll(directEquivalents).build(), publishers);
         
@@ -45,8 +51,12 @@ public class TransitiveLookupWriter implements LookupWriter {
         //entry for the subject.
         LookupEntry subjectEntry = Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of(subject.getCanonicalUri())), null);
         
-        if(subjectEntry != null && ImmutableSet.copyOf(Iterables.transform(subjectEntry.directEquivalents(),LookupRef.TO_ID)).equals(canonUris)) {
-            return;
+        if (subjectEntry != null) {
+            ImmutableSet<String> currentEquivalents = ImmutableSet.copyOf(Iterables.transform(subjectEntry.directEquivalents(),LookupRef.TO_ID));
+            if(currentEquivalents.equals(canonUris)) {
+                return;
+            }
+            log.trace("Equivalence change: {} -> {}", currentEquivalents, canonUris);
         }
         
         subjectEntry = subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
