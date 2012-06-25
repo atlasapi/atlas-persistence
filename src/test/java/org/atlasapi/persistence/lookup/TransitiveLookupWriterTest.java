@@ -1,6 +1,11 @@
 package org.atlasapi.persistence.lookup;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriter;
+import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
@@ -15,6 +20,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -309,4 +315,19 @@ public class TransitiveLookupWriterTest extends TestCase {
         
     }
     
+    public void testDoesntWriteEquivalencesWhenEquivalentsDontChange() {
+        
+        LookupEntryStore store = mock(LookupEntryStore.class);
+        TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
+        
+        Item paItem = createItem("paItem2",Publisher.PA);
+        Item pnItem = createItem("pnItem2",Publisher.PREVIEW_NETWORKS);
+        
+        LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(ImmutableList.of(LookupRef.from(pnItem)));
+        when(store.entriesForUris(ImmutableList.of(paItem.getCanonicalUri()))).thenReturn(ImmutableList.of(paLookupEntry));
+        
+        writer.writeLookup(paItem, ImmutableSet.of(pnItem), ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS));
+        
+        verify(store, never()).store(Mockito.isA(LookupEntry.class));
+    }
 }
