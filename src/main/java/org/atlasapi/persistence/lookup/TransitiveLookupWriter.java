@@ -54,9 +54,10 @@ public class TransitiveLookupWriter implements LookupWriter {
         if (subjectEntry != null) {
             ImmutableSet<String> currentEquivalents = ImmutableSet.copyOf(Iterables.transform(subjectEntry.directEquivalents(),LookupRef.TO_ID));
             if(currentEquivalents.equals(canonUris)) {
+                log.debug("Equivalence no change: {}", subject.getCanonicalUri());
                 return;
             }
-            log.trace("Equivalence change: {} -> {}", currentEquivalents, canonUris);
+            log.debug("Equivalence change: {} -> {}", currentEquivalents, canonUris);
         }
         
         subjectEntry = subjectEntry != null ? subjectEntry : LookupEntry.lookupEntryFrom(subject);
