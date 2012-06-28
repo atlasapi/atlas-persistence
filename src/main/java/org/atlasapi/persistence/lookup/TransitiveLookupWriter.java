@@ -33,6 +33,7 @@ import com.google.common.collect.Sets;
 public class TransitiveLookupWriter implements LookupWriter {
 
     private static final Logger log = LoggerFactory.getLogger(TransitiveLookupWriter.class);
+    private static final int maxSetSize = 150; 
     private final LookupEntryStore entryStore;
 
     public TransitiveLookupWriter(LookupEntryStore entryStore) {
@@ -66,6 +67,10 @@ public class TransitiveLookupWriter implements LookupWriter {
         //Pull the current transitive closures for the directly equivalent parameters.
         Map<LookupRef, LookupEntry> lookups = transitiveClosure(ImmutableSet.copyOf(Iterables.concat(ImmutableSet.of(subjectEntry), equivEntries)));
         
+        if (lookups.size() > maxSetSize) {
+            log.info("Transitive set too large: {} {}", subject, lookups.size());
+            return;
+        }
         
         //Update the direct equivalents for all the lookups.
         lookups = Maps.newHashMap(Maps.transformValues(lookups, new Function<LookupEntry, LookupEntry>() {
