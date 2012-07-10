@@ -23,8 +23,9 @@ public class MongoContainerSummaryResolver implements ContainerSummaryResolver {
     private final String title = "title";
     private final String description = "description";
     private final String seriesNumber = "seriesNumber";
+    private final String totalEpisodes = "totalEpisodes";
     private final String type = "type";
-    private final DBObject fields = MongoBuilders.select().fields(ID, CURIE, title, description).fields(seriesNumber, type).build();
+    private final DBObject fields = MongoBuilders.select().fields(ID, CURIE, title, description).fields(seriesNumber, totalEpisodes, type).build();
 
     public MongoContainerSummaryResolver(DatabasedMongo mongo) {
         this.containers = mongo.collection(ContentCategory.CONTAINER.tableName());
@@ -62,6 +63,7 @@ public class MongoContainerSummaryResolver implements ContainerSummaryResolver {
         summary.setTitle(TranslatorUtils.toString(containerDbo, title));
         summary.setDescription(TranslatorUtils.toString(containerDbo, description));
         summary.setSeriesNumber(TranslatorUtils.toInteger(containerDbo, seriesNumber));
+        summary.setTotalEpisodes(TranslatorUtils.toInteger(containerDbo, totalEpisodes));
         summary.setType(TranslatorUtils.toString(containerDbo, type));
         return Optional.of(summary);
     }
