@@ -63,8 +63,8 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
-        TopicRef topic2 = new TopicRef(2l, 0.02f, false);
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);
+        TopicRef topic2 = new TopicRef(2l, 0.02f, false, TopicRef.Relationship.ABOUT);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
@@ -104,7 +104,7 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals(topic1.getTopic(), t1.get("topic"));
         assertEquals(topic1.getWeighting(), t1.get("weighting"));
         assertEquals(topic1.isSupervised(), t1.get("supervised"));
-        
+        assertEquals(topic1.getRelationship().name(), t1.get("relationship"));
     }
     
     public void testConvertToItem() throws Exception {
@@ -139,8 +139,8 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
-        TopicRef topic2 = new TopicRef(2l, 0.02f, false);
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);
+        TopicRef topic2 = new TopicRef(2l, 0.02f, false, TopicRef.Relationship.ABOUT);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         ContentGroupRef contentGroup1 = new ContentGroupRef(1L, "uri");
