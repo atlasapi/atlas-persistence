@@ -7,8 +7,10 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.persistence.media.entity.TopicTranslator.NAMESPACE;
 import static org.atlasapi.persistence.media.entity.TopicTranslator.VALUE;
+import static org.atlasapi.persistence.media.entity.TopicTranslator.PUBLISHER;
 
 import org.atlasapi.content.criteria.ContentQuery;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.media.entity.TopicTranslator;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
@@ -61,6 +63,11 @@ public class MongoTopicStore implements TopicStore, TopicQueryResolver {
     @Override
     public Maybe<Topic> topicFor(String namespace, String value) {
         return topicForQuery(where().fieldEquals(VALUE, value).fieldEquals(NAMESPACE, namespace).build());
+    }
+    
+    @Override
+    public Maybe<Topic> topicFor(Publisher publisher, String namespace, String value) {
+    	return topicForQuery(where().fieldEquals(VALUE, value).fieldEquals(NAMESPACE, namespace).fieldEquals(PUBLISHER, Publisher.TO_KEY.apply(publisher)).build());
     }
 
     @Override
