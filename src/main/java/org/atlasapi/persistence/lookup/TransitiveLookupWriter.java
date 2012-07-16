@@ -2,8 +2,11 @@ package org.atlasapi.persistence.lookup;
 
 import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
+import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.transform;
 import static org.atlasapi.media.entity.Identified.TO_URI;
+import static org.atlasapi.media.entity.LookupRef.TO_ID;
 
 import java.util.Map;
 import java.util.Queue;
@@ -15,8 +18,11 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -27,7 +33,10 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 public class TransitiveLookupWriter implements LookupWriter {
-
+    
+    private static final Logger log = LoggerFactory.getLogger(TransitiveLookupWriter.class);
+    private static final int maxSetSize = 150;
+    
     private final LookupEntryStore entryStore;
     private final boolean explicit;
     
@@ -50,6 +59,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
     
     public void writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> publishers) {
+        Preconditions.checkArgument(emptyToNull(subjectUri) != null, "Invalid subject URI");
         
         //canonical URIs of subject and directEquivalents
         final Set<String> canonUris = ImmutableSet.<String>builder().add(subjectUri).addAll(equivalentUris).build();
@@ -57,15 +67,21 @@ public class TransitiveLookupWriter implements LookupWriter {
         //entry for the subject.
         LookupEntry subjectEntry = get(subjectUri);
         
-        if(subjectEntry != null && ImmutableSet.copyOf(Iterables.transform(relevantEquivalents(subjectEntry),LookupRef.TO_ID)).equals(canonUris)) {
+        ImmutableSet<String> currentEquivalents = ImmutableSet.copyOf(transform(relevantEquivalents(subjectEntry),TO_ID));
+        if(currentEquivalents.equals(canonUris)) {
             return;
         }
+        log.trace("Equivalence change: {} -> {}", currentEquivalents, canonUris);
         
         Set<LookupEntry> equivEntries = entriesFor(equivalentUris);
 
         //Pull the current transitive closures for the directly equivalent parameters.
         Map<LookupRef, LookupEntry> lookups = transitiveClosure(ImmutableSet.copyOf(Iterables.concat(ImmutableSet.of(subjectEntry), equivEntries)));
         
+        if(lookups.size() > maxSetSize) {
+            log.info("Transitive set too large: {} {}", subjectUri, lookups.size());
+            return;
+        }
         
         final ImmutableSet<LookupRef> subjectRef = ImmutableSet.of(subjectEntry.lookupRef());
         //Update the direct equivalents for all the lookups.

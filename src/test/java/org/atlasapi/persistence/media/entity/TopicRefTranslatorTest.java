@@ -22,7 +22,7 @@ public class TopicRefTranslatorTest {
  
         TopicRefTranslator translator = new TopicRefTranslator();
         
-        TopicRef topicRef = new TopicRef(1l, 0.01f, true);
+        TopicRef topicRef = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);
         DBObject dbObject = translator.toDBObject(topicRef);
         dbObject.put(MongoConstants.ID, "test");
 		collection.save(dbObject);
@@ -32,5 +32,6 @@ public class TopicRefTranslatorTest {
         assertThat(topicRef.getTopic(), is(equalTo(queried.getTopic())));
         assertThat(topicRef.getWeighting(), is(equalTo(queried.getWeighting())));
         assertThat(topicRef.isSupervised(), is(equalTo(queried.isSupervised())));
+        assertThat(topicRef.getRelationship(), is(equalTo(queried.getRelationship())));
 	}
 }
