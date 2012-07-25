@@ -10,6 +10,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -26,7 +27,7 @@ public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
     private final String broadcasts = "broadcasts";
     private final String transmissionEndTime = "transmissionEndTime";
     
-    private final String transmissionEndTimeKey = String.format("%s.%s.%s", versions, broadcasts, transmissionEndTime);
+    private final String transmissionEndTimeKey = Joiner.on(".").join(versions, broadcasts, transmissionEndTime);
     private final String containerKey = "container";
     
     private final DBObject fields = select().field(transmissionEndTimeKey).build();
