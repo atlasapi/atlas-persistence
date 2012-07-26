@@ -8,6 +8,7 @@ import static com.google.common.collect.Iterables.transform;
 import static org.atlasapi.media.entity.Identified.TO_URI;
 import static org.atlasapi.media.entity.LookupRef.TO_ID;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -191,19 +192,18 @@ public class TransitiveLookupWriter implements LookupWriter {
 
     // Uses a work queue to pull out and map the transitive closures rooted at each entry in entries.
     private Map<LookupRef, LookupEntry> transitiveClosure(Set<LookupEntry> entries) {
+
+        HashMap<LookupRef, LookupEntry> transitiveClosure = Maps.newHashMap();
         
-        Queue<LookupEntry> toProcess = Lists.newLinkedList(entries);
-        
-        Map<LookupRef, LookupEntry> found = Maps.newHashMap(Maps.uniqueIndex(entries, LookupEntry.TO_SELF));
-        
-        while(!toProcess.isEmpty()) {
-            LookupEntry current = toProcess.poll();
-            found.put(current.lookupRef(), current);
-            //add entries for equivalents that haven't been seen before to the work queue
-            toProcess.addAll(entriesForRefs(filter(neighbours(current), not(in(found.keySet())))));
+        for (LookupEntry entry : entries) {
+            transitiveClosure.put(entry.lookupRef(), entry);
+            for (LookupEntry equivEntry : entriesForRefs(filter(entry.equivalents(), not(in(transitiveClosure.keySet()))))) {
+                transitiveClosure.put(equivEntry.lookupRef(), equivEntry);
+            }
         }
         
-        return found;
+        return transitiveClosure;
+        
     }
 
     private Iterable<LookupRef> neighbours(LookupEntry current) {
