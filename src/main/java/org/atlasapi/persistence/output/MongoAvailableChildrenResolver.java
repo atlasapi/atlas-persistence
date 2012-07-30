@@ -10,12 +10,12 @@ import java.util.Comparator;
 
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.persistence.content.ContentCategory;
-import org.elasticsearch.common.collect.Ordering;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Ordering;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
