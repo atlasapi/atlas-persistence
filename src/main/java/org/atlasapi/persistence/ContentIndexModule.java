@@ -1,12 +1,16 @@
 package org.atlasapi.persistence;
 
 import org.atlasapi.persistence.content.ContentIndexer;
+import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 
 /**
  */
 public interface ContentIndexModule {
     
-    public void init();
+    void init();
     
-    public ContentIndexer contentIndexer();
+    ContentIndexer contentIndexer();
+
+    ScheduleIndex scheduleIndex();
+    
 }
