@@ -30,4 +30,5 @@ public class ESBroadcast extends ESObject {
         properties.put(TRANSMISSION_END_TIME, transmissionEndTime);
         return this;
     }
+    
 }
