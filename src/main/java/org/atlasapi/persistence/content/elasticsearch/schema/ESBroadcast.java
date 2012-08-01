@@ -4,23 +4,29 @@ import java.util.Date;
 
 /**
  */
-public class ESVersion extends ESObject {
+public class ESBroadcast extends ESObject {
     
+    public final static String ID = "id";
     public final static String CHANNEL = "channel";
     public final static String TRANSMISSION_TIME = "transmissionTime";
     public final static String TRANSMISSION_END_TIME = "transmissionEndTime";
     
-    public ESVersion channel(String channel) {
+    public ESBroadcast id(String id) {
+        properties.put(ID, id);
+        return this;
+    }
+    
+    public ESBroadcast channel(String channel) {
         properties.put(CHANNEL, channel);
         return this;
     }
     
-    public ESVersion transmissionTime(Date transmissionTime) {
+    public ESBroadcast transmissionTime(Date transmissionTime) {
         properties.put(TRANSMISSION_TIME, transmissionTime);
         return this;
     }
     
-    public ESVersion transmissionEndTime(Date transmissionEndTime) {
+    public ESBroadcast transmissionEndTime(Date transmissionEndTime) {
         properties.put(TRANSMISSION_END_TIME, transmissionEndTime);
         return this;
     }
