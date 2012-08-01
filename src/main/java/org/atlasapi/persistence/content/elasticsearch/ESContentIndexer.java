@@ -16,7 +16,7 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.node.NodeBuilder;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.*;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESVersion;
+import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
@@ -55,7 +55,7 @@ public class ESContentIndexer implements ContentIndexer {
                 startObject().
                 startObject(ESItem.TYPE).
                 startObject("properties").
-                startObject("versions").
+                startObject(ESItem.BROADCASTS).
                 field("type").value("nested").
                 endObject().
                 endObject().
@@ -66,16 +66,18 @@ public class ESContentIndexer implements ContentIndexer {
 
     @Override
     public void index(Item item) {
-        Collection<ESVersion> esVersions = new LinkedList<ESVersion>();
+        Collection<ESBroadcast> esBroadcasts = new LinkedList<ESBroadcast>();
         for (Version version : item.getVersions()) {
             for (Broadcast broadcast : version.getBroadcasts()) {
-                esVersions.add(new ESVersion().channel(
-                        broadcast.getBroadcastOn()).
-                        transmissionTime(broadcast.getTransmissionTime().toDate()).
-                        transmissionEndTime(broadcast.getTransmissionEndTime().toDate()));
+                if (broadcast.isActivelyPublished()) {
+                    esBroadcasts.add(new ESBroadcast().id(broadcast.getSourceId()). 
+                            channel(broadcast.getBroadcastOn()).
+                            transmissionTime(broadcast.getTransmissionTime().toDate()).
+                            transmissionEndTime(broadcast.getTransmissionEndTime().toDate()));
+                }
             }
         }
-        ESItem esItem = new ESItem().uri(item.getCanonicalUri()).publisher(item.getPublisher().name()).versions(esVersions);
+        ESItem esItem = new ESItem().uri(item.getCanonicalUri()).publisher(item.getPublisher().name()).broadcasts(esBroadcasts);
         ActionFuture<IndexResponse> result = esClient.client().index(
                 Requests.indexRequest(INDEX_NAME).
                 type(ESItem.TYPE).

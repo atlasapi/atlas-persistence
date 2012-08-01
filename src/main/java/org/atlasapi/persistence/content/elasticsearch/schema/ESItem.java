@@ -11,7 +11,7 @@ public class ESItem extends ESObject{
     //
     public final static String URI = "uri";
     public final static String PUBLISHER = "publisher";
-    public final static String VERSIONS = "versions";
+    public final static String BROADCASTS = "broadcasts";
     
     public ESItem uri(String uri) {
         properties.put(URI, uri);
@@ -23,8 +23,8 @@ public class ESItem extends ESObject{
         return this;
     }
     
-    public ESItem versions(Collection<ESVersion> versions) {
-        properties.put(VERSIONS, Iterables.transform(versions, TO_MAP));
+    public ESItem broadcasts(Collection<ESBroadcast> broadcasts) {
+        properties.put(BROADCASTS, Iterables.transform(broadcasts, TO_MAP));
         return this;
     }
 }

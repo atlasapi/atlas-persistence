@@ -52,17 +52,17 @@ public class ESContentIndexerTest {
         Thread.sleep(1000);
         
         ListenableActionFuture<SearchResponse> result1 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
-                QueryBuilders.nestedQuery("versions", QueryBuilders.fieldQuery("channel", "MB"))).execute();
+                QueryBuilders.nestedQuery("broadcasts", QueryBuilders.fieldQuery("channel", "MB"))).execute();
         SearchHits hits1 = result1.actionGet(60, TimeUnit.SECONDS).getHits();
         assertEquals(1, hits1.totalHits());
         
         ListenableActionFuture<SearchResponse> result2 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
-                QueryBuilders.nestedQuery("versions", QueryBuilders.rangeQuery("transmissionTime").from(new DateTime().minusDays(1).toDate()))).execute();
+                QueryBuilders.nestedQuery("broadcasts", QueryBuilders.rangeQuery("transmissionTime").from(new DateTime().minusDays(1).toDate()))).execute();
         SearchHits hits2 = result2.actionGet(60, TimeUnit.SECONDS).getHits();
         assertEquals(1, hits2.totalHits());
         
         ListenableActionFuture<SearchResponse> result3 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
-                QueryBuilders.nestedQuery("versions", QueryBuilders.rangeQuery("transmissionTime").from(new DateTime().toDate()))).execute();
+                QueryBuilders.nestedQuery("broadcasts", QueryBuilders.rangeQuery("transmissionTime").from(new DateTime().toDate()))).execute();
         SearchHits hits3 = result3.actionGet(60, TimeUnit.SECONDS).getHits();
         assertEquals(0, hits3.totalHits());
     }
