@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.event;
 
-import org.atlasapi.messaging.event.EntityUpdatedEvent;
+import org.atlasapi.messaging.EntityUpdatedMessage;
 
 public interface RecentChangeStore {
 
@@ -8,12 +8,12 @@ public interface RecentChangeStore {
      * Log a change.
      * @param event
      */
-    void logChange(EntityUpdatedEvent event);
+    void logChange(EntityUpdatedMessage event);
     
     /**
      * Logged changes
      * @return
      */
-    Iterable<EntityUpdatedEvent> changes();
+    Iterable<EntityUpdatedMessage> changes();
     
 }

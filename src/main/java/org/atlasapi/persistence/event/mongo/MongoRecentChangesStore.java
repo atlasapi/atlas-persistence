@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.event.mongo;
 
-import org.atlasapi.messaging.event.EntityUpdatedEvent;
+import org.atlasapi.messaging.EntityUpdatedMessage;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -19,16 +19,16 @@ public class MongoRecentChangesStore implements RecentChangeStore {
 
     private DBCollection changeCollection;
     
-    private final Function<DBObject, EntityUpdatedEvent> FROM_DBOBJECT = 
-        new Function<DBObject, EntityUpdatedEvent>() {
+    private final Function<DBObject, EntityUpdatedMessage> FROM_DBOBJECT = 
+        new Function<DBObject, EntityUpdatedMessage>() {
             @Override
-            public EntityUpdatedEvent apply(DBObject input) {
+            public EntityUpdatedMessage apply(DBObject input) {
                 String changeId = TranslatorUtils.toString(input, "cid");
                 DateTime timestamp = TranslatorUtils.toDateTime(input, "ts");
                 String entityId = TranslatorUtils.toString(input, "eid");
                 String entityType = TranslatorUtils.toString(input, "etype");
                 String entitySource = TranslatorUtils.toString(input, "esource");
-                return new EntityUpdatedEvent(changeId, timestamp, entityId, entityType, entitySource);
+                return new EntityUpdatedMessage(changeId, timestamp, entityId, entityType, entitySource);
             }
         };
 
@@ -42,13 +42,13 @@ public class MongoRecentChangesStore implements RecentChangeStore {
     }   
 
     @Override
-    public void logChange(EntityUpdatedEvent event) {
+    public void logChange(EntityUpdatedMessage event) {
         changeCollection.save(toDBObject(event));
     }
 
-    private DBObject toDBObject(EntityUpdatedEvent event) {
+    private DBObject toDBObject(EntityUpdatedMessage event) {
         BasicDBObject dbo = new BasicDBObject();
-        TranslatorUtils.from(dbo, "cid", event.getChangeId());
+        TranslatorUtils.from(dbo, "cid", event.getMessageId());
         TranslatorUtils.fromDateTime(dbo, "ts", event.getDateTime());
         TranslatorUtils.from(dbo, "eid", event.getEntityId());
         TranslatorUtils.from(dbo, "etype", event.getEntityType());
@@ -57,7 +57,7 @@ public class MongoRecentChangesStore implements RecentChangeStore {
     }
 
     @Override
-    public Iterable<EntityUpdatedEvent> changes() {
+    public Iterable<EntityUpdatedMessage> changes() {
         DBCursor changes = changeCollection.find().sort(new BasicDBObject(MongoConstants.NATURAL, -1));
         return Iterables.transform(changes, FROM_DBOBJECT);
     }
