@@ -43,10 +43,8 @@ import org.atlasapi.persistence.topic.TopicStore;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
-import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.event.RecentChangeStore;
 import org.atlasapi.persistence.event.mongo.MongoRecentChangesStore;
-import org.atlasapi.persistence.topic.TopicContentUriLister;
 import org.springframework.context.annotation.Bean;
 
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
@@ -135,12 +133,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	public ShortUrlSaver shortUrlSaver() {
 		return shortUrlSaver;
 	}
-
-    public TopicContentUriLister topicContentUriLister() {
-		return contentLister;
-    }
 	
-	public ContentLister contentLister() {
+	public MongoContentLister contentLister() {
 		return contentLister;
     }
 
