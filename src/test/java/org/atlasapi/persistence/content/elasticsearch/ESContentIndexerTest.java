@@ -10,7 +10,6 @@ import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Requests;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -24,25 +23,18 @@ import org.junit.Before;
 /**
  */
 public class ESContentIndexerTest {
-
-    private Node esNode;
+    
+    private Node esClient;
 
     @Before
     public void before() throws Exception {
-        esNode = NodeBuilder.nodeBuilder().
-                clusterName(ESSchema.CLUSTER_NAME).
-                settings(ImmutableSettings.settingsBuilder().
-                put("transport.tcp.port", 9300).
-                put("discovery.zen.ping.multicast.enabled", false).
-                put("discovery.zen.ping.unicast", "localhost:9300")).
-                build().
-                start();
+        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
     }
-
+    
     @After
     public void after() throws Exception {
-        esNode.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
-        esNode.close();
+        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
+        esClient.close();
     }
 
     @Test
@@ -52,27 +44,27 @@ public class ESContentIndexerTest {
         Item item = new Item("uri", "curie", Publisher.METABROADCAST);
         version.addBroadcast(broadcast);
         item.addVersion(version);
-
-        ESContentIndexer contentIndexer = new ESContentIndexer("localhost:9300", 60000);
+        
+        ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
         contentIndexer.init();
         
         Thread.sleep(1000);
         
         contentIndexer.index(item);
-
+        
         Thread.sleep(1000);
-
-        ListenableActionFuture<SearchResponse> result1 = esNode.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
+        
+        ListenableActionFuture<SearchResponse> result1 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
                 QueryBuilders.nestedQuery("broadcasts", QueryBuilders.fieldQuery("channel", "MB"))).execute();
         SearchHits hits1 = result1.actionGet(60, TimeUnit.SECONDS).getHits();
         assertEquals(1, hits1.totalHits());
-
-        ListenableActionFuture<SearchResponse> result2 = esNode.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
+        
+        ListenableActionFuture<SearchResponse> result2 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
                 QueryBuilders.nestedQuery("broadcasts", QueryBuilders.rangeQuery("transmissionTime").from(new DateTime().minusDays(1).toDate()))).execute();
         SearchHits hits2 = result2.actionGet(60, TimeUnit.SECONDS).getHits();
         assertEquals(1, hits2.totalHits());
-
-        ListenableActionFuture<SearchResponse> result3 = esNode.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
+        
+        ListenableActionFuture<SearchResponse> result3 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
                 QueryBuilders.nestedQuery("broadcasts", QueryBuilders.rangeQuery("transmissionTime").from(new DateTime().toDate()))).execute();
         SearchHits hits3 = result3.actionGet(60, TimeUnit.SECONDS).getHits();
         assertEquals(0, hits3.totalHits());
