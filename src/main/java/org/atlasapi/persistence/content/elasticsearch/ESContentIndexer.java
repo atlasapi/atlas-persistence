@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
-import com.google.common.base.Splitter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -18,37 +17,39 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.*;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.exists.IndicesExistsResponse;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.indices.IndexAlreadyExistsException;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 
 /**
  *
  */
 public class ESContentIndexer implements ContentIndexer {
 
-    private final TransportClient esClient;
+    private final Node esClient;
     private final long requestTimeout;
 
     public ESContentIndexer(String seeds, long requestTimeout) {
-        Iterable<String> hosts = Splitter.on(",").split(seeds);
-        this.esClient = new TransportClient(ImmutableSettings.settingsBuilder().put("cluster.name", CLUSTER_NAME));
-        for (String host : hosts) {
-            String[] pair = host.split(":");
-            this.esClient.addTransportAddress(new InetSocketTransportAddress(pair[0], Integer.parseInt(pair[1])));
-        }
+        this.esClient = NodeBuilder.nodeBuilder().client(true).clusterName(CLUSTER_NAME).
+                settings(ImmutableSettings.settingsBuilder().put("discovery.zen.ping.unicast.hosts", seeds)).
+                build().start();
         this.requestTimeout = requestTimeout;
     }
 
+    protected ESContentIndexer(Node esClient) {
+        this.esClient = esClient;
+        this.requestTimeout = 60000;
+    }
+
     public void init() throws IOException {
-        try {
-            ActionFuture<CreateIndexResponse> index = esClient.admin().indices().create(Requests.createIndexRequest(INDEX_NAME));
-            index.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-        } catch (IndexAlreadyExistsException ex) {
+        ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(Requests.indicesExistsRequest(INDEX_NAME));
+        if (!exists.actionGet(requestTimeout, TimeUnit.MILLISECONDS).isExists()) {
+            ActionFuture<CreateIndexResponse> create = esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME));
+            create.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
         }
         //
-        ActionFuture<PutMappingResponse> mapped = esClient.admin().indices().putMapping(
+        ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
                 Requests.putMappingRequest(INDEX_NAME).type(ESItem.TYPE).source(
                 XContentFactory.jsonBuilder().
                 startObject().
@@ -60,7 +61,7 @@ public class ESContentIndexer implements ContentIndexer {
                 endObject().
                 endObject().
                 endObject()));
-        mapped.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -69,7 +70,7 @@ public class ESContentIndexer implements ContentIndexer {
         for (Version version : item.getVersions()) {
             for (Broadcast broadcast : version.getBroadcasts()) {
                 if (broadcast.isActivelyPublished()) {
-                    esBroadcasts.add(new ESBroadcast().id(broadcast.getSourceId()). 
+                    esBroadcasts.add(new ESBroadcast().id(broadcast.getSourceId()).
                             channel(broadcast.getBroadcastOn()).
                             transmissionTime(broadcast.getTransmissionTime().toDate()).
                             transmissionEndTime(broadcast.getTransmissionEndTime().toDate()));
@@ -77,7 +78,7 @@ public class ESContentIndexer implements ContentIndexer {
             }
         }
         ESItem esItem = new ESItem().uri(item.getCanonicalUri()).publisher(item.getPublisher().name()).broadcasts(esBroadcasts);
-        ActionFuture<IndexResponse> result = esClient.index(
+        ActionFuture<IndexResponse> result = esClient.client().index(
                 Requests.indexRequest(INDEX_NAME).
                 type(ESItem.TYPE).
                 id(item.getCanonicalUri()).
