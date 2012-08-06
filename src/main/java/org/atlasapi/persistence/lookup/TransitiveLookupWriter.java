@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.lookup;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Strings.emptyToNull;
@@ -60,8 +61,16 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
     
     public void writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> publishers) {
-        Preconditions.checkArgument(emptyToNull(subjectUri) != null, "Invalid subject URI");
+        Preconditions.checkArgument(emptyToNull(subjectUri) != null, "Subject URI was null/empty");
         
+        try {
+            attemptWriteLookup(subjectUri, equivalentUris, publishers);
+        } catch (Throwable e) {
+            throw new RuntimeException(subjectUri, e);
+        }
+    }
+
+    private void attemptWriteLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> publishers) {
         //canonical URIs of subject and directEquivalents
         final Set<String> canonUris = ImmutableSet.<String>builder().add(subjectUri).addAll(equivalentUris).build();
 
@@ -120,7 +129,6 @@ public class TransitiveLookupWriter implements LookupWriter {
         for (LookupEntry entry : newLookups) {
             entryStore.store(entry);
         }
-
     }
 
     private Iterable<LookupRef> neighbours(final Set<Publisher> publishers,
@@ -173,8 +181,9 @@ public class TransitiveLookupWriter implements LookupWriter {
                     seen.add(current);
                 }
                 transitiveSet.add(current);
-                direct.addAll(lookupMap.get(current.id()).directEquivalents());
-                direct.addAll(lookupMap.get(current.id()).explicitEquivalents());
+                String id = current.id();
+                direct.addAll(checkNotNull(lookupMap.get(id), "No lookup entry for " + id).directEquivalents());
+                direct.addAll(lookupMap.get(id).explicitEquivalents());
             }
             
             newLookups.add(entry.copyWithEquivalents(transitiveSet));
