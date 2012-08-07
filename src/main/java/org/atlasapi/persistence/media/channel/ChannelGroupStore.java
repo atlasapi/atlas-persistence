@@ -1,6 +1,8 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import com.google.common.base.Optional;
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelGroup;
 
 public interface ChannelGroupStore {
 

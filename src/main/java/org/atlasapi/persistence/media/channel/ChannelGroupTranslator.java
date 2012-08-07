@@ -1,10 +1,10 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import java.util.Set;
 
 import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
 import com.google.common.collect.ImmutableSet;
@@ -12,6 +12,7 @@ import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.atlasapi.media.channel.ChannelGroup;
 
 public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
 

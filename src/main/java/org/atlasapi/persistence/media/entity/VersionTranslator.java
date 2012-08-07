@@ -9,8 +9,8 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.segment.SegmentEvent;
-import org.atlasapi.media.segment.SegmentEventTranslator;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.segment.SegmentEventTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 import org.joda.time.Duration;
 
 import com.google.common.base.Function;

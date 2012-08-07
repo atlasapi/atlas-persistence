@@ -1,11 +1,11 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import static com.google.common.collect.Iterables.transform;
 
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
 import com.google.common.collect.ImmutableSet;
@@ -13,6 +13,7 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.atlasapi.media.channel.Channel;
 
 public class ChannelTranslator implements ModelTranslator<Channel> {
 

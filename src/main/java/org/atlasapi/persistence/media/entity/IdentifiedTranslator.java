@@ -5,7 +5,7 @@ import java.util.Set;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Function;

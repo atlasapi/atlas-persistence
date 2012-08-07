@@ -1,5 +1,6 @@
 package org.atlasapi.media.channel;
 
+import org.atlasapi.persistence.media.channel.MongoChannelGroupStore;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;

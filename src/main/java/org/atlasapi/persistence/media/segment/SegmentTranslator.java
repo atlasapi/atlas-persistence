@@ -1,4 +1,4 @@
-package org.atlasapi.media.segment;
+package org.atlasapi.persistence.media.segment;
 
 import java.math.BigInteger;
 
@@ -12,6 +12,7 @@ import com.metabroadcast.common.persistence.translator.ModelTranslator;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.atlasapi.media.segment.Segment;
 
 public class SegmentTranslator implements ModelTranslator<Segment> {
 

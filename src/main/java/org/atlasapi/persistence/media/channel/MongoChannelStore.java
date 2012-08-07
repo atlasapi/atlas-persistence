@@ -1,4 +1,4 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
@@ -23,6 +23,7 @@ import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import org.atlasapi.media.channel.Channel;
 
 public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 

@@ -1,16 +1,17 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.media.channel.ChannelResolver;
-import org.atlasapi.media.product.ProductResolver;
-import org.atlasapi.media.product.ProductStore;
-import org.atlasapi.media.segment.SegmentResolver;
-import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.persistence.media.channel.ChannelResolver;
+import org.atlasapi.persistence.media.product.ProductResolver;
+import org.atlasapi.persistence.media.product.ProductStore;
+import org.atlasapi.persistence.media.segment.SegmentResolver;
+import org.atlasapi.persistence.media.segment.SegmentWriter;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.ScheduleResolver;
+import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.mongo.LastUpdatedContentFinder;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
@@ -60,6 +61,8 @@ public interface ContentPersistenceModule {
 	LastUpdatedContentFinder lastUpdatedContentFinder();
 	
 	TopicContentLister topicContentLister();
+    
+    ContentLister contentLister();
 	
     RecentChangeStore recentChangesStore();
 }

@@ -1,8 +1,8 @@
-package org.atlasapi.media.segment;
+package org.atlasapi.persistence.media.segment;
 
 import java.math.BigInteger;
 
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.Duration;
 
@@ -10,6 +10,8 @@ import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.atlasapi.media.segment.SegmentEvent;
+import org.atlasapi.media.segment.SegmentRef;
 
 public class SegmentEventTranslator implements ModelTranslator<SegmentEvent> {
 

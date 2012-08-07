@@ -1,7 +1,8 @@
-package org.atlasapi.media.segment;
+package org.atlasapi.persistence.media.segment;
 
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.ids.IdGenerator;
+import org.atlasapi.media.segment.Segment;
 
 public class IdSettingSegmentWriter implements SegmentWriter {
 
