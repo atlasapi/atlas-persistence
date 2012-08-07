@@ -9,7 +9,6 @@ import static com.google.common.collect.Iterables.transform;
 import static org.atlasapi.media.entity.Identified.TO_URI;
 import static org.atlasapi.media.entity.LookupRef.TO_ID;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -202,7 +201,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     // Uses a work queue to pull out and map the transitive closures rooted at each entry in entries.
     private Map<LookupRef, LookupEntry> transitiveClosure(Set<LookupEntry> entries) {
 
-        HashMap<LookupRef, LookupEntry> transitiveClosure = Maps.newHashMap();
+        Map<LookupRef, LookupEntry> transitiveClosure = Maps.newHashMap();
         
         for (LookupEntry entry : entries) {
             transitiveClosure.put(entry.lookupRef(), entry);
@@ -212,7 +211,6 @@ public class TransitiveLookupWriter implements LookupWriter {
         }
         
         return transitiveClosure;
-        
     }
 
     private Iterable<LookupRef> neighbours(LookupEntry current) {
