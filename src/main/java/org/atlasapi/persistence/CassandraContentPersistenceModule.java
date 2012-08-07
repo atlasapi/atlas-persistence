@@ -36,10 +36,6 @@ public class CassandraContentPersistenceModule implements ContentPersistenceModu
         this.cassandraContentStore = new CassandraContentStore(Lists.newArrayList(Splitter.on(',').split(seeds)), port, Runtime.getRuntime().availableProcessors() * 10, connectionTimeout, requestTimeout);
     }
 
-    public CassandraContentStore cassandraContentStore() {
-        return cassandraContentStore;
-    }
-
     @Override
     public ContentResolver contentResolver() {
         return cassandraContentStore;
