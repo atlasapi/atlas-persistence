@@ -86,6 +86,10 @@ public class MongoContentPersistenceModule {
         return contentWriter;
     }
 
+    public LookupResolvingContentResolver contentResolver() {
+        return contentResolver;
+    }
+    
     public MongoContentResolver knownTypeContentResolver() {
         return knownTypeContentResolver;
     }
