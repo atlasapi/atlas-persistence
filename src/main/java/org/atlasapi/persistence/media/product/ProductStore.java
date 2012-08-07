@@ -1,8 +1,9 @@
-package org.atlasapi.media.product;
+package org.atlasapi.persistence.media.product;
 
 import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.base.Optional;
+import org.atlasapi.media.product.Product;
 
 public interface ProductStore {
 

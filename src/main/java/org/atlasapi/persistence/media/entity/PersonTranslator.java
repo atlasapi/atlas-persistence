@@ -5,7 +5,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import java.util.List;
 
 import org.atlasapi.media.entity.Person;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;

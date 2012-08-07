@@ -1,5 +1,6 @@
 package org.atlasapi.media.channel;
 
+import org.atlasapi.persistence.media.channel.MongoChannelStore;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;

@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.media.MimeType;

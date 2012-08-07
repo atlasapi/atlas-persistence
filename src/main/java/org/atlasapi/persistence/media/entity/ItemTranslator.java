@@ -13,7 +13,7 @@ import org.atlasapi.media.entity.ReleaseDate;
 import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
 import org.atlasapi.media.entity.Subtitles;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 import org.joda.time.LocalDate;
 
 import com.google.common.base.Function;

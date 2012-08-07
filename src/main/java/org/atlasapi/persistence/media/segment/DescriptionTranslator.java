@@ -1,4 +1,4 @@
-package org.atlasapi.media.segment;
+package org.atlasapi.persistence.media.segment;
 
 import static org.atlasapi.media.entity.Description.description;
 
