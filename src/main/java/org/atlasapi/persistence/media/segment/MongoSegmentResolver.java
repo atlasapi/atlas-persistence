@@ -1,10 +1,10 @@
-package org.atlasapi.media.segment;
+package org.atlasapi.persistence.media.segment;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
-import static org.atlasapi.media.segment.SegmentTranslator.PUBLISHER_KEY;
-import static org.atlasapi.media.segment.SegmentTranslator.SOURCE_ID_KEY;
+import static org.atlasapi.persistence.media.segment.SegmentTranslator.PUBLISHER_KEY;
+import static org.atlasapi.persistence.media.segment.SegmentTranslator.SOURCE_ID_KEY;
 
 import java.util.Map;
 
@@ -24,6 +24,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.media.segment.Segment;
+import org.atlasapi.media.segment.SegmentRef;
 
 public class MongoSegmentResolver implements SegmentResolver {
 

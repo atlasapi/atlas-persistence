@@ -7,7 +7,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.TopicRef;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;

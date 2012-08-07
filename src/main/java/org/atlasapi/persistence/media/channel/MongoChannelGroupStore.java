@@ -1,4 +1,4 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
@@ -14,6 +14,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelGroup;
 
 public class MongoChannelGroupStore implements ChannelGroupStore {
 

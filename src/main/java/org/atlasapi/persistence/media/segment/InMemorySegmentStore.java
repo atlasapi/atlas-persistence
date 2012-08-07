@@ -1,4 +1,4 @@
-package org.atlasapi.media.segment;
+package org.atlasapi.persistence.media.segment;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -12,6 +12,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.metabroadcast.common.base.Maybe;
+import org.atlasapi.media.segment.Segment;
+import org.atlasapi.media.segment.SegmentRef;
 
 public class InMemorySegmentStore implements SegmentResolver, SegmentWriter {
 

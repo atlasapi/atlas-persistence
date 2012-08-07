@@ -1,4 +1,4 @@
-package org.atlasapi.media.segment;
+package org.atlasapi.persistence.media.segment;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
@@ -9,6 +9,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import org.atlasapi.media.segment.Segment;
 
 public class MongoSegmentWriter implements SegmentWriter {
 

@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.atlasapi.media.channel.Channel;
-import org.atlasapi.media.channel.ChannelResolver;
+import org.atlasapi.persistence.media.channel.ChannelResolver;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;

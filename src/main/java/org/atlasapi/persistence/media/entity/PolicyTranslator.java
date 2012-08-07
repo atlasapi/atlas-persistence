@@ -5,7 +5,7 @@ import java.util.Currency;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Policy.Platform;
 import org.atlasapi.media.entity.Policy.RevenueContract;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.metabroadcast.common.currency.Price;
 import com.metabroadcast.common.intl.Countries;

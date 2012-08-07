@@ -8,8 +8,8 @@ import static org.atlasapi.persistence.media.entity.ProductTranslator.CONTENT_KE
 
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.product.Product;
-import org.atlasapi.media.product.ProductResolver;
-import org.atlasapi.media.product.ProductStore;
+import org.atlasapi.persistence.media.product.ProductResolver;
+import org.atlasapi.persistence.media.product.ProductStore;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ProductTranslator;

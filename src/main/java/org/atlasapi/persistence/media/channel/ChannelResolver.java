@@ -1,10 +1,11 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import java.util.Map;
 
 import org.atlasapi.media.channel.Channel;
 
 import com.metabroadcast.common.base.Maybe;
+import org.atlasapi.media.channel.Channel;
 
 public interface ChannelResolver {
 

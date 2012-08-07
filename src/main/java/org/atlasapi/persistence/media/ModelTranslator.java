@@ -1,4 +1,4 @@
-package org.atlasapi.persistence;
+package org.atlasapi.persistence.media;
 
 import com.mongodb.DBObject;
 

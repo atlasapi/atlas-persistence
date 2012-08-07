@@ -10,7 +10,7 @@ import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SortKey;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
