@@ -22,6 +22,7 @@ import org.atlasapi.persistence.media.segment.SegmentResolver;
 import org.atlasapi.persistence.media.segment.SegmentWriter;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicContentLister;
+import org.atlasapi.persistence.topic.TopicContentUriLister;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 
@@ -130,17 +131,17 @@ public class CassandraContentPersistenceModule implements ContentPersistenceModu
     }
 
     @Override
-    public TopicContentLister topicContentLister() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
     public TopicQueryResolver topicQueryResolver() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public TopicStore topicStore() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public TopicContentUriLister topicContentUriLister() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     
