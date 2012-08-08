@@ -1,10 +1,22 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.persistence.media.channel.ChannelGroupStore;
+import org.atlasapi.persistence.media.channel.ChannelResolver;
 import org.atlasapi.persistence.media.channel.MongoChannelGroupStore;
 import org.atlasapi.persistence.media.channel.MongoChannelStore;
+import org.atlasapi.persistence.media.product.ProductResolver;
+import org.atlasapi.persistence.media.product.ProductStore;
 import org.atlasapi.persistence.media.segment.MongoSegmentResolver;
 import org.atlasapi.persistence.media.segment.MongoSegmentWriter;
+import org.atlasapi.persistence.media.segment.SegmentResolver;
+import org.atlasapi.persistence.media.segment.SegmentWriter;
+import org.atlasapi.persistence.content.ContentGroupResolver;
+import org.atlasapi.persistence.content.ContentGroupWriter;
+import org.atlasapi.persistence.content.ContentResolver;
+import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
+import org.atlasapi.persistence.content.mongo.LastUpdatedContentFinder;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -13,6 +25,7 @@ import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
+import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
@@ -21,20 +34,24 @@ import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.logging.SystemOutAdapterLog;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
+import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
+import org.atlasapi.persistence.topic.TopicQueryResolver;
+import org.atlasapi.persistence.topic.TopicStore;
 
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
 import org.atlasapi.persistence.event.RecentChangeStore;
 import org.atlasapi.persistence.event.mongo.MongoRecentChangesStore;
+import org.atlasapi.persistence.topic.TopicContentUriLister;
 
-public class MongoContentPersistenceModule {
+public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     private final MongoLookupEntryStore lookupStore;
-    private final MongoContentGroupWriter contentGroupWriter;
-    private final MongoContentGroupResolver contentGroupResolver;
-    private final MongoContentWriter contentWriter;
+    private final ContentGroupWriter contentGroupWriter;
+    private final ContentGroupResolver contentGroupResolver;
+    private final ContentWriter contentWriter;
     private final LookupResolvingContentResolver contentResolver;
     private final MongoContentResolver knownTypeContentResolver;
     private final MongoScheduleStore scheduleStore;
@@ -65,8 +82,8 @@ public class MongoContentPersistenceModule {
         this.itemsPeopleWriter = new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore, log), log);
         this.shortUrlSaver = new MongoShortUrlSaver(db);
         this.contentLister = new MongoContentLister(db);
+        this.topicCreatingTopicResolver = new TopicCreatingTopicResolver(new MongoTopicStore(db), new MongoSequentialIdGenerator(db, "topic"));
         this.topicStore = new MongoTopicStore(db);
-        this.topicCreatingTopicResolver = new TopicCreatingTopicResolver(topicStore, new MongoSequentialIdGenerator(db, "topic"));
         this.segmentWriter = new MongoSegmentWriter(db, new SubstitutionTableNumberCodec());
         this.segmentResolver = new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
         this.channelGroupStore = new MongoChannelGroupStore(db);
@@ -74,23 +91,23 @@ public class MongoContentPersistenceModule {
         this.changesStore = new MongoRecentChangesStore(db);
     }
 
-    public MongoContentGroupWriter contentGroupWriter() {
+    public ContentGroupWriter contentGroupWriter() {
         return contentGroupWriter;
     }
 
-    public MongoContentGroupResolver contentGroupResolver() {
+    public ContentGroupResolver contentGroupResolver() {
         return contentGroupResolver;
     }
 
-    public MongoContentWriter contentWriter() {
+    public ContentWriter contentWriter() {
         return contentWriter;
     }
 
-    public LookupResolvingContentResolver contentResolver() {
+    public ContentResolver contentResolver() {
         return contentResolver;
     }
-    
-    public MongoContentResolver knownTypeContentResolver() {
+
+    public KnownTypeContentResolver knownTypeContentResolver() {
         return knownTypeContentResolver;
     }
 
@@ -98,11 +115,15 @@ public class MongoContentPersistenceModule {
         return lookupStore;
     }
 
-    public MongoScheduleStore scheduleStore() {
+    public MongoScheduleStore scheduleResolver() {
         return scheduleStore;
     }
 
-    public QueuingItemsPeopleWriter itemsPeopleWriter() {
+    public MongoScheduleStore scheduleWriter() {
+        return scheduleStore;
+    }
+
+    public ItemsPeopleWriter itemsPeopleWriter() {
         return itemsPeopleWriter;
     }
 
@@ -110,7 +131,7 @@ public class MongoContentPersistenceModule {
         return personStore;
     }
 
-    public MongoShortUrlSaver shortUrlSaver() {
+    public ShortUrlSaver shortUrlSaver() {
         return shortUrlSaver;
     }
 
@@ -118,31 +139,47 @@ public class MongoContentPersistenceModule {
         return contentLister;
     }
 
-    public MongoTopicStore topicStore() {
+    public LastUpdatedContentFinder lastUpdatedContentFinder() {
+        return contentLister;
+    }
+
+    public TopicStore topicStore() {
+        return topicCreatingTopicResolver;
+    }
+
+    public TopicQueryResolver topicQueryResolver() {
         return topicStore;
     }
 
-    public MongoSegmentWriter segmentWriter() {
+    public SegmentWriter segmentWriter() {
         return segmentWriter;
     }
 
-    public MongoSegmentResolver segmentResolver() {
+    public SegmentResolver segmentResolver() {
         return segmentResolver;
     }
 
-    public MongoChannelStore channelStore() {
+    public ChannelResolver channelResolver() {
         return channelStore;
     }
 
-    public MongoChannelGroupStore channelGroupStore() {
+    public ChannelGroupStore channelGroupStore() {
         return channelGroupStore;
     }
 
-    public MongoProductStore productStore() {
+    public ProductStore productStore() {
+        return productStore;
+    }
+
+    public ProductResolver productResolver() {
         return productStore;
     }
 
     public RecentChangeStore recentChangesStore() {
         return changesStore;
+    }
+    
+    public TopicContentUriLister topicContentUriLister() {
+		return contentLister;
     }
 }
