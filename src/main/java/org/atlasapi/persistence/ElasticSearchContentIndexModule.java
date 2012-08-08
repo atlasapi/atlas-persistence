@@ -1,10 +1,9 @@
 package org.atlasapi.persistence;
 
 import java.io.IOException;
-import org.atlasapi.persistence.content.ContentIndexer;
 import org.atlasapi.persistence.content.elasticsearch.ESContentIndexer;
 
-public class ElasticSearchContentIndexModule implements ContentIndexModule {
+public class ElasticSearchContentIndexModule {
 
     private final ESContentIndexer contentIndexer;
 
@@ -12,7 +11,6 @@ public class ElasticSearchContentIndexModule implements ContentIndexModule {
         this.contentIndexer = new ESContentIndexer(seeds, requestTimeout);
     }
 
-    @Override
     public void init() {
         try {
             contentIndexer.init();
@@ -21,7 +19,7 @@ public class ElasticSearchContentIndexModule implements ContentIndexModule {
         }
     }
 
-    public ContentIndexer contentIndexer() {
+    public ESContentIndexer contentIndexer() {
         return contentIndexer;
     }
 }
