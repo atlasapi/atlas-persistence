@@ -23,6 +23,9 @@ public class CassandraSchema {
             "Container",
             StringSerializer.get(),
             StringSerializer.get());
+    
+    static final String EQUIV_COLUMN = "equiv";
+
     //
     public static final String ITEM_COLUMN = "item";
     public static final String CLIPS_COLUMN = "clips";
