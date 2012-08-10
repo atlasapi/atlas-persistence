@@ -13,10 +13,10 @@ import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import com.google.common.base.Functions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.MorePredicates;
 
 public class DefaultEquivalentContentResolver implements EquivalentContentResolver {
@@ -35,8 +35,11 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         
         ResolvedContent resolvedContent = contentResolver.findByCanonicalUris(Iterables.concat(mapToEquivs.values()));
         
-        
-        return null;
+        EquivalentContent.Builder equivalentContent = EquivalentContent.builder();
+        for (String uri : uris) {
+            equivalentContent.put(uri, ImmutableSet.copyOf(Iterables.filter(resolvedContent.getResolvedResults(mapToEquivs.get(uri)), Content.class)));
+        }
+        return equivalentContent.build();
     }
 
     private Map<String, Iterable<String>> mapToEquivs(Iterable<LookupEntry> resolved, Set<Publisher> selectedSources) {
