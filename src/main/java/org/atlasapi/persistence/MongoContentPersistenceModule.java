@@ -22,6 +22,7 @@ import org.atlasapi.persistence.logging.SystemOutAdapterLog;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
+import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -121,6 +122,10 @@ public class MongoContentPersistenceModule {
 
     public TopicCreatingTopicResolver topicStore() {
         return topicCreatingTopicResolver;
+    }
+    
+    public TopicQueryResolver topicQueryResolver() {
+        return topicStore;
     }
 
     public MongoSegmentWriter segmentWriter() {
