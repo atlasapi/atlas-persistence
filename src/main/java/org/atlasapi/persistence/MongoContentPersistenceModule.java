@@ -120,7 +120,7 @@ public class MongoContentPersistenceModule {
         return contentLister;
     }
 
-    public TopicStore topicStore() {
+    public TopicCreatingTopicResolver topicStore() {
         return topicCreatingTopicResolver;
     }
 
