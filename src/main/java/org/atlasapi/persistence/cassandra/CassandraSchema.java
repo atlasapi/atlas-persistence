@@ -19,6 +19,9 @@ public interface CassandraSchema {
             "Container",
             StringSerializer.get(),
             StringSerializer.get());
+    
+    static final String EQUIV_COLUMN = "equiv";
+
     //
     static final String ITEM_COLUMN = "item";
     static final String CLIPS_COLUMN = "clips";

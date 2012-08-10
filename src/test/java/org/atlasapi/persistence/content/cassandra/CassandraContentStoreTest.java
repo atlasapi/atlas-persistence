@@ -20,7 +20,7 @@ import org.junit.Ignore;
 
 /**
  */
-@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
+//@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraContentStoreTest {
     
     //
