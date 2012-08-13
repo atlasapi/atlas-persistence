@@ -43,7 +43,7 @@ public class EsScheduleIndexTest {
     private EsScheduleIndex scheduleIndex;
     private ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
 
-    private final Channel channel = new Channel(Publisher.METABROADCAST,"MB","MB",MediaType.VIDEO, "MB");
+    private final Channel channel = new Channel(Publisher.METABROADCAST,"MB","MB",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
     
     @Before
     public void before() throws Exception {
@@ -127,7 +127,7 @@ public class EsScheduleIndexTest {
     public void testDoesntReturnContentOnDifferentChannel() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item wrongChannel = itemWithBroadcast("wrong", "other", start.plusHours(1), start.plusHours(2));
+        Item wrongChannel = itemWithBroadcast("wrong", "http://www.bbc.co.uk/services/bbctwo", start.plusHours(1), start.plusHours(2));
         
         contentIndexer.index(wrongChannel);
         

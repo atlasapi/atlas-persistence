@@ -16,6 +16,9 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.fieldQuery;
 import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.textQuery;
+import static org.elasticsearch.index.query.TextQueryBuilder.Operator.AND;
+import static org.elasticsearch.index.query.TextQueryBuilder.Type.BOOLEAN;
 import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
 import java.util.Date;
@@ -31,6 +34,9 @@ import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TextQueryBuilder.Operator;
+import org.elasticsearch.index.query.TextQueryBuilder.Type;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
@@ -98,7 +104,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         return filteredQuery(
             boolQuery()
                 .must(fieldQuery(PUBLISHER, publisher))
-                .must(nestedQuery(BROADCASTS, fieldQuery(CHANNEL, broadcastOn))), 
+                .must(nestedQuery(BROADCASTS, textQuery(CHANNEL, broadcastOn).operator(AND))), 
             nestedFilter(BROADCASTS, orFilter(andFilter(
                 //inside or overlapping the interval ends
                 rangeFilter(TRANSMISSION_TIME).lt(to),
