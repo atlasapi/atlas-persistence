@@ -23,13 +23,11 @@ import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
-import org.atlasapi.persistence.topic.TopicStore;
 
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
-import org.atlasapi.persistence.event.RecentChangeStore;
-import org.atlasapi.persistence.event.mongo.MongoRecentChangesStore;
+import org.atlasapi.persistence.messaging.mongo.MongoMessageStore;
 
 public class MongoContentPersistenceModule {
 
@@ -51,7 +49,7 @@ public class MongoContentPersistenceModule {
     private final MongoSegmentResolver segmentResolver;
     private final MongoChannelGroupStore channelGroupStore;
     private final MongoProductStore productStore;
-    private final MongoRecentChangesStore changesStore;
+    private final MongoMessageStore messageStore;
 
     public MongoContentPersistenceModule(DatabasedMongo db) {
         AdapterLog log = new SystemOutAdapterLog();
@@ -73,7 +71,7 @@ public class MongoContentPersistenceModule {
         this.segmentResolver = new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
         this.channelGroupStore = new MongoChannelGroupStore(db);
         this.productStore = new MongoProductStore(db);
-        this.changesStore = new MongoRecentChangesStore(db);
+        this.messageStore = new MongoMessageStore(db);
     }
 
     public MongoContentGroupWriter contentGroupWriter() {
@@ -148,7 +146,7 @@ public class MongoContentPersistenceModule {
         return productStore;
     }
 
-    public RecentChangeStore recentChangesStore() {
-        return changesStore;
+    public MongoMessageStore messageStore() {
+        return messageStore;
     }
 }
