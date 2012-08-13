@@ -1,9 +1,9 @@
 package org.atlasapi.persistence;
 
 import java.io.IOException;
+
 import org.atlasapi.persistence.content.elasticsearch.ESContentIndexer;
 import org.atlasapi.persistence.content.elasticsearch.EsScheduleIndex;
-import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 
 public class ElasticSearchContentIndexModule {
 
@@ -27,7 +27,7 @@ public class ElasticSearchContentIndexModule {
         return contentIndexer;
     }
 
-    public ScheduleIndex scheduleIndex() {
+    public EsScheduleIndex scheduleIndex() {
         return scheduleIndex;
     }
 }
