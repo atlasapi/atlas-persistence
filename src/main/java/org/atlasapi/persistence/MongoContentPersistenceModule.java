@@ -121,10 +121,6 @@ public class MongoContentPersistenceModule {
         return topicCreatingTopicResolver;
     }
 
-    public TopicQueryResolver topicQueryResolver() {
-        return topicStore;
-    }
-
     public MongoSegmentWriter segmentWriter() {
         return segmentWriter;
     }
