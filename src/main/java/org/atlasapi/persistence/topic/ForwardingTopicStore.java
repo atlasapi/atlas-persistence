@@ -4,7 +4,7 @@ import org.atlasapi.media.entity.Topic;
 
 import com.metabroadcast.common.base.Maybe;
 
-public abstract class ForwardingTopicStore implements TopicStore {
+public abstract class ForwardingTopicStore implements TopicStore, TopicQueryResolver {
 
     protected ForwardingTopicStore() {}
     
