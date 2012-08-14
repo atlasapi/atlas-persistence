@@ -13,7 +13,6 @@ import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.media.entity.TopicTranslator;
-import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 
 import com.google.common.base.Function;
@@ -26,7 +25,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-public class MongoTopicStore implements TopicStore, TopicQueryResolver {
+public class MongoTopicStore implements TopicStore {
 
     private final DBCollection collection;
     private final TopicTranslator translator;
