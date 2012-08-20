@@ -65,17 +65,6 @@ public class EsScheduleIndex implements ScheduleIndex {
     };
     
     private final Node esClient;
-    
-    public EsScheduleIndex(String seeds) {
-        this(nodeBuilder()
-                .client(true)
-                .clusterName(CLUSTER_NAME)
-                .settings(settingsBuilder()
-                    .put("discovery.zen.ping.unicast.hosts", seeds)
-                ).build()
-                .start()
-        );
-    }
 
     public EsScheduleIndex(Node esClient) {
         this.esClient = esClient;
