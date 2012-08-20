@@ -55,8 +55,8 @@ public class ESTopicSearcherTest {
         version1.addBroadcast(broadcast1);
         version2.addBroadcast(broadcast2);
         //
-        TopicRef topic1 = new TopicRef(1l, 1.0f, Boolean.TRUE);
-        TopicRef topic2 = new TopicRef(2l, 1.0f, Boolean.TRUE);
+        TopicRef topic1 = new TopicRef(1l, 1.0f, Boolean.TRUE, TopicRef.Relationship.ABOUT);
+        TopicRef topic2 = new TopicRef(2l, 1.0f, Boolean.TRUE, TopicRef.Relationship.ABOUT);
         //
         Item item1 = new Item("uri1", "curie1", Publisher.METABROADCAST);
         item1.addVersion(version1);
