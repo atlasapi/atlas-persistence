@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -13,17 +12,12 @@ import com.metabroadcast.common.base.Maybe;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.OperationResult;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
-import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.query.AllRowsQuery;
-import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,15 +26,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
+import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.content.ContentResolver;
@@ -65,38 +59,27 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     //
     private Keyspace keyspace;
 
-    public CassandraContentStore(List<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
-        this.mapper.setFilters(new SimpleFilterProvider().
-                addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER)).
+    public CassandraContentStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
+        this.mapper.setFilters(new SimpleFilterProvider().addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER)).
                 addFilter(FilteredContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContainerConfiguration.CLIPS_FILTER, FilteredContainerConfiguration.CHILD_REFS_FILTER)));
-        this.context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
-                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
-                withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
-                setMaxBlockedThreadsPerHost(maxConnections).
-                setMaxConnsPerHost(maxConnections).
-                setConnectTimeout(connectionTimeout).
-                setSeeds(Joiner.on(",").join(seeds))).
-                withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
-                buildKeyspace(ThriftFamilyFactory.getInstance());
+        this.context = context;
         this.requestTimeout = requestTimeout;
     }
 
-    @PostConstruct
     public void init() {
-        context.start();
         keyspace = context.getEntity();
-    }
-
-    @PreDestroy
-    public void close() {
-        context.shutdown();
     }
 
     @Override
     public void createOrUpdate(Item item) {
         try {
-            writeItem(item);
-            attachItemToParent(item);
+            Container container = null;
+            ParentRef parent = item.getContainer();
+            if (parent != null) {
+                container = readContainer(parent.getUri());
+            }
+            writeItem(container, item);
+            attachItemToParent(container, item);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -106,6 +89,12 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     public void createOrUpdate(Container container) {
         try {
             writeContainer(container);
+            for (Identified child : findByCanonicalUris(Iterables.transform(container.getChildRefs(), ChildRef.TO_URI)).getAllResolvedResults()) {
+                if (child instanceof Item) {
+                    Item item = (Item) child;
+                    writeDenormalizedContainerData(container, item);
+                }
+            }
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -178,10 +167,11 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         }
     }
 
-    private void writeItem(Item item) throws Exception {
+    private void writeItem(Container container, Item item) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
         marshalItem(item, mutation);
+        marshalContainerSummary(container, item, mutation);
         Future<OperationResult<Void>> result = mutation.executeAsync();
         try {
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -202,14 +192,22 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         }
     }
 
-    private void attachItemToParent(Item item) throws Exception {
-        ParentRef parent = item.getContainer();
-        if (parent != null) {
-            Container container = readContainer(parent.getUri());
-            if (container != null) {
-                container.setChildRefs(ChildRef.dedupeAndSort(Iterables.concat(container.getChildRefs(), ImmutableList.of(item.childRef()))));
-                writeContainer(container);
-            }
+    private void writeDenormalizedContainerData(Container container, Item item) throws Exception {
+        MutationBatch mutation = keyspace.prepareMutationBatch();
+        mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
+        marshalContainerSummary(container, item, mutation);
+        Future<OperationResult<Void>> result = mutation.executeAsync();
+        try {
+            result.get(requestTimeout, TimeUnit.MILLISECONDS);
+        } catch (Exception ex) {
+            throw new CassandraPersistenceException(ex.getMessage(), ex);
+        }
+    }
+
+    private void attachItemToParent(Container container, Item item) throws Exception {
+        if (container != null) {
+            container.setChildRefs(ChildRef.dedupeAndSort(Iterables.concat(container.getChildRefs(), ImmutableList.of(item.childRef()))));
+            writeContainer(container);
         }
     }
 
@@ -257,6 +255,15 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 putColumn(VERSIONS_COLUMN, versionsBytes, null);
     }
 
+    private void marshalContainerSummary(Container container, Item item, MutationBatch mutation) throws IOException {
+        Item.ContainerSummary containerSummary = buildContainerSummary(container);
+        if (containerSummary != null) {
+            byte[] containerSummaryBytes = mapper.writeValueAsBytes(containerSummary);
+            mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
+                    putColumn(CONTAINER_SUMMARY_COLUMN, containerSummaryBytes, null);
+        }
+    }
+
     private void marshalContainer(Container container, MutationBatch mutation) throws IOException {
         byte[] containerBytes = mapper.writeValueAsBytes(container);
         byte[] clipsBytes = mapper.writeValueAsBytes(container.getClips());
@@ -271,8 +278,12 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         Item item = mapper.readValue(columns.getColumnByName(ITEM_COLUMN).getByteArrayValue(), Item.class);
         List<Clip> clips = mapper.readValue(columns.getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
         Set<Version> versions = mapper.readValue(columns.getColumnByName(VERSIONS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Version.class));
+        Item.ContainerSummary containerSummary = columns.getColumnNames().contains(CONTAINER_SUMMARY_COLUMN)
+                ? mapper.readValue(columns.getColumnByName(CONTAINER_SUMMARY_COLUMN).getByteArrayValue(), Item.ContainerSummary.class)
+                : null;
         item.setClips(clips);
         item.setVersions(versions);
+        item.setContainerSummary(containerSummary);
         return item;
     }
 
@@ -283,5 +294,19 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         container.setClips(clips);
         container.setChildRefs(children);
         return container;
+    }
+
+    private Item.ContainerSummary buildContainerSummary(Container container) throws IOException {
+        if (container != null) {
+            String title = container.getTitle();
+            String description = container.getDescription();
+            Integer series = null;
+            if (container instanceof Series) {
+                series = ((Series) container).getSeriesNumber();
+            }
+            return new Item.ContainerSummary(EntityType.from(container).name(), title, description, series);
+        } else {
+            return null;
+        }
     }
 }
