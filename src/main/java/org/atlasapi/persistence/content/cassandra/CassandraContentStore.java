@@ -26,17 +26,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.cassandra.CassandraDisplayTitle;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
@@ -172,7 +171,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
         marshalItem(item, mutation);
-        marshalDisplayTitle(container, item, mutation);
+        marshalContainerSummary(container, item, mutation);
         Future<OperationResult<Void>> result = mutation.executeAsync();
         try {
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -196,7 +195,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private void writeDenormalizedContainerData(Container container, Item item) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-        marshalDisplayTitle(container, item, mutation);
+        marshalContainerSummary(container, item, mutation);
         Future<OperationResult<Void>> result = mutation.executeAsync();
         try {
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
@@ -256,10 +255,13 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 putColumn(VERSIONS_COLUMN, versionsBytes, null);
     }
 
-    private void marshalDisplayTitle(Container container, Item item, MutationBatch mutation) throws IOException {
-        byte[] displayTitleBytes = mapper.writeValueAsBytes(buildDisplayTitle(container, item));
-        mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
-                putColumn(DISPLAY_TITLE_COLUMN, displayTitleBytes, null);
+    private void marshalContainerSummary(Container container, Item item, MutationBatch mutation) throws IOException {
+        Item.ContainerSummary containerSummary = buildContainerSummary(container);
+        if (containerSummary != null) {
+            byte[] containerSummaryBytes = mapper.writeValueAsBytes(containerSummary);
+            mutation.withRow(ITEMS_CF, item.getCanonicalUri()).
+                    putColumn(CONTAINER_SUMMARY_COLUMN, containerSummaryBytes, null);
+        }
     }
 
     private void marshalContainer(Container container, MutationBatch mutation) throws IOException {
@@ -276,8 +278,12 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         Item item = mapper.readValue(columns.getColumnByName(ITEM_COLUMN).getByteArrayValue(), Item.class);
         List<Clip> clips = mapper.readValue(columns.getColumnByName(CLIPS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, Clip.class));
         Set<Version> versions = mapper.readValue(columns.getColumnByName(VERSIONS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(Set.class, Version.class));
+        Item.ContainerSummary containerSummary = columns.getColumnNames().contains(CONTAINER_SUMMARY_COLUMN)
+                ? mapper.readValue(columns.getColumnByName(CONTAINER_SUMMARY_COLUMN).getByteArrayValue(), Item.ContainerSummary.class)
+                : null;
         item.setClips(clips);
         item.setVersions(versions);
+        item.setContainerSummary(containerSummary);
         return item;
     }
 
@@ -290,15 +296,17 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         return container;
     }
 
-    private CassandraDisplayTitle buildDisplayTitle(Container container, Item item) throws IOException {
-        String title = null;
-        String subtitle = null;
+    private Item.ContainerSummary buildContainerSummary(Container container) throws IOException {
         if (container != null) {
-            title = container.getTitle();
-            subtitle = container instanceof Series ? container.getTitle() + ":" + item.getTitle() : item.getTitle();
+            String title = container.getTitle();
+            String description = container.getDescription();
+            Integer series = null;
+            if (container instanceof Series) {
+                series = ((Series) container).getSeriesNumber();
+            }
+            return new Item.ContainerSummary(EntityType.from(container).name(), title, description, series);
         } else {
-            title = item.getTitle();
+            return null;
         }
-        return new CassandraDisplayTitle().title(title).subtitle(subtitle);
     }
 }

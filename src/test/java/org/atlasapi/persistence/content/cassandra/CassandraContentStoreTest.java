@@ -10,9 +10,12 @@ import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import java.util.Arrays;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.cassandra.CassandraSchema;
 import org.junit.After;
@@ -24,7 +27,7 @@ import static org.junit.Assert.*;
 
 /**
  */
-@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
+//@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraContentStoreTest {
 
     //
@@ -83,8 +86,10 @@ public class CassandraContentStoreTest {
         child1.setTitle("child1");
         child1.setId(3L);
 
-        Container container1 = new Container("container1", "curie1", Publisher.METABROADCAST);
+        Series container1 = new Series("container1", "curie1", Publisher.METABROADCAST);
         container1.setTitle("container1");
+        container1.setDescription("description1");
+        container1.withSeriesNumber(1);
         container1.setId(4L);
 
         container1.setChildRefs(Arrays.asList(child1.childRef()));
@@ -98,5 +103,11 @@ public class CassandraContentStoreTest {
 
         container1.setTitle("container11");
         store.createOrUpdate(container1);
+        
+        Item read = (Item) store.findByCanonicalUris(Arrays.asList("child1")).getAllResolvedResults().get(0);
+        assertEquals(EntityType.SERIES.name(), read.getContainerSummary().getType());
+        assertEquals("container11", read.getContainerSummary().getTitle());
+        assertEquals("description1", read.getContainerSummary().getDescription());
+        assertEquals(Integer.valueOf(1), read.getContainerSummary().getSeriesNumber());
     }
 }

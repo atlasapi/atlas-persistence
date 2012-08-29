@@ -28,6 +28,7 @@ public class CassandraSchema {
     public static final String CLIPS_COLUMN = "clips";
     public static final String VERSIONS_COLUMN = "versions";
     public static final String DISPLAY_TITLE_COLUMN = "display_title";
+    public static final String CONTAINER_SUMMARY_COLUMN = "container_summary";
     //
     public static final String CONTAINER_COLUMN = "container";
     public static final String CHILDREN_COLUMN = "children";
