@@ -23,6 +23,7 @@ public interface CassandraSchema {
     static final String ITEM_COLUMN = "item";
     static final String CLIPS_COLUMN = "clips";
     static final String VERSIONS_COLUMN = "versions";
+    static final String DISPLAY_TITLE_COLUMN = "display_title";
     //
     static final String CONTAINER_COLUMN = "container";
     static final String CHILDREN_COLUMN = "children";
