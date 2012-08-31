@@ -28,9 +28,7 @@ public class CassandraContentPersistenceModule {
                 withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
                 buildKeyspace(ThriftFamilyFactory.getInstance());
         this.cassandraContentStore = new CassandraContentStore(cassandraContext, requestTimeout);
-    }
-
-    public void init() {
+        //
         cassandraContext.start();
         cassandraContentStore.init();
     }
