@@ -77,8 +77,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
         }
         
-        entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
-
         return entity;
     }
 
