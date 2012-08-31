@@ -4,14 +4,13 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
@@ -35,6 +34,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final RelatedLinkTranslator relatedLinkTranslator;
     private final TopicRefTranslator contentTopicTranslator;
     private final ContentGroupRefTranslator contentGroupRefTranslator;
+    private final CrewMemberTranslator crewMemberTranslator;
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
         this(new DescribedTranslator(new IdentifiedTranslator()), new ClipTranslator(idCodec));
@@ -48,6 +48,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.relatedLinkTranslator = new RelatedLinkTranslator();
         this.contentTopicTranslator = new TopicRefTranslator();
         this.contentGroupRefTranslator = new ContentGroupRefTranslator();
+        this.crewMemberTranslator = new CrewMemberTranslator();
     }
 
     @Override
@@ -65,7 +66,17 @@ public class ContentTranslator implements ModelTranslator<Content> {
         } catch (ClassCastException e) {
             entity.setId(TranslatorUtils.toDouble(dbObject, ID_KEY).longValue());
         }
-
+        
+        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, "people");
+        if (list != null && ! list.isEmpty()) {
+            for (DBObject dbPerson: list) {
+                CrewMember crewMember = crewMemberTranslator.fromDBObject(dbPerson, null);
+                if (crewMember != null) {
+                    entity.addPerson(crewMember);
+                }
+            }
+        }
+        
         return entity;
     }
 
@@ -142,6 +153,14 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeRelatedLinks(dbObject, entity);
         encodeTopics(dbObject, entity);
         encodeContentGroups(dbObject, entity);
+        
+        if (! entity.people().isEmpty()) {
+            BasicDBList list = new BasicDBList();
+            for (CrewMember person: entity.people()) {
+                list.add(crewMemberTranslator.toDBObject(null, person));
+            }
+            dbObject.put("people", list);
+        }
 
         TranslatorUtils.from(dbObject, ID_KEY, entity.getId());
 

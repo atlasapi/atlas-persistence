@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Certificate;
-import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
@@ -18,7 +17,6 @@ import org.atlasapi.persistence.media.ModelTranslator;
 import org.joda.time.LocalDate;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
@@ -50,7 +48,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator;
-    private final CrewMemberTranslator crewMemberTranslator = new CrewMemberTranslator();
     
     private final Function<DBObject, Subtitles> subtitlesFromDbo = new Function<DBObject, Subtitles>() {
         @Override
@@ -111,16 +108,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
                 versions.add(version);
             }
             item.setVersions(versions);
-        }
-        
-        list = TranslatorUtils.toDBObjectList(dbObject, "people");
-        if (list != null && ! list.isEmpty()) {
-            for (DBObject dbPerson: list) {
-                CrewMember crewMember = crewMemberTranslator.fromDBObject(dbPerson, null);
-                if (crewMember != null) {
-                    item.addPerson(crewMember);
-                }
-            }
         }
         
         if(dbObject.containsField("container")) {
@@ -299,14 +286,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		    encodeReleases(itemDbo, film.getReleaseDates());
 		    encodeCertificates(itemDbo, film.getCertificates());
 		    
-		}
-		
-		if (! entity.people().isEmpty()) {
-		    BasicDBList list = new BasicDBList();
-            for (CrewMember person: entity.people()) {
-                list.add(crewMemberTranslator.toDBObject(null, person));
-            }
-            itemDbo.put("people", list);
 		}
 		
         return itemDbo;
