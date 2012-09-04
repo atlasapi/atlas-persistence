@@ -8,8 +8,9 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.media.entity.LookupRef.TO_ID;
+import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
 
 import java.util.Set;
@@ -43,13 +44,11 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     
     @Override
     public void store(LookupEntry entry) {
-        for (LookupEntry idEntry : entry.entriesForIdentifiers()) {
-            lookup.update(MongoBuilders.where().idEquals(idEntry.uri()).build(), translator.toDbo(idEntry), UPSERT, SINGLE);
-        }
+        lookup.update(MongoBuilders.where().idEquals(entry.uri()).build(), translator.toDbo(entry), UPSERT, SINGLE);
     }
     
     @Override
-    public Iterable<LookupEntry> entriesForUris(Iterable<String> uris) {
+    public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
         DBCursor found = lookup.find(where().idIn(uris).build());
         if (found == null) {
             return ImmutableList.of();
@@ -88,13 +87,22 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         
         store(merged);
         
-        for (LookupEntry entry : entriesForUris(transform(filter(transitiveEquivs, not(equalTo(ref))), TO_ID))) {
+        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(transitiveEquivs, not(equalTo(ref))), TO_ID))) {
             if(entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }
             entry = entry.copyWithEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build());
             store(entry);
         }
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
+        return Iterables.transform(find(identifiers), translator.FROM_DBO);
+    }
+
+    private Iterable<DBObject> find(Iterable<String> identifiers) {
+        return lookup.find(where().fieldIn(ALIASES, identifiers).build());
     }
 
 }
