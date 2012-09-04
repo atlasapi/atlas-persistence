@@ -11,7 +11,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.metabroadcast.common.time.DateTimeZones;
 
 public class LookupEntry {
@@ -20,7 +19,7 @@ public class LookupEntry {
         DateTime now = new DateTime(DateTimeZones.UTC);
         LookupRef lookupRef = LookupRef.from(c);
         ImmutableSet<LookupRef> reflexiveSet = ImmutableSet.of(lookupRef);
-        return new LookupEntry(c.getCanonicalUri(), c.getId(), lookupRef, c.getAliases(), reflexiveSet, reflexiveSet, reflexiveSet, now, now);
+        return new LookupEntry(c.getCanonicalUri(), c.getId(), lookupRef, c.getAllUris(), reflexiveSet, reflexiveSet, reflexiveSet, now, now);
     }
     
     public static Function<LookupEntry,String> TO_ID = new Function<LookupEntry, String>() {
@@ -125,14 +124,6 @@ public class LookupEntry {
 
     public DateTime updated() {
         return updated;
-    }
-    
-    public List<LookupEntry> entriesForIdentifiers() {
-        List<LookupEntry> entries = Lists.newArrayList(this);
-        for (String alias : aliases) {
-            entries.add(new LookupEntry(alias, id, self, ImmutableSet.<String>of(), ImmutableSet.<LookupRef>of(), ImmutableSet.<LookupRef>of(), this.equivs, created, updated));
-        }
-        return ImmutableList.copyOf(entries);
     }
 
     public LookupRef lookupRef() {
