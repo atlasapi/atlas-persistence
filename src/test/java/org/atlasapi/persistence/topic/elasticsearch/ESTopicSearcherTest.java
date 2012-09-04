@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.topic.elasticsearch;
 
 import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.query.Selection;
 import org.atlasapi.persistence.content.elasticsearch.*;
 import java.io.IOException;
 import java.util.List;
@@ -61,17 +62,25 @@ public class ESTopicSearcherTest {
         Item item1 = new Item("uri1", "curie1", Publisher.METABROADCAST);
         item1.addVersion(version1);
         item1.addTopicRef(topic1);
-        item1.addTopicRef(topic2);
         Item item2 = new Item("uri2", "curie2", Publisher.METABROADCAST);
         item2.addVersion(version1);
         item2.addTopicRef(topic1);
         Item item3 = new Item("uri3", "curie3", Publisher.METABROADCAST);
-        item3.addVersion(version2);
+        item3.addVersion(version1);
+        item3.addTopicRef(topic1);
         item3.addTopicRef(topic2);
+        Item item4 = new Item("uri4", "curie4", Publisher.METABROADCAST);
+        item4.addVersion(version2);
+        item4.addTopicRef(topic2);
+        Item item5 = new Item("uri5", "curie5", Publisher.METABROADCAST);
+        item5.addVersion(version2);
+        item5.addTopicRef(topic2);
         //
         indexer.index(item1);
         indexer.index(item2);
         indexer.index(item3);
+        indexer.index(item4);
+        indexer.index(item5);
         //
         Thread.sleep(1000);
         //
@@ -80,8 +89,17 @@ public class ESTopicSearcherTest {
         when(resolver.topicForId(2l)).thenReturn(Maybe.just(new Topic(2l)));
         //
         TopicSearcher searcher = new ESTopicSearcher(esClient, 60000);
-        List<Topic> topics = searcher.popularTopics(new Interval(new DateTime().minusHours(1), new DateTime().plusHours(1)), resolver);
+        List<Topic> topics = searcher.popularTopics(new Interval(new DateTime().minusHours(1), new DateTime().plusHours(1)), resolver, Selection.offsetBy(0).withLimit(Integer.MAX_VALUE));
+        assertEquals(2, topics.size());
         assertEquals(Long.valueOf(1), topics.get(0).getId());
         assertEquals(Long.valueOf(2), topics.get(1).getId());
+        //
+        topics = searcher.popularTopics(new Interval(new DateTime().minusHours(1), new DateTime().plusHours(1)), resolver, Selection.offsetBy(0).withLimit(1));
+        assertEquals(1, topics.size());
+        assertEquals(Long.valueOf(1), topics.get(0).getId());
+        //
+        topics = searcher.popularTopics(new Interval(new DateTime().minusHours(1), new DateTime().plusHours(1)), resolver, Selection.offsetBy(1).withLimit(1));
+        assertEquals(1, topics.size());
+        assertEquals(Long.valueOf(2), topics.get(0).getId());
     }
 }
