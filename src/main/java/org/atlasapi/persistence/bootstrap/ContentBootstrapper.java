@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ContentBootstrapper {
@@ -62,7 +61,7 @@ public class ContentBootstrapper {
         if (boostrapLock.tryLock()) {
             try {
                 bootstrapping = true;
-                destination = listener.getClass().toString();
+                destination = listener.getClass().getName();
                 listener.beforeContentChange();
                 try {
                     if (log.isInfoEnabled()) {
