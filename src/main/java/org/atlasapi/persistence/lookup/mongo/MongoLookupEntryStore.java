@@ -102,7 +102,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     private Iterable<DBObject> find(Iterable<String> identifiers) {
-        return lookup.find(where().fieldIn(ALIASES, identifiers).build());
+        return lookup.find(where().or(where().fieldIn(ALIASES, identifiers),where().idIn(identifiers)).build());
     }
 
 }
