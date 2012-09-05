@@ -59,6 +59,10 @@ public class ContentTranslatorTest {
         translator.toDBObject(dboFromContent, content);
         int hashCodeFromContent = dboFromContent.hashCode();
         
+        System.out.println(dbo);
+        System.out.println(dboFromContent);
+        
+        assertEquals(dbo, dboFromContent);
         assertEquals(hashCodeFromContent, hashCodeFromDbo);
     }
 }
