@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.lookup.mongo;
 
 import static com.google.common.base.Predicates.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
@@ -170,5 +171,34 @@ public class MongoLookupEntryStoreTest {
         LookupEntry changedEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(series.getCanonicalUri())));
         
         assertEquals(ContentCategory.PROGRAMME_GROUP, changedEntry.lookupRef().category());
+    }
+    
+    @Test
+    public void testEnsureLookupRewritesEntryWhenAliasesChange() {
+        
+        Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC_REDUX);
+        brand.addAlias("brandAlias");
+        
+        entryStore.ensureLookup(brand);
+        
+        brand.addAlias("anotherBrandAlias");
+        
+        entryStore.ensureLookup(brand);
+
+        LookupEntry entry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(brand.getCanonicalUri())));
+        
+        assertThat(entry.aliases().size(), is(3));
+        assertThat(entry.aliases(), hasItems("brandUri", "brandAlias", "anotherBrandAlias"));
+
+        brand.setAliases(ImmutableSet.of("anotherBrandAlias"));
+
+        entryStore.ensureLookup(brand);
+        
+        entry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(brand.getCanonicalUri())));
+        
+        assertThat(entry.aliases().size(), is(2));
+        assertThat(entry.aliases(), hasItems("brandUri", "anotherBrandAlias"));
+        
+        
     }
 }

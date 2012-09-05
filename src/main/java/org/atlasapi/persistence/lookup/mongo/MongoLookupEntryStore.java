@@ -74,26 +74,34 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         if (existing == null) {
             store(newEntry);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
-            convertEntry(content, newEntry, existing);
+            updateEntry(content, newEntry, existing);
+        } else if (!newEntry.aliases().equals(existing.aliases())) {
+            store(merge(content, newEntry, existing));
         }
     }
 
-    private void convertEntry(Content content, LookupEntry newEntry, LookupEntry existing) {
-        LookupRef ref = LookupRef.from(content);
-        Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
-        Set<LookupRef> explicit = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.explicitEquivalents()).build();
-        Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
-        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated());
-        
+    private void updateEntry(Content content, LookupEntry newEntry, LookupEntry existing) {
+        LookupEntry merged = merge(content, newEntry, existing);
+        LookupRef ref = merged.lookupRef();
+
         store(merged);
         
-        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(transitiveEquivs, not(equalTo(ref))), TO_ID))) {
+        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_ID))) {
             if(entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }
             entry = entry.copyWithEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build());
             store(entry);
         }
+    }
+
+    private LookupEntry merge(Content content, LookupEntry newEntry, LookupEntry existing) {
+        LookupRef ref = LookupRef.from(content);
+        Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
+        Set<LookupRef> explicit = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.explicitEquivalents()).build();
+        Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
+        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated());
+        return merged;
     }
 
     @Override
