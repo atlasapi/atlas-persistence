@@ -45,7 +45,7 @@ public class MongoContentPersistenceIntegrationTest {
         
         contentWriter.createOrUpdate(item);
         
-        Iterable<LookupEntry> entries = lookupStore.entriesForUris(ImmutableSet.of(item.getCanonicalUri()));
+        Iterable<LookupEntry> entries = lookupStore.entriesForCanonicalUris(ImmutableSet.of(item.getCanonicalUri()));
         LookupEntry entry = Iterables.getOnlyElement(entries);
         Long id = entry.id();
         assertThat(id, is(nullValue()));

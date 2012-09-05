@@ -41,9 +41,9 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         writer.writeLookup(item, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.BBC));
 
-        LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of("testUri")));
+        LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of("testUri")));
         assertEquals(item.getCanonicalUri(), uriEntry.uri());
-        assertEquals(item.getAliases(), uriEntry.aliases());
+        assertEquals(item.getAllUris(), uriEntry.aliases());
         assertEquals("testUri", Iterables.getOnlyElement(uriEntry.directEquivalents()).id());
 
         assertNotNull(uriEntry.created());
@@ -53,16 +53,8 @@ public class TransitiveLookupWriterTest extends TestCase {
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
         assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).category());
 
-        LookupEntry aliasEntry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of("testAlias")));
-        assertEquals(Iterables.getOnlyElement(item.getAliases()), aliasEntry.uri());
-        assertEquals(ImmutableSet.of(), aliasEntry.directEquivalents());
-
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(aliasEntry.equivalents()).id());
-        assertEquals(item.getPublisher(), Iterables.getOnlyElement(aliasEntry.equivalents()).publisher());
-        assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(aliasEntry.equivalents()).category());
-
-        assertNotNull(aliasEntry.created());
-        assertNotNull(aliasEntry.updated());
+        LookupEntry aliasEntry = Iterables.getOnlyElement(store.entriesForIdentifiers(ImmutableList.of("testAlias")));
+        assertEquals(aliasEntry, uriEntry);
 
     }
 
@@ -173,12 +165,12 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
 
     private void hasEquivs(Content id, Content... transitiveEquivs) {
-        LookupEntry entry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of(id.getCanonicalUri())));
+        LookupEntry entry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of(id.getCanonicalUri())));
         assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(transitiveEquivs),Identified.TO_URI)), ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), LookupRef.TO_ID)));
     }
 
     private void hasDirectEquivs(Content id, Content... directEquivs) {
-        LookupEntry entry = Iterables.getOnlyElement(store.entriesForUris(ImmutableList.of(id.getCanonicalUri())));
+        LookupEntry entry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of(id.getCanonicalUri())));
         assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(directEquivs),Identified.TO_URI)), ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(), LookupRef.TO_ID)));
     }
 
@@ -324,7 +316,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         Item pnItem = createItem("pnItem2",Publisher.PREVIEW_NETWORKS);
         
         LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(ImmutableList.of(LookupRef.from(pnItem)));
-        when(store.entriesForUris(ImmutableList.of(paItem.getCanonicalUri()))).thenReturn(ImmutableList.of(paLookupEntry));
+        when(store.entriesForCanonicalUris(ImmutableList.of(paItem.getCanonicalUri()))).thenReturn(ImmutableList.of(paLookupEntry));
         
         writer.writeLookup(paItem, ImmutableSet.of(pnItem), ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS));
         
