@@ -13,6 +13,7 @@ import org.joda.time.DateTime;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -27,7 +28,7 @@ public class LookupEntryTranslator {
     private static final String TYPE = "type";
     private static final String LAST_UPDATED = "updated";
     private static final String FIRST_CREATED = "created";
-    private static final String ALIASES = "aliases";
+    public static final String ALIASES = "aliases";
     public static final String OPAQUE_ID = "aid";
     
     public Function<LookupEntry, DBObject> TO_DBO = new Function<LookupEntry, DBObject>() {
@@ -50,7 +51,10 @@ public class LookupEntryTranslator {
         TranslatorUtils.from(dbo, ID, entry.uri());
         TranslatorUtils.from(dbo, OPAQUE_ID, entry.id());
         TranslatorUtils.from(dbo, SELF, equivalentToDbo.apply(entry.lookupRef()));
-        TranslatorUtils.fromSet(dbo, entry.aliases(), ALIASES);
+        
+        Set<String> aliases = Sets.newHashSet(entry.uri());
+        aliases.addAll(entry.aliases());
+        TranslatorUtils.fromSet(dbo, aliases, ALIASES);
         
         BasicDBList directEquivDbos = new BasicDBList();
         directEquivDbos.addAll(ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(),equivalentToDbo)));
@@ -96,7 +100,10 @@ public class LookupEntryTranslator {
         } catch (ClassCastException cce) {
             id = TranslatorUtils.toDouble(dbo, OPAQUE_ID).longValue();
         }
+
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
+        aliases.add(uri);
+        
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
         Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);

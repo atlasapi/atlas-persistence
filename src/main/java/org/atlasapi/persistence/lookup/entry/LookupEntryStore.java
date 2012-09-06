@@ -4,12 +4,29 @@ public interface LookupEntryStore {
 
     /**
      * Stores specified entry, and all related entries (like those for aliases).
+     * 
      * @param entry
      */
     void store(LookupEntry entry);
-    
-    Iterable<LookupEntry> entriesForUris(Iterable<String> uris);
-    
+
+    /**
+     * Get entries for given URIs or Aliases. There is a one-to-many mapping
+     * from identifier to entry so more entries maybe returned than were
+     * requested.
+     * 
+     * @param identifiers
+     * @return
+     */
+    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers);
+
+    /**
+     * Get entries for specified <b>canonical</b> URIs.
+     * 
+     * @param uris
+     * @return
+     */
+    Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris);
+
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
-    
+
 }

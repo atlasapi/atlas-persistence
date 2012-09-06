@@ -191,11 +191,11 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
     
     private Set<LookupEntry> entriesFor(Iterable<String> equivalents) {
-        return ImmutableSet.copyOf(entryStore.entriesForUris(equivalents));
+        return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(equivalents));
     }
 
     private LookupEntry get(String subject) {
-        return Iterables.getOnlyElement(entryStore.entriesForUris(ImmutableList.of(subject)), null);
+        return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(subject)), null);
     }
 
     // Uses a work queue to pull out and map the transitive closures rooted at each entry in entries.
@@ -218,6 +218,6 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Set<LookupEntry> entriesForRefs(Iterable<LookupRef> refs) {
-        return ImmutableSet.copyOf(entryStore.entriesForUris(Iterables.transform(refs, LookupRef.TO_ID)));
+        return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(Iterables.transform(refs, LookupRef.TO_ID)));
     }
 }

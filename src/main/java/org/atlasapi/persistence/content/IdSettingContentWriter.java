@@ -29,7 +29,7 @@ public class IdSettingContentWriter implements ContentWriter {
     
     //Check for existence of a lookup entry for the content. If none, generate a new ID for the content.
     private <T extends Content> T ensureId(T content) {
-        Iterable<LookupEntry> entries = lookupStore.entriesForUris(ImmutableList.of(content.getCanonicalUri()));
+        Iterable<LookupEntry> entries = lookupStore.entriesForCanonicalUris(ImmutableList.of(content.getCanonicalUri()));
 
         if (Iterables.isEmpty(entries)) {
             content.setId(generator.generateRaw());
