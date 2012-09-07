@@ -24,6 +24,8 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 
+import com.metabroadcast.common.time.DateTimeZones;
+
 /**
  *
  */
@@ -92,8 +94,8 @@ public class ESContentIndexer implements ContentIndexer {
                 if (broadcast.isActivelyPublished()) {
                     esBroadcasts.add(new ESBroadcast().id(broadcast.getSourceId()).
                             channel(broadcast.getBroadcastOn()).
-                            transmissionTime(broadcast.getTransmissionTime().toDate()).
-                            transmissionEndTime(broadcast.getTransmissionEndTime().toDate()));
+                            transmissionTime(broadcast.getTransmissionTime().toDateTime(DateTimeZones.UTC).toDate()).
+                            transmissionEndTime(broadcast.getTransmissionEndTime().toDateTime(DateTimeZones.UTC).toDate()));
                 }
             }
         }

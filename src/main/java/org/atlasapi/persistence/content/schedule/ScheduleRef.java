@@ -27,8 +27,13 @@ public final class ScheduleRef {
             this.entries = ImmutableList.builder();
         }
 
-        public Builder addEntry(String itemUri, DateTime broadcastTime, DateTime broadcastEndTime, @Nullable String broadcastId) {
-            entries.add(new ScheduleRefEntry(itemUri, channelId, broadcastTime, broadcastEndTime, broadcastId));
+        public Builder addEntry(ScheduleRefEntry entry) {
+            this.entries.add(entry);
+            return this;
+        }
+        
+        public Builder addEntries(Iterable<ScheduleRefEntry> entries) {
+            this.entries.addAll(entries);
             return this;
         }
         
