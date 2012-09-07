@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.time.DateTimeZones;
 
@@ -43,7 +44,8 @@ public class EsScheduleIndexTest {
     private EsScheduleIndex scheduleIndex;
     private ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
 
-    private final Channel channel = new Channel(Publisher.METABROADCAST,"MB","MB",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
+    private final Channel channel1 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
+    private final Channel channel2 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbctwo");
     
     @Before
     public void before() throws Exception {
@@ -66,13 +68,13 @@ public class EsScheduleIndexTest {
     @Test
     public void testReturnsContentContainedInInterval() throws Exception {
         
-        Item contained = itemWithBroadcast("contained", channel.getCanonicalUri(), new DateTime(10, UTC), new DateTime(20, UTC));
+        Item contained = itemWithBroadcast("contained", channel1.getCanonicalUri(), new DateTime(10, UTC), new DateTime(20, UTC));
 
         contentIndexer.index(contained);
         Thread.sleep(1000);
 
         Interval interval = new Interval(new DateTime(00, UTC), new DateTime(30, UTC));
-        Future<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel, interval);
+        Future<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval);
         
         ScheduleRef scheduleRef  = futureEntries.get(5, TimeUnit.SECONDS);
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
@@ -86,15 +88,15 @@ public class EsScheduleIndexTest {
     public void testReturnsContentOverlappingInterval() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item overlapStart = itemWithBroadcast("overlapStart", channel.getCanonicalUri(), start, start.plusHours(1));
-        Item overlapEnd = itemWithBroadcast("overlapEnd", channel.getCanonicalUri(), start.plusHours(2), start.plusHours(3));
+        Item overlapStart = itemWithBroadcast("overlapStart", channel1.getCanonicalUri(), start, start.plusHours(1));
+        Item overlapEnd = itemWithBroadcast("overlapEnd", channel1.getCanonicalUri(), start.plusHours(2), start.plusHours(3));
         
         contentIndexer.index(overlapEnd);
         contentIndexer.index(overlapStart);
         
         Thread.sleep(1000);
 
-        ListenableFuture<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
+        ListenableFuture<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
         
         ScheduleRef scheduleRef  = futureEntries.get(5, TimeUnit.SECONDS);
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
@@ -108,13 +110,13 @@ public class EsScheduleIndexTest {
     public void testReturnsContentContainingInterval() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item containsInterval = itemWithBroadcast("contains", channel.getCanonicalUri(), start, start.plusHours(3));
+        Item containsInterval = itemWithBroadcast("contains", channel1.getCanonicalUri(), start, start.plusHours(3));
         
         contentIndexer.index(containsInterval);
         
         Thread.sleep(1000);
         
-        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
 
         ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
@@ -133,7 +135,7 @@ public class EsScheduleIndexTest {
         
         Thread.sleep(1000);
         
-        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
         
         ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
@@ -145,12 +147,12 @@ public class EsScheduleIndexTest {
     public void testDoesntReturnContentOutsideInterval() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item tooLate = itemWithBroadcast("late", channel.getCanonicalUri(), start.plusHours(3), start.plusHours(4));
+        Item tooLate = itemWithBroadcast("late", channel1.getCanonicalUri(), start.plusHours(3), start.plusHours(4));
       
         contentIndexer.index(tooLate);
         Thread.sleep(1000);
           
-        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
           
         ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
@@ -163,12 +165,12 @@ public class EsScheduleIndexTest {
         
         Interval interval = new Interval(0, 100, DateTimeZones.UTC);
         
-        Item exactMatch = itemWithBroadcast("exact", channel.getCanonicalUri(), interval.getStart(), interval.getEnd());
+        Item exactMatch = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
         
         contentIndexer.index(exactMatch);
         Thread.sleep(1000);
         
-        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel, interval);
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval);
         
         ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
@@ -178,6 +180,62 @@ public class EsScheduleIndexTest {
         
     }
     
+    @Test
+    public void testOnlyReturnsExactlyMatchingScheduleRef() throws Exception {
+        
+        Interval interval1 = new Interval(0, 100, DateTimeZones.UTC);
+        Interval interval2 = new Interval(150, 200, DateTimeZones.UTC);
+        
+        Item itemWith2Broadcasts = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
+        Broadcast broadcast = new Broadcast(channel2.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
+        Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
+        
+        contentIndexer.index(itemWith2Broadcasts);
+        Thread.sleep(1000);
+        
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval2);
+        ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+        
+        assertThat(scheduleRef.getScheduleEntries().size(), is(0));
+
+        futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel2, interval1);
+        scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+
+        assertThat(scheduleRef.getScheduleEntries().size(), is(0));
+
+        futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval1);
+        scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+        
+        assertThat(scheduleRef.getScheduleEntries().size(), is(1));
+        
+        futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel2, interval2);
+        scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+        
+        assertThat(scheduleRef.getScheduleEntries().size(), is(1));
+    }
+    
+    @Test
+    public void testThatItemAppearingTwiceInScheduleGetsTwoEntries() throws Exception {
+        
+        Interval interval1 = new Interval(0, 100, DateTimeZones.UTC);
+        Interval interval2 = new Interval(150, 200, DateTimeZones.UTC);
+        
+        Item itemWith2Broadcasts = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
+        Broadcast broadcast = new Broadcast(channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
+        Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
+        
+        contentIndexer.index(itemWith2Broadcasts);
+        Thread.sleep(1000);
+        
+        Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, queryInterval);
+        ScheduleRef scheduleRef  = futureRef.get(500, TimeUnit.SECONDS);
+        
+        assertThat(scheduleRef.getScheduleEntries().size(), is(2));
+
+        
+    }
+     
     private Item itemWithBroadcast(String itemUri, String channelUri, DateTime start, DateTime end) {
         
         Broadcast broadcast = new Broadcast(channelUri, start, end);
