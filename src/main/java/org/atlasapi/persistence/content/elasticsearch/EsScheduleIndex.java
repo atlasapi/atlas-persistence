@@ -4,8 +4,8 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.ID;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_END_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.BROADCASTS;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.PUBLISHER;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.BROADCASTS;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.CLUSTER_NAME;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
