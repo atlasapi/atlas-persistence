@@ -6,8 +6,6 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.BROADCASTS;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.PUBLISHER;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.CLUSTER_NAME;
-import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.orFilter;
@@ -18,8 +16,6 @@ import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.textQuery;
 import static org.elasticsearch.index.query.TextQueryBuilder.Operator.AND;
-import static org.elasticsearch.index.query.TextQueryBuilder.Type.BOOLEAN;
-import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
 import java.util.Date;
 import java.util.List;
@@ -33,19 +29,16 @@ import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TextQueryBuilder.Operator;
-import org.elasticsearch.index.query.TextQueryBuilder.Type;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -65,6 +58,16 @@ public class EsScheduleIndex implements ScheduleIndex {
     };
     
     private final Node esClient;
+    private final AsyncFunction<SearchResponse, SearchResponse> scrollSearchFunction = new AsyncFunction<SearchResponse, SearchResponse>() {
+        @Override
+        public ListenableFuture<SearchResponse> apply(SearchResponse input) throws Exception {
+            SettableFuture<SearchResponse> searchResult = SettableFuture.create();
+            esClient.client()
+                .prepareSearchScroll(input.getScrollId())
+                .execute(resultSettingListener(searchResult));
+            return searchResult;
+        }
+    };
 
     public EsScheduleIndex(Node esClient) {
         this.esClient = esClient;
@@ -77,18 +80,21 @@ public class EsScheduleIndex implements ScheduleIndex {
         Date to = scheduleInterval.getEnd().toDate();
         String pub = publisher.name();
         
-        final SettableFuture<SearchResponse> result = SettableFuture.create();
+        SettableFuture<SearchResponse> scanResult = SettableFuture.create();
         
         esClient.client()
             .prepareSearch(ESSchema.INDEX_NAME)
-            .addFields(FIELDS)
+            .setSearchType(SearchType.SCAN)
+            .setScroll("1m")
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
-            .addSort(SortBuilders.fieldSort(BROADCAST_TRANSMISSION_TIME).order(SortOrder.DESC))
-            .execute(resultSettingListener(result));
+            .addFields(FIELDS)
+            .execute(resultSettingListener(scanResult));
+        
+        ListenableFuture<SearchResponse> result = Futures.transform(scanResult, scrollSearchFunction);
         
         return Futures.transform(result, resultTransformer(broadcastOn));
     }
-
+    
     private QueryBuilder scheduleQueryFor(String publisher, String broadcastOn, Date from, Date to) {
         return filteredQuery(
             boolQuery()
