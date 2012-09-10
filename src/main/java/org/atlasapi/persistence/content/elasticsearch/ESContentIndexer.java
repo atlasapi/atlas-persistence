@@ -23,6 +23,7 @@ import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESLocation;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESTopic;
 import org.atlasapi.persistence.content.elasticsearch.support.Strings;
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.IndicesExistsResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -55,78 +56,10 @@ public class ESContentIndexer implements ContentIndexer {
     }
 
     public void init() throws IOException {
-        ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(Requests.indicesExistsRequest(INDEX_NAME));
-        if (!exists.actionGet(requestTimeout, TimeUnit.MILLISECONDS).isExists()) {
-            ActionFuture<CreateIndexResponse> create = esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME));
-            create.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-        }
-        //
-        ActionFuture<PutMappingResponse> putMapping = null;
-        putMapping = esClient.client().admin().indices().putMapping(
-                Requests.putMappingRequest(INDEX_NAME).type(ESContent.ITEM_TYPE).source(
-                XContentFactory.jsonBuilder().
-                startObject().
-                startObject(ESContent.ITEM_TYPE).
-                startObject("_parent").
-                field("type").value(ESContent.CONTAINER_TYPE).
-                endObject().
-                startObject("properties").
-                startObject(ESContent.URI).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.TITLE).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.FLATTENED_TITLE).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.PUBLISHER).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.SPECIALIZATION).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.BROADCASTS).
-                field("type").value("nested").
-                endObject().
-                startObject(ESContent.LOCATIONS).
-                field("type").value("nested").
-                endObject().
-                endObject().
-                endObject().
-                endObject()));
-        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-        putMapping = esClient.client().admin().indices().putMapping(
-                Requests.putMappingRequest(INDEX_NAME).type(ESContent.CONTAINER_TYPE).source(
-                XContentFactory.jsonBuilder().
-                startObject().
-                startObject(ESContent.CONTAINER_TYPE).
-                startObject("properties").
-                startObject(ESContent.URI).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.TITLE).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.FLATTENED_TITLE).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                startObject(ESContent.PUBLISHER).
-                field("type").value("string").
-                field("analyzed").value("not_analyzed").
-                endObject().
-                endObject().
-                endObject().
-                endObject()));
-        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        createIndex();
+        putContainerMapping();
+        putChildItemMapping();
+        putTopItemMapping();
     }
 
     @Override
@@ -139,12 +72,18 @@ public class ESContentIndexer implements ContentIndexer {
                 broadcasts(makeESBroadcasts(item)).
                 locations(makeESLocations(item)).
                 topics(makeESTopics(item));
-        IndexRequest request = Requests.indexRequest(INDEX_NAME).
-                type(ESContent.ITEM_TYPE).
-                id(item.getCanonicalUri()).
-                source(indexed.toMap());
+        IndexRequest request = null;
         if (item.getContainer() != null) {
-            request.parent(item.getContainer().getUri());
+            request = Requests.indexRequest(INDEX_NAME).
+                    type(ESContent.CHILD_ITEM_TYPE).
+                    id(item.getCanonicalUri()).
+                    source(indexed.toMap()).
+                    parent(item.getContainer().getUri());
+        } else {
+            request = Requests.indexRequest(INDEX_NAME).
+                    type(ESContent.TOP_ITEM_TYPE).
+                    id(item.getCanonicalUri()).
+                    source(indexed.toMap());
         }
         ActionFuture<IndexResponse> result = esClient.client().index(request);
         result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
@@ -155,13 +94,136 @@ public class ESContentIndexer implements ContentIndexer {
         ESContent indexed = new ESContent().uri(container.getCanonicalUri()).
                 title(container.getTitle() != null ? container.getTitle() : null).
                 flattenedTitle(container.getTitle() != null ? Strings.flatten(container.getTitle()) : null).
-                publisher(container.getPublisher() != null ? container.getPublisher().key() : null);
+                publisher(container.getPublisher() != null ? container.getPublisher().key() : null).
+                specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null);
         ActionFuture<IndexResponse> result = esClient.client().index(
                 Requests.indexRequest(INDEX_NAME).
                 type(ESContent.CONTAINER_TYPE).
                 id(container.getCanonicalUri()).
                 source(indexed.toMap()));
         result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    private void createIndex() throws ElasticSearchException {
+        ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(Requests.indicesExistsRequest(INDEX_NAME));
+        if (!exists.actionGet(requestTimeout, TimeUnit.MILLISECONDS).isExists()) {
+            ActionFuture<CreateIndexResponse> create = esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME));
+            create.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void putContainerMapping() throws IOException, ElasticSearchException {
+        ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
+                Requests.putMappingRequest(INDEX_NAME).type(ESContent.CONTAINER_TYPE).source(
+                XContentFactory.jsonBuilder().
+                startObject().
+                startObject(ESContent.CONTAINER_TYPE).
+                startObject("properties").
+                startObject(ESContent.URI).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.TITLE).
+                field("type").value("string").
+                field("index").value("analyzed").
+                endObject().
+                startObject(ESContent.FLATTENED_TITLE).
+                field("type").value("string").
+                field("index").value("analyzed").
+                endObject().
+                startObject(ESContent.PUBLISHER).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.SPECIALIZATION).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                endObject().
+                endObject().
+                endObject()));
+        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    private void putChildItemMapping() throws ElasticSearchException, IOException {
+        ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
+                Requests.putMappingRequest(INDEX_NAME).type(ESContent.CHILD_ITEM_TYPE).source(
+                XContentFactory.jsonBuilder().
+                startObject().
+                startObject(ESContent.CHILD_ITEM_TYPE).
+                startObject("_parent").
+                field("type").value(ESContent.CONTAINER_TYPE).
+                endObject().
+                startObject("properties").
+                startObject(ESContent.URI).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.TITLE).
+                field("type").value("string").
+                field("index").value("analyzed").
+                endObject().
+                startObject(ESContent.FLATTENED_TITLE).
+                field("type").value("string").
+                field("index").value("analyzed").
+                endObject().
+                startObject(ESContent.PUBLISHER).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.SPECIALIZATION).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.BROADCASTS).
+                field("type").value("nested").
+                endObject().
+                startObject(ESContent.LOCATIONS).
+                field("type").value("nested").
+                endObject().
+                endObject().
+                endObject().
+                endObject()));
+        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    private void putTopItemMapping() throws ElasticSearchException, IOException {
+        ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
+                Requests.putMappingRequest(INDEX_NAME).type(ESContent.TOP_ITEM_TYPE).source(
+                XContentFactory.jsonBuilder().
+                startObject().
+                startObject(ESContent.TOP_ITEM_TYPE).
+                startObject("properties").
+                startObject(ESContent.URI).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.TITLE).
+                field("type").value("string").
+                field("index").value("analyzed").
+                endObject().
+                startObject(ESContent.FLATTENED_TITLE).
+                field("type").value("string").
+                field("index").value("analyzed").
+                endObject().
+                startObject(ESContent.PUBLISHER).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.SPECIALIZATION).
+                field("type").value("string").
+                field("index").value("not_analyzed").
+                endObject().
+                startObject(ESContent.BROADCASTS).
+                field("type").value("nested").
+                endObject().
+                startObject(ESContent.LOCATIONS).
+                field("type").value("nested").
+                endObject().
+                endObject().
+                endObject().
+                endObject()));
+        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     private Collection<ESBroadcast> makeESBroadcasts(Item item) {
