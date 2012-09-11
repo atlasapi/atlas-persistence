@@ -10,6 +10,8 @@ public class ESBroadcast extends ESObject {
     public final static String CHANNEL = "channel";
     public final static String TRANSMISSION_TIME = "transmissionTime";
     public final static String TRANSMISSION_END_TIME = "transmissionEndTime";
+    public final static String TRANSMISSION_TIME_IN_MILLIS = "transmissionTimeInMillis";
+    public final static String REPEAT = "repeat";
     
     public ESBroadcast id(String id) {
         properties.put(ID, id);
@@ -31,4 +33,13 @@ public class ESBroadcast extends ESObject {
         return this;
     }
     
+    public ESBroadcast transmissionTimeInMillis(Long transmissionTimeInMillis) {
+        properties.put(TRANSMISSION_TIME_IN_MILLIS, transmissionTimeInMillis);
+        return this;
+    }
+    
+    public ESBroadcast repeat(Boolean repeat) {
+        properties.put(REPEAT, repeat);
+        return this;
+    }
 }

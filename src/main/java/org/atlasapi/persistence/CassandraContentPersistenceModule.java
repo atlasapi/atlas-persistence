@@ -40,4 +40,8 @@ public class CassandraContentPersistenceModule {
     public CassandraContentStore cassandraContentStore() {
         return cassandraContentStore;
     }
+    
+    public void init() {
+        cassandraContentStore.init();
+    }
 }

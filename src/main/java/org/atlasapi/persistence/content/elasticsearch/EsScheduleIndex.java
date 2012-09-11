@@ -4,8 +4,8 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.ID;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_END_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.BROADCASTS;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.PUBLISHER;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.BROADCASTS;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.orFilter;
@@ -15,7 +15,7 @@ import static org.elasticsearch.index.query.QueryBuilders.fieldQuery;
 import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.textQuery;
-import static org.elasticsearch.index.query.TextQueryBuilder.Operator.AND;
+import static org.elasticsearch.index.query.MatchQueryBuilder.Operator.AND;
 
 import java.util.Date;
 import java.util.List;

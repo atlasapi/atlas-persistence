@@ -70,6 +70,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         keyspace = context.getEntity();
     }
 
+    public void close() {
+        context.shutdown();
+    }
+
     @Override
     public void createOrUpdate(Item item) {
         try {
