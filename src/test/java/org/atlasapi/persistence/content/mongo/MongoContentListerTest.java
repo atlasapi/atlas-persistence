@@ -63,9 +63,9 @@ public class MongoContentListerTest {
         bbcBrand.setLastUpdated(tenthOfTheTenth);
         c4Brand.setLastUpdated(ELEVENTH_OF_THE_TENTH);
         
-        TopicRef topic1 = new TopicRef(1l, 0.01f, true);
-        TopicRef topic2 = new TopicRef(2l, 0.01f, true);
-        TopicRef topic3 = new TopicRef(3l, 0.01f, true);
+        TopicRef topic1 = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);
+        TopicRef topic2 = new TopicRef(2l, 0.01f, true, TopicRef.Relationship.ABOUT);
+        TopicRef topic3 = new TopicRef(3l, 0.01f, true, TopicRef.Relationship.ABOUT);
 
         bbcItem1.setTopicRefs(ImmutableSet.of(topic1, topic2, topic3));
         c4Item1.setTopicRefs(ImmutableSet.of(topic2, topic3));
