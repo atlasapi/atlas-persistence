@@ -81,13 +81,11 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         this.requestTimeout = requestTimeout;
     }
 
-    @PostConstruct
     public void init() {
         context.start();
         keyspace = context.getEntity();
     }
 
-    @PreDestroy
     public void close() {
         context.shutdown();
     }
