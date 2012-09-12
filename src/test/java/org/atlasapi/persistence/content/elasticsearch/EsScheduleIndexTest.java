@@ -242,10 +242,10 @@ public class EsScheduleIndexTest {
         Interval interval1 = new Interval(0, 100, DateTimeZones.UTC);
         Interval interval2 = new Interval(150, 200, DateTimeZones.UTC);
         
-        Item childItem = itemWithBroadcast("child", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
+        Item childItem = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
         childItem.setContainer(new Brand("brandUri","brandCurie",METABROADCAST));
         
-        Item topItem = itemWithBroadcast("top", channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
+        Item topItem = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
         
         contentIndexer.index(childItem);
         contentIndexer.index(topItem);

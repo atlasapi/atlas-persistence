@@ -5,8 +5,8 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_END_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.BROADCASTS;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.CHILD_ITEM_TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.TOP_ITEM_TYPE;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.INDEX_NAME;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
@@ -175,13 +175,13 @@ public class EsScheduleIndex implements ScheduleIndex {
         String broadcastOn = channel.getCanonicalUri();
         Date from = scheduleInterval.getStart().toDate();
         Date to = scheduleInterval.getEnd().toDate();
-        String pub = publisher.name();
+        String pub = publisher.key();
         
         SettableFuture<SearchResponse> result = SettableFuture.create();
         
         esClient.client()
             .prepareSearch(INDEX_NAME)
-            .setTypes(CHILD_ITEM_TYPE, TOP_ITEM_TYPE)
+            .setTypes(TOP_ITEM_TYPE, CHILD_ITEM_TYPE)
             .setSearchType(SearchType.SCAN)
             .setScroll(SCROLL_TIMEOUT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
