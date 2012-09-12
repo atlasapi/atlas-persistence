@@ -13,6 +13,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.MediaType;
@@ -69,7 +70,7 @@ public class EsScheduleIndexTest {
     public void testReturnsContentContainedInInterval() throws Exception {
         
         Item contained = itemWithBroadcast("contained", channel1.getCanonicalUri(), new DateTime(10, UTC), new DateTime(20, UTC));
-
+        
         contentIndexer.index(contained);
         Thread.sleep(1000);
 
@@ -229,10 +230,32 @@ public class EsScheduleIndexTest {
         
         Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, queryInterval);
-        ScheduleRef scheduleRef  = futureRef.get(500, TimeUnit.SECONDS);
+        ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
         
         assertThat(scheduleRef.getScheduleEntries().size(), is(2));
-
+        
+    }
+    
+    @Test
+    public void testFindsBothChildrenAndTopLevelItems() throws Exception {
+        
+        Interval interval1 = new Interval(0, 100, DateTimeZones.UTC);
+        Interval interval2 = new Interval(150, 200, DateTimeZones.UTC);
+        
+        Item childItem = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
+        childItem.setContainer(new Brand("brandUri","brandCurie",METABROADCAST));
+        
+        Item topItem = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
+        
+        contentIndexer.index(childItem);
+        contentIndexer.index(topItem);
+        Thread.sleep(1000);
+        
+        Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, queryInterval);
+        ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+        
+        assertThat(scheduleRef.getScheduleEntries().size(), is(2));
         
     }
      
