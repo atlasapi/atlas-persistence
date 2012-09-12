@@ -248,8 +248,10 @@ public class ESContentIndexer implements ContentIndexer {
         for (Version version : item.getVersions()) {
             for (Encoding encoding : version.getManifestedAs()) {
                 for (Location location : encoding.getAvailableAt()) {
-                    esLocations.add(new ESLocation().availabilityTime(
-                            location.getPolicy().getAvailabilityStart().toDate()).availabilityEndTime(location.getPolicy().getAvailabilityEnd().toDate()));
+                    if (location.getPolicy() != null && location.getPolicy().getAvailabilityStart() != null && location.getPolicy().getAvailabilityEnd() != null) {
+                        esLocations.add(new ESLocation().availabilityTime(location.getPolicy().getAvailabilityStart().toDateTime(DateTimeZones.UTC).toDate()).
+                                availabilityEndTime(location.getPolicy().getAvailabilityEnd().toDateTime(DateTimeZones.UTC).toDate()));
+                    }
                 }
             }
         }
