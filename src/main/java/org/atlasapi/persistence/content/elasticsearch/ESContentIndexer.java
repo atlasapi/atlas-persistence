@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
+import com.metabroadcast.common.time.DateTimeZones;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
