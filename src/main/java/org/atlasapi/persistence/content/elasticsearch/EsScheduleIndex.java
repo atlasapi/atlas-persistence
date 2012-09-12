@@ -6,6 +6,8 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.BROADCASTS;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.PUBLISHER;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.INDEX_NAME;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.orFilter;
@@ -25,7 +27,6 @@ import javax.annotation.Nullable;
 
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
@@ -121,9 +122,14 @@ public class EsScheduleIndex implements ScheduleIndex {
         
         @Override
         public ListenableFuture<HitAccumulator> apply(SearchResponse input) throws Exception {
-            log.trace("{}: scan   {} hits ({}ms)", new Object[]{input.scrollId().hashCode(), input.hits().totalHits(), input.tookInMillis()});
+            log.info("{}: scan   {} hits ({}ms)", new Object[]{input.scrollId().hashCode(), input.hits().totalHits(), input.tookInMillis()});
             SettableFuture<HitAccumulator> searchResult = SettableFuture.create();
-            scrollSearch(input.scrollId(), scrollingListener(searchResult, new HitAccumulator(input)));
+            HitAccumulator accumulator = new HitAccumulator(input);
+            if (accumulator.canScrollMore()) {
+                scrollSearch(input.scrollId(), scrollingListener(searchResult, accumulator));
+            } else {
+                searchResult.set(accumulator);
+            }
             return searchResult;
         }
 
@@ -139,7 +145,7 @@ public class EsScheduleIndex implements ScheduleIndex {
 
                 @Override
                 public void onResponse(SearchResponse response) {
-                    log.trace("{}: scroll {} hits ({}ms)", new Object[]{accumulator.scrollId().hashCode(), response.hits().hits().length, response.tookInMillis()});
+                    log.info("{}: scroll {} hits ({}ms)", new Object[]{accumulator.scrollId().hashCode(), response.hits().hits().length, response.tookInMillis()});
                                         
                     accumulator.foldIn(response);
 
@@ -173,7 +179,8 @@ public class EsScheduleIndex implements ScheduleIndex {
         SettableFuture<SearchResponse> result = SettableFuture.create();
         
         esClient.client()
-            .prepareSearch(ESSchema.INDEX_NAME)
+            .prepareSearch(INDEX_NAME)
+            .setTypes(TYPE)
             .setSearchType(SearchType.SCAN)
             .setScroll(SCROLL_TIMEOUT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
@@ -188,7 +195,8 @@ public class EsScheduleIndex implements ScheduleIndex {
         return filteredQuery(
             boolQuery()
                 .must(fieldQuery(PUBLISHER, publisher))
-                .must(nestedQuery(BROADCASTS, textQuery(CHANNEL, broadcastOn).operator(AND))), 
+                .must(nestedQuery(BROADCASTS, textQuery(CHANNEL, broadcastOn).operator(AND)))
+            ,
             nestedFilter(BROADCASTS, orFilter(andFilter(
                 //inside or overlapping the interval ends
                 rangeFilter(TRANSMISSION_TIME).lt(to),
@@ -227,7 +235,7 @@ public class EsScheduleIndex implements ScheduleIndex {
                     refBuilder.addEntries(validEntries(hit,channel, scheduleInterval));
                 }
                 ScheduleRef ref = refBuilder.build();
-                log.debug("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{input.scrollId().hashCode(), hits, ref.getScheduleEntries().size(), input.queries(), input.millis()});
+                log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{input.scrollId().hashCode(), hits, ref.getScheduleEntries().size(), input.queries(), input.millis()});
                 return ref;
             }
         };
