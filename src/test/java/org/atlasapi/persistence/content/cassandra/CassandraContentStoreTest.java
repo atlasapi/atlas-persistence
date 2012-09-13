@@ -39,7 +39,7 @@ public class CassandraContentStoreTest {
 
     @Before
     public void before() {
-        context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
+        context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace("prod")).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(9160).
                 setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).

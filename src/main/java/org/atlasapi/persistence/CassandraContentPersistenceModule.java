@@ -17,8 +17,8 @@ public class CassandraContentPersistenceModule {
     private final AstyanaxContext<Keyspace> cassandraContext;
     private final CassandraContentStore cassandraContentStore;
 
-    public CassandraContentPersistenceModule(String seeds, int port, int connectionTimeout, int requestTimeout) {
-        this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
+    public CassandraContentPersistenceModule(String environment, String seeds, int port, int connectionTimeout, int requestTimeout) {
+        this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
                 setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).
