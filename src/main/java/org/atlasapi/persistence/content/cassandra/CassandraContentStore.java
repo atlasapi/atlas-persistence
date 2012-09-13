@@ -67,8 +67,8 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     //
     private Keyspace keyspace;
 
-    public CassandraContentStore(List<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
-        this.context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
+    public CassandraContentStore(String environment, List<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
+        this.context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
                 setMaxBlockedThreadsPerHost(maxConnections).

@@ -32,7 +32,7 @@ public class CassandraContentStoreTest {
     
     @Before
     public void before() {
-        store = new CassandraContentStore(Arrays.asList(CASSANDRA_HOST), 9160, 10, 10000, 10000);
+        store = new CassandraContentStore("prod", Arrays.asList(CASSANDRA_HOST), 9160, 10, 10000, 10000);
         store.init();
     }
     

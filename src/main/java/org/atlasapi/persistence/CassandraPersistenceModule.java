@@ -13,12 +13,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CassandraPersistenceModule {
     
+    private @Value("${cassandra.env}") String environment;
     private @Value("${cassandra.seeds}") String seeds;
     private @Value("${cassandra.port}") int port;
     private @Value("${cassandra.connectionTimeout}") int connectionTimeout;
     private @Value("${cassandra.requestTimeout}") int requestTimeout;
     
     public @Bean @Qualifier(value="cassandra") CassandraContentStore cassandraContentStore() {
-        return new CassandraContentStore(Lists.newArrayList(Splitter.on(',').split(seeds)), port, Runtime.getRuntime().availableProcessors() * 10, connectionTimeout, requestTimeout);
+        return new CassandraContentStore(environment, Lists.newArrayList(Splitter.on(',').split(seeds)), port, Runtime.getRuntime().availableProcessors() * 10, connectionTimeout, requestTimeout);
     }
 }
