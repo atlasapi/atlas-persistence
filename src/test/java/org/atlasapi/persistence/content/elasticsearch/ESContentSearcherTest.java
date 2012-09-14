@@ -6,32 +6,23 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
-import org.elasticsearch.action.ListenableActionFuture;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Requests;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
-import org.elasticsearch.search.SearchHits;
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import static org.junit.Assert.*;
 
 public class ESContentSearcherTest {
 
@@ -72,8 +63,10 @@ public class ESContentSearcherTest {
         item4.addVersion(version2);
         //
         Brand brand1 = new Brand("buri1", "buri1", Publisher.METABROADCAST);
+        brand1.setTitle("b1");
         brand1.setChildRefs(Arrays.asList(item1.childRef(), item2.childRef()));
         Brand brand2 = new Brand("buri2", "buri2", Publisher.METABROADCAST);
+        brand2.setTitle("b2");
         brand2.setChildRefs(Arrays.asList(item3.childRef()));
         //
         item1.setParentRef(ParentRef.parentRefFrom(brand1));
@@ -87,12 +80,12 @@ public class ESContentSearcherTest {
 
         Thread.sleep(1000);
 
+        contentIndexer.index(brand1);
+        contentIndexer.index(brand2);
         contentIndexer.index(item1);
         contentIndexer.index(item2);
         contentIndexer.index(item3);
         contentIndexer.index(item4);
-        contentIndexer.index(brand1);
-        contentIndexer.index(brand2);
 
         Thread.sleep(1000);
 

@@ -2,17 +2,23 @@ package org.atlasapi.persistence.content.elasticsearch;
 
 import com.metabroadcast.common.time.DateTimeZones;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentIndexer;
+import org.atlasapi.persistence.content.ContentResolver;
+import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
@@ -27,6 +33,7 @@ import org.atlasapi.persistence.content.elasticsearch.support.Strings;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.IndicesExistsResponse;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.node.Node;
@@ -64,7 +71,7 @@ public class ESContentIndexer implements ContentIndexer {
     }
 
     @Override
-    public void index(Item item) {
+    public void index(Item item, ContentResolver... resolvers) {
         ESContent indexed = new ESContent().uri(item.getCanonicalUri()).
                 title(item.getTitle() != null ? item.getTitle() : null).
                 flattenedTitle(item.getTitle() != null ? Strings.flatten(item.getTitle()) : null).
@@ -75,6 +82,7 @@ public class ESContentIndexer implements ContentIndexer {
                 topics(makeESTopics(item));
         IndexRequest request = null;
         if (item.getContainer() != null) {
+            fillParentData(indexed, item.getContainer(), resolvers);
             request = Requests.indexRequest(INDEX_NAME).
                     type(ESContent.CHILD_ITEM_TYPE).
                     id(item.getCanonicalUri()).
@@ -265,5 +273,49 @@ public class ESContentIndexer implements ContentIndexer {
             esTopics.add(new ESTopic().id(topic.getTopic()));
         }
         return esTopics;
+    }
+
+    private void fillParentData(ESContent child, ParentRef parent, ContentResolver... resolvers) {
+        Map<String, Object> indexedContainer = tryIndex(parent);
+        if (indexedContainer != null) {
+            child.parentTitle(indexedContainer.containsKey(ESContent.TITLE) ? indexedContainer.get(ESContent.TITLE).toString() : null);
+            child.parentFlattenedTitle(indexedContainer.containsKey(ESContent.FLATTENED_TITLE) ? indexedContainer.get(ESContent.FLATTENED_TITLE).toString() : null);
+        } else {
+            Container resolvedContainer = tryResolvers(parent, resolvers);
+            if (resolvedContainer != null) {
+                child.parentTitle(resolvedContainer.getTitle() != null ? resolvedContainer.getTitle() : null);
+                child.parentFlattenedTitle(resolvedContainer.getTitle() != null ? Strings.flatten(resolvedContainer.getTitle()) : null);
+            }
+        }
+    }
+
+    private Container tryResolvers(ParentRef parent, ContentResolver[] resolvers) throws IllegalStateException {
+        Container container = null;
+        for (ContentResolver resolver : resolvers) {
+            ResolvedContent results = resolver.findByCanonicalUris(Arrays.asList(parent.getUri()));
+            //
+            if (results.getAllResolvedResults().size() > 1) {
+                throw new IllegalStateException("More than one content found for: " + parent.getUri());
+            } else if (results.getAllResolvedResults().size() == 1) {
+                Identified source = results.getFirstValue().requireValue();
+                if (source instanceof Container) {
+                    container = (Container) source;
+                    break;
+                } else {
+                    throw new IllegalStateException("Unexpected type for: " + parent.getUri());
+                }
+            }
+        }
+        return container;
+    }
+
+    private Map<String, Object> tryIndex(ParentRef parent) {
+        ActionFuture<GetResponse> future = esClient.client().get(Requests.getRequest(INDEX_NAME).id(parent.getUri()));
+        GetResponse response = future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        if (response.exists()) {
+            return response.sourceAsMap();
+        } else {
+            return null;
+        }
     }
 }
