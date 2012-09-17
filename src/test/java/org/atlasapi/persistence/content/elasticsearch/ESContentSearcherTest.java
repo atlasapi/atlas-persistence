@@ -63,10 +63,10 @@ public class ESContentSearcherTest {
         item4.addVersion(version2);
         //
         Brand brand1 = new Brand("buri1", "buri1", Publisher.METABROADCAST);
-        brand1.setTitle("b1");
+        brand1.setTitle("title");
         brand1.setChildRefs(Arrays.asList(item1.childRef(), item2.childRef()));
         Brand brand2 = new Brand("buri2", "buri2", Publisher.METABROADCAST);
-        brand2.setTitle("b2");
+        brand2.setTitle("b");
         brand2.setChildRefs(Arrays.asList(item3.childRef()));
         //
         item1.setParentRef(ParentRef.parentRefFrom(brand1));
@@ -95,6 +95,8 @@ public class ESContentSearcherTest {
                 Collections.EMPTY_SET,
                 1, 0f, 0f));
         SearchResults results = future.get();
-        assertEquals(1, results.toUris().size());
+        assertEquals(2, results.toUris().size());
+        assertEquals("buri1", results.toUris().get(0));
+        assertEquals("uri4", results.toUris().get(1));
     }
 }

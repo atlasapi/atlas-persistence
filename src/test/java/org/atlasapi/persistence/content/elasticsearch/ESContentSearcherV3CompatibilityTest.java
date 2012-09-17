@@ -205,10 +205,10 @@ public class ESContentSearcherV3CompatibilityTest {
     public void testFindingBrandsBySpecialization() throws Exception {
         check(searcher.search(title("aprentice")).get(), theApprentice);
         //
-        Brand theApprentice2 = new Brand();
-        Brand.copyTo(theApprentice, theApprentice2);
-        theApprentice2.setSpecialization(Specialization.RADIO);
-        indexer.index(theApprentice2);
+        Item theApprenticeItem2 = new Item();
+        Item.copyTo(theApprenticeItem, theApprenticeItem2);
+        theApprenticeItem2.setSpecialization(Specialization.RADIO);
+        indexer.index(theApprenticeItem2);
         Thread.sleep(1000);
         //
         checkNot(searcher.search(specializedTitle("aprentice", Specialization.TV)).get(), theApprentice);
@@ -231,7 +231,7 @@ public class ESContentSearcherV3CompatibilityTest {
     @Test
     public void testUsesPrefixSearchForShortSearches() throws Exception {
         // commented out for now as order is inverted:
-        // check(searcher.search(title("Dr")).get(), doctorWho, dragonsDen);
+        //check(searcher.search(title("Dr")).get(), doctorWho, dragonsDen);
         check(searcher.search(title("l")).get());
     }
 

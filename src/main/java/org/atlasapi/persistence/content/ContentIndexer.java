@@ -21,5 +21,5 @@ public interface ContentIndexer {
 
     void index(Container container);
     
-	void index(Item item, ContentResolver... resolvers);
+	void index(Item item);
 }
