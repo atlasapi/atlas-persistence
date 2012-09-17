@@ -39,7 +39,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.SystemClock;
+import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.elasticsearch.client.Requests;
@@ -144,14 +146,14 @@ public class ESContentSearcherV3CompatibilityTest {
         for (Item i : itemsUpdated) {
             indexer.index(i);
         }
-        Thread.sleep(1000);
+        Thread.sleep(2000);
     }
 
     @After
     public void after() throws Exception {
         esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
         esClient.close();
-        Thread.sleep(1000);
+        Thread.sleep(2000);
     }
 
     @Test
@@ -195,7 +197,7 @@ public class ESContentSearcherV3CompatibilityTest {
         Brand.copyTo(theApprentice, theApprentice2);
         theApprentice2.setTitle("Completely Different2");
         indexer.index(theApprentice2);
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         //
         checkNot(searcher.search(title("aprentice")).get(), theApprentice);
         check(searcher.search(title("Completely Different2")).get(), theApprentice);
@@ -205,11 +207,11 @@ public class ESContentSearcherV3CompatibilityTest {
     public void testFindingBrandsBySpecialization() throws Exception {
         check(searcher.search(title("aprentice")).get(), theApprentice);
         //
-        Brand theApprentice2 = new Brand();
-        Brand.copyTo(theApprentice, theApprentice2);
-        theApprentice2.setSpecialization(Specialization.RADIO);
-        indexer.index(theApprentice2);
-        Thread.sleep(1000);
+        Item theApprenticeItem2 = new Item();
+        Item.copyTo(theApprenticeItem, theApprenticeItem2);
+        theApprenticeItem2.setSpecialization(Specialization.RADIO);
+        indexer.index(theApprenticeItem2);
+        Thread.sleep(2000);
         //
         checkNot(searcher.search(specializedTitle("aprentice", Specialization.TV)).get(), theApprentice);
         check(searcher.search(specializedTitle("aprentice", Specialization.RADIO)).get(), theApprentice);
@@ -220,18 +222,24 @@ public class ESContentSearcherV3CompatibilityTest {
         check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.BBC), 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings, politicsEast);
         check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.ARCHIVE_ORG), 1.0f, 0.0f, 0.0f)).get());
 
-        Brand east = new Brand("/east", "curie", Publisher.ARCHIVE_ORG);
-        east.setTitle("east");
-        indexer.index(east);
-        Thread.sleep(1000);
+        Brand eastBrand = new Brand("/east", "curie", Publisher.ARCHIVE_ORG);
+        eastBrand.setTitle("east");
+        Item eastItem = new Item("/eastItem", "curie", Publisher.ARCHIVE_ORG);
+        eastBrand.setTitle("east");
+        eastBrand.setChildRefs(Arrays.asList(eastItem.childRef()));
+        eastItem.setTitle("east");
+        eastItem.setParentRef(ParentRef.parentRefFrom(eastBrand));
+        indexer.index(eastBrand);
+        indexer.index(eastItem);
+        Thread.sleep(2000);
         
-        check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.ARCHIVE_ORG), 1.0f, 0.0f, 0.0f)).get(), east);
+        check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.ARCHIVE_ORG), 1.0f, 0.0f, 0.0f)).get(), eastBrand);
     }
 
     @Test
     public void testUsesPrefixSearchForShortSearches() throws Exception {
         // commented out for now as order is inverted:
-        // check(searcher.search(title("Dr")).get(), doctorWho, dragonsDen);
+        //check(searcher.search(title("Dr")).get(), doctorWho, dragonsDen);
         check(searcher.search(title("l")).get());
     }
 
@@ -248,6 +256,18 @@ public class ESContentSearcherV3CompatibilityTest {
         // commented out for now as order is inverted:
         //check(searcher.search(title("spook")).get(), spooks, spookyTheCat);
         check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks);
+    }
+    
+    @Test
+    public void testBrandWithNoChildrenHasLowWeight() throws Exception {
+        check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks);
+
+        Brand spookie = new Brand("/spookie", "curie", Publisher.ARCHIVE_ORG);
+        spookie.setTitle("spookie");
+        indexer.index(spookie);
+        Thread.sleep(2000);
+        
+        check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks, spookie);
     }
     
     protected static SearchQuery title(String term) {

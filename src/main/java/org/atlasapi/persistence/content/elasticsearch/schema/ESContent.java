@@ -14,11 +14,14 @@ public class ESContent extends ESObject {
     public final static String URI = "uri";
     public final static String TITLE = "title";
     public final static String FLATTENED_TITLE = "flattenedTitle";
+    public final static String PARENT_TITLE = "parentTitle";
+    public final static String PARENT_FLATTENED_TITLE = "parentFlattenedTitle";
     public final static String PUBLISHER = "publisher";
     public final static String SPECIALIZATION = "specialization";
     public final static String BROADCASTS = "broadcasts";
     public final static String LOCATIONS = "locations";
     public final static String TOPICS = "topics";
+    public final static String HAS_CHILDREN = "hasChildren";
 
     public ESContent uri(String uri) {
         properties.put(URI, uri);
@@ -35,6 +38,16 @@ public class ESContent extends ESObject {
         return this;
     }
 
+    public ESContent parentTitle(String parentTitle) {
+        properties.put(PARENT_TITLE, parentTitle);
+        return this;
+    }
+    
+    public ESContent parentFlattenedTitle(String parentFlattenedTitle) {
+        properties.put(PARENT_FLATTENED_TITLE, parentFlattenedTitle);
+        return this;
+    }
+    
     public ESContent publisher(String publisher) {
         properties.put(PUBLISHER, publisher);
         return this;
@@ -57,6 +70,11 @@ public class ESContent extends ESObject {
 
     public ESContent topics(Collection<ESTopic> topics) {
         properties.put(TOPICS, Iterables.transform(topics, TO_MAP));
+        return this;
+    }
+    
+    public ESContent hasChildren(Boolean hasChildren) {
+        properties.put(HAS_CHILDREN, hasChildren);
         return this;
     }
 }

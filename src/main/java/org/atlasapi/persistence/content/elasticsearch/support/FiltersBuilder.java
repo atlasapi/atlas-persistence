@@ -8,7 +8,7 @@ import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.TermsFilterBuilder;
 
-public class FilterBuilder {
+public class FiltersBuilder {
 
     public static TermsFilterBuilder buildForPublishers(Iterable<Publisher> publishers) {
         return FilterBuilders.termsFilter(ESContent.PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
