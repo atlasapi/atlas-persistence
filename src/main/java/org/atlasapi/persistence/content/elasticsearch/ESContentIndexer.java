@@ -64,10 +64,11 @@ public class ESContentIndexer implements ContentIndexer {
     }
 
     public void init() throws IOException {
-        createIndex();
-        putContainerMapping();
-        putChildItemMapping();
-        putTopItemMapping();
+        if (createIndex()) {
+            putContainerMapping();
+            putChildItemMapping();
+            putTopItemMapping();
+        }
     }
 
     @Override
@@ -125,11 +126,14 @@ public class ESContentIndexer implements ContentIndexer {
         result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void createIndex() throws ElasticSearchException {
+    private boolean createIndex() throws ElasticSearchException {
         ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(Requests.indicesExistsRequest(INDEX_NAME));
         if (!exists.actionGet(requestTimeout, TimeUnit.MILLISECONDS).isExists()) {
             ActionFuture<CreateIndexResponse> create = esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME));
             create.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+            return true;
+        } else {
+            return false;
         }
     }
 
