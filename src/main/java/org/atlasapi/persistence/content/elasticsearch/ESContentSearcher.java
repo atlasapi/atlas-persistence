@@ -41,21 +41,25 @@ public class ESContentSearcher implements ContentSearcher {
 
     @Override
     public final ListenableFuture<SearchResults> search(SearchQuery search) {
-        BoolQueryBuilder initialQuery = QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery());
-        QueryBuilder finalQuery = null;
-
+        BoolQueryBuilder combinedQuery = QueryBuilders.boolQuery();
+                
+        QueryBuilder titleQuery = null;
         if (search.getTerm() != null && !search.getTerm().isEmpty()) {
-            initialQuery.must(TitleQueryBuilder.build(search.getTerm(), search.getTitleWeighting()));
-        }
-
-        if (search.getCatchupWeighting() != 0.0f) {
-            initialQuery.should(AvailabilityQueryBuilder.build(new Date(), search.getCatchupWeighting()));
-        }
-
-        if (search.getBroadcastWeighting() != 0.0f) {
-            finalQuery = BroadcastQueryBuilder.build(initialQuery, search.getBroadcastWeighting(), 1f);
+            titleQuery = TitleQueryBuilder.build(search.getTerm(), search.getTitleWeighting());
+            combinedQuery.must(titleQuery);
         } else {
-            finalQuery = initialQuery;
+            throw new IllegalStateException("Search title should be provided!");
+        }
+
+        QueryBuilder availabilityQuery = null;
+        if (search.getCatchupWeighting() != 0.0f) {
+            availabilityQuery = AvailabilityQueryBuilder.build(new Date(), search.getCatchupWeighting());
+            combinedQuery.should(availabilityQuery);
+        }
+
+        QueryBuilder finalQuery = combinedQuery;
+        if (search.getBroadcastWeighting() != 0.0f) {
+            finalQuery = BroadcastQueryBuilder.build(finalQuery, search.getBroadcastWeighting(), 1f);
         }
 
         List<TermsFilterBuilder> filters = new LinkedList<TermsFilterBuilder>();
@@ -70,7 +74,7 @@ public class ESContentSearcher implements ContentSearcher {
         }
 
         QueryBuilder containerQuery = QueryBuilders.filteredQuery(QueryBuilders.boolQuery().
-                should(QueryBuilders.boolQuery().mustNot(QueryBuilders.hasChildQuery(ESContent.CHILD_ITEM_TYPE, QueryBuilders.matchAllQuery()))).
+                should(QueryBuilders.customBoostFactorQuery(QueryBuilders.boolQuery().must(titleQuery).must(QueryBuilders.termQuery(ESContent.HAS_CHILDREN, Boolean.FALSE))).boostFactor(0.001f)).
                 should(QueryBuilders.topChildrenQuery(ESContent.CHILD_ITEM_TYPE, finalQuery)),
                 FilterBuilders.typeFilter(ESContent.CONTAINER_TYPE));
 

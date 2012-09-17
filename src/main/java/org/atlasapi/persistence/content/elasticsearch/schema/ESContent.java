@@ -21,6 +21,7 @@ public class ESContent extends ESObject {
     public final static String BROADCASTS = "broadcasts";
     public final static String LOCATIONS = "locations";
     public final static String TOPICS = "topics";
+    public final static String HAS_CHILDREN = "hasChildren";
 
     public ESContent uri(String uri) {
         properties.put(URI, uri);
@@ -69,6 +70,11 @@ public class ESContent extends ESObject {
 
     public ESContent topics(Collection<ESTopic> topics) {
         properties.put(TOPICS, Iterables.transform(topics, TO_MAP));
+        return this;
+    }
+    
+    public ESContent hasChildren(Boolean hasChildren) {
+        properties.put(HAS_CHILDREN, hasChildren);
         return this;
     }
 }

@@ -103,10 +103,17 @@ public class ESContentIndexer implements ContentIndexer {
         ESContent indexed = new ESContent().uri(container.getCanonicalUri()).
                 title(container.getTitle() != null ? container.getTitle() : null).
                 flattenedTitle(container.getTitle() != null ? Strings.flatten(container.getTitle()) : null).
+                parentTitle(container.getTitle() != null ? container.getTitle() : null).
+                parentFlattenedTitle(container.getTitle() != null ? Strings.flatten(container.getTitle()) : null).
                 publisher(container.getPublisher() != null ? container.getPublisher().key() : null).
                 specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null);
-        for (ChildRef child : container.getChildRefs()) {
-            indexChildData(container, child);
+        if (!container.getChildRefs().isEmpty()) {
+            indexed.hasChildren(Boolean.TRUE);
+            for (ChildRef child : container.getChildRefs()) {
+                indexChildData(container, child);
+            }
+        } else {
+            indexed.hasChildren(Boolean.FALSE);
         }
         ActionFuture<IndexResponse> result = esClient.client().index(
                 Requests.indexRequest(INDEX_NAME).
