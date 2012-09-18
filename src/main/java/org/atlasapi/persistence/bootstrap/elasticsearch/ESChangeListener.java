@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.bootstrap.ContentChangeListener;
@@ -48,13 +49,17 @@ public class ESChangeListener implements ContentChangeListener {
     @Override
     public void contentChange(Iterable<? extends Described> contents) {
         for (final Described content : contents) {
-            if (content instanceof Item) {
+            if (content instanceof Item || content instanceof Container) {
                 executor.submit(new Runnable() {
 
                     @Override
                     public void run() {
                         try {
-                            contentIndexer.index((Item) content);
+                            if (content instanceof Item) {
+                                contentIndexer.index((Item) content);
+                            } else {
+                                contentIndexer.index((Container) content);
+                            }
                         } catch (Exception ex) {
                             log.warn("Failed to index content {}, exception follows.", content);
                             log.warn(ex.getMessage(), ex);
