@@ -18,6 +18,7 @@ import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
@@ -33,9 +34,13 @@ import org.elasticsearch.search.sort.SortOrder;
  */
 public class ESContentSearcher implements ContentSearcher {
 
-    private final Node index;
+    private final Client index;
 
     public ESContentSearcher(Node index) {
+        this.index = index.client();
+    }
+    
+    protected ESContentSearcher(Client index) {
         this.index = index;
     }
 
@@ -75,7 +80,7 @@ public class ESContentSearcher implements ContentSearcher {
 
         QueryBuilder containerQuery = QueryBuilders.filteredQuery(QueryBuilders.boolQuery().
                 should(QueryBuilders.customBoostFactorQuery(QueryBuilders.boolQuery().must(titleQuery).must(QueryBuilders.termQuery(ESContent.HAS_CHILDREN, Boolean.FALSE))).boostFactor(0.001f)).
-                should(QueryBuilders.topChildrenQuery(ESContent.CHILD_ITEM_TYPE, finalQuery)),
+                should(QueryBuilders.topChildrenQuery(ESContent.CHILD_ITEM_TYPE, finalQuery).score("sum")),
                 FilterBuilders.typeFilter(ESContent.CONTAINER_TYPE));
 
         QueryBuilder topItemQuery = QueryBuilders.filteredQuery(finalQuery, FilterBuilders.typeFilter(ESContent.TOP_ITEM_TYPE));
@@ -83,7 +88,7 @@ public class ESContentSearcher implements ContentSearcher {
         QueryBuilder allQuery = QueryBuilders.boolQuery().should(containerQuery).should(topItemQuery);
 
         final SettableFuture<SearchResults> result = SettableFuture.create();
-        index.client().prepareSearch(ESSchema.INDEX_NAME).
+        index.prepareSearch(ESSchema.INDEX_NAME).
                 setQuery(allQuery).
                 addSort(SortBuilders.scoreSort().order(SortOrder.DESC)).
                 setFrom(search.getSelection().getOffset()).
