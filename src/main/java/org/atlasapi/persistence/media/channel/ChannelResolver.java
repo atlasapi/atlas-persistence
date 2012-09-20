@@ -12,7 +12,7 @@ public interface ChannelResolver {
 	@Deprecated
 	Maybe<Channel> fromKey(String key);
 
-	Maybe<Channel> fromId(long id);
+	Maybe<Channel> fromId(Long id);
 	
 	Maybe<Channel> fromUri(String uri);
 	

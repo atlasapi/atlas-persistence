@@ -23,6 +23,18 @@ public class CassandraSchema {
             "Container",
             StringSerializer.get(),
             StringSerializer.get());
+    public static final ColumnFamily<String, String> PEOPLE_CF = new ColumnFamily<String, String>(
+            "Person",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CONTENT_GROUP_CF = new ColumnFamily<String, String>(
+            "ContentGroup",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CONTENT_GROUP_SECONDARY_CF = new ColumnFamily<String, String>(
+            "ContentGroupSecondary",
+            StringSerializer.get(),
+            StringSerializer.get());
     //
     public static final String ITEM_COLUMN = "item";
     public static final String CLIPS_COLUMN = "clips";
@@ -31,6 +43,10 @@ public class CassandraSchema {
     //
     public static final String CONTAINER_COLUMN = "container";
     public static final String CHILDREN_COLUMN = "children";
+    //
+    public static final String PERSON_COLUMN = "person";
+    public static final String CONTENT_GROUP_COLUMN = "content_group";
+    public static final String CONTENTS_COLUMN = "contents";
 
     public static String getKeyspace(String environment) {
         String ks = KEYSPACES.get(environment);

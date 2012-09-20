@@ -25,7 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.PeopleLister;
+import org.atlasapi.persistence.content.people.PeopleLister;
 import org.atlasapi.persistence.content.PeopleListerListener;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
