@@ -65,8 +65,9 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 			
 		}));
 	}
+    
 	@Override
-	public Maybe<Channel> fromId(long id) {
+	public Maybe<Channel> fromId(Long id) {
 		return Maybe.fromPossibleNullValue(translator.fromDBObject(collection.findOne(where().idEquals(id).build()), null));
 	}
 

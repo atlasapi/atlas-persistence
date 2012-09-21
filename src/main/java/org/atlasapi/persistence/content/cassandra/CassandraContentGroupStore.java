@@ -92,9 +92,9 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
                         setConsistencyLevel(ConsistencyLevel.CL_ONE).
                         getKey(id.toString()).
                         executeAsync();
-                OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
-                if (!columns.getResult().isEmpty()) {
-                    String uri = unmarshalUri(columns.getResult());
+                ColumnList<String> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
+                if (!columns.isEmpty()) {
+                    String uri = unmarshalUri(columns);
                     ContentGroup contentGroup = findByUri(uri);
                     if (contentGroup != null) {
                         results.put(id.toString(), Maybe.just((Identified) contentGroup));
@@ -168,9 +168,9 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
                 setConsistencyLevel(ConsistencyLevel.CL_ONE).
                 getKey(uri).
                 executeAsync();
-        OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
-        if (!columns.getResult().isEmpty()) {
-            return unmarshalContentGroup(columns.getResult());
+        ColumnList<String> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
+        if (!columns.isEmpty()) {
+            return unmarshalContentGroup(columns);
         } else {
             return null;
         }

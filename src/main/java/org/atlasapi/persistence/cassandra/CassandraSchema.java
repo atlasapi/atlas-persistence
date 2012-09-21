@@ -35,6 +35,18 @@ public class CassandraSchema {
             "ContentGroupSecondary",
             StringSerializer.get(),
             StringSerializer.get());
+    public static final ColumnFamily<String, String> CHANNEL_CF = new ColumnFamily<String, String>(
+            "Channel",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CHANNEL_GROUP_CF = new ColumnFamily<String, String>(
+            "ChannelGroup",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CHANNEL_GROUP_SECONDARY_CF = new ColumnFamily<String, String>(
+            "ChannelGroupSecondary",
+            StringSerializer.get(),
+            StringSerializer.get());
     //
     public static final String ITEM_COLUMN = "item";
     public static final String CLIPS_COLUMN = "clips";
@@ -47,6 +59,10 @@ public class CassandraSchema {
     public static final String PERSON_COLUMN = "person";
     public static final String CONTENT_GROUP_COLUMN = "content_group";
     public static final String CONTENTS_COLUMN = "contents";
+    //
+    public static final String CHANNEL_COLUMN = "channel";
+    //
+    public static final String CHANNEL_GROUP_COLUMN = "channel_group";
 
     public static String getKeyspace(String environment) {
         String ks = KEYSPACES.get(environment);
