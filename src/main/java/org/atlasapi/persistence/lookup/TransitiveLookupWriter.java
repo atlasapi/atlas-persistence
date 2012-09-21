@@ -6,15 +6,15 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
-import static org.atlasapi.media.entity.Identified.TO_URI;
 import static org.atlasapi.media.entity.LookupRef.TO_ID;
 
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Described;
+import javax.annotation.Nullable;
+
+import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -32,6 +33,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import com.metabroadcast.common.base.MorePredicates;
 
 public class TransitiveLookupWriter implements LookupWriter {
     
@@ -53,9 +55,16 @@ public class TransitiveLookupWriter implements LookupWriter {
         this.entryStore = entryStore;
         this.explicit = explicit;
     }
+    
+    private static final Function<ContentRef, String> TO_URI = new Function<ContentRef, String>() {
+        @Override
+        public String apply(@Nullable ContentRef input) {
+            return input.getCanonicalUri();
+        }
+    };
 
     @Override
-    public <T extends Content> void writeLookup(T subject, Iterable<T> equivalents, Set<Publisher> publishers) {
+    public void writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> publishers) {
         writeLookup(subject.getCanonicalUri(), Iterables.transform(filterContentPublishers(equivalents, publishers), TO_URI), publishers);
     }
     
@@ -76,7 +85,8 @@ public class TransitiveLookupWriter implements LookupWriter {
         //entry for the subject.
         LookupEntry subjectEntry = get(subjectUri);
         
-        ImmutableSet<String> currentEquivalents = ImmutableSet.copyOf(transform(relevantEquivalents(subjectEntry),TO_ID));
+        Set<LookupRef> relevantEquivalents = Sets.filter(relevantEquivalents(subjectEntry), MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(publishers)));
+        ImmutableSet<String> currentEquivalents = ImmutableSet.copyOf(transform(relevantEquivalents,TO_ID));
         if(currentEquivalents.equals(canonUris)) {
             return;
         }
@@ -151,10 +161,10 @@ public class TransitiveLookupWriter implements LookupWriter {
         });
     }
     
-    private <T extends Described> Iterable<T> filterContentPublishers(Iterable<T> content, final Set<Publisher> publishers) {
-        return Iterables.filter(content, new Predicate<Described>() {
+    private Iterable<ContentRef> filterContentPublishers(Iterable<ContentRef> content, final Set<Publisher> publishers) {
+        return Iterables.filter(content, new Predicate<ContentRef>() {
             @Override
-            public boolean apply(Described input) {
+            public boolean apply(ContentRef input) {
                 return publishers.contains(input.getPublisher());
             }
         });

@@ -1,5 +1,38 @@
 package org.atlasapi.persistence.content.cassandra;
 
+
+import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.atlasapi.media.entity.ChildRef;
+import org.atlasapi.media.entity.Clip;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.ParentRef;
+import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.ContentResolver;
+import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.ResolvedContent;
+import org.atlasapi.persistence.content.listing.ContentLister;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
+import org.atlasapi.serialization.json.JsonFactory;
+import org.atlasapi.serialization.json.configuration.model.FilteredContainerConfiguration;
+import org.atlasapi.serialization.json.configuration.model.FilteredItemConfiguration;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -18,35 +51,6 @@ import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.query.AllRowsQuery;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.ParentRef;
-import org.atlasapi.media.entity.Series;
-import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
-import org.atlasapi.persistence.content.ContentResolver;
-import org.atlasapi.persistence.content.ContentWriter;
-import org.atlasapi.persistence.content.ResolvedContent;
-import org.atlasapi.serialization.json.JsonFactory;
-import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.listing.ContentLister;
-import org.atlasapi.persistence.content.listing.ContentListingCriteria;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
-import org.atlasapi.serialization.json.configuration.model.FilteredContainerConfiguration;
-import org.atlasapi.serialization.json.configuration.model.FilteredItemConfiguration;
 
 /**
  */
