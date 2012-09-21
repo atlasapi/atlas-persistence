@@ -4,7 +4,6 @@ import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.getKeyspace;
 
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -34,24 +33,13 @@ import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.query.ColumnFamilyQuery;
-import com.netflix.astyanax.query.IndexQuery;
 import com.netflix.astyanax.query.RowSliceQuery;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 
-/*
-   update column family EquivalenceSummary with                            
-   comparator = UTF8Type and
-   column_metadata =
-   [
-     {column_name: summary, validation_class: UTF8Type},
-     {column_name: parent, validation_class: UTF8Type, index_type: KEYS}
-   ];
- */
-
 public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore {
 
-    private static final String SUMMARY_CF_NAME = "EquivalenceSummary";
+    private static final String SUMMARY_CF_NAME = "EquivalenceSummaries";
     private static final String SUMMARY_COL = "summary";
     private static final String PARENT_COL = "parent";
     static final ColumnFamily<String, String> EQUIV_SUM_CF = 
@@ -112,28 +100,6 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
 
     private byte[] serialize(EquivalenceSummary summary) throws Exception {
         return mapper.writeValueAsBytes(summary);
-    }
-
-    @Override
-    public Set<EquivalenceSummary> summariesForChildren(String parent) {
-        Rows<String, String> rows = rowsForParent(parent);
-        ImmutableSet.Builder<EquivalenceSummary> result = ImmutableSet.builder();
-        for (Row<String, String> row : rows) {
-            result.add(deserialize(row));
-        }
-        return result.build();
-    }
-
-    private Rows<String, String> rowsForParent(String parent) {
-        try {
-            IndexQuery<String, String> query = keyspace.prepareQuery(EQUIV_SUM_CF)
-                    .searchWithIndex().addExpression()
-                        .whereColumn(PARENT_COL).equals().value(parent);
-            Future<OperationResult<Rows<String, String>>> queryResult = query.executeAsync();
-            return queryResult.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
-        } catch (Exception e) {
-            throw new CassandraPersistenceException(parent, e);
-        }
     }
 
     @Override
