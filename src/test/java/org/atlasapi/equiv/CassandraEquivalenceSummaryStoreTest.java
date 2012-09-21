@@ -5,8 +5,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.util.Set;
-
 import org.atlasapi.media.entity.Publisher;
 import org.junit.After;
 import org.junit.Before;
@@ -14,7 +12,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.metabroadcast.common.collect.OptionalMap;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
@@ -80,10 +77,6 @@ public class CassandraEquivalenceSummaryStoreTest {
 
         assertThat(resolved.get("two").get(), is(equalTo(summaryTwo)));
         assertThat(resolved.get("one").get(), is(equalTo(summaryOne)));
-        
-        Set<EquivalenceSummary> childSummaries = store.summariesForChildren("parent");
-        assertThat(childSummaries.size(), is(1));
-        assertThat(Iterables.getOnlyElement(childSummaries).getSubject(), is(summaryTwo.getSubject()));
         
     }
 
