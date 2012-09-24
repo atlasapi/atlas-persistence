@@ -100,7 +100,7 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
     }
 
     private Segment findSegment(String id) throws Exception {
-        ColumnList<String> result = keyspace.prepareQuery(SEGMENT_CF).getKey(id).executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
+        ColumnList<String> result = keyspace.prepareQuery(SEGMENT_CF).setConsistencyLevel(ConsistencyLevel.CL_ONE).getKey(id).executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
         if (!result.isEmpty()) {
             return mapper.readValue(result.getColumnByName(SEGMENT_COLUMN).getByteArrayValue(), Segment.class);
         } else {

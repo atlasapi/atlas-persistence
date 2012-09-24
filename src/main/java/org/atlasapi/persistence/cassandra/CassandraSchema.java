@@ -67,6 +67,14 @@ public class CassandraSchema {
             "SegmentSecondary",
             StringSerializer.get(),
             StringSerializer.get());
+    public static final ColumnFamily<String, String> TOPIC_CF = new ColumnFamily<String, String>(
+            "Topic",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> TOPIC_SECONDARY_CF = new ColumnFamily<String, String>(
+            "TopicSecondary",
+            StringSerializer.get(),
+            StringSerializer.get());
     //
     public static final String ITEM_COLUMN = "item";
     public static final String CLIPS_COLUMN = "clips";
@@ -87,6 +95,8 @@ public class CassandraSchema {
     public static final String PRODUCT_COLUMN = "product";
     //
     public static final String SEGMENT_COLUMN = "segment";
+    //
+    public static final String TOPIC_COLUMN = "topic";
 
     public static String getKeyspace(String environment) {
         String ks = KEYSPACES.get(environment);
