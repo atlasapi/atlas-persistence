@@ -7,6 +7,8 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+
+import org.atlasapi.persistence.cassandra.CassandraSchema;
 import org.atlasapi.persistence.content.cassandra.CassandraContentStore;
 import org.atlasapi.persistence.lookup.cassandra.CassandraLookupEntryStore;
 
@@ -20,8 +22,8 @@ public class CassandraContentPersistenceModule {
     private final CassandraContentStore cassandraContentStore;
     private final CassandraLookupEntryStore lookupEntryStore;
 
-    public CassandraContentPersistenceModule(String seeds, int port, int connectionTimeout, int requestTimeout) {
-        this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
+    public CassandraContentPersistenceModule(String environment, String seeds, int port, int connectionTimeout, int requestTimeout) {
+        this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(CassandraSchema.getKeyspace(environment)).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
                 setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).

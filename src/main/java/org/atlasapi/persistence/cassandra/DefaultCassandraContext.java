@@ -1,7 +1,6 @@
 package org.atlasapi.persistence.cassandra;
 
 import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.KEYSPACE;
 
 import java.util.List;
 
@@ -18,8 +17,8 @@ public class DefaultCassandraContext {
 
     private final AstyanaxContext<Keyspace> context;
 
-    public DefaultCassandraContext(List<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
-        this.context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
+    public DefaultCassandraContext(String environment, List<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
+        this.context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(CassandraSchema.getKeyspace(environment)).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
                 setMaxBlockedThreadsPerHost(maxConnections).

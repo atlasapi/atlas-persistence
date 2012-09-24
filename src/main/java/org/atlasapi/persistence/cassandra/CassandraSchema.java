@@ -24,8 +24,8 @@ public class CassandraSchema {
             StringSerializer.get(),
             StringSerializer.get());
     
-    static final String EQUIV_COLUMN = "equiv";
-    static final String DFLT_EQUIV_COLUMN = "dflt_equiv";
+    public static final String EQUIV_COLUMN = "equiv";
+    public static final String DFLT_EQUIV_COLUMN = "dflt_equiv";
 
     //
     public static final String ITEM_COLUMN = "item";
