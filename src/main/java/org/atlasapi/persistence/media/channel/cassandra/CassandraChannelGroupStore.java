@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.channel.cassandra;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
@@ -13,13 +14,14 @@ import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.query.AllRowsQuery;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
+import org.atlasapi.persistence.cassandra.CassandraIndex;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.media.channel.ChannelGroupStore;
 import org.atlasapi.serialization.json.JsonFactory;
@@ -42,17 +44,18 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public ChannelGroup store(ChannelGroup group) {
+        CassandraIndex index = new CassandraIndex();
         try {
             ChannelGroup old = findChannelGroup(group.getId());
             if (old != null) {
                 MutationBatch remove = keyspace.prepareMutationBatch().setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-                removeChannelsIndex(old, remove);
+                removeChannelsIndex(old, index);
                 remove.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
             }
             MutationBatch create = keyspace.prepareMutationBatch().setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
             marshalChannelGroup(group, create);
-            createChannelsIndex(group, create);
             create.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
+            createChannelsIndex(group, index);
             return group;
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
@@ -109,25 +112,19 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public Iterable<ChannelGroup> channelGroupsFor(Channel channel) {
+        CassandraIndex index = new CassandraIndex();
         try {
-            ColumnList<String> reversedIndex = keyspace.prepareQuery(CHANNEL_GROUP_SECONDARY_CF).
-                    setConsistencyLevel(ConsistencyLevel.CL_ONE).
-                    getKey(channel.getId().toString()).
-                    executeAsync().
-                    get(requestTimeout, TimeUnit.MILLISECONDS).
-                    getResult();
-            if (!reversedIndex.isEmpty()) {
-                Set<ChannelGroup> result = new HashSet<ChannelGroup>();
-                for (String id : reversedIndex.getColumnNames()) {
-                    ChannelGroup group = findChannelGroup(Long.parseLong(id));
-                    if (group != null) {
-                        result.add(group);
-                    }
+            Collection<String> groups = index.inverted(keyspace, CHANNEL_GROUP_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+                    lookup(channel.getId().toString()).
+                    async(requestTimeout, TimeUnit.MILLISECONDS);
+            Set<ChannelGroup> result = new HashSet<ChannelGroup>();
+            for (String id : groups) {
+                ChannelGroup group = findChannelGroup(Long.parseLong(id));
+                if (group != null) {
+                    result.add(group);
                 }
-                return result;
-            } else {
-                return Collections.EMPTY_SET;
             }
+            return result;
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -160,15 +157,27 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
                 putColumn(CHANNEL_GROUP_COLUMN, mapper.writeValueAsBytes(group));
     }
 
-    private void removeChannelsIndex(ChannelGroup old, MutationBatch mutation) {
-        for (Long channel : old.getChannels()) {
-            mutation.withRow(CHANNEL_GROUP_SECONDARY_CF, channel.toString()).deleteColumn(old.getId().toString());
-        }
+    private void removeChannelsIndex(ChannelGroup old, CassandraIndex index) throws Exception {
+        index.inverted(keyspace, CHANNEL_GROUP_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+                from(old.getId().toString()).
+                delete(Iterables.toArray(Iterables.transform(old.getChannels(), new Function<Long, String>() {
+
+            @Override
+            public String apply(Long input) {
+                return input.toString();
+            }
+        }), String.class)).async(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void createChannelsIndex(ChannelGroup group, MutationBatch mutation) {
-        for (Long channel : group.getChannels()) {
-            mutation.withRow(CHANNEL_GROUP_SECONDARY_CF, channel.toString()).putEmptyColumn(group.getId().toString());
-        }
+    private void createChannelsIndex(ChannelGroup group, CassandraIndex index) throws Exception {
+        index.inverted(keyspace, CHANNEL_GROUP_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+                from(group.getId().toString()).
+                index(Iterables.toArray(Iterables.transform(group.getChannels(), new Function<Long, String>() {
+
+            @Override
+            public String apply(Long input) {
+                return input.toString();
+            }
+        }), String.class)).async(requestTimeout, TimeUnit.MILLISECONDS);
     }
 }

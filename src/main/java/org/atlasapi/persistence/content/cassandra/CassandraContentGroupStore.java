@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Identified;
+import org.atlasapi.persistence.cassandra.CassandraIndex;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
@@ -60,6 +61,7 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
             marshalContentGroup(group, mutation);
             Future<OperationResult<Void>> result = mutation.executeAsync();
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
+            indexContentGroup(group);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -85,16 +87,14 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
 
     @Override
     public ResolvedContent findByIds(Iterable<Long> ids) {
+        CassandraIndex index = new CassandraIndex();
         try {
             Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
             for (Long id : ids) {
-                Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(CONTENT_GROUP_SECONDARY_CF).
-                        setConsistencyLevel(ConsistencyLevel.CL_ONE).
-                        getKey(id.toString()).
-                        executeAsync();
-                ColumnList<String> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
-                if (!columns.isEmpty()) {
-                    String uri = unmarshalUri(columns);
+                String uri = index.direct(keyspace, CONTENT_GROUP_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+                        from(id.toString()).
+                        lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
+                if (uri != null) {
                     ContentGroup contentGroup = findByUri(uri);
                     if (contentGroup != null) {
                         results.put(id.toString(), Maybe.just((Identified) contentGroup));
@@ -152,15 +152,21 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
         }
     }
 
+    private void indexContentGroup(ContentGroup contentGroup) throws Exception {
+        if (contentGroup.getId() != null) {
+            CassandraIndex index = new CassandraIndex();
+            index.direct(keyspace, CONTENT_GROUP_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+                    from(contentGroup.getId().toString()).
+                    to(contentGroup.getCanonicalUri()).
+                    index().async(requestTimeout, TimeUnit.MILLISECONDS);
+        }
+    }
+
     private ContentGroup unmarshalContentGroup(ColumnList<String> columns) throws IOException {
         ContentGroup contentGroup = mapper.readValue(columns.getColumnByName(CONTENT_GROUP_COLUMN).getByteArrayValue(), ContentGroup.class);
         List<ChildRef> children = mapper.readValue(columns.getColumnByName(CONTENTS_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, ChildRef.class));
         contentGroup.setContents(children);
         return contentGroup;
-    }
-
-    private String unmarshalUri(ColumnList<String> columns) throws IOException {
-        return columns.getColumnByName(CONTENT_GROUP_COLUMN).getStringValue();
     }
 
     private ContentGroup findByUri(String uri) throws Exception {
