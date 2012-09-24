@@ -13,9 +13,7 @@ public class DescriptionTranslator {
 
     private static final String THUMBNAIL_KEY = "thumb";
     private static final String IMAGE_KEY = "image";
-    private static final String LONG_SYNOPSIS_KEY = "long";
-    private static final String MEDIUM_SYNOPSIS_KEY = "medium";
-    private static final String SHORT_SYNOPSIS_KEY = "short";
+    private static final String SYNOPSIS_KEY = "synopsis";
     private static final String TITLE_KEY = "title";
 
     public DBObject toDBObject(Description desc) {
@@ -26,9 +24,7 @@ public class DescriptionTranslator {
         BasicDBObject dbo = new BasicDBObject();
         
         addEmptyToNullField(dbo, TITLE_KEY, desc.getTitle());
-        addEmptyToNullField(dbo, SHORT_SYNOPSIS_KEY, desc.getShortSynopsis());
-        addEmptyToNullField(dbo, MEDIUM_SYNOPSIS_KEY, desc.getMediumSynopsis());
-        addEmptyToNullField(dbo, LONG_SYNOPSIS_KEY, desc.getLongSynopsis());
+        addEmptyToNullField(dbo, SYNOPSIS_KEY, desc.getSynopsis());
         addEmptyToNullField(dbo, IMAGE_KEY, desc.getImage());
         addEmptyToNullField(dbo, THUMBNAIL_KEY, desc.getThumbnail());
         
@@ -46,9 +42,7 @@ public class DescriptionTranslator {
         
         return description()
             .withTitle(getField(dbo,TITLE_KEY))
-            .withShortSynopsis(getField(dbo, SHORT_SYNOPSIS_KEY))
-            .withMediumSynopsis(getField(dbo, LONG_SYNOPSIS_KEY))
-            .withLongSynopsis(getField(dbo, LONG_SYNOPSIS_KEY))
+            .withSynopsis(getField(dbo, SYNOPSIS_KEY))
             .withImage(getField(dbo, IMAGE_KEY))
             .withThumbnail(getField(dbo, THUMBNAIL_KEY)).build();
         
