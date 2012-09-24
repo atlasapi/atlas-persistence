@@ -6,6 +6,7 @@ import static org.atlasapi.persistence.cassandra.CassandraSchema.DFLT_EQUIV_COLU
 import static org.atlasapi.persistence.cassandra.CassandraSchema.EQUIV_COLUMN;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.ITEMS_CF;
 
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -16,6 +17,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.persistence.cassandra.CassandraIndex;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -46,8 +48,10 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
 
     private static final Logger log = LoggerFactory.getLogger(CassandraLookupEntryStore.class);
     
-    private final AstyanaxContext<Keyspace> context;
     private final ObjectMapper mapper = JsonFactory.makeJsonMapper();
+
+    private final AstyanaxContext<Keyspace> context;
+    private final CassandraIndex index; 
     private final int requestTimeout;
 
     private Keyspace keyspace;
@@ -55,6 +59,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     public CassandraLookupEntryStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.context = context;
         this.requestTimeout = requestTimeout;
+        this.index = new CassandraIndex();
     }
     
     @PostConstruct
@@ -99,7 +104,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForUris(Iterable<String> uris) {
+    public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
         try {
             return Iterables.concat(
                 entries(uris, ITEMS_CF),entries(uris, CONTAINER_CF)
@@ -120,18 +125,18 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
         return Iterables.filter(Iterables.transform(rows, ROW_TO_LOOKUP_ENTRY), notNull());
     }
     
-    private final Function<Row<String,String>,LookupEntry> ROW_TO_LOOKUP_ENTRY = new Function<Row<String,String>, LookupEntry>(){
+    private final Function<Row<String, String>, LookupEntry> ROW_TO_LOOKUP_ENTRY = new Function<Row<String, String>, LookupEntry>() {
 
         @Override
-        public LookupEntry apply(@Nullable Row<String,String> input) {
+        public LookupEntry apply(@Nullable Row<String, String> input) {
             try {
                 return unmarshalEntry(input.getColumns());
             } catch (Exception e) {
                 log.warn("Failed to unmarshall lookup entry", e);
                 throw Throwables.propagate(e);
             }
-        }}; 
-
+        }
+    };
         
     private LookupEntry unmarshalEntry(ColumnList<String> columns) throws Exception {
         Column<String> equivCol = columns.getColumnByName(EQUIV_COLUMN);
@@ -156,9 +161,36 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
             MutationBatch mutation = marshalEntry(entry, DFLT_EQUIV_COLUMN);
             Future<OperationResult<Void>> result = mutation.executeAsync();
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
+            
+            ConsistencyLevel cl = ConsistencyLevel.CL_QUORUM;
+            
+            index.inverted(keyspace, columnFamily(entry), cl)
+                .from(content.getCanonicalUri())
+                .index(content.getAllUris())
+                .async(1, TimeUnit.MINUTES);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
+        return Iterables.concat(entriesForIds(identifiers, ITEMS_CF), entriesForIds(identifiers, CONTAINER_CF));
+    }
+
+    private Iterable<LookupEntry> entriesForIds(Iterable<String> identifiers, final ColumnFamily<String, String> cf) {
+        final ConsistencyLevel cl = ConsistencyLevel.CL_QUORUM;
+        return Iterables.concat(Iterables.transform(identifiers, new Function<String, Iterable<LookupEntry>>() {
+            @Override
+            public Iterable<LookupEntry> apply(@Nullable String input) {
+                try {
+                    Collection<String> ids = index.inverted(keyspace, cf, cl).lookup(input).async(1, TimeUnit.MINUTES);
+                    return entries(ids, cf);
+                } catch (Exception e) {
+                    throw new CassandraPersistenceException(e.getMessage(), e);
+                }
+            }
+        }));
     }
 
 }

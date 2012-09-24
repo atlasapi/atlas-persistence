@@ -60,8 +60,33 @@ public class CassandraLookupEntryStoreTest {
         LookupEntry testEntry = LookupEntry.lookupEntryFrom(testItem);
         entryStore.store(testEntry);
         
-        Iterable<LookupEntry> uriEntry = entryStore.entriesForUris(ImmutableList.of("testItemUri"));
+        Iterable<LookupEntry> uriEntry = entryStore.entriesForCanonicalUris(ImmutableList.of("testItemUri"));
         assertEquals(testEntry, Iterables.getOnlyElement(uriEntry));
+        
+    }
+
+    @Test
+    public void testStoreAndReadLookupEntriesWithAliases() {
+        
+        Item testItem2 = new Item("testItemUri2", "testItemCurie2", Publisher.BBC);
+        testItem2.addAlias("testItemAlias2");
+        testItem2.addAlias("sharedAlias");
+        
+        Item testItem3 = new Item("testItemUri3", "testItemCurie3", Publisher.BBC);
+        testItem3.addAlias("testItemAlias3");
+        testItem3.addAlias("sharedAlias");
+        
+        entryStore.ensureLookup(testItem2);
+        entryStore.ensureLookup(testItem3);
+        
+        Iterable<LookupEntry> entries = entryStore.entriesForIdentifiers(ImmutableList.of("testItemAlias2"));
+        assertEquals(testItem2.getCanonicalUri(), Iterables.getOnlyElement(entries).uri());
+        
+        entries = entryStore.entriesForIdentifiers(ImmutableList.of("testItemAlias3"));
+        assertEquals(testItem3.getCanonicalUri(), Iterables.getOnlyElement(entries).uri());
+        
+        entries = entryStore.entriesForIdentifiers(ImmutableList.of("sharedAlias"));
+        assertEquals(2, Iterables.size(entries));
         
     }
 
