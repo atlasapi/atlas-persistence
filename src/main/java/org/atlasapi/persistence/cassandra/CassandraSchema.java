@@ -12,7 +12,7 @@ public class CassandraSchema {
     public static final String CLUSTER = "Atlas";
     //
     public static final String PROD_KEYSPACE = "Atlas";
-    public static final String STAGE_KEYSPACE = "AtlasStage";
+    public static final String STAGE_KEYSPACE = "Atlas_Stage";
     public static final Map<String, String> KEYSPACES = ImmutableMap.<String, String>builder().put("prod", PROD_KEYSPACE).put("stage", STAGE_KEYSPACE).build();
     //
     public static final ColumnFamily<String, String> ITEMS_CF = new ColumnFamily<String, String>(
