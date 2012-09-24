@@ -1,7 +1,6 @@
 package org.atlasapi.persistence.lookup.cassandra;
 
 import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.KEYSPACE;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.log4j.ConsoleAppender;
@@ -27,7 +26,7 @@ import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 
 public class CassandraLookupEntryStoreTest {
     
-    private final AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(KEYSPACE).
+    private final AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace("AtlasTest").
             withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
             withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(9160).
             setMaxBlockedThreadsPerHost(5).

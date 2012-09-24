@@ -2,6 +2,7 @@ package org.atlasapi.persistence.lookup.cassandra;
 
 import static com.google.common.base.Predicates.notNull;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.CONTAINER_CF;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.DFLT_EQUIV_COLUMN;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.EQUIV_COLUMN;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.ITEMS_CF;
 
@@ -14,8 +15,10 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.serialization.json.JsonFactory;
@@ -24,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.netflix.astyanax.AstyanaxContext;
@@ -38,7 +42,7 @@ import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 
-public class CassandraLookupEntryStore implements LookupEntryStore {
+public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
     private static final Logger log = LoggerFactory.getLogger(CassandraLookupEntryStore.class);
     
@@ -67,9 +71,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore {
     @Override
     public void store(LookupEntry entry) {
         try {
-            MutationBatch mutation = keyspace.prepareMutationBatch();
-            mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-            marshalEntry(entry, mutation);
+            MutationBatch mutation = marshalEntry(entry, EQUIV_COLUMN);
             Future<OperationResult<Void>> result = mutation.executeAsync();
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
@@ -77,26 +79,31 @@ public class CassandraLookupEntryStore implements LookupEntryStore {
         }
     }
 
-    private void marshalEntry(LookupEntry entry, MutationBatch mutation) throws Exception {
+    private MutationBatch marshalEntry(LookupEntry entry, String column) throws Exception {
+        MutationBatch mutation = keyspace.prepareMutationBatch()
+                .setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
+        ColumnFamily<String, String> cf = columnFamily(entry);
+        byte[] entryBytes = mapper.writer().writeValueAsBytes(entry);
+        mutation.withRow(cf, entry.uri()).putColumn(column, entryBytes, null);
+        return mutation;
+    }
+
+    protected ColumnFamily<String, String> columnFamily(LookupEntry entry) {
         ColumnFamily<String, String> cf;
         if (ContentCategory.CONTAINERS.contains(entry.lookupRef().category())) {
             cf = CONTAINER_CF;
         } else {
             cf = ITEMS_CF;
         }
-        byte[] entryBytes = mapper.writer().writeValueAsBytes(entry);
-        System.out.println(new String(entryBytes));
-        mutation
-            .withRow(cf, entry.uri())
-            .putColumn(EQUIV_COLUMN, entryBytes, null);
+        return cf;
     }
 
     @Override
     public Iterable<LookupEntry> entriesForUris(Iterable<String> uris) {
         try {
-            return ImmutableList.copyOf(Iterables.concat(
+            return Iterables.concat(
                 entries(uris, ITEMS_CF),entries(uris, CONTAINER_CF)
-            ));
+            );
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -106,9 +113,9 @@ public class CassandraLookupEntryStore implements LookupEntryStore {
         Future<OperationResult<Rows<String, String>>> op = keyspace.prepareQuery(cf)
                 .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
                 .getKeySlice(ImmutableList.copyOf(uris))
-                .withColumnSlice(EQUIV_COLUMN)
+                .withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN)
                 .executeAsync();
-        
+
         Rows<String, String> rows = op.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
         return Iterables.filter(Iterables.transform(rows, ROW_TO_LOOKUP_ENTRY), notNull());
     }
@@ -121,19 +128,37 @@ public class CassandraLookupEntryStore implements LookupEntryStore {
                 return unmarshalEntry(input.getColumns());
             } catch (Exception e) {
                 log.warn("Failed to unmarshall lookup entry", e);
-                return null;
+                throw Throwables.propagate(e);
             }
         }}; 
 
         
     private LookupEntry unmarshalEntry(ColumnList<String> columns) throws Exception {
         Column<String> equivCol = columns.getColumnByName(EQUIV_COLUMN);
+        if (equivCol == null) {
+            equivCol = columns.getColumnByName(DFLT_EQUIV_COLUMN);
+        }
+        if (equivCol == null) {
+            return null;
+        }
         return mapper.readValue(equivCol.getByteArrayValue(), LookupEntry.class);
     }
 
     @Override
     public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void ensureLookup(Content content) {
+        try {
+            LookupEntry entry = LookupEntry.lookupEntryFrom(content);
+            MutationBatch mutation = marshalEntry(entry, DFLT_EQUIV_COLUMN);
+            Future<OperationResult<Void>> result = mutation.executeAsync();
+            result.get(requestTimeout, TimeUnit.MILLISECONDS);
+        } catch (Exception ex) {
+            throw new CassandraPersistenceException(ex.getMessage(), ex);
+        }
     }
 
 }

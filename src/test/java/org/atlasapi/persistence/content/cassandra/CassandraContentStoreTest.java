@@ -1,5 +1,23 @@
 package org.atlasapi.persistence.content.cassandra;
 
+import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+import java.util.Arrays;
+
+import org.atlasapi.media.entity.Clip;
+import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.ParentRef;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.google.common.collect.Sets;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
@@ -7,23 +25,6 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import java.util.Arrays;
-import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.ParentRef;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Series;
-import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.cassandra.CassandraSchema;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.Before;
-import org.junit.Ignore;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
-import static org.junit.Assert.*;
 
 /**
  */
@@ -36,6 +37,7 @@ public class CassandraContentStoreTest {
     //
     private AstyanaxContext context;
     private CassandraContentStore store;
+    private final NewLookupWriter lookupWriter = mock(NewLookupWriter.class);
     //
 
     @Before
@@ -49,7 +51,7 @@ public class CassandraContentStoreTest {
                 setSeeds(CASSANDRA_HOST)).
                 withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
                 buildKeyspace(ThriftFamilyFactory.getInstance());
-        store = new CassandraContentStore(context, 10000);
+        store = new CassandraContentStore(context, 10000, lookupWriter);
         context.start();
         store.init();
     }

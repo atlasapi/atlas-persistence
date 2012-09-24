@@ -44,6 +44,8 @@ import org.atlasapi.serialization.json.JsonFactory;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
+import org.atlasapi.persistence.lookup.NewLookupWriter;
+
 import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
 import org.atlasapi.serialization.json.configuration.model.FilteredContainerConfiguration;
 import org.atlasapi.serialization.json.configuration.model.FilteredItemConfiguration;
@@ -58,12 +60,14 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private final int requestTimeout;
     //
     private Keyspace keyspace;
+    private NewLookupWriter lookupWriter;
 
-    public CassandraContentStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
+    public CassandraContentStore(AstyanaxContext<Keyspace> context, int requestTimeout, NewLookupWriter lookupWriter) {
         this.mapper.setFilters(new SimpleFilterProvider().addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER)).
                 addFilter(FilteredContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContainerConfiguration.CLIPS_FILTER, FilteredContainerConfiguration.CHILD_REFS_FILTER)));
         this.context = context;
         this.requestTimeout = requestTimeout;
+        this.lookupWriter = lookupWriter;
     }
 
     public void init() {
@@ -80,6 +84,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
             }
             writeItem(container, item);
             attachItemToParent(container, item);
+            lookupWriter.ensureLookup(item);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -95,6 +100,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                     writeDenormalizedContainerData(container, item);
                 }
             }
+            lookupWriter.ensureLookup(container);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
