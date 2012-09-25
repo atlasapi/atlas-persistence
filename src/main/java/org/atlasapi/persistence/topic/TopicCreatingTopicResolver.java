@@ -31,5 +31,4 @@ public class TopicCreatingTopicResolver extends ForwardingTopicStore {
     protected TopicStore delegate() {
         return delegate;
     }
-        
 }

@@ -3,13 +3,20 @@ package org.atlasapi.persistence.topic.cassandra;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
 import com.metabroadcast.common.base.Maybe;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.ConsistencyLevel;
+import com.netflix.astyanax.model.Row;
+import com.netflix.astyanax.model.Rows;
+import com.netflix.astyanax.query.AllRowsQuery;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.content.criteria.ContentQuery;
@@ -103,6 +110,37 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
         throw new UnsupportedOperationException("Not supported here.");
     }
 
+    @Override
+    public Iterable<Topic> topics() {
+        try {
+            AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(TOPIC_CF).
+                    setConsistencyLevel(ConsistencyLevel.CL_ONE).
+                    getAllRows();
+            allRowsQuery.setRowLimit(100);
+            //
+            final OperationResult<Rows<String, String>> result = allRowsQuery.execute();
+            return new Iterable<Topic>() {
+
+                @Override
+                public Iterator<Topic> iterator() {
+                    return Iterators.transform(result.getResult().iterator(), new Function<Row, Topic>() {
+
+                        @Override
+                        public Topic apply(Row input) {
+                            try {
+                                return mapper.readValue(input.getColumns().getColumnByName(TOPIC_COLUMN).getByteArrayValue(), Topic.class);
+                            } catch (Exception ex) {
+                                return null;
+                            }
+                        }
+                    });
+                }
+            };
+        } catch (Exception ex) {
+            throw new CassandraPersistenceException(ex.getMessage(), ex);
+        }
+    }
+
     private String buildIndexKey(String namespace, String value) {
         return namespace + ":" + value;
     }
@@ -124,15 +162,15 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
 
     private void createIndex(Topic topic) throws Exception {
         index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
-                    from(buildIndexKey(topic.getNamespace(), topic.getValue())).
-                    to(topic.getId().toString()).
-                    index().async(requestTimeout, TimeUnit.MILLISECONDS);
+                from(buildIndexKey(topic.getNamespace(), topic.getValue())).
+                to(topic.getId().toString()).
+                index().async(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     private void deleteIndex(Topic topic) throws Exception {
         index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
-                    from(buildIndexKey(topic.getNamespace(), topic.getValue())).
-                    to(topic.getId().toString()).
-                    delete().async(requestTimeout, TimeUnit.MILLISECONDS);
+                from(buildIndexKey(topic.getNamespace(), topic.getValue())).
+                to(topic.getId().toString()).
+                delete().async(requestTimeout, TimeUnit.MILLISECONDS);
     }
 }
