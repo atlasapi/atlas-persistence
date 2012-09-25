@@ -7,7 +7,7 @@ import org.atlasapi.media.channel.Channel;
 import com.metabroadcast.common.base.Maybe;
 import org.atlasapi.media.channel.Channel;
 
-public interface ChannelResolver {
+public interface ChannelResolver extends ChannelLister {
 
 	@Deprecated
 	Maybe<Channel> fromKey(String key);
@@ -17,9 +17,7 @@ public interface ChannelResolver {
 	Maybe<Channel> fromUri(String uri);
 	
 	Iterable<Channel> forIds(Iterable<Long> ids);
-	
-	Iterable<Channel> all();
-	
+		
 	/**
 	 * Return a map whose keys are aliases prefixed with aliasPrefix
 	 * 

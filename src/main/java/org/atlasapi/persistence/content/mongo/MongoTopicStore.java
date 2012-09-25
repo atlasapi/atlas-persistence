@@ -22,6 +22,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.persistence.topic.TopicLister;
 
 public class MongoTopicStore implements TopicStore {
 
@@ -83,4 +84,8 @@ public class MongoTopicStore implements TopicStore {
         return transform(collection.find(dbQuery));
     }
     
+    @Override
+    public Iterable<Topic> topics() {
+        return transform(collection.find());
+    }
 }

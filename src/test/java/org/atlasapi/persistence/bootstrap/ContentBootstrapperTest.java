@@ -50,20 +50,20 @@ public class ContentBootstrapperTest {
     
     @Test
     public void testListenerIsCalled() throws Exception {
-        ContentChangeListener listener = mock(ContentChangeListener.class);
+        ChangeListener listener = mock(ChangeListener.class);
         
         assertTrue(bootstrapper.loadAllIntoListener(listener));
-        verify(listener).beforeContentChange();
-        verify(listener).contentChange(ImmutableList.of(item1, item2));
-        verify(listener).contentChange(ImmutableList.of(item3));
-        verify(listener).afterContentChange();
+        verify(listener).beforeChange();
+        verify(listener).onChange(ImmutableList.of(item1, item2));
+        verify(listener).onChange(ImmutableList.of(item3));
+        verify(listener).afterChange();
     }
     
     @Test
     public void testListenerIsNotCalledConcurrently() throws Exception {
         final CountDownLatch before = new CountDownLatch(1);
         final CountDownLatch after = new CountDownLatch(1);
-        final ContentChangeListener listener = mock(ContentChangeListener.class);
+        final ChangeListener listener = mock(ChangeListener.class);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         
         doAnswer(new Answer() {
@@ -74,7 +74,7 @@ public class ContentBootstrapperTest {
                 after.await();
                 return null;
             }
-        }).when(listener).beforeContentChange();
+        }).when(listener).beforeChange();
         
         executor.submit(new Runnable() {
             

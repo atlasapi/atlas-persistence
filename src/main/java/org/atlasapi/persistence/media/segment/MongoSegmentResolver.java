@@ -24,10 +24,11 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.media.channel.ChannelGroup;
 import org.atlasapi.media.segment.Segment;
 import org.atlasapi.media.segment.SegmentRef;
 
-public class MongoSegmentResolver implements SegmentResolver {
+public class MongoSegmentResolver implements SegmentResolver, SegmentLister {
 
     private DBCollection segments;
     private SegmentTranslator translator;
@@ -79,4 +80,17 @@ public class MongoSegmentResolver implements SegmentResolver {
         return Maybe.just(translator.fromDBObject(dbo, null));
     }
 
+    @Override
+    public Iterable<Segment> segments() {
+        return transform(segments.find());
+    }
+    
+    private Iterable<Segment> transform(DBCursor dbos) {
+        return Iterables.transform(dbos, new Function<DBObject, Segment>() {
+            @Override
+            public Segment apply(DBObject input) {
+                return translator.fromDBObject(input, null);
+            }
+        });
+    }
 }
