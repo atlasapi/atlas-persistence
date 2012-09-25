@@ -41,10 +41,10 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
 
     private final ObjectMapper mapper = JsonFactory.makeJsonMapper();
     //
+    private final CassandraIndex index = new CassandraIndex();
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraContentGroupStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.mapper.setFilters(new SimpleFilterProvider().addFilter(FilteredContentGroupConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContentGroupConfiguration.CONTENTS_FILTER)));
@@ -56,12 +56,12 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
     @Override
     public void createOrUpdate(ContentGroup group) {
         try {
-            MutationBatch mutation = keyspace.prepareMutationBatch();
-            mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-            marshalContentGroup(group, mutation);
-            Future<OperationResult<Void>> result = mutation.executeAsync();
-            result.get(requestTimeout, TimeUnit.MILLISECONDS);
-            indexContentGroup(group);
+            ContentGroup old = findByUri(group.getCanonicalUri());
+            if (old != null) {
+                removeContentGroupIndex(old);
+            }
+            writeContentGroup(group);
+            createContentGroupIndex(group);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -91,7 +91,7 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
         try {
             Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
             for (Long id : ids) {
-                String uri = index.direct(keyspace, CONTENT_GROUP_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+                String uri = index.direct(keyspace, CONTENT_GROUP_ID_INDEX_CF, ConsistencyLevel.CL_ONE).
                         from(id.toString()).
                         lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
                 if (uri != null) {
@@ -140,25 +140,30 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
         }
     }
 
-    private void marshalContentGroup(ContentGroup contentGroup, MutationBatch mutation) throws IOException {
+    private void writeContentGroup(ContentGroup contentGroup) throws Exception {
         byte[] contentGroupBytes = mapper.writeValueAsBytes(contentGroup);
         byte[] contentsBytes = mapper.writeValueAsBytes(contentGroup.getContents());
+        MutationBatch mutation = keyspace.prepareMutationBatch().setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
         mutation.withRow(CONTENT_GROUP_CF, contentGroup.getCanonicalUri()).
                 putColumn(CONTENT_GROUP_COLUMN, contentGroupBytes, null).
                 putColumn(CONTENTS_COLUMN, contentsBytes, null);
-        if (contentGroup.getId() != null) {
-            mutation.withRow(CONTENT_GROUP_SECONDARY_CF, contentGroup.getId().toString()).
-                    putColumn(CONTENT_GROUP_COLUMN, contentGroup.getCanonicalUri());
-        }
+        mutation.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void indexContentGroup(ContentGroup contentGroup) throws Exception {
+    private void createContentGroupIndex(ContentGroup contentGroup) throws Exception {
         if (contentGroup.getId() != null) {
-            CassandraIndex index = new CassandraIndex();
-            index.direct(keyspace, CONTENT_GROUP_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+            index.direct(keyspace, CONTENT_GROUP_ID_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(contentGroup.getId().toString()).
                     to(contentGroup.getCanonicalUri()).
                     index().async(requestTimeout, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void removeContentGroupIndex(ContentGroup contentGroup) throws Exception {
+        if (contentGroup.getId() != null) {
+            index.direct(keyspace, CONTENT_GROUP_ID_INDEX_CF, ConsistencyLevel.CL_QUORUM).
+                    from(contentGroup.getId().toString()).
+                    delete().async(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 

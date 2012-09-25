@@ -31,10 +31,10 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
 
     private final ObjectMapper mapper = JsonFactory.makeJsonMapper();
     //
+    private final CassandraIndex index = new CassandraIndex();
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraChannelGroupStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.context = context;
@@ -44,18 +44,13 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public ChannelGroup store(ChannelGroup group) {
-        CassandraIndex index = new CassandraIndex();
         try {
             ChannelGroup old = findChannelGroup(group.getId());
             if (old != null) {
-                MutationBatch remove = keyspace.prepareMutationBatch().setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-                removeChannelsIndex(old, index);
-                remove.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
+                removeChannelsIndex(old);
             }
-            MutationBatch create = keyspace.prepareMutationBatch().setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-            marshalChannelGroup(group, create);
-            create.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
-            createChannelsIndex(group, index);
+            storeChannelGroup(group);
+            createChannelsIndex(group);
             return group;
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
@@ -112,9 +107,8 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public Iterable<ChannelGroup> channelGroupsFor(Channel channel) {
-        CassandraIndex index = new CassandraIndex();
         try {
-            Collection<String> groups = index.inverted(keyspace, CHANNEL_GROUP_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+            Collection<String> groups = index.inverted(keyspace, CHANNEL_GROUP_CHANNELS_INDEX_CF, ConsistencyLevel.CL_ONE).
                     lookup(channel.getId().toString()).
                     async(requestTimeout, TimeUnit.MILLISECONDS);
             Set<ChannelGroup> result = new HashSet<ChannelGroup>();
@@ -152,13 +146,14 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
         return mapper.readValue(columns.getColumnByName(CHANNEL_GROUP_COLUMN).getByteArrayValue(), ChannelGroup.class);
     }
 
-    private void marshalChannelGroup(ChannelGroup group, MutationBatch mutation) throws Exception {
-        mutation.withRow(CHANNEL_GROUP_CF, group.getId().toString()).
-                putColumn(CHANNEL_GROUP_COLUMN, mapper.writeValueAsBytes(group));
+    private void storeChannelGroup(ChannelGroup group) throws Exception {
+        MutationBatch mutation = keyspace.prepareMutationBatch().setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
+        mutation.withRow(CHANNEL_GROUP_CF, group.getId().toString()).putColumn(CHANNEL_GROUP_COLUMN, mapper.writeValueAsBytes(group));
+        mutation.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void removeChannelsIndex(ChannelGroup old, CassandraIndex index) throws Exception {
-        index.inverted(keyspace, CHANNEL_GROUP_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+    private void removeChannelsIndex(ChannelGroup old) throws Exception {
+        index.inverted(keyspace, CHANNEL_GROUP_CHANNELS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(old.getId().toString()).
                 delete(Iterables.toArray(Iterables.transform(old.getChannels(), new Function<Long, String>() {
 
@@ -169,8 +164,8 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
         }), String.class)).async(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void createChannelsIndex(ChannelGroup group, CassandraIndex index) throws Exception {
-        index.inverted(keyspace, CHANNEL_GROUP_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+    private void createChannelsIndex(ChannelGroup group) throws Exception {
+        index.inverted(keyspace, CHANNEL_GROUP_CHANNELS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(group.getId().toString()).
                 index(Iterables.toArray(Iterables.transform(group.getChannels(), new Function<Long, String>() {
 

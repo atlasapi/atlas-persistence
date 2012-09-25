@@ -1,16 +1,10 @@
 package org.atlasapi.persistence.media.channel.cassandra;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import org.atlasapi.persistence.media.channel.*;
-
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
-
 import org.joda.time.Duration;
-
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -37,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.serialization.json.JsonFactory;
-import org.atlasapi.serialization.json.configuration.model.FilteredContentGroupConfiguration;
+import org.atlasapi.persistence.media.channel.*;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
 
 public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
@@ -46,8 +40,7 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
     //
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
     //
     private IdGenerator idGenerator;
     private SubstitutionTableNumberCodec codec;

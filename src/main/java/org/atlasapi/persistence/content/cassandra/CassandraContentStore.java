@@ -56,18 +56,14 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     //
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraContentStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.mapper.setFilters(new SimpleFilterProvider().addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER)).
                 addFilter(FilteredContainerConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContainerConfiguration.CLIPS_FILTER, FilteredContainerConfiguration.CHILD_REFS_FILTER)));
         this.context = context;
         this.requestTimeout = requestTimeout;
-    }
-
-    public void init() {
-        keyspace = context.getEntity();
+        this.keyspace = context.getEntity();
     }
 
     @Override

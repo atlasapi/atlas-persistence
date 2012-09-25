@@ -9,8 +9,9 @@ import org.joda.time.Duration;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
+import org.junit.Ignore;
 
-//@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraChannelStoreTest extends BaseCassandraTest {
     
     private CassandraChannelStore store;

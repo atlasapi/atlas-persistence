@@ -37,8 +37,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
     private final CassandraIndex index = new CassandraIndex();
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraProductStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.context = context;
@@ -66,7 +65,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
     @Override
     public Optional<Product> productForSourceIdentified(Publisher source, String sourceIdentifier) {
         try {
-            String id = index.direct(keyspace, PRODUCT_DIRECT_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+            String id = index.direct(keyspace, PRODUCT_URI_INDEX_CF, ConsistencyLevel.CL_ONE).
                     from(sourceIdentifier).
                     lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
             if (id != null) {
@@ -102,7 +101,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
     public Iterable<Product> productsForContent(String canonicalUri) {
         try {
             Set<Product> result = new HashSet<Product>();
-            Collection<String> products = index.inverted(keyspace, PRODUCT_INVERTED_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+            Collection<String> products = index.inverted(keyspace, PRODUCT_CONTENTS_INDEX_CF, ConsistencyLevel.CL_ONE).
                     lookup(canonicalUri).async(requestTimeout, TimeUnit.MILLISECONDS);
             for (String id : products) {
                 Product product = findProduct(id);
@@ -152,7 +151,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
     }
 
     private Product findProduct(String id) throws Exception {
-        ColumnList<String> result = keyspace.prepareQuery(PRODUCT_CF).getKey(id).executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
+        ColumnList<String> result = keyspace.prepareQuery(PRODUCT_CF).setConsistencyLevel(ConsistencyLevel.CL_ONE).getKey(id).executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
         if (!result.isEmpty()) {
             return unmarshalProduct(result);
         } else {
@@ -162,7 +161,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
 
     private void deleteUriIndex(Product product) throws Exception {
         if (product.getCanonicalUri() != null) {
-            index.direct(keyspace, PRODUCT_DIRECT_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+            index.direct(keyspace, PRODUCT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(product.getCanonicalUri()).
                     delete().async(requestTimeout, TimeUnit.MILLISECONDS);
         }
@@ -170,7 +169,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
 
     private void createUriIndex(Product product) throws Exception {
         if (product.getCanonicalUri() != null) {
-            index.direct(keyspace, PRODUCT_DIRECT_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+            index.direct(keyspace, PRODUCT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(product.getCanonicalUri()).
                     to(product.getId().toString()).
                     index().async(requestTimeout, TimeUnit.MILLISECONDS);
@@ -179,7 +178,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
 
     private void deleteContentIndex(Product old) throws Exception {
         if (!old.getContent().isEmpty()) {
-            index.inverted(keyspace, PRODUCT_INVERTED_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+            index.inverted(keyspace, PRODUCT_CONTENTS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(old.getId().toString()).
                     delete(Iterables.toArray(old.getContent(), String.class)).
                     async(requestTimeout, TimeUnit.MILLISECONDS);
@@ -188,7 +187,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
 
     private void createContentIndex(Product product) throws Exception {
         if (!product.getContent().isEmpty()) {
-            index.inverted(keyspace, PRODUCT_INVERTED_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+            index.inverted(keyspace, PRODUCT_CONTENTS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(product.getId().toString()).
                     index(Iterables.toArray(product.getContent(), String.class)).
                     async(requestTimeout, TimeUnit.MILLISECONDS);

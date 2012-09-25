@@ -42,8 +42,7 @@ public class CassandraPersonStore implements PersonWriter, PeopleResolver, Peopl
     //
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraPersonStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.mapper.setFilters(new SimpleFilterProvider().

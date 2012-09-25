@@ -32,8 +32,7 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
     private final CassandraIndex index = new CassandraIndex();
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraTopicStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.mapper.setFilters(new SimpleFilterProvider().addFilter(FilteredContentGroupConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContentGroupConfiguration.CONTENTS_FILTER)));
@@ -85,7 +84,7 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
     @Override
     public Maybe<Topic> topicFor(String namespace, String value) {
         try {
-            String id = index.direct(keyspace, TOPIC_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+            String id = index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_ONE).
                     from(buildIndexKey(namespace, value)).
                     lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
             if (id != null) {
@@ -124,14 +123,14 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
     }
 
     private void createIndex(Topic topic) throws Exception {
-        index.direct(keyspace, TOPIC_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+        index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(buildIndexKey(topic.getNamespace(), topic.getValue())).
                     to(topic.getId().toString()).
                     index().async(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     private void deleteIndex(Topic topic) throws Exception {
-        index.direct(keyspace, TOPIC_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+        index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(buildIndexKey(topic.getNamespace(), topic.getValue())).
                     to(topic.getId().toString()).
                     delete().async(requestTimeout, TimeUnit.MILLISECONDS);

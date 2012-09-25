@@ -10,10 +10,11 @@ import org.junit.Test;
 import org.junit.Before;
 import org.joda.time.DateTime;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 /**
  */
-//@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraPersonStoreTest extends BaseCassandraTest {
 
     private CassandraPersonStore store;

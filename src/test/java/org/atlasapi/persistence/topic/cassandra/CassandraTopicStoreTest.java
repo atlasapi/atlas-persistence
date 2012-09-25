@@ -8,9 +8,9 @@ import org.atlasapi.persistence.cassandra.BaseCassandraTest;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
+import org.junit.Ignore;
 
-/**
- */
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraTopicStoreTest extends BaseCassandraTest {
 
     private CassandraTopicStore store;

@@ -34,8 +34,7 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
     private final CassandraIndex index = new CassandraIndex();
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraSegmentStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.context = context;
@@ -75,7 +74,7 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
     @Override
     public Maybe<Segment> resolveForSource(Publisher source, String uri) {
         try {
-            String id = index.direct(keyspace, SEGMENT_SECONDARY_CF, ConsistencyLevel.CL_ONE).
+            String id = index.direct(keyspace, SEGMENT_URI_INDEX_CF, ConsistencyLevel.CL_ONE).
                     from(uri).
                     lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
             if (id != null) {
@@ -109,14 +108,14 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
     }
 
     private void createUriIndex(Segment segment) throws Exception {
-        index.direct(keyspace, SEGMENT_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+        index.direct(keyspace, SEGMENT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(segment.getCanonicalUri()).
                 to(segment.getIdentifier()).
                 index().async(requestTimeout, TimeUnit.MILLISECONDS);
     }
     
     private void deleteUriIndex(Segment segment) throws Exception {
-        index.direct(keyspace, SEGMENT_SECONDARY_CF, ConsistencyLevel.CL_QUORUM).
+        index.direct(keyspace, SEGMENT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(segment.getCanonicalUri()).
                 to(segment.getIdentifier()).
                 delete().async(requestTimeout, TimeUnit.MILLISECONDS);

@@ -1,61 +1,32 @@
 package org.atlasapi.persistence.content.cassandra;
 
 import com.google.common.collect.Sets;
-import com.netflix.astyanax.AstyanaxContext;
-import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
-import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
-import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import java.util.Arrays;
 import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
-import org.junit.After;
+import org.atlasapi.persistence.cassandra.BaseCassandraTest;
 import org.junit.Test;
 import org.junit.Before;
-import org.junit.Ignore;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 /**
  */
-//@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
-public class CassandraContentStoreTest {
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
+public class CassandraContentStoreTest extends BaseCassandraTest {
 
-    //
-    //private static final String CASSANDRA_HOST = "cassandra1.owl.atlas.mbst.tv";
-    private static final String CASSANDRA_HOST = "127.0.0.1";
-    //
-    private AstyanaxContext context;
     private CassandraContentStore store;
-    //
 
+    @Override
     @Before
     public void before() {
-        context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace("prod")).
-                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
-                withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(9160).
-                setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).
-                setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 10).
-                setConnectTimeout(10000).
-                setSeeds(CASSANDRA_HOST)).
-                withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
-                buildKeyspace(ThriftFamilyFactory.getInstance());
+        super.before();
         store = new CassandraContentStore(context, 10000);
-        context.start();
-        store.init();
-    }
-
-    @After
-    public void close() {
-        context.shutdown();
     }
 
     @Test
@@ -102,11 +73,16 @@ public class CassandraContentStoreTest {
 
         container1.setTitle("container11");
         store.createOrUpdate(container1);
-        
+
         Item read = (Item) store.findByCanonicalUris(Arrays.asList("child1")).getAllResolvedResults().get(0);
         assertEquals(EntityType.SERIES.name(), read.getContainerSummary().getType());
         assertEquals("container11", read.getContainerSummary().getTitle());
         assertEquals("description1", read.getContainerSummary().getDescription());
         assertEquals(Integer.valueOf(1), read.getContainerSummary().getSeriesNumber());
+    }
+    
+    @Test
+    public void testNoContentFound() {
+        assertEquals(0, store.findByCanonicalUris(Arrays.asList("notfound")).getAllResolvedResults().size());
     }
 }

@@ -31,8 +31,8 @@ public class CassandraSchema {
             "ContentGroup",
             StringSerializer.get(),
             StringSerializer.get());
-    public static final ColumnFamily<String, String> CONTENT_GROUP_SECONDARY_CF = new ColumnFamily<String, String>(
-            "ContentGroupSecondary",
+    public static final ColumnFamily<String, String> CONTENT_GROUP_ID_INDEX_CF = new ColumnFamily<String, String>(
+            "ContentGroup_Id_Index",
             StringSerializer.get(),
             StringSerializer.get());
     public static final ColumnFamily<String, String> CHANNEL_CF = new ColumnFamily<String, String>(
@@ -43,36 +43,36 @@ public class CassandraSchema {
             "ChannelGroup",
             StringSerializer.get(),
             StringSerializer.get());
-    public static final ColumnFamily<String, String> CHANNEL_GROUP_SECONDARY_CF = new ColumnFamily<String, String>(
-            "ChannelGroupSecondary",
+    public static final ColumnFamily<String, String> CHANNEL_GROUP_CHANNELS_INDEX_CF = new ColumnFamily<String, String>(
+            "ChannelGroup_Channels_Index",
             StringSerializer.get(),
             StringSerializer.get());
     public static final ColumnFamily<String, String> PRODUCT_CF = new ColumnFamily<String, String>(
             "Product",
             StringSerializer.get(),
             StringSerializer.get());
-    public static final ColumnFamily<String, String> PRODUCT_DIRECT_SECONDARY_CF = new ColumnFamily<String, String>(
-            "ProductDirectSecondary",
+    public static final ColumnFamily<String, String> PRODUCT_URI_INDEX_CF = new ColumnFamily<String, String>(
+            "Product_Uri_Index",
             StringSerializer.get(),
             StringSerializer.get());
-    public static final ColumnFamily<String, String> PRODUCT_INVERTED_SECONDARY_CF = new ColumnFamily<String, String>(
-            "ProductInvertedSecondary",
+    public static final ColumnFamily<String, String> PRODUCT_CONTENTS_INDEX_CF = new ColumnFamily<String, String>(
+            "Product_Contents_Index",
             StringSerializer.get(),
             StringSerializer.get());
     public static final ColumnFamily<String, String> SEGMENT_CF = new ColumnFamily<String, String>(
             "Segment",
             StringSerializer.get(),
             StringSerializer.get());
-    public static final ColumnFamily<String, String> SEGMENT_SECONDARY_CF = new ColumnFamily<String, String>(
-            "SegmentSecondary",
+    public static final ColumnFamily<String, String> SEGMENT_URI_INDEX_CF = new ColumnFamily<String, String>(
+            "Segment_Uri_Index",
             StringSerializer.get(),
             StringSerializer.get());
     public static final ColumnFamily<String, String> TOPIC_CF = new ColumnFamily<String, String>(
             "Topic",
             StringSerializer.get(),
             StringSerializer.get());
-    public static final ColumnFamily<String, String> TOPIC_SECONDARY_CF = new ColumnFamily<String, String>(
-            "TopicSecondary",
+    public static final ColumnFamily<String, String> TOPIC_NS_VALUE_INDEX_CF = new ColumnFamily<String, String>(
+            "Topic_NS_Value_Index",
             StringSerializer.get(),
             StringSerializer.get());
     //
