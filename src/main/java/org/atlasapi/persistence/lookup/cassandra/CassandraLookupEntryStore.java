@@ -1,10 +1,9 @@
 package org.atlasapi.persistence.lookup.cassandra;
 
 import static com.google.common.base.Predicates.notNull;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.CONTAINER_CF;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.CONTENT_CF;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.DFLT_EQUIV_COLUMN;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.EQUIV_COLUMN;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.ITEMS_CF;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -19,7 +18,6 @@ import javax.annotation.PreDestroy;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.persistence.cassandra.CassandraIndex;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
-import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -87,28 +85,15 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     private MutationBatch marshalEntry(LookupEntry entry, String column) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch()
                 .setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-        ColumnFamily<String, String> cf = columnFamily(entry);
         byte[] entryBytes = mapper.writer().writeValueAsBytes(entry);
-        mutation.withRow(cf, entry.uri()).putColumn(column, entryBytes, null);
+        mutation.withRow(CONTENT_CF, entry.uri()).putColumn(column, entryBytes, null);
         return mutation;
-    }
-
-    protected ColumnFamily<String, String> columnFamily(LookupEntry entry) {
-        ColumnFamily<String, String> cf;
-        if (ContentCategory.CONTAINERS.contains(entry.lookupRef().category())) {
-            cf = CONTAINER_CF;
-        } else {
-            cf = ITEMS_CF;
-        }
-        return cf;
     }
 
     @Override
     public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
         try {
-            return Iterables.concat(
-                entries(uris, ITEMS_CF),entries(uris, CONTAINER_CF)
-            );
+            return entries(uris, CONTENT_CF);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -164,9 +149,9 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
             
             ConsistencyLevel cl = ConsistencyLevel.CL_QUORUM;
             
-            index.inverted(keyspace, columnFamily(entry), cl)
+            index.inverted(keyspace, CONTENT_CF, cl)
                 .from(content.getCanonicalUri())
-                .index(content.getAllUris())
+                .index(content.getAllUris().iterator())
                 .async(1, TimeUnit.MINUTES);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
@@ -175,7 +160,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
 
     @Override
     public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
-        return Iterables.concat(entriesForIds(identifiers, ITEMS_CF), entriesForIds(identifiers, CONTAINER_CF));
+        return entriesForIds(identifiers, CONTENT_CF);
     }
 
     private Iterable<LookupEntry> entriesForIds(Iterable<String> identifiers, final ColumnFamily<String, String> cf) {

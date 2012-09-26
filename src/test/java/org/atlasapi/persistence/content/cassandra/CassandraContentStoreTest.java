@@ -1,11 +1,8 @@
 package org.atlasapi.persistence.content.cassandra;
 
-import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 import java.util.Arrays;
-
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Item;
@@ -13,52 +10,28 @@ import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.cassandra.BaseCassandraTest;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.collect.Sets;
-import com.netflix.astyanax.AstyanaxContext;
-import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
-import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
-import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import org.junit.Before;
+import org.junit.Ignore;
+import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
 
 /**
  */
-//@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
-public class CassandraContentStoreTest {
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
+public class CassandraContentStoreTest extends BaseCassandraTest {
 
-    //
-    //private static final String CASSANDRA_HOST = "cassandra1.owl.atlas.mbst.tv";
-    private static final String CASSANDRA_HOST = "127.0.0.1";
-    //
-    private AstyanaxContext context;
     private CassandraContentStore store;
-    private final NewLookupWriter lookupWriter = mock(NewLookupWriter.class);
-    //
 
+    @Override
     @Before
     public void before() {
-        context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace("AtlasTest").
-                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
-                withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(9160).
-                setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).
-                setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 10).
-                setConnectTimeout(10000).
-                setSeeds(CASSANDRA_HOST)).
-                withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
-                buildKeyspace(ThriftFamilyFactory.getInstance());
-        store = new CassandraContentStore(context, 10000, lookupWriter);
-        context.start();
-        store.init();
-    }
-
-    @After
-    public void close() {
-        context.shutdown();
+        super.before();
+        store = new CassandraContentStore(context, 10000, mock(NewLookupWriter.class));
     }
 
     @Test
@@ -105,11 +78,40 @@ public class CassandraContentStoreTest {
 
         container1.setTitle("container11");
         store.createOrUpdate(container1);
-        
+
         Item read = (Item) store.findByCanonicalUris(Arrays.asList("child1")).getAllResolvedResults().get(0);
         assertEquals(EntityType.SERIES.name(), read.getContainerSummary().getType());
         assertEquals("container11", read.getContainerSummary().getTitle());
         assertEquals("description1", read.getContainerSummary().getDescription());
         assertEquals(Integer.valueOf(1), read.getContainerSummary().getSeriesNumber());
+    }
+    
+    @Test
+    public void testListDifferentContentTypes() {
+        Item child1 = new Item("child1", "child1", Publisher.METABROADCAST);
+        child1.setTitle("child1");
+        child1.setId(3L);
+
+        Series container1 = new Series("container1", "curie1", Publisher.METABROADCAST);
+        container1.setTitle("container1");
+        container1.setDescription("description1");
+        container1.withSeriesNumber(1);
+        container1.setId(4L);
+
+        container1.setChildRefs(Arrays.asList(child1.childRef()));
+        child1.setParentRef(ParentRef.parentRefFrom(container1));
+
+        store.createOrUpdate(child1);
+        store.createOrUpdate(container1);
+
+        assertEquals(1, Iterators.size(store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CONTAINER).build())));
+        assertEquals(container1, store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CONTAINER).build()).next());
+        assertEquals(1, Iterators.size(store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CHILD_ITEM).build())));
+        assertEquals(child1, store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CHILD_ITEM).build()).next());
+    }
+    
+    @Test
+    public void testNoContentFound() {
+        assertEquals(0, store.findByCanonicalUris(Arrays.asList("notfound")).getAllResolvedResults().size());
     }
 }

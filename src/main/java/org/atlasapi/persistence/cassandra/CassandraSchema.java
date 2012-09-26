@@ -12,30 +12,97 @@ public class CassandraSchema {
     public static final String CLUSTER = "Atlas";
     //
     public static final String PROD_KEYSPACE = "Atlas";
-    public static final String STAGE_KEYSPACE = "AtlasStage";
+    public static final String STAGE_KEYSPACE = "Atlas_Stage";
     public static final Map<String, String> KEYSPACES = ImmutableMap.<String, String>builder().put("prod", PROD_KEYSPACE).put("stage", STAGE_KEYSPACE).build();
     //
-    public static final ColumnFamily<String, String> ITEMS_CF = new ColumnFamily<String, String>(
-            "Item",
+    public static final ColumnFamily<String, String> CONTENT_CF = new ColumnFamily<String, String>(
+            "Content",
             StringSerializer.get(),
             StringSerializer.get());
-    public static final ColumnFamily<String, String> CONTAINER_CF = new ColumnFamily<String, String>(
-            "Container",
+    public static final ColumnFamily<String, String> PEOPLE_CF = new ColumnFamily<String, String>(
+            "Person",
             StringSerializer.get(),
             StringSerializer.get());
-    
+    public static final ColumnFamily<String, String> CONTENT_GROUP_CF = new ColumnFamily<String, String>(
+            "ContentGroup",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CONTENT_GROUP_ID_INDEX_CF = new ColumnFamily<String, String>(
+            "ContentGroup_Id_Index",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CHANNEL_CF = new ColumnFamily<String, String>(
+            "Channel",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CHANNEL_GROUP_CF = new ColumnFamily<String, String>(
+            "ChannelGroup",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> CHANNEL_GROUP_CHANNELS_INDEX_CF = new ColumnFamily<String, String>(
+            "ChannelGroup_Channels_Index",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> PRODUCT_CF = new ColumnFamily<String, String>(
+            "Product",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> PRODUCT_URI_INDEX_CF = new ColumnFamily<String, String>(
+            "Product_Uri_Index",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> PRODUCT_CONTENTS_INDEX_CF = new ColumnFamily<String, String>(
+            "Product_Contents_Index",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> SEGMENT_CF = new ColumnFamily<String, String>(
+            "Segment",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> SEGMENT_URI_INDEX_CF = new ColumnFamily<String, String>(
+            "Segment_Uri_Index",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> TOPIC_CF = new ColumnFamily<String, String>(
+            "Topic",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> TOPIC_NS_VALUE_INDEX_CF = new ColumnFamily<String, String>(
+            "Topic_NS_Value_Index",
+            StringSerializer.get(),
+            StringSerializer.get());
+    public static final ColumnFamily<String, String> TOPIC_PUBLISHER_NS_VALUE_INDEX_CF = new ColumnFamily<String, String>(
+            "Topic_Publisher_NS_Value_Index",
+            StringSerializer.get(),
+            StringSerializer.get());
+    //
+    public static final String CONTENT_TYPE_COLUMN = "content_type";
+    //
     public static final String EQUIV_COLUMN = "equiv";
     public static final String DFLT_EQUIV_COLUMN = "dflt_equiv";
-
     //
     public static final String ITEM_COLUMN = "item";
     public static final String CLIPS_COLUMN = "clips";
     public static final String VERSIONS_COLUMN = "versions";
-    public static final String DISPLAY_TITLE_COLUMN = "display_title";
     public static final String CONTAINER_SUMMARY_COLUMN = "container_summary";
+    public static final String DISPLAY_TITLE_COLUMN = "display_title";
     //
     public static final String CONTAINER_COLUMN = "container";
     public static final String CHILDREN_COLUMN = "children";
+    //
+    public static final String PERSON_COLUMN = "person";
+    public static final String CONTENT_GROUP_COLUMN = "content_group";
+    public static final String CONTENTS_COLUMN = "contents";
+    //
+    public static final String CHANNEL_COLUMN = "channel";
+    //
+    public static final String CHANNEL_GROUP_COLUMN = "channel_group";
+    //
+    public static final String PRODUCT_COLUMN = "product";
+    //
+    public static final String SEGMENT_COLUMN = "segment";
+    //
+    public static final String TOPIC_COLUMN = "topic";
 
     public static String getKeyspace(String environment) {
         String ks = KEYSPACES.get(environment);

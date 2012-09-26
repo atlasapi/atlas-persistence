@@ -51,7 +51,7 @@ public class DummyChannelResolver implements ChannelResolver {
 	}
 
 	@Override
-	public Maybe<Channel> fromId(long id) {
+	public Maybe<Channel> fromId(Long id) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -32,5 +32,10 @@ public abstract class ForwardingTopicStore implements TopicStore {
     public Maybe<Topic> topicForId(Long id) {
         return delegate().topicForId(id);
     }
+
+    @Override
+    public Iterable<Topic> topics() {
+        return delegate().topics();
+    }
     
 }

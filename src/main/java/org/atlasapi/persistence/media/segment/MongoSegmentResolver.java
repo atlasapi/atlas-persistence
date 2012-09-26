@@ -27,7 +27,7 @@ import com.mongodb.DBObject;
 import org.atlasapi.media.segment.Segment;
 import org.atlasapi.media.segment.SegmentRef;
 
-public class MongoSegmentResolver implements SegmentResolver {
+public class MongoSegmentResolver implements SegmentResolver, SegmentLister {
 
     private DBCollection segments;
     private SegmentTranslator translator;
@@ -38,16 +38,17 @@ public class MongoSegmentResolver implements SegmentResolver {
         this.idCodec = idCodec;
         this.translator = new SegmentTranslator(idCodec);
     }
-    
+
     @Override
     public Map<SegmentRef, Maybe<Segment>> resolveById(Iterable<SegmentRef> identifiers) {
         Map<SegmentRef, Segment> resolved = Maps.uniqueIndex(Iterables.transform(segmentsForIdentifiers(identifiers), new Function<DBObject, Segment>() {
+
             @Override
             public Segment apply(DBObject input) {
                 return translator.fromDBObject(input, null);
             }
         }), Segment.TO_REF);
-        
+
         ImmutableMap.Builder<SegmentRef, Maybe<Segment>> result = ImmutableMap.builder();
         for (SegmentRef segmentRef : identifiers) {
             result.put(segmentRef, Maybe.fromPossibleNullValue(resolved.get(segmentRef)));
@@ -56,12 +57,13 @@ public class MongoSegmentResolver implements SegmentResolver {
     }
 
     private DBCursor segmentsForIdentifiers(Iterable<SegmentRef> identifiers) {
-        return segments.find(new BasicDBObject(ID, new BasicDBObject(IN,decode(identifiers))));
+        return segments.find(new BasicDBObject(ID, new BasicDBObject(IN, decode(identifiers))));
     }
 
     private BasicDBList decode(Iterable<SegmentRef> identifiers) {
         BasicDBList list = new BasicDBList();
         list.addAll(ImmutableList.copyOf(Iterables.transform(identifiers, Functions.compose(new Function<String, Long>() {
+
             @Override
             public Long apply(String input) {
                 return idCodec.decode(input).longValue();
@@ -79,4 +81,18 @@ public class MongoSegmentResolver implements SegmentResolver {
         return Maybe.just(translator.fromDBObject(dbo, null));
     }
 
+    @Override
+    public Iterable<Segment> segments() {
+        return transform(segments.find());
+    }
+
+    private Iterable<Segment> transform(DBCursor dbos) {
+        return Iterables.transform(dbos, new Function<DBObject, Segment>() {
+
+            @Override
+            public Segment apply(DBObject input) {
+                return translator.fromDBObject(input, null);
+            }
+        });
+    }
 }

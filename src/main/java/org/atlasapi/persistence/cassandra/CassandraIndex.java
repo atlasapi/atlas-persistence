@@ -1,13 +1,7 @@
 package org.atlasapi.persistence.cassandra;
 
-import static com.google.common.base.Preconditions.checkState;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
@@ -18,6 +12,12 @@ import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.query.ColumnFamilyQuery;
 import com.netflix.astyanax.query.ColumnQuery;
 import com.netflix.astyanax.query.RowQuery;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -130,31 +130,31 @@ public class CassandraIndex {
             this.source = source;
             return this;
         }
-
+        
         public Index index(String... values) {
-            if (source == null) {
-                throw new IllegalStateException("Indexing requires you to call the 'from' method.");
-            }
-            for (String value : values) {
-                mutation.withRow(cf, value).putEmptyColumn(source);
-            }
-            return new Index();
+            return index(Iterators.forArray(values));
         }
         
-        public Index index(Iterable<String> values) {
-            checkState(source != null, "Indexing requires you to call the 'from' method.");
-            for (String value : values) {
-                mutation.withRow(cf, value).putEmptyColumn(source);
+        public Index delete(String... values) {
+            return delete(Iterators.forArray(values));
+        }
+        
+        public Index index(Iterator<String> values) {
+            if (source == null) {
+                throw new IllegalStateException("Indexing requires you to call the 'from' method.");
+            }
+            while (values.hasNext()) {
+                mutation.withRow(cf, values.next()).putEmptyColumn(source);
             }
             return new Index();
         }
 
-        public Index delete(String... values) {
+        public Index delete(Iterator<String> values) {
             if (source == null) {
                 throw new IllegalStateException("Indexing requires you to call the 'from' method.");
             }
-            for (String value : values) {
-                mutation.withRow(cf, value).deleteColumn(source);
+            while (values.hasNext()) {
+                mutation.withRow(cf, values.next()).deleteColumn(source);
             }
             return new Index();
         }
