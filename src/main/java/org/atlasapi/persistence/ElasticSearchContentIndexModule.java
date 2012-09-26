@@ -3,6 +3,7 @@ package org.atlasapi.persistence;
 import java.io.IOException;
 
 import org.atlasapi.persistence.content.elasticsearch.ESContentIndexer;
+import org.atlasapi.persistence.content.elasticsearch.ESContentSearcher;
 import org.atlasapi.persistence.content.elasticsearch.EsScheduleIndex;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.persistence.topic.elasticsearch.ESTopicSearcher;
@@ -15,6 +16,7 @@ public class ElasticSearchContentIndexModule {
     private final ESContentIndexer contentIndexer;
     private final EsScheduleIndex scheduleIndex;
     private final ESTopicSearcher topicSearcher;
+    private final ESContentSearcher contentSearcher;
 
     public ElasticSearchContentIndexModule(String seeds, long requestTimeout) {
         Node index = NodeBuilder.nodeBuilder().client(true).
@@ -24,6 +26,7 @@ public class ElasticSearchContentIndexModule {
         this.contentIndexer = new ESContentIndexer(index, requestTimeout);
         this.scheduleIndex = new EsScheduleIndex(index);
         this.topicSearcher = new ESTopicSearcher(index, requestTimeout);
+        this.contentSearcher = new ESContentSearcher(index);
     }
 
     public void init() {
@@ -44,5 +47,9 @@ public class ElasticSearchContentIndexModule {
 
     public ESTopicSearcher topicSearcher() {
         return topicSearcher;
+    }
+    
+    public ESContentSearcher contentSearcher() {
+        return contentSearcher;
     }
 }

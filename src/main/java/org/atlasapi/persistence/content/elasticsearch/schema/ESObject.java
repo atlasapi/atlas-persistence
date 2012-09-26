@@ -10,7 +10,17 @@ public class ESObject {
 
     public final static FromEsObjectToMap TO_MAP = new FromEsObjectToMap();
     //
-    protected Map properties = new HashMap();
+    protected Map properties = new HashMap() {
+
+        @Override
+        public Object put(Object k, Object v) {
+            if (k != null && v != null) {
+                return super.put(k, v);
+            } else {
+                return null;
+            }
+        }
+    };
 
     public Map toMap() {
         return properties;

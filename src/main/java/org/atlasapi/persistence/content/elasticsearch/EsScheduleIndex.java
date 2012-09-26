@@ -4,9 +4,10 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.ID;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_END_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.BROADCASTS;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.PUBLISHER;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESItem.TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.BROADCASTS;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.CHILD_ITEM_TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.TOP_ITEM_TYPE;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.INDEX_NAME;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
@@ -16,8 +17,8 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.fieldQuery;
 import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.textQuery;
-import static org.elasticsearch.index.query.TextQueryBuilder.Operator.AND;
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
+import static org.elasticsearch.index.query.MatchQueryBuilder.Operator.AND;
 
 import java.util.Date;
 import java.util.List;
@@ -180,7 +181,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         
         esClient.client()
             .prepareSearch(INDEX_NAME)
-            .setTypes(TYPE)
+            .setTypes(CHILD_ITEM_TYPE, TOP_ITEM_TYPE)
             .setSearchType(SearchType.SCAN)
             .setScroll(SCROLL_TIMEOUT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
@@ -195,7 +196,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         return filteredQuery(
             boolQuery()
                 .must(fieldQuery(PUBLISHER, publisher))
-                .must(nestedQuery(BROADCASTS, textQuery(CHANNEL, broadcastOn).operator(AND)))
+                .must(nestedQuery(BROADCASTS, matchQuery(CHANNEL, broadcastOn).operator(AND)))
             ,
             nestedFilter(BROADCASTS, orFilter(andFilter(
                 //inside or overlapping the interval ends

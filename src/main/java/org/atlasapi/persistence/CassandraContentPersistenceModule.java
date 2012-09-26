@@ -1,11 +1,8 @@
 package org.atlasapi.persistence;
 
 import com.metabroadcast.common.ids.IdGenerator;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
 
 import org.atlasapi.equiv.CassandraEquivalenceSummaryStore;
-import org.atlasapi.persistence.cassandra.CassandraSchema;
-import org.atlasapi.persistence.content.cassandra.CassandraContentStore;
 import org.atlasapi.persistence.lookup.cassandra.CassandraLookupEntryStore;
 
 import com.netflix.astyanax.AstyanaxContext;

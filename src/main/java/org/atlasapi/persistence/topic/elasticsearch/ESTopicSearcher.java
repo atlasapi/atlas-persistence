@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESItem;
+import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESTopic;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
@@ -37,7 +37,7 @@ public class ESTopicSearcher implements TopicSearcher {
     @Override
     public List<Topic> popularTopics(Interval interval, TopicQueryResolver resolver, Selection selection) {
         Facets facets = buildQuery(interval, selection).actionGet(timeout, TimeUnit.MILLISECONDS).getFacets();
-        TermsFacet terms = facets.facet(TermsFacet.class, ESItem.TOPICS);
+        TermsFacet terms = facets.facet(TermsFacet.class, ESContent.TOPICS);
         List<Topic> result = new LinkedList<Topic>();
         for (TermsFacet.Entry term : Iterables.limit(Iterables.skip(terms.entries(), selection.getOffset()), selection.getLimit())) {
             Maybe<Topic> topic = resolver.topicForId(Long.parseLong(term.getTerm()));
@@ -49,12 +49,9 @@ public class ESTopicSearcher implements TopicSearcher {
     }
 
     private ListenableActionFuture<SearchResponse> buildQuery(Interval interval, Selection selection) {
-        System.out.println(index.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
-                QueryBuilders.nestedQuery(ESItem.BROADCASTS, QueryBuilders.rangeQuery(ESBroadcast.TRANSMISSION_TIME).from(interval.getStart()).to(interval.getEnd()))).
-                addFacet(FacetBuilders.termsFacet(ESItem.TOPICS).field(ESItem.TOPICS + "." + ESTopic.ID).size(selection.getOffset() + selection.getLimit())).toString());
         ListenableActionFuture<SearchResponse> result = index.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
-                QueryBuilders.nestedQuery(ESItem.BROADCASTS, QueryBuilders.rangeQuery(ESBroadcast.TRANSMISSION_TIME).from(interval.getStart()).to(interval.getEnd()))).
-                addFacet(FacetBuilders.termsFacet(ESItem.TOPICS).field(ESItem.TOPICS + "." + ESTopic.ID).size(selection.getOffset() + selection.getLimit())).
+                QueryBuilders.nestedQuery(ESContent.BROADCASTS, QueryBuilders.rangeQuery(ESBroadcast.TRANSMISSION_TIME).from(interval.getStart()).to(interval.getEnd()))).
+                addFacet(FacetBuilders.termsFacet(ESContent.TOPICS).field(ESContent.TOPICS + "." + ESTopic.ID).size(selection.getOffset() + selection.getLimit())).
                 execute();
         return result;
     }

@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.bootstrap.elasticsearch;
 
 import java.util.concurrent.ThreadPoolExecutor;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.bootstrap.AbstractMultiThreadedChangeListener;
@@ -26,6 +27,12 @@ public class ESChangeListener extends AbstractMultiThreadedChangeListener {
 
     @Override
     protected void onChange(Identified change) {
-        esContentIndexer.index((Item) change);
+        if (change instanceof Item) {
+            esContentIndexer.index((Item) change);
+        } else if (change instanceof Container) {
+            esContentIndexer.index((Container) change);
+        } else {
+            throw new IllegalStateException("Unknown type: " + change.getClass().getName());
+        }
     }
 }

@@ -14,9 +14,12 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 
 public interface ContentIndexer {
 
+    void index(Container container);
+    
 	void index(Item item);
 }
