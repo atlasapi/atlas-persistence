@@ -42,6 +42,8 @@ import org.atlasapi.media.entity.Topic;
 import org.atlasapi.media.product.Product;
 import org.atlasapi.media.segment.Segment;
 import org.atlasapi.persistence.content.ContentGroupLister;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryLister;
 import org.atlasapi.persistence.media.channel.ChannelGroupLister;
 import org.atlasapi.persistence.media.channel.ChannelLister;
 import org.atlasapi.persistence.media.product.ProductLister;
@@ -57,6 +59,7 @@ public class ContentBootstrapper {
     private volatile String destination;
     //
     private ContentLister[] contentListers = new ContentLister[0];
+    private LookupEntryLister[] lookupEntryListers = new LookupEntryLister[0];
     private PeopleLister[] peopleListers = new PeopleLister[0];
     private ChannelLister[] channelListers = new ChannelLister[0];
     private ProductLister[] productListers = new ProductLister[0];
@@ -65,6 +68,11 @@ public class ContentBootstrapper {
     private ContentGroupLister[] contentGroupListers = new ContentGroupLister[0];
     private ChannelGroupLister[] channelGroupListers = new ChannelGroupLister[0];
 
+    public ContentBootstrapper withLookupEntryListers(LookupEntryLister... lookupEntryListers) {
+        this.lookupEntryListers = lookupEntryListers;
+        return this;
+    }
+    
     public ContentBootstrapper withContentListers(ContentLister... contentListers) {
         this.contentListers = contentListers;
         return this;
@@ -115,6 +123,10 @@ public class ContentBootstrapper {
                     log.info("Bootstrapping contents...");
                     int processedContents = bootstrapContent(listener);
                     log.info(String.format("Finished bootstrapping %s contents.", processedContents));
+                    
+                    log.info("Bootstrapping lookup entries...");
+                    int processedLookupEntries = bootstrapLookupEntries(listener);
+                    log.info(String.format("Finished bootstrapping %s lookup entries.", processedLookupEntries));
 
                     log.info("Bootstrapping content groups...");
                     int processedContentGroups = bootstrapContentGroups(listener);
@@ -264,6 +276,17 @@ public class ContentBootstrapper {
             for (Iterable<ChannelGroup> channelGroups : Iterables.partition(lister.channelGroups(), 100)) {
                 listener.onChange(channelGroups);
                 processed += Iterables.size(channelGroups);
+            }
+        }
+        return processed;
+    }
+    
+    private int bootstrapLookupEntries(final ChangeListener listener) throws RuntimeException {
+        int processed = 0;
+        for (LookupEntryLister lister : lookupEntryListers) {
+            for (Iterable<LookupEntry> lookupEntries : Iterables.partition(lister.all(), 100)) {
+                listener.onChange(lookupEntries);
+                processed += Iterables.size(lookupEntries);
             }
         }
         return processed;

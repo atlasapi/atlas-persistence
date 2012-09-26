@@ -28,5 +28,4 @@ public interface LookupEntryStore {
     Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris);
 
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
-
 }

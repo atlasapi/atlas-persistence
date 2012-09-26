@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,26 +40,22 @@ public abstract class AbstractMultiThreadedChangeListener implements ChangeListe
     }
 
     @Override
-    public void onChange(Iterable<? extends Identified> changed) {
-        for (final Identified change : changed) {
-            if (change instanceof Item) {
-                executor.submit(new Runnable() {
+    public void onChange(Iterable changed) {
+        for (final Object change : changed) {
+            executor.submit(new Runnable() {
 
-                    @Override
-                    public void run() {
-                        try {
-                            onChange(change);
-                        } catch (Exception ex) {
-                            log.warn("Failed to index content {}, exception follows.", change);
-                            log.warn(ex.getMessage(), ex);
-                        }
+                @Override
+                public void run() {
+                    try {
+                        onChange((Item) change);
+                    } catch (Exception ex) {
+                        log.warn("Failed to index content {}, exception follows.", change);
+                        log.warn(ex.getMessage(), ex);
                     }
-                });
-            } else {
-                log.info("Cannot index content of type: {}", change.getClass());
-            }
+                }
+            });
         }
     }
 
-    protected abstract void onChange(Identified change);
+    protected abstract void onChange(Object change);
 }

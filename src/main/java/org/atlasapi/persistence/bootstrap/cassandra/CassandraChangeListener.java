@@ -5,7 +5,6 @@ import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.ContentGroup;
-import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Topic;
@@ -16,6 +15,8 @@ import org.atlasapi.persistence.content.cassandra.CassandraContentGroupStore;
 import org.atlasapi.persistence.content.cassandra.CassandraContentStore;
 import org.atlasapi.persistence.content.cassandra.CassandraProductStore;
 import org.atlasapi.persistence.content.people.cassandra.CassandraPersonStore;
+import org.atlasapi.persistence.lookup.cassandra.CassandraLookupEntryStore;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.media.channel.cassandra.CassandraChannelGroupStore;
 import org.atlasapi.persistence.media.channel.cassandra.CassandraChannelStore;
 import org.atlasapi.persistence.media.segment.cassandra.CassandraSegmentStore;
@@ -29,6 +30,7 @@ public class CassandraChangeListener extends AbstractMultiThreadedChangeListener
     private CassandraChannelGroupStore cassandraChannelGroupStore;
     private CassandraChannelStore cassandraChannelStore;
     private CassandraContentGroupStore cassandraContentGroupStore;
+    private CassandraLookupEntryStore cassandraLookupEntryStore;
     private CassandraPersonStore cassandraPersonStore;
     private CassandraProductStore cassandraProductStore;
     private CassandraSegmentStore cassandraSegmentStore;
@@ -74,11 +76,18 @@ public class CassandraChangeListener extends AbstractMultiThreadedChangeListener
         this.cassandraTopicStore = cassandraTopicStore;
     }
 
+    public void setCassandraLookupEntryStore(CassandraLookupEntryStore cassandraLookupEntryStore) {
+        this.cassandraLookupEntryStore = cassandraLookupEntryStore;
+    }
+
     @Override
-    protected void onChange(Identified change) {
+    protected void onChange(Object change) {
         if (change instanceof Item) {
             cassandraContentStore.createOrUpdate((Item) change);
-        } else if (change instanceof Container) {
+        } else if (change instanceof LookupEntry) {
+            cassandraLookupEntryStore.store((LookupEntry) change);
+        }
+        if (change instanceof Container) {
             cassandraContentStore.createOrUpdate((Container) change);
         } else if (change instanceof Person) {
             cassandraPersonStore.createOrUpdatePerson((Person) change);

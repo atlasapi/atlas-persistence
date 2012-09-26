@@ -31,8 +31,9 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.persistence.lookup.entry.LookupEntryLister;
 
-public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
+public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter, LookupEntryLister {
 
     private DBCollection lookup;
     private LookupEntryTranslator translator;
@@ -107,6 +108,11 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
         return Iterables.transform(find(identifiers), translator.FROM_DBO);
+    }
+    
+    @Override
+    public Iterable<LookupEntry> all() {
+        return Iterables.transform(lookup.find(), translator.FROM_DBO);
     }
 
     private Iterable<DBObject> find(Iterable<String> identifiers) {
