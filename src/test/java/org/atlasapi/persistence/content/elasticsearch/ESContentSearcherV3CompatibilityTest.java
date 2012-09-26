@@ -127,7 +127,7 @@ public class ESContentSearcherV3CompatibilityTest {
 
     @Before
     public void before() throws Exception {
-        esClient = NodeBuilder.nodeBuilder().local(false).clusterName(ESSchema.CLUSTER_NAME).build().start();
+        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
         try {
             esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
         } catch (Exception ex) {
