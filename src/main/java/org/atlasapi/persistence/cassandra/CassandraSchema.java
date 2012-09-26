@@ -15,12 +15,8 @@ public class CassandraSchema {
     public static final String STAGE_KEYSPACE = "Atlas_Stage";
     public static final Map<String, String> KEYSPACES = ImmutableMap.<String, String>builder().put("prod", PROD_KEYSPACE).put("stage", STAGE_KEYSPACE).build();
     //
-    public static final ColumnFamily<String, String> ITEMS_CF = new ColumnFamily<String, String>(
-            "Item",
-            StringSerializer.get(),
-            StringSerializer.get());
-    public static final ColumnFamily<String, String> CONTAINER_CF = new ColumnFamily<String, String>(
-            "Container",
+    public static final ColumnFamily<String, String> CONTENT_CF = new ColumnFamily<String, String>(
+            "Content",
             StringSerializer.get(),
             StringSerializer.get());
     public static final ColumnFamily<String, String> PEOPLE_CF = new ColumnFamily<String, String>(
@@ -75,6 +71,7 @@ public class CassandraSchema {
             "Topic_NS_Value_Index",
             StringSerializer.get(),
             StringSerializer.get());
+    public static final String CONTENT_TYPE_COLUMN = "content_type";
     //
     public static final String ITEM_COLUMN = "item";
     public static final String CLIPS_COLUMN = "clips";

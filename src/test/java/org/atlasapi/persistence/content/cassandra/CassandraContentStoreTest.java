@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.cassandra;
 
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
 import org.atlasapi.media.entity.Clip;
@@ -10,6 +11,8 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.cassandra.BaseCassandraTest;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.junit.Test;
 import org.junit.Before;
 import static org.junit.Assert.*;
@@ -79,6 +82,30 @@ public class CassandraContentStoreTest extends BaseCassandraTest {
         assertEquals("container11", read.getContainerSummary().getTitle());
         assertEquals("description1", read.getContainerSummary().getDescription());
         assertEquals(Integer.valueOf(1), read.getContainerSummary().getSeriesNumber());
+    }
+    
+    @Test
+    public void testListDifferentContentTypes() {
+        Item child1 = new Item("child1", "child1", Publisher.METABROADCAST);
+        child1.setTitle("child1");
+        child1.setId(3L);
+
+        Series container1 = new Series("container1", "curie1", Publisher.METABROADCAST);
+        container1.setTitle("container1");
+        container1.setDescription("description1");
+        container1.withSeriesNumber(1);
+        container1.setId(4L);
+
+        container1.setChildRefs(Arrays.asList(child1.childRef()));
+        child1.setParentRef(ParentRef.parentRefFrom(container1));
+
+        store.createOrUpdate(child1);
+        store.createOrUpdate(container1);
+
+        assertEquals(1, Iterators.size(store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CONTAINER).build())));
+        assertEquals(container1, store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CONTAINER).build()).next());
+        assertEquals(1, Iterators.size(store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CHILD_ITEM).build())));
+        assertEquals(child1, store.listContent(new ContentListingCriteria.Builder().forContent(ContentCategory.CHILD_ITEM).build()).next());
     }
     
     @Test
