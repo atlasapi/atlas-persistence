@@ -9,9 +9,11 @@ import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import org.junit.After;
 import org.junit.Before;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
+import org.junit.Ignore;
 
 /**
  */
+@Ignore
 public class BaseCassandraTest {
 
     //

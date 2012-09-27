@@ -23,7 +23,9 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import org.junit.Ignore;
 
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraLookupEntryStoreTest {
     
     private final AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace("AtlasTest").

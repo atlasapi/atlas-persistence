@@ -8,10 +8,11 @@ import com.netflix.astyanax.serializers.StringSerializer;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 /**
  */
-//@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraIndexTest extends BaseCassandraTest {
 
     @Test
