@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.base.Function;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Iterators;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
@@ -26,8 +27,6 @@ import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.content.PeopleListerListener;
 import org.atlasapi.persistence.content.people.PersonWriter;
 import org.atlasapi.serialization.json.JsonFactory;
-import org.atlasapi.serialization.json.configuration.model.FilteredContainerConfiguration;
-import org.atlasapi.serialization.json.configuration.model.FilteredItemConfiguration;
 import org.atlasapi.persistence.content.people.PeopleLister;
 import org.atlasapi.persistence.content.people.PeopleResolver;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
@@ -45,8 +44,7 @@ public class CassandraPersonStore implements PersonWriter, PeopleResolver, Peopl
     private final Keyspace keyspace;
 
     public CassandraPersonStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
-        this.mapper.setFilters(new SimpleFilterProvider().
-                addFilter(FilteredContentGroupConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContentGroupConfiguration.CONTENTS_FILTER)));
+        this.mapper.setFilters(new SimpleFilterProvider().addFilter(FilteredContentGroupConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredContentGroupConfiguration.CONTENTS_FILTER)));
         this.context = context;
         this.requestTimeout = requestTimeout;
         this.keyspace = context.getEntity();
@@ -104,17 +102,21 @@ public class CassandraPersonStore implements PersonWriter, PeopleResolver, Peopl
             allRowsQuery.setRowLimit(100);
             //
             OperationResult<Rows<String, String>> result = allRowsQuery.execute();
-            Iterator<Person> people = Iterators.transform(result.getResult().iterator(), new Function<Row, Person>() {
+            Iterator<Person> people = Iterators.filter(Iterators.transform(result.getResult().iterator(), new Function<Row, Person>() {
 
                 @Override
                 public Person apply(Row input) {
                     try {
-                        return unmarshalFullPerson(input.getColumns());
+                        if (!input.getColumns().isEmpty()) {
+                            return unmarshalFullPerson(input.getColumns());
+                        } else {
+                            return null;
+                        }
                     } catch (Exception ex) {
                         return null;
                     }
                 }
-            });
+            }), Predicates.notNull());
             //
             while (people.hasNext()) {
                 Person person = people.next();
@@ -130,7 +132,7 @@ public class CassandraPersonStore implements PersonWriter, PeopleResolver, Peopl
         mutation.withRow(PEOPLE_CF, person.getCanonicalUri()).
                 putColumn(PERSON_COLUMN, bytes, null);
     }
-    
+
     private void marshalPersonContents(Person person, MutationBatch mutation) throws IOException {
         byte[] bytes = mapper.writeValueAsBytes(person.getContents());
         mutation.withRow(PEOPLE_CF, person.getCanonicalUri()).

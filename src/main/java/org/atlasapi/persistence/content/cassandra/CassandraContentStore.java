@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -131,19 +132,23 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     public Iterator<Content> listContent(final ContentListingCriteria criteria) {
         try {
             AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(CONTENT_CF).setConsistencyLevel(ConsistencyLevel.CL_ONE).getAllRows();
-            Iterator<Content> result = Iterators.transform(
+            Iterator<Content> result = Iterators.filter(Iterators.transform(
                     allRowsQuery.setRowLimit(100).execute().getResult().iterator(),
                     new Function<Row<String, String>, Content>() {
 
                         @Override
                         public Content apply(Row<String, String> input) {
                             try {
-                                return unmarshalContent(input.getColumns());
+                                if (!input.getColumns().isEmpty()) {
+                                    return unmarshalContent(input.getColumns());
+                                } else {
+                                    return null;
+                                }
                             } catch (Exception ex) {
                                 return null;
                             }
                         }
-                    });
+                    }), Predicates.notNull());
             return Iterators.filter(result, new Predicate<Content>() {
 
                 @Override

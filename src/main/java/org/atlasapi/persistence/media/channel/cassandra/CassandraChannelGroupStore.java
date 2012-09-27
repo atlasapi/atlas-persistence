@@ -3,6 +3,8 @@ package org.atlasapi.persistence.media.channel.cassandra;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.netflix.astyanax.AstyanaxContext;
@@ -83,7 +85,7 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
             allRowsQuery.setRowLimit(100);
             //
             final OperationResult<Rows<String, String>> result = allRowsQuery.execute();
-            return new Iterable<ChannelGroup>() {
+            return Iterables.filter(new Iterable<ChannelGroup>() {
 
                 @Override
                 public Iterator<ChannelGroup> iterator() {
@@ -92,14 +94,18 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
                         @Override
                         public ChannelGroup apply(Row input) {
                             try {
-                                return unmarshalChannelGroup(input.getColumns());
+                                if (!input.getColumns().isEmpty()) {
+                                    return unmarshalChannelGroup(input.getColumns());
+                                } else {
+                                    return null;
+                                }
                             } catch (Exception ex) {
                                 return null;
                             }
                         }
                     });
                 }
-            };
+            }, Predicates.notNull());
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }

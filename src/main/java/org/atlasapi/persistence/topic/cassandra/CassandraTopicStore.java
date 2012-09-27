@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.google.common.base.Function;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.metabroadcast.common.base.Maybe;
 import com.netflix.astyanax.AstyanaxContext;
@@ -137,7 +139,7 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
             allRowsQuery.setRowLimit(100);
             //
             final OperationResult<Rows<String, String>> result = allRowsQuery.execute();
-            return new Iterable<Topic>() {
+            return Iterables.filter(new Iterable<Topic>() {
 
                 @Override
                 public Iterator<Topic> iterator() {
@@ -146,14 +148,18 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
                         @Override
                         public Topic apply(Row input) {
                             try {
-                                return mapper.readValue(input.getColumns().getColumnByName(TOPIC_COLUMN).getByteArrayValue(), Topic.class);
+                                if (!input.getColumns().isEmpty()) {
+                                    return mapper.readValue(input.getColumns().getColumnByName(TOPIC_COLUMN).getByteArrayValue(), Topic.class);
+                                } else {
+                                    return null;
+                                }
                             } catch (Exception ex) {
                                 return null;
                             }
                         }
                     });
                 }
-            };
+            }, Predicates.notNull());
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }

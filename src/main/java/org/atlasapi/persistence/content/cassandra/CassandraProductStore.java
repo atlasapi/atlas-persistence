@@ -3,6 +3,7 @@ package org.atlasapi.persistence.content.cassandra;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.netflix.astyanax.AstyanaxContext;
@@ -124,7 +125,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
             allRowsQuery.setRowLimit(100);
             //
             final OperationResult<Rows<String, String>> result = allRowsQuery.execute();
-            return new Iterable<Product>() {
+            return Iterables.filter(new Iterable<Product>() {
 
                 @Override
                 public Iterator<Product> iterator() {
@@ -133,14 +134,18 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
                         @Override
                         public Product apply(Row input) {
                             try {
-                                return unmarshalProduct(input.getColumns());
+                                if (!input.getColumns().isEmpty()) {
+                                    return unmarshalProduct(input.getColumns());
+                                } else {
+                                    return null;
+                                }
                             } catch (Exception ex) {
                                 return null;
                             }
                         }
                     });
                 }
-            };
+            }, Predicates.notNull());
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
