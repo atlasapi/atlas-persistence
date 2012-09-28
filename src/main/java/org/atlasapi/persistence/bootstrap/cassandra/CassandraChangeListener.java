@@ -86,8 +86,7 @@ public class CassandraChangeListener extends AbstractMultiThreadedChangeListener
             cassandraContentStore.createOrUpdate((Item) change);
         } else if (change instanceof LookupEntry) {
             cassandraLookupEntryStore.store((LookupEntry) change);
-        }
-        if (change instanceof Container) {
+        } else if (change instanceof Container) {
             cassandraContentStore.createOrUpdate((Container) change);
         } else if (change instanceof Person) {
             cassandraPersonStore.createOrUpdatePerson((Person) change);

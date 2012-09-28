@@ -72,7 +72,7 @@ public class ContentBootstrapper {
         this.lookupEntryListers = lookupEntryListers;
         return this;
     }
-    
+
     public ContentBootstrapper withContentListers(ContentLister... contentListers) {
         this.contentListers = contentListers;
         return this;
@@ -123,7 +123,7 @@ public class ContentBootstrapper {
                     log.info("Bootstrapping contents...");
                     int processedContents = bootstrapContent(listener);
                     log.info(String.format("Finished bootstrapping %s contents.", processedContents));
-                    
+
                     log.info("Bootstrapping lookup entries...");
                     int processedLookupEntries = bootstrapLookupEntries(listener);
                     log.info(String.format("Finished bootstrapping %s lookup entries.", processedLookupEntries));
@@ -156,6 +156,7 @@ public class ContentBootstrapper {
                     int processedTopics = bootstrapTopics(listener);
                     log.info(String.format("Finished bootstrapping %s topics!", processedTopics));
                 } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);
                     throw new RuntimeException(ex.getMessage(), ex);
                 } finally {
                     listener.afterChange();
@@ -179,14 +180,9 @@ public class ContentBootstrapper {
             Iterator<Content> content = lister.listContent(defaultCriteria().forContent(contentCategories).build());
             Iterator<List<Content>> partitionedContent = Iterators.paddedPartition(content, 100);
             while (partitionedContent.hasNext()) {
-                List<Content> partition = ImmutableList.copyOf(Iterables.filter(partitionedContent.next(), notNull()));
-                try {
-                    listener.onChange(partition);
-                    processed += partition.size();
-                } catch (RuntimeException ex) {
-                    log.warn(ex.getMessage(), ex);
-                    throw ex;
-                }
+                Iterable<Content> partition = Iterables.filter(partitionedContent.next(), notNull());
+                listener.onChange(partition);
+                processed += Iterables.size(partition);
                 if (log.isInfoEnabled()) {
                     log.info(String.format("%s content processed: %s", processed, ContentListingProgress.progressFrom(Iterables.getLast(partition))));
                 }
@@ -202,13 +198,8 @@ public class ContentBootstrapper {
 
                 @Override
                 public void personListed(Person person) {
-                    try {
-                        listener.onChange(ImmutableList.of(person));
-                        processed.incrementAndGet();
-                    } catch (RuntimeException ex) {
-                        log.warn(ex.getMessage(), ex);
-                        throw ex;
-                    }
+                    listener.onChange(ImmutableList.of(person));
+                    processed.incrementAndGet();
                 }
             });
         }
@@ -280,7 +271,7 @@ public class ContentBootstrapper {
         }
         return processed;
     }
-    
+
     private int bootstrapLookupEntries(final ChangeListener listener) throws RuntimeException {
         int processed = 0;
         for (LookupEntryLister lister : lookupEntryListers) {
