@@ -137,17 +137,21 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
             allRowsQuery.setRowLimit(100);
             //
             final OperationResult<Rows<String, String>> result = allRowsQuery.execute();
-            return Maps.uniqueIndex(Iterators.transform(result.getResult().iterator(), new Function<Row, Channel>() {
+            return Maps.uniqueIndex(Iterators.filter(Iterators.transform(result.getResult().iterator(), new Function<Row, Channel>() {
 
                 @Override
                 public Channel apply(Row input) {
                     try {
-                        return mapper.readValue(input.getColumns().getColumnByName(CHANNEL_COLUMN).getByteArrayValue(), Channel.class);
+                        if (!input.getColumns().isEmpty()) {
+                            return mapper.readValue(input.getColumns().getColumnByName(CHANNEL_COLUMN).getByteArrayValue(), Channel.class);
+                        } else {
+                            return null;
+                        }
                     } catch (Exception ex) {
                         return null;
                     }
                 }
-            }), new Function<Channel, Long>() {
+            }), Predicates.notNull()), new Function<Channel, Long>() {
 
                 @Override
                 public Long apply(Channel input) {
