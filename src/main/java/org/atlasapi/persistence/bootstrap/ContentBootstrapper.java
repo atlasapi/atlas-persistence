@@ -180,9 +180,9 @@ public class ContentBootstrapper {
             Iterator<Content> content = lister.listContent(defaultCriteria().forContent(contentCategories).build());
             Iterator<List<Content>> partitionedContent = Iterators.paddedPartition(content, 100);
             while (partitionedContent.hasNext()) {
-                Iterable<Content> partition = Iterables.filter(partitionedContent.next(), notNull());
+                List<Content> partition = ImmutableList.copyOf(Iterables.filter(partitionedContent.next(), notNull()));
                 listener.onChange(partition);
-                processed += Iterables.size(partition);
+                processed += partition.size();
                 if (log.isInfoEnabled()) {
                     log.info(String.format("%s content processed: %s", processed, ContentListingProgress.progressFrom(Iterables.getLast(partition))));
                 }
