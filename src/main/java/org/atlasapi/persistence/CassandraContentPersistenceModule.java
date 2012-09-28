@@ -60,8 +60,8 @@ public class CassandraContentPersistenceModule {
         this.cassandraChannelStore = new CassandraChannelStore(cassandraContext, requestTimeout, idGenerator, Duration.standardMinutes(15));
         this.cassandraContentGroupStore = new CassandraContentGroupStore(cassandraContext, requestTimeout);
         this.cassandraPersonStore = new CassandraPersonStore(cassandraContext, requestTimeout);
-        this.cassandraProductStore = new CassandraProductStore(cassandraContext, requestTimeout);
-        this.cassandraSegmentStore = new CassandraSegmentStore(cassandraContext, requestTimeout);
+        this.cassandraProductStore = new CassandraProductStore(cassandraContext, requestTimeout, idGenerator);
+        this.cassandraSegmentStore = new CassandraSegmentStore(cassandraContext, requestTimeout, idGenerator);
         this.cassandraTopicStore = new CassandraTopicStore(cassandraContext, requestTimeout);
     }
 

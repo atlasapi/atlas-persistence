@@ -2,7 +2,7 @@ package org.atlasapi.persistence.media.segment.cassandra;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.ids.IdGenerator;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.segment.Segment;
 import org.atlasapi.media.segment.SegmentRef;
@@ -35,11 +36,13 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
     private final Keyspace keyspace;
+    private final IdGenerator idGenerator;
 
-    public CassandraSegmentStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
+    public CassandraSegmentStore(AstyanaxContext<Keyspace> context, int requestTimeout, IdGenerator idGenerator) {
         this.context = context;
         this.requestTimeout = requestTimeout;
         this.keyspace = context.getEntity();
+        this.idGenerator = idGenerator;
     }
 
     @Override
@@ -48,6 +51,9 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
             Segment old = findSegment(segment.getIdentifier());
             if (old != null) {
                 deleteUriIndex(old);
+                ensureId(segment, old.getId());
+            } else {
+                ensureId(segment, idGenerator.generateRaw());
             }
             writeSegment(segment);
             createUriIndex(segment);
@@ -113,11 +119,17 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
                 to(segment.getIdentifier()).
                 index().async(requestTimeout, TimeUnit.MILLISECONDS);
     }
-    
+
     private void deleteUriIndex(Segment segment) throws Exception {
         index.direct(keyspace, SEGMENT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(segment.getCanonicalUri()).
                 to(segment.getIdentifier()).
                 delete().async(requestTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    private void ensureId(Identified identified, Long id) {
+        if (identified.getId() == null) {
+            identified.setId(id);
+        }
     }
 }

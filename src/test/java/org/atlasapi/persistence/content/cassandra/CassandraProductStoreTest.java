@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content.cassandra;
 
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.ids.UUIDGenerator;
 import java.util.Arrays;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.product.Product;
@@ -21,7 +22,7 @@ public class CassandraProductStoreTest extends BaseCassandraTest {
     @Override
     public void before() {
         super.before();
-        store = new CassandraProductStore(context, 10000);
+        store = new CassandraProductStore(context, 10000, new UUIDGenerator());
     }
     
     @Test

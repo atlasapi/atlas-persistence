@@ -17,7 +17,6 @@ import com.google.common.collect.Maps;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.caching.BackgroundComputingValue;
 import com.metabroadcast.common.ids.IdGenerator;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
@@ -43,7 +42,6 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
     private final Keyspace keyspace;
     //
     private IdGenerator idGenerator;
-    private SubstitutionTableNumberCodec codec;
     private BackgroundComputingValue<Map<Long, Channel>> channels;
 
     public CassandraChannelStore(AstyanaxContext<Keyspace> context, int requestTimeout, IdGenerator idGenerator, Duration cacheExpiry) {
@@ -51,7 +49,6 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
         this.requestTimeout = requestTimeout;
         this.keyspace = context.getEntity();
         this.idGenerator = idGenerator;
-        this.codec = new SubstitutionTableNumberCodec();
         this.channels = new BackgroundComputingValue<Map<Long, Channel>>(cacheExpiry, new Callable<Map<Long, Channel>>() {
 
             @Override
@@ -65,8 +62,7 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
     @Override
     public void write(Channel channel) {
         if (channel.getId() == null) {
-            // TODO: skip ids of legacy channel names
-            channel.setId(codec.decode(idGenerator.generate()).longValue());
+            channel.setId(idGenerator.generateRaw());
         }
         try {
             MutationBatch mutation = keyspace.prepareMutationBatch();

@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.segment.cassandra;
 
 import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.ids.UUIDGenerator;
 import java.util.Arrays;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.segment.Segment;
@@ -23,7 +24,7 @@ public class CassandraSegmentStoreTest extends BaseCassandraTest {
     @Override
     public void before() {
         super.before();
-        store = new CassandraSegmentStore(context, 10000);
+        store = new CassandraSegmentStore(context, 10000, new UUIDGenerator());
     }
 
     @Test

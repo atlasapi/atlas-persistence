@@ -6,6 +6,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.metabroadcast.common.ids.IdGenerator;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.product.Product;
 import org.atlasapi.persistence.cassandra.CassandraIndex;
@@ -39,11 +41,13 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
     private final Keyspace keyspace;
+    private final IdGenerator idGenerator;
 
-    public CassandraProductStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
+    public CassandraProductStore(AstyanaxContext<Keyspace> context, int requestTimeout, IdGenerator idGenerator) {
         this.context = context;
         this.requestTimeout = requestTimeout;
         this.keyspace = context.getEntity();
+        this.idGenerator = idGenerator;
     }
 
     @Override
@@ -53,6 +57,9 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
             if (old != null) {
                 deleteUriIndex(old);
                 deleteContentIndex(old);
+                ensureId(product, old.getId());
+            } else {
+                ensureId(product, idGenerator.generateRaw());
             }
             storeProduct(product);
             createUriIndex(product);
@@ -203,5 +210,11 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
         MutationBatch mutation = keyspace.prepareMutationBatch().setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
         mutation.withRow(PRODUCT_CF, product.getId().toString()).putColumn(PRODUCT_COLUMN, mapper.writeValueAsBytes(product));
         mutation.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    private void ensureId(Identified identified, Long id) {
+        if (identified.getId() == null) {
+            identified.setId(id);
+        }
     }
 }
