@@ -47,9 +47,9 @@ public abstract class AbstractMultiThreadedChangeListener implements ChangeListe
                 @Override
                 public void run() {
                     try {
-                        onChange((Item) change);
+                        onChange(change);
                     } catch (Exception ex) {
-                        log.warn("Failed to index content {}, exception follows.", change);
+                        log.warn("Failed to process content {}, exception follows.", change);
                         log.warn(ex.getMessage(), ex);
                     }
                 }
