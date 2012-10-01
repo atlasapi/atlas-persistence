@@ -33,7 +33,8 @@ import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
@@ -174,9 +175,7 @@ public class ContentBootstrapper {
     private int bootstrapContent(final ChangeListener listener) throws RuntimeException {
         int processed = 0;
         for (ContentLister lister : contentListers) {
-            List<ContentCategory> contentCategories = Lists.newArrayList(ContentCategory.TOP_LEVEL_CONTENT);
-            contentCategories.remove(ContentCategory.CONTENT_GROUP);
-            //
+            Set<ContentCategory> contentCategories = Sets.union(ContentCategory.CONTAINERS, ContentCategory.ITEMS);
             Iterator<Content> content = lister.listContent(defaultCriteria().forContent(contentCategories).build());
             Iterator<List<Content>> partitionedContent = Iterators.paddedPartition(content, 100);
             while (partitionedContent.hasNext()) {
