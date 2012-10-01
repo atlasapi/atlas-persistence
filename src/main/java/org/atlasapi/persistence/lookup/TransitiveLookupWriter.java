@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.lookup;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Strings.emptyToNull;
@@ -182,8 +183,9 @@ public class TransitiveLookupWriter implements LookupWriter {
                     seen.add(current);
                 }
                 transitiveSet.add(current);
-                direct.addAll(lookupMap.get(current.id()).directEquivalents());
-                direct.addAll(lookupMap.get(current.id()).explicitEquivalents());
+                String id = current.id();
+                LookupEntry currentEntry = checkNotNull(lookupMap.get(id), "No lookup entry for " + id);
+                direct.addAll(neighbours(currentEntry));
             }
             
             newLookups.add(entry.copyWithEquivalents(transitiveSet));
@@ -214,7 +216,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         return transitiveClosure;
     }
 
-    private Iterable<LookupRef> neighbours(LookupEntry current) {
+    private Set<LookupRef> neighbours(LookupEntry current) {
         return ImmutableSet.copyOf(Iterables.concat(current.directEquivalents(), current.explicitEquivalents()));
     }
 
