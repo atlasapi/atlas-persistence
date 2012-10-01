@@ -3,7 +3,6 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
@@ -30,9 +29,7 @@ import com.mongodb.DBObject;
 public class ItemTranslator implements ModelTranslator<Item> {
     
     private static final String FILM_RELEASES_KEY = "releases";
-    private static final String FILM_CERTIFICATES_KEY = "certificates";
     private static final String FILM_SUBTITLES_KEY = "subtitles";
-    private static final String FILM_LANGUAGES_KEY = "languages";
     private static final String PART_NUMBER = "partNumber";
     private static final String EPISODE_NUMBER = "episodeNumber";
     private static final String SERIES_NUMBER = "seriesNumber";
@@ -41,7 +38,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String TYPE_KEY = "type";
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
-	private static final String FILM_YEAR_KEY = "year";
 	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
 	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
 	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
@@ -53,12 +49,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         @Override
         public Subtitles apply(DBObject input) {
             return new Subtitles(TranslatorUtils.toString(input, "language"));
-        }
-    };
-    private final Function<DBObject, Certificate> certificateFromDbo = new Function<DBObject, Certificate>() {
-        @Override
-        public Certificate apply(DBObject input) {
-            return new Certificate(TranslatorUtils.toString(input, "class"),Countries.fromCode(TranslatorUtils.toString(input, "country")));
         }
     };
     private final Function<DBObject, ReleaseDate> releaseDateFromDbo = new Function<DBObject, ReleaseDate>() {
@@ -129,17 +119,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
         
         if (item instanceof Film) {
             Film film = (Film) item;
-            film.setYear(TranslatorUtils.toInteger(dbObject, FILM_YEAR_KEY));
             film.setWebsiteUrl(TranslatorUtils.toString(dbObject, FILM_WEBSITE_URL_KEY));
-            if (dbObject.containsField(FILM_LANGUAGES_KEY)) {
-                film.setLanguages(TranslatorUtils.toSet(dbObject, FILM_LANGUAGES_KEY));
-            }
             if (dbObject.containsField(FILM_SUBTITLES_KEY)) {
                 film.setSubtitles(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_SUBTITLES_KEY), subtitlesFromDbo));
             }
-            if (dbObject.containsField(FILM_LANGUAGES_KEY)) {
-                film.setCertificates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_CERTIFICATES_KEY), certificateFromDbo));
-            } 
             if (dbObject.containsField(FILM_RELEASES_KEY)) {
                 film.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
             }
@@ -276,32 +259,14 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		
 		if (entity instanceof Film) {
 		    Film film = (Film) entity;
-		    TranslatorUtils.from(itemDbo, FILM_YEAR_KEY, film.getYear());
 		    TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
-		    if (!film.getLanguages().isEmpty()) {
-		        TranslatorUtils.fromSet(itemDbo, film.getLanguages(), FILM_LANGUAGES_KEY);
-		    }
 		    
 		    encodeSubtitles(itemDbo, film.getSubtitles());
 		    encodeReleases(itemDbo, film.getReleaseDates());
-		    encodeCertificates(itemDbo, film.getCertificates());
 		    
 		}
 		
         return itemDbo;
-    }
-
-    private void encodeCertificates(DBObject dbo, Set<Certificate> certificates) {
-        if(!certificates.isEmpty()) {
-            BasicDBList values = new BasicDBList();
-            for(Certificate releaseDate : certificates) {
-                DBObject certDbo = new BasicDBObject();
-                TranslatorUtils.from(certDbo, "class", releaseDate.classification());
-                TranslatorUtils.from(certDbo, "country", releaseDate.country().code());
-                values.add(certDbo);
-            }
-            dbo.put(FILM_CERTIFICATES_KEY, values);
-        }  
     }
     
     private void encodeReleases(DBObject dbo, Set<ReleaseDate> releaseDates) {
