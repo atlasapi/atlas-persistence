@@ -115,7 +115,7 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
         try {
             Collection<String> groups = index.inverted(keyspace, CHANNEL_GROUP_CHANNELS_INDEX_CF, ConsistencyLevel.CL_ONE).
                     lookup(channel.getId().toString()).
-                    async(requestTimeout, TimeUnit.MILLISECONDS);
+                    execute(requestTimeout, TimeUnit.MILLISECONDS);
             Set<ChannelGroup> result = new HashSet<ChannelGroup>();
             for (String id : groups) {
                 ChannelGroup group = findChannelGroup(Long.parseLong(id));
@@ -166,7 +166,7 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
             public String apply(Long input) {
                 return input.toString();
             }
-        }), String.class)).async(requestTimeout, TimeUnit.MILLISECONDS);
+        }), String.class)).execute(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     private void createChannelsIndex(ChannelGroup group) throws Exception {
@@ -178,6 +178,6 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
             public String apply(Long input) {
                 return input.toString();
             }
-        }), String.class)).async(requestTimeout, TimeUnit.MILLISECONDS);
+        }), String.class)).execute(requestTimeout, TimeUnit.MILLISECONDS);
     }
 }

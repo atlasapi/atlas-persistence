@@ -86,14 +86,14 @@ public class CassandraIndex {
 
         public class Index {
 
-            public void async(long time, TimeUnit unit) throws Exception {
+            public void execute(long time, TimeUnit unit) throws Exception {
                 mutation.executeAsync().get(time, unit);
             }
         }
 
         public class Lookup {
 
-            public String async(long time, TimeUnit unit) throws Exception {
+            public String execute(long time, TimeUnit unit) throws Exception {
                 try {
                     Column<String> result = query.executeAsync().get(time, unit).getResult();
                     if (result.hasValue()) {
@@ -166,14 +166,14 @@ public class CassandraIndex {
 
         public class Index {
 
-            public void async(long time, TimeUnit unit) throws Exception {
+            public void execute(long time, TimeUnit unit) throws Exception {
                 mutation.executeAsync().get(time, unit);
             }
         }
 
         public class Lookup {
 
-            public Collection<String> async(long time, TimeUnit unit) throws Exception {
+            public Collection<String> execute(long time, TimeUnit unit) throws Exception {
                 try {
                     ColumnList<String> result = query.executeAsync().get(time, unit).getResult();
                     if (!result.isEmpty()) {

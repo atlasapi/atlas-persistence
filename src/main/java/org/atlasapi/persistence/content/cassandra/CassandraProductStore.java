@@ -75,7 +75,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
         try {
             String id = index.direct(keyspace, PRODUCT_URI_INDEX_CF, ConsistencyLevel.CL_ONE).
                     from(sourceIdentifier).
-                    lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    lookup().execute(requestTimeout, TimeUnit.MILLISECONDS);
             if (id != null) {
                 Product product = findProduct(id);
                 if (product != null && product.getPublisher().equals(source)) {
@@ -110,7 +110,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
         try {
             Set<Product> result = new HashSet<Product>();
             Collection<String> products = index.inverted(keyspace, PRODUCT_CONTENTS_INDEX_CF, ConsistencyLevel.CL_ONE).
-                    lookup(canonicalUri).async(requestTimeout, TimeUnit.MILLISECONDS);
+                    lookup(canonicalUri).execute(requestTimeout, TimeUnit.MILLISECONDS);
             for (String id : products) {
                 Product product = findProduct(id);
                 if (product != null) {
@@ -175,7 +175,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
         if (product.getCanonicalUri() != null) {
             index.direct(keyspace, PRODUCT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(product.getCanonicalUri()).
-                    delete().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    delete().execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -184,7 +184,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
             index.direct(keyspace, PRODUCT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(product.getCanonicalUri()).
                     to(product.getId().toString()).
-                    index().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    index().execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -193,7 +193,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
             index.inverted(keyspace, PRODUCT_CONTENTS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(old.getId().toString()).
                     delete(Iterables.toArray(old.getContent(), String.class)).
-                    async(requestTimeout, TimeUnit.MILLISECONDS);
+                    execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -202,7 +202,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
             index.inverted(keyspace, PRODUCT_CONTENTS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(product.getId().toString()).
                     index(Iterables.toArray(product.getContent(), String.class)).
-                    async(requestTimeout, TimeUnit.MILLISECONDS);
+                    execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 

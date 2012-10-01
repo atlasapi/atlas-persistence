@@ -82,7 +82,7 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
         try {
             String id = index.direct(keyspace, SEGMENT_URI_INDEX_CF, ConsistencyLevel.CL_ONE).
                     from(uri).
-                    lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    lookup().execute(requestTimeout, TimeUnit.MILLISECONDS);
             if (id != null) {
                 Segment segment = findSegment(id);
                 if (segment != null && segment.getPublisher().equals(source)) {
@@ -117,14 +117,14 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
         index.direct(keyspace, SEGMENT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(segment.getCanonicalUri()).
                 to(segment.getIdentifier()).
-                index().async(requestTimeout, TimeUnit.MILLISECONDS);
+                index().execute(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     private void deleteUriIndex(Segment segment) throws Exception {
         index.direct(keyspace, SEGMENT_URI_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(segment.getCanonicalUri()).
                 to(segment.getIdentifier()).
-                delete().async(requestTimeout, TimeUnit.MILLISECONDS);
+                delete().execute(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     private void ensureId(Identified identified, Long id) {

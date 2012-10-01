@@ -96,7 +96,7 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
         try {
             String id = index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_ONE).
                     from(buildIndexKey(namespace, value)).
-                    lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    lookup().execute(requestTimeout, TimeUnit.MILLISECONDS);
             if (id != null) {
                 Topic topic = findTopic(id);
                 return Maybe.fromPossibleNullValue(topic);
@@ -113,7 +113,7 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
         try {
             String id = index.direct(keyspace, TOPIC_PUBLISHER_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_ONE).
                     from(buildIndexKey(publisher, namespace, value)).
-                    lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    lookup().execute(requestTimeout, TimeUnit.MILLISECONDS);
             if (id != null) {
                 Topic topic = findTopic(id);
                 return Maybe.fromPossibleNullValue(topic);
@@ -192,23 +192,23 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
         index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(buildIndexKey(topic.getNamespace(), topic.getValue())).
                 to(topic.getId().toString()).
-                index().async(requestTimeout, TimeUnit.MILLISECONDS);
+                index().execute(requestTimeout, TimeUnit.MILLISECONDS);
         if (topic.getPublisher() != null) {
             index.direct(keyspace, TOPIC_PUBLISHER_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(buildIndexKey(topic.getPublisher(), topic.getNamespace(), topic.getValue())).
                     to(topic.getId().toString()).
-                    index().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    index().execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
     private void deleteIndex(Topic topic) throws Exception {
         index.direct(keyspace, TOPIC_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(buildIndexKey(topic.getNamespace(), topic.getValue())).
-                delete().async(requestTimeout, TimeUnit.MILLISECONDS);
+                delete().execute(requestTimeout, TimeUnit.MILLISECONDS);
         if (topic.getPublisher() != null) {
             index.direct(keyspace, TOPIC_PUBLISHER_NS_VALUE_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(buildIndexKey(topic.getPublisher(), topic.getNamespace(), topic.getValue())).
-                    delete().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    delete().execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 }

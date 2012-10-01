@@ -25,11 +25,11 @@ public class CassandraIndexTest extends BaseCassandraTest {
         ConsistencyLevel cl = ConsistencyLevel.CL_QUORUM;
         CassandraIndex index = new CassandraIndex();
 
-        index.direct(ks, cf, cl).from("a").to("b").index().async(1, TimeUnit.MINUTES);
-        assertEquals("b", index.direct(ks, cf, cl).from("a").lookup().async(1, TimeUnit.MINUTES));
+        index.direct(ks, cf, cl).from("a").to("b").index().execute(1, TimeUnit.MINUTES);
+        assertEquals("b", index.direct(ks, cf, cl).from("a").lookup().execute(1, TimeUnit.MINUTES));
         
-        index.direct(ks, cf, cl).from("a").delete().async(1, TimeUnit.MINUTES);
-        assertEquals(null, index.direct(ks, cf, cl).from("a").lookup().async(1, TimeUnit.MINUTES));
+        index.direct(ks, cf, cl).from("a").delete().execute(1, TimeUnit.MINUTES);
+        assertEquals(null, index.direct(ks, cf, cl).from("a").lookup().execute(1, TimeUnit.MINUTES));
     }
     
     @Test
@@ -42,12 +42,12 @@ public class CassandraIndexTest extends BaseCassandraTest {
         ConsistencyLevel cl = ConsistencyLevel.CL_QUORUM;
         CassandraIndex index = new CassandraIndex();
 
-        index.inverted(ks, cf, cl).from("a").index("v1","v2").async(1, TimeUnit.MINUTES);
-        index.inverted(ks, cf, cl).from("b").index("v1").async(1, TimeUnit.MINUTES);
-        assertEquals(2, index.inverted(ks, cf, cl).lookup("v1").async(1, TimeUnit.MINUTES).size());
+        index.inverted(ks, cf, cl).from("a").index("v1","v2").execute(1, TimeUnit.MINUTES);
+        index.inverted(ks, cf, cl).from("b").index("v1").execute(1, TimeUnit.MINUTES);
+        assertEquals(2, index.inverted(ks, cf, cl).lookup("v1").execute(1, TimeUnit.MINUTES).size());
         
-        index.inverted(ks, cf, cl).from("b").delete("v1").async(1, TimeUnit.MINUTES);
-        assertEquals(1, index.inverted(ks, cf, cl).lookup("v1").async(1, TimeUnit.MINUTES).size());
-        assertEquals("a", Iterables.get(index.inverted(ks, cf, cl).lookup("v1").async(1, TimeUnit.MINUTES), 0));
+        index.inverted(ks, cf, cl).from("b").delete("v1").execute(1, TimeUnit.MINUTES);
+        assertEquals(1, index.inverted(ks, cf, cl).lookup("v1").execute(1, TimeUnit.MINUTES).size());
+        assertEquals("a", Iterables.get(index.inverted(ks, cf, cl).lookup("v1").execute(1, TimeUnit.MINUTES), 0));
     }
 }

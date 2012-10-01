@@ -93,7 +93,7 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
             for (Long id : ids) {
                 String uri = index.direct(keyspace, CONTENT_GROUP_ID_INDEX_CF, ConsistencyLevel.CL_ONE).
                         from(id.toString()).
-                        lookup().async(requestTimeout, TimeUnit.MILLISECONDS);
+                        lookup().execute(requestTimeout, TimeUnit.MILLISECONDS);
                 if (uri != null) {
                     ContentGroup contentGroup = findByUri(uri);
                     if (contentGroup != null) {
@@ -155,7 +155,7 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
             index.direct(keyspace, CONTENT_GROUP_ID_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(contentGroup.getId().toString()).
                     to(contentGroup.getCanonicalUri()).
-                    index().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    index().execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -163,7 +163,7 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
         if (contentGroup.getId() != null) {
             index.direct(keyspace, CONTENT_GROUP_ID_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                     from(contentGroup.getId().toString()).
-                    delete().async(requestTimeout, TimeUnit.MILLISECONDS);
+                    delete().execute(requestTimeout, TimeUnit.MILLISECONDS);
         }
     }
 

@@ -152,7 +152,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
             index.inverted(keyspace, CONTENT_CF, cl)
                 .from(content.getCanonicalUri())
                 .index(content.getAllUris().iterator())
-                .async(1, TimeUnit.MINUTES);
+                .execute(1, TimeUnit.MINUTES);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -169,7 +169,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
             @Override
             public Iterable<LookupEntry> apply(@Nullable String input) {
                 try {
-                    Collection<String> ids = index.inverted(keyspace, cf, cl).lookup(input).async(1, TimeUnit.MINUTES);
+                    Collection<String> ids = index.inverted(keyspace, cf, cl).lookup(input).execute(1, TimeUnit.MINUTES);
                     return entries(ids, cf);
                 } catch (Exception e) {
                     throw new CassandraPersistenceException(e.getMessage(), e);
