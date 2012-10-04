@@ -186,7 +186,7 @@ public class ContentBootstrapper {
                     error = ex;
                     throw new RuntimeException(ex.getMessage(), ex);
                 } finally {
-                    if (error != null) {
+                    if (error == null) {
                         lastStatus.set(SUCCESS);
                     } else {
                         lastStatus.set(FAIL);
