@@ -12,6 +12,7 @@ import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -24,11 +25,15 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.segment.Segment;
 import org.atlasapi.media.segment.SegmentRef;
 
 public class MongoSegmentResolver implements SegmentResolver, SegmentLister {
 
+    private static final Log log = LogFactory.getLog(MongoSegmentResolver.class);
+    //
     private DBCollection segments;
     private SegmentTranslator translator;
     private final NumberToShortStringCodec idCodec;
@@ -87,12 +92,17 @@ public class MongoSegmentResolver implements SegmentResolver, SegmentLister {
     }
 
     private Iterable<Segment> transform(DBCursor dbos) {
-        return Iterables.transform(dbos, new Function<DBObject, Segment>() {
+        return Iterables.filter(Iterables.transform(dbos, new Function<DBObject, Segment>() {
 
             @Override
             public Segment apply(DBObject input) {
-                return translator.fromDBObject(input, null);
+                try {
+                    return translator.fromDBObject(input, null);
+                } catch (Exception ex) {
+                    log.warn(ex.getMessage(), ex);
+                    return null;
+                }
             }
-        });
+        }), Predicates.notNull());
     }
 }
