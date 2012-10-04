@@ -55,7 +55,7 @@ public class ContentBootstrapper {
 
     private static final Log log = LogFactory.getLog(ContentBootstrapper.class);
     //
-    private final ReentrantLock boostrapLock = new ReentrantLock();
+    private final ReentrantLock bootstrapLock = new ReentrantLock();
     private volatile boolean bootstrapping;
     private volatile String destination;
     //
@@ -115,7 +115,7 @@ public class ContentBootstrapper {
     }
 
     public boolean loadAllIntoListener(final ChangeListener listener) {
-        if (boostrapLock.tryLock()) {
+        if (bootstrapLock.tryLock()) {
             try {
                 bootstrapping = true;
                 destination = listener.getClass().toString();
@@ -164,7 +164,7 @@ public class ContentBootstrapper {
                 }
             } finally {
                 bootstrapping = false;
-                boostrapLock.unlock();
+                bootstrapLock.unlock();
             }
             return true;
         } else {
