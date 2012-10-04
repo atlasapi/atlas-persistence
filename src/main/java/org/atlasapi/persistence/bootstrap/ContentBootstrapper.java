@@ -35,6 +35,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
@@ -53,9 +54,14 @@ import org.atlasapi.persistence.topic.TopicLister;
 
 public class ContentBootstrapper {
 
+    private static final String NONE = "NONE";
+    private static final String SUCCESS = "SUCCESS";
+    private static final String FAIL = "FAIL";
+    //
     private static final Log log = LogFactory.getLog(ContentBootstrapper.class);
     //
     private final ReentrantLock bootstrapLock = new ReentrantLock();
+    private final AtomicReference<String> lastStatus = new AtomicReference<String>(NONE);
     private volatile boolean bootstrapping;
     private volatile String destination;
     //
@@ -114,52 +120,77 @@ public class ContentBootstrapper {
         return this;
     }
 
-    public boolean loadAllIntoListener(final ChangeListener listener) {
+    public boolean loadAllIntoListener(ChangeListener listener) {
         if (bootstrapLock.tryLock()) {
             try {
+                Exception error = null;
                 bootstrapping = true;
                 destination = listener.getClass().toString();
                 listener.beforeChange();
                 try {
-                    log.info("Bootstrapping contents...");
-                    int processedContents = bootstrapContent(listener);
-                    log.info(String.format("Finished bootstrapping %s contents.", processedContents));
+                    if (contentListers.length > 0) {
+                        log.info("Bootstrapping contents...");
+                        int processedContents = bootstrapContent(listener);
+                        log.info(String.format("Finished bootstrapping %s contents.", processedContents));
+                    }
 
-                    log.info("Bootstrapping lookup entries...");
-                    int processedLookupEntries = bootstrapLookupEntries(listener);
-                    log.info(String.format("Finished bootstrapping %s lookup entries.", processedLookupEntries));
+                    if (lookupEntryListers.length > 0) {
+                        log.info("Bootstrapping lookup entries...");
+                        int processedLookupEntries = bootstrapLookupEntries(listener);
+                        log.info(String.format("Finished bootstrapping %s lookup entries.", processedLookupEntries));
+                    }
 
-                    log.info("Bootstrapping content groups...");
-                    int processedContentGroups = bootstrapContentGroups(listener);
-                    log.info(String.format("Finished bootstrapping %s content groups!", processedContentGroups));
+                    if (contentGroupListers.length > 0) {
+                        log.info("Bootstrapping content groups...");
+                        int processedContentGroups = bootstrapContentGroups(listener);
+                        log.info(String.format("Finished bootstrapping %s content groups!", processedContentGroups));
+                    }
 
-                    log.info("Bootstrapping people...");
-                    int processedPeople = bootstrapPeople(listener);
-                    log.info(String.format("Finished bootstrapping %s people!", processedPeople));
+                    if (peopleListers.length > 0) {
+                        log.info("Bootstrapping people...");
+                        int processedPeople = bootstrapPeople(listener);
+                        log.info(String.format("Finished bootstrapping %s people!", processedPeople));
+                    }
 
-                    log.info("Bootstrapping products...");
-                    int processedProducts = bootstrapProducts(listener);
-                    log.info(String.format("Finished bootstrapping %s products!", processedProducts));
+                    if (productListers.length > 0) {
+                        log.info("Bootstrapping products...");
+                        int processedProducts = bootstrapProducts(listener);
+                        log.info(String.format("Finished bootstrapping %s products!", processedProducts));
+                    }
 
-                    log.info("Bootstrapping segments...");
-                    int processedSegments = bootstrapSegments(listener);
-                    log.info(String.format("Finished bootstrapping %s segments!", processedSegments));
+                    if (segmentListers.length > 0) {
+                        log.info("Bootstrapping segments...");
+                        int processedSegments = bootstrapSegments(listener);
+                        log.info(String.format("Finished bootstrapping %s segments!", processedSegments));
+                    }
 
-                    log.info("Bootstrapping channels...");
-                    int processedChannels = bootstrapChannels(listener);
-                    log.info(String.format("Finished bootstrapping %s channels!", processedChannels));
+                    if (channelListers.length > 0) {
+                        log.info("Bootstrapping channels...");
+                        int processedChannels = bootstrapChannels(listener);
+                        log.info(String.format("Finished bootstrapping %s channels!", processedChannels));
+                    }
 
-                    log.info("Bootstrapping channel groups...");
-                    int processedChannelGroups = bootstrapChannelGroups(listener);
-                    log.info(String.format("Finished bootstrapping %s channel groups!", processedChannelGroups));
+                    if (channelGroupListers.length > 0) {
+                        log.info("Bootstrapping channel groups...");
+                        int processedChannelGroups = bootstrapChannelGroups(listener);
+                        log.info(String.format("Finished bootstrapping %s channel groups!", processedChannelGroups));
+                    }
 
-                    log.info("Bootstrapping topics...");
-                    int processedTopics = bootstrapTopics(listener);
-                    log.info(String.format("Finished bootstrapping %s topics!", processedTopics));
+                    if (topicListers.length > 0) {
+                        log.info("Bootstrapping topics...");
+                        int processedTopics = bootstrapTopics(listener);
+                        log.info(String.format("Finished bootstrapping %s topics!", processedTopics));
+                    }
                 } catch (Exception ex) {
                     log.error(ex.getMessage(), ex);
+                    error = ex;
                     throw new RuntimeException(ex.getMessage(), ex);
                 } finally {
+                    if (error != null) {
+                        lastStatus.set(SUCCESS);
+                    } else {
+                        lastStatus.set(FAIL);
+                    }
                     listener.afterChange();
                 }
             } finally {
@@ -171,7 +202,19 @@ public class ContentBootstrapper {
             return false;
         }
     }
+    
+    public boolean isBootstrapping() {
+        return bootstrapping;
+    }
 
+    public String getDestination() {
+        return destination;
+    }
+
+    public String getLastStatus() {
+        return lastStatus.get();
+    }
+    
     private int bootstrapContent(final ChangeListener listener) throws RuntimeException {
         int processed = 0;
         for (ContentLister lister : contentListers) {
@@ -280,13 +323,5 @@ public class ContentBootstrapper {
             }
         }
         return processed;
-    }
-
-    public boolean isBootstrapping() {
-        return bootstrapping;
-    }
-
-    public String getDestination() {
-        return destination;
     }
 }
