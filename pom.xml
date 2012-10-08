@@ -55,6 +55,12 @@
             <groupId>com.netflix.astyanax</groupId>
             <artifactId>astyanax</artifactId>
             <version>1.0.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
         	<groupId>org.mockito</groupId>
