@@ -19,7 +19,6 @@ import org.atlasapi.search.model.SearchResults;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -33,9 +32,9 @@ import org.elasticsearch.search.sort.SortOrder;
 /**
  */
 public class ESContentSearcher implements ContentSearcher {
-
+    
     private final Client index;
-
+    
     public ESContentSearcher(Node index) {
         this.index = index.client();
     }
@@ -43,7 +42,7 @@ public class ESContentSearcher implements ContentSearcher {
     protected ESContentSearcher(Client index) {
         this.index = index;
     }
-
+    
     @Override
     public final ListenableFuture<SearchResults> search(SearchQuery search) {
         QueryBuilder titleQuery = null;
@@ -83,43 +82,51 @@ public class ESContentSearcher implements ContentSearcher {
         } else {
             contentQuery = broadcastQuery;
         }
-
+        
         QueryBuilder containerQuery = QueryBuilders.filteredQuery(QueryBuilders.boolQuery().
                 should(QueryBuilders.customBoostFactorQuery(QueryBuilders.filteredQuery(QueryBuilders.termQuery(ESContent.HAS_CHILDREN, Boolean.FALSE), FilterBuilders.queryFilter(titleQuery))).boostFactor(0.001f)).
                 should(QueryBuilders.topChildrenQuery(ESContent.CHILD_ITEM_TYPE, contentQuery).score("sum")),
                 FilterBuilders.typeFilter(ESContent.CONTAINER_TYPE));
-
+        
         QueryBuilder topItemQuery = QueryBuilders.filteredQuery(contentQuery, FilterBuilders.typeFilter(ESContent.TOP_ITEM_TYPE));
-
+        
         QueryBuilder allQuery = QueryBuilders.boolQuery().should(containerQuery).should(topItemQuery);
         
-        System.out.println(allQuery);
-
         final SettableFuture<SearchResults> result = SettableFuture.create();
         index.prepareSearch(ESSchema.INDEX_NAME).
                 setQuery(allQuery).
                 addSort(SortBuilders.scoreSort().order(SortOrder.DESC)).
                 setFrom(search.getSelection().getOffset()).
                 setSize(search.getSelection().limitOrDefaultValue(10)).
-                execute(new ActionListener<SearchResponse>() {
-
-            @Override
-            public void onResponse(SearchResponse response) {
-                Iterable<String> uris = Iterables.transform(response.getHits(), new Function<SearchHit, String>() {
-
-                    @Override
-                    public String apply(SearchHit input) {
-                        return input.sourceAsMap().get(ESContent.URI).toString();
-                    }
-                });
-                result.set(new SearchResults(uris));
-            }
-
-            @Override
-            public void onFailure(Throwable e) {
-                result.setException(e);
-            }
-        });
+                execute(new SearchResponseListener(result));
         return result;
+    }
+    
+    private static class SearchResponseListener implements ActionListener<SearchResponse> {
+        
+        private final SettableFuture result;
+        
+        public SearchResponseListener(SettableFuture result) {
+            this.result = result;
+        }
+        
+        @Override
+        public void onResponse(SearchResponse response) {
+            Iterable<String> uris = Iterables.transform(response.getHits(), new SearchHitToURI());
+            result.set(new SearchResults(uris));
+        }
+        
+        @Override
+        public void onFailure(Throwable e) {
+            result.setException(e);
+        }
+    }
+    
+    private static class SearchHitToURI implements Function<SearchHit, String> {
+
+        @Override
+        public String apply(SearchHit input) {
+            return input.sourceAsMap().get(ESContent.URI).toString();
+        }
     }
 }
