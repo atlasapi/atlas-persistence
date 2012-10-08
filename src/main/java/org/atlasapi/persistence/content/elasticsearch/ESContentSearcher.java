@@ -46,27 +46,17 @@ public class ESContentSearcher implements ContentSearcher {
 
     @Override
     public final ListenableFuture<SearchResults> search(SearchQuery search) {
-        BoolQueryBuilder combinedQuery = QueryBuilders.boolQuery();
-                
         QueryBuilder titleQuery = null;
+        QueryBuilder availabilityQuery = null;
+        QueryBuilder broadcastQuery = null;
+        QueryBuilder contentQuery = null;
+        
         if (search.getTerm() != null && !search.getTerm().isEmpty()) {
             titleQuery = TitleQueryBuilder.build(search.getTerm(), search.getTitleWeighting());
-            combinedQuery.must(titleQuery);
         } else {
             throw new IllegalStateException("Search title should be provided!");
         }
-
-        QueryBuilder availabilityQuery = null;
-        if (search.getCatchupWeighting() != 0.0f) {
-            availabilityQuery = AvailabilityQueryBuilder.build(new Date(), search.getCatchupWeighting());
-            combinedQuery.should(availabilityQuery);
-        }
-
-        QueryBuilder finalQuery = combinedQuery;
-        if (search.getBroadcastWeighting() != 0.0f) {
-            finalQuery = BroadcastQueryBuilder.build(finalQuery, search.getBroadcastWeighting(), 1f);
-        }
-
+        
         List<TermsFilterBuilder> filters = new LinkedList<TermsFilterBuilder>();
         if (search.getIncludedPublishers() != null && !search.getIncludedPublishers().isEmpty()) {
             filters.add(FiltersBuilder.buildForPublishers(search.getIncludedPublishers()));
@@ -75,17 +65,35 @@ public class ESContentSearcher implements ContentSearcher {
             filters.add(FiltersBuilder.buildForSpecializations(search.getIncludedSpecializations()));
         }
         if (!filters.isEmpty()) {
-            finalQuery = QueryBuilders.filteredQuery(finalQuery, FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()])));
+            titleQuery = QueryBuilders.filteredQuery(titleQuery, FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()])));
+        }
+        
+        if (search.getBroadcastWeighting() != 0.0f) {
+            broadcastQuery = BroadcastQueryBuilder.build(titleQuery, search.getBroadcastWeighting(), 1f);
+        } else {
+            broadcastQuery = titleQuery;
+        }
+        
+        if (search.getCatchupWeighting() != 0.0f) {
+            availabilityQuery = AvailabilityQueryBuilder.build(new Date(), search.getCatchupWeighting());
+        }
+        
+        if (availabilityQuery != null) {
+            contentQuery = QueryBuilders.boolQuery().must(broadcastQuery).should(availabilityQuery);
+        } else {
+            contentQuery = broadcastQuery;
         }
 
         QueryBuilder containerQuery = QueryBuilders.filteredQuery(QueryBuilders.boolQuery().
-                should(QueryBuilders.customBoostFactorQuery(QueryBuilders.boolQuery().must(titleQuery).must(QueryBuilders.termQuery(ESContent.HAS_CHILDREN, Boolean.FALSE))).boostFactor(0.001f)).
-                should(QueryBuilders.topChildrenQuery(ESContent.CHILD_ITEM_TYPE, finalQuery).score("sum")),
+                should(QueryBuilders.customBoostFactorQuery(QueryBuilders.filteredQuery(QueryBuilders.termQuery(ESContent.HAS_CHILDREN, Boolean.FALSE), FilterBuilders.queryFilter(titleQuery))).boostFactor(0.001f)).
+                should(QueryBuilders.topChildrenQuery(ESContent.CHILD_ITEM_TYPE, contentQuery).score("sum")),
                 FilterBuilders.typeFilter(ESContent.CONTAINER_TYPE));
 
-        QueryBuilder topItemQuery = QueryBuilders.filteredQuery(finalQuery, FilterBuilders.typeFilter(ESContent.TOP_ITEM_TYPE));
+        QueryBuilder topItemQuery = QueryBuilders.filteredQuery(contentQuery, FilterBuilders.typeFilter(ESContent.TOP_ITEM_TYPE));
 
         QueryBuilder allQuery = QueryBuilders.boolQuery().should(containerQuery).should(topItemQuery);
+        
+        System.out.println(allQuery);
 
         final SettableFuture<SearchResults> result = SettableFuture.create();
         index.prepareSearch(ESSchema.INDEX_NAME).
