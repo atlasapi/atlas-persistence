@@ -8,6 +8,9 @@ public class BroadcastQueryBuilder {
 
     public static QueryBuilder build(QueryBuilder childQuery, float timeBoost, float firstBroadcastBoost) {
         return QueryBuilders.customScoreQuery(childQuery).
+                param("firstBroadcastBoost", firstBroadcastBoost).
+                param("timeBoost", timeBoost).
+                param("oneWeek", TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS)).
                 script(""
                 + "if (_source.broadcasts != null) {"
                 + "  now = time();"
@@ -16,9 +19,9 @@ public class BroadcastQueryBuilder {
                 + "  foreach (b : _source.broadcasts) {"
                 + "    candidate = abs(now - b.transmissionTimeInMillis);"
                 + "    if (candidate < t) t = candidate;"
-                + "    if (b.repeat = false) f = " + firstBroadcastBoost + ";"
+                + "    if (b.repeat = false) f = firstBroadcastBoost;"
                 + "  }"
-                + "  _score + (_score * f * " + timeBoost + " * (1 / (1 + (t / (t < " + TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS) + " ? 50 : 1)))));"
+                + "  _score + (_score * f * timeBoost * (1 / (1 + (t / (t < oneWeek ? 50 : 1)))));"
                 + "} else _score;");
     }
 }
