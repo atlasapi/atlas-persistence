@@ -153,7 +153,7 @@ public class ESContentSearcherV3CompatibilityTest {
     public void after() throws Exception {
         esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
         esClient.close();
-        Thread.sleep(2000);
+        Thread.sleep(3000);
     }
 
     @Test
