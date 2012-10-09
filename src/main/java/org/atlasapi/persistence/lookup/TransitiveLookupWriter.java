@@ -191,8 +191,8 @@ public class TransitiveLookupWriter implements LookupWriter {
                 }
                 transitiveSet.add(current);
                 String id = current.id();
-                direct.addAll(checkNotNull(lookupMap.get(id), "No lookup entry for " + id).directEquivalents());
-                direct.addAll(lookupMap.get(id).explicitEquivalents());
+                LookupEntry currentEntry = checkNotNull(lookupMap.get(id), "No lookup entry for " + id);
+                direct.addAll(neighbours(currentEntry));
             }
             
             newLookups.add(entry.copyWithEquivalents(transitiveSet));
@@ -223,7 +223,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         return transitiveClosure;
     }
 
-    private Iterable<LookupRef> neighbours(LookupEntry current) {
+    private Set<LookupRef> neighbours(LookupEntry current) {
         return ImmutableSet.copyOf(Iterables.concat(current.directEquivalents(), current.explicitEquivalents()));
     }
 
