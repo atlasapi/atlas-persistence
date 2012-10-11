@@ -5,8 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.atlasapi.media.channel.Channel;
@@ -44,10 +42,10 @@ public class MongoScheduleStoreTest {
 
     private MongoScheduleStore store;
     
-    private final Channel BBC_ONE = new Channel(Publisher.BBC, "BBC One", "bbcone", MediaType.VIDEO, "http://www.bbc.co.uk/bbcone");
-    private final Channel BBC_TWO = new Channel(Publisher.BBC, "BBC Two", "bbctwo", MediaType.VIDEO, "http://www.bbc.co.uk/bbctwo");
-    private final Channel Channel_4_HD = new Channel(Publisher.C4, "Channel 4", "channel4", MediaType.VIDEO, "http://www.channel4.com");
-    private final Channel AL_JAZEERA_ENGLISH = new Channel(Publisher.C4, "Al Jazeera English", "aljazeera", MediaType.VIDEO, "http://www.aljazeera.com/");
+    private final Channel BBC_ONE = new Channel(Publisher.BBC, "BBC One", "bbcone", false, MediaType.VIDEO, "http://www.bbc.co.uk/bbcone");
+    private final Channel BBC_TWO = new Channel(Publisher.BBC, "BBC Two", "bbctwo", false, MediaType.VIDEO, "http://www.bbc.co.uk/bbctwo");
+    private final Channel Channel_4_HD = new Channel(Publisher.C4, "Channel 4", "channel4", false, MediaType.VIDEO, "http://www.channel4.com");
+    private final Channel AL_JAZEERA_ENGLISH = new Channel(Publisher.C4, "Al Jazeera English", "aljazeera", false, MediaType.VIDEO, "http://www.aljazeera.com/");
     
     private final DateTime now = new DateTime(DateTimeZones.UTC);
     private final Broadcast broadcast1 = new Broadcast(BBC_ONE.uri(), now.minusHours(4), now.minusHours(2));
