@@ -45,8 +45,8 @@ public class EsScheduleIndexTest {
     private EsScheduleIndex scheduleIndex;
     private ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
 
-    private final Channel channel1 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
-    private final Channel channel2 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbctwo");
+    private final Channel channel1 = new Channel(Publisher.METABROADCAST,"MB1","MB1",false,MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
+    private final Channel channel2 = new Channel(Publisher.METABROADCAST,"MB1","MB1",false,MediaType.VIDEO, "http://www.bbc.co.uk/services/bbctwo");
     
     @Before
     public void before() throws Exception {
