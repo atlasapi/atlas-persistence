@@ -22,6 +22,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String BROADCASTER = "broadcaster";
 	public static final String MEDIA_TYPE = "mediaType";
 	public static final String AVAILABLE_ON = "availableOn";
+	public static final String HIGH_DEFINITION = "highDefinition";
 	public static final String KEY = "key";
 
 	private ModelTranslator<Identified> identifiedTranslator;
@@ -39,6 +40,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		TranslatorUtils.from(dbObject, TITLE, model.title());
 		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.mediaType().name());
 		TranslatorUtils.from(dbObject, PUBLISHER, model.publisher().key());
+		TranslatorUtils.from(dbObject, HIGH_DEFINITION, model.highDefinition());
 		TranslatorUtils.from(dbObject, BROADCASTER, model.broadcaster() != null ? model.broadcaster().key() : null);
 		TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableFrom(), Publisher.TO_KEY)), AVAILABLE_ON);
 		TranslatorUtils.from(dbObject, KEY, model.key());
@@ -59,6 +61,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
 		model.setTitle((String) dbObject.get(TITLE));
 		model.setKey((String) dbObject.get(KEY));
+		model.setHighDefinition((Boolean) dbObject.get(HIGH_DEFINITION));
 		model.setAvailableFrom(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
