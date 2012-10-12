@@ -32,30 +32,30 @@ import org.elasticsearch.search.sort.SortOrder;
 /**
  */
 public class ESContentSearcher implements ContentSearcher {
-    
+
     private final Client index;
-    
+
     public ESContentSearcher(Node index) {
         this.index = index.client();
     }
-    
+
     protected ESContentSearcher(Client index) {
         this.index = index;
     }
-    
+
     @Override
     public final ListenableFuture<SearchResults> search(SearchQuery search) {
         QueryBuilder titleQuery = null;
         QueryBuilder availabilityQuery = null;
         QueryBuilder broadcastQuery = null;
         QueryBuilder contentQuery = null;
-        
+
         if (search.getTerm() != null && !search.getTerm().isEmpty()) {
             titleQuery = TitleQueryBuilder.build(search.getTerm(), search.getTitleWeighting());
         } else {
             throw new IllegalStateException("Search title should be provided!");
         }
-        
+
         List<TermsFilterBuilder> filters = new LinkedList<TermsFilterBuilder>();
         if (search.getIncludedPublishers() != null && !search.getIncludedPublishers().isEmpty()) {
             filters.add(FiltersBuilder.buildForPublishers(search.getIncludedPublishers()));
@@ -66,62 +66,57 @@ public class ESContentSearcher implements ContentSearcher {
         if (!filters.isEmpty()) {
             titleQuery = QueryBuilders.filteredQuery(titleQuery, FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()])));
         }
-        
+
         if (search.getBroadcastWeighting() != 0.0f) {
             broadcastQuery = BroadcastQueryBuilder.build(titleQuery, search.getBroadcastWeighting(), 1f);
         } else {
             broadcastQuery = titleQuery;
         }
-        
+
         if (search.getCatchupWeighting() != 0.0f) {
             availabilityQuery = AvailabilityQueryBuilder.build(new Date(), search.getCatchupWeighting());
         }
-        
+
         if (availabilityQuery != null) {
             contentQuery = QueryBuilders.boolQuery().must(broadcastQuery).should(availabilityQuery);
         } else {
             contentQuery = broadcastQuery;
         }
-        
-        QueryBuilder containerQuery = QueryBuilders.filteredQuery(QueryBuilders.boolQuery().
-                should(QueryBuilders.customBoostFactorQuery(QueryBuilders.filteredQuery(QueryBuilders.termQuery(ESContent.HAS_CHILDREN, Boolean.FALSE), FilterBuilders.queryFilter(titleQuery))).boostFactor(0.001f)).
-                should(QueryBuilders.topChildrenQuery(ESContent.CHILD_ITEM_TYPE, contentQuery).score("sum")),
-                FilterBuilders.typeFilter(ESContent.CONTAINER_TYPE));
-        
-        QueryBuilder topItemQuery = QueryBuilders.filteredQuery(contentQuery, FilterBuilders.typeFilter(ESContent.TOP_ITEM_TYPE));
-        
-        QueryBuilder allQuery = QueryBuilders.boolQuery().should(containerQuery).should(topItemQuery);
-        
+
+        QueryBuilder finalQuery = QueryBuilders.boolQuery().
+                should(QueryBuilders.filteredQuery(contentQuery, FilterBuilders.andFilter(FilterBuilders.typeFilter(ESContent.TOP_LEVEL_TYPE), FilterBuilders.termFilter(ESContent.HAS_CHILDREN, Boolean.FALSE)))).
+                should(QueryBuilders.topChildrenQuery(ESContent.CHILD_TYPE, contentQuery).score("sum"));
+
         final SettableFuture<SearchResults> result = SettableFuture.create();
         index.prepareSearch(ESSchema.INDEX_NAME).
-                setQuery(allQuery).
+                setQuery(finalQuery).
                 addSort(SortBuilders.scoreSort().order(SortOrder.DESC)).
                 setFrom(search.getSelection().getOffset()).
                 setSize(search.getSelection().limitOrDefaultValue(10)).
                 execute(new SearchResponseListener(result));
         return result;
     }
-    
+
     private static class SearchResponseListener implements ActionListener<SearchResponse> {
-        
+
         private final SettableFuture result;
-        
+
         public SearchResponseListener(SettableFuture result) {
             this.result = result;
         }
-        
+
         @Override
         public void onResponse(SearchResponse response) {
             Iterable<String> uris = Iterables.transform(response.getHits(), new SearchHitToURI());
             result.set(new SearchResults(uris));
         }
-        
+
         @Override
         public void onFailure(Throwable e) {
             result.setException(e);
         }
     }
-    
+
     private static class SearchHitToURI implements Function<SearchHit, String> {
 
         @Override

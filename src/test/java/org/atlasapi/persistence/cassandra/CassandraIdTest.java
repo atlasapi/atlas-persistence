@@ -17,7 +17,7 @@ import org.junit.Ignore;
 
 /**
  */
-@Ignore(value = "Enable if running a local Cassandra instance with proper schema.")
+//@Ignore(value = "Enable if running a local Cassandra instance with proper schema.")
 // TODO: some duplicated code, refactor later.
 public class CassandraIdTest extends BaseCassandraTest {
 
@@ -144,7 +144,7 @@ public class CassandraIdTest extends BaseCassandraTest {
                 StringSerializer.get());
 
         try {
-            int times = 1000;
+            int times = 100000;
             //
             ExecutorService executor = Executors.newFixedThreadPool(10);
             //
@@ -187,7 +187,7 @@ public class CassandraIdTest extends BaseCassandraTest {
                 StringSerializer.get());
 
         try {
-            int times = 1000;
+            int times = 100000;
             //
             ExecutorService executor = Executors.newFixedThreadPool(10);
             //
@@ -196,7 +196,7 @@ public class CassandraIdTest extends BaseCassandraTest {
                 @Override
                 protected CassandraId initialValue() {
                     int stripe = (int) Thread.currentThread().getId() % 5;
-                    return CassandraId.stripedGenerator(context, lockCF.getName(), targetCF.getName(), stripe, 5, 10);
+                    return CassandraId.stripedGenerator(context, lockCF.getName(), targetCF.getName(), stripe, 5, 100);
                 }
             };
             final ConcurrentMap<Long, Long> ids = new ConcurrentHashMap<Long, Long>();

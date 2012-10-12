@@ -72,7 +72,7 @@ public class EsScheduleIndexTest {
         Item contained = itemWithBroadcast("contained", channel1.getCanonicalUri(), new DateTime(10, UTC), new DateTime(20, UTC));
         
         contentIndexer.index(contained);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         Interval interval = new Interval(new DateTime(00, UTC), new DateTime(30, UTC));
         Future<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval);
@@ -95,7 +95,7 @@ public class EsScheduleIndexTest {
         contentIndexer.index(overlapEnd);
         contentIndexer.index(overlapStart);
         
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         ListenableFuture<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
         
@@ -115,7 +115,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(containsInterval);
         
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
 
@@ -134,7 +134,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(wrongChannel);
         
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
         
@@ -151,7 +151,7 @@ public class EsScheduleIndexTest {
         Item tooLate = itemWithBroadcast("late", channel1.getCanonicalUri(), start.plusHours(3), start.plusHours(4));
       
         contentIndexer.index(tooLate);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
           
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
           
@@ -169,7 +169,7 @@ public class EsScheduleIndexTest {
         Item exactMatch = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
         
         contentIndexer.index(exactMatch);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval);
         
@@ -192,7 +192,7 @@ public class EsScheduleIndexTest {
         Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
         
         contentIndexer.index(itemWith2Broadcasts);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval2);
         ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
@@ -226,7 +226,7 @@ public class EsScheduleIndexTest {
         Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
         
         contentIndexer.index(itemWith2Broadcasts);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         
         Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, queryInterval);
@@ -249,7 +249,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(childItem);
         contentIndexer.index(topItem);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         
         Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, queryInterval);

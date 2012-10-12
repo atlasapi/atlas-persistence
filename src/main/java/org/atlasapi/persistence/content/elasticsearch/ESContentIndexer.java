@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
-import com.metabroadcast.common.time.DateTimeZones;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -65,9 +64,8 @@ public class ESContentIndexer implements ContentIndexer {
 
     public void init() throws IOException {
         if (createIndex()) {
-            putContainerMapping();
-            putChildItemMapping();
-            putTopItemMapping();
+            putTopContentMapping();
+            putChildContentMapping();
         }
     }
 
@@ -83,22 +81,22 @@ public class ESContentIndexer implements ContentIndexer {
                 broadcasts(makeESBroadcasts(item)).
                 locations(makeESLocations(item)).
                 topics(makeESTopics(item));
-        IndexRequest request = null;
         if (item.getContainer() != null) {
             fillParentData(indexed, item.getContainer());
-            request = Requests.indexRequest(INDEX_NAME).
-                    type(ESContent.CHILD_ITEM_TYPE).
+            IndexRequest request = Requests.indexRequest(INDEX_NAME).
+                    type(ESContent.CHILD_TYPE).
                     id(item.getCanonicalUri()).
                     source(indexed.toMap()).
                     parent(item.getContainer().getUri());
+            esClient.client().index(request).actionGet(requestTimeout, TimeUnit.MILLISECONDS);
         } else {
-            request = Requests.indexRequest(INDEX_NAME).
-                    type(ESContent.TOP_ITEM_TYPE).
+            IndexRequest request = Requests.indexRequest(INDEX_NAME).
+                    type(ESContent.TOP_LEVEL_TYPE).
                     id(item.getCanonicalUri()).
-                    source(indexed.toMap());
+                    source(indexed.hasChildren(false).toMap());
+            esClient.client().index(request).actionGet(requestTimeout, TimeUnit.MILLISECONDS);
         }
-        ActionFuture<IndexResponse> result = esClient.client().index(request);
-        result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+
     }
 
     @Override
@@ -120,7 +118,7 @@ public class ESContentIndexer implements ContentIndexer {
         }
         ActionFuture<IndexResponse> result = esClient.client().index(
                 Requests.indexRequest(INDEX_NAME).
-                type(ESContent.CONTAINER_TYPE).
+                type(ESContent.TOP_LEVEL_TYPE).
                 id(container.getCanonicalUri()).
                 source(indexed.toMap()));
         result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
@@ -137,48 +135,12 @@ public class ESContentIndexer implements ContentIndexer {
         }
     }
 
-    private void putContainerMapping() throws IOException, ElasticSearchException {
+    private void putTopContentMapping() throws IOException, ElasticSearchException {
         ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
-                Requests.putMappingRequest(INDEX_NAME).type(ESContent.CONTAINER_TYPE).source(
+                Requests.putMappingRequest(INDEX_NAME).type(ESContent.TOP_LEVEL_TYPE).source(
                 XContentFactory.jsonBuilder().
                 startObject().
-                startObject(ESContent.CONTAINER_TYPE).
-                startObject("properties").
-                startObject(ESContent.URI).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.TITLE).
-                field("type").value("string").
-                field("index").value("analyzed").
-                endObject().
-                startObject(ESContent.FLATTENED_TITLE).
-                field("type").value("string").
-                field("index").value("analyzed").
-                endObject().
-                startObject(ESContent.PUBLISHER).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.SPECIALIZATION).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                endObject().
-                endObject().
-                endObject()));
-        putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-    }
-
-    private void putChildItemMapping() throws ElasticSearchException, IOException {
-        ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
-                Requests.putMappingRequest(INDEX_NAME).type(ESContent.CHILD_ITEM_TYPE).source(
-                XContentFactory.jsonBuilder().
-                startObject().
-                startObject(ESContent.CHILD_ITEM_TYPE).
-                startObject("_parent").
-                field("type").value(ESContent.CONTAINER_TYPE).
-                endObject().
+                startObject(ESContent.TOP_LEVEL_TYPE).
                 startObject("properties").
                 startObject(ESContent.URI).
                 field("type").value("string").
@@ -212,12 +174,15 @@ public class ESContentIndexer implements ContentIndexer {
         putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void putTopItemMapping() throws ElasticSearchException, IOException {
+    private void putChildContentMapping() throws ElasticSearchException, IOException {
         ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
-                Requests.putMappingRequest(INDEX_NAME).type(ESContent.TOP_ITEM_TYPE).source(
+                Requests.putMappingRequest(INDEX_NAME).type(ESContent.CHILD_TYPE).source(
                 XContentFactory.jsonBuilder().
                 startObject().
-                startObject(ESContent.TOP_ITEM_TYPE).
+                startObject(ESContent.CHILD_TYPE).
+                startObject("_parent").
+                field("type").value(ESContent.TOP_LEVEL_TYPE).
+                endObject().
                 startObject("properties").
                 startObject(ESContent.URI).
                 field("type").value("string").
@@ -308,7 +273,7 @@ public class ESContentIndexer implements ContentIndexer {
             }
             ActionFuture<IndexResponse> result = esClient.client().index(
                     Requests.indexRequest(INDEX_NAME).
-                    type(ESContent.CHILD_ITEM_TYPE).
+                    type(ESContent.CHILD_TYPE).
                     parent(parent.getCanonicalUri()).
                     id(child.getUri()).
                     source(indexedChild));

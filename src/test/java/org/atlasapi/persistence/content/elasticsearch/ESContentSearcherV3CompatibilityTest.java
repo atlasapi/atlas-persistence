@@ -90,7 +90,7 @@ public class ESContentSearcherV3CompatibilityTest {
     private final Item u2 = complexItem().withUri("/items/u2").withTitle("U2 Ultraviolet").withVersions(version().withBroadcasts(broadcast().build()).build()).build();
 
     private final Item spooks = complexItem().withTitle("Spooks").withUri("/item/spooks")
-            .withVersions(version().withBroadcasts(broadcast().withStartTime(new SystemClock().now().minus(Duration.standardDays(365))).build()).build()).build();
+            .withVersions(version().withBroadcasts(broadcast().withStartTime(new SystemClock().now().minus(Duration.standardDays(28))).build()).build()).build();
     private final Item spookyTheCat = complexItem().withTitle("Spooky the Cat").withUri("/item/spookythecat").withVersions(version().withBroadcasts(broadcast().build()).build()).build();
 
     private final Item jamieOliversCookingProgramme = complexItem().withUri("/items/oliver/1").withTitle("Jamie Oliver's cooking programme")
@@ -257,17 +257,29 @@ public class ESContentSearcherV3CompatibilityTest {
         //check(searcher.search(title("spook")).get(), spooks, spookyTheCat);
         check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks);
     }
-    
+     
     @Test
-    public void testBrandWithNoChildrenHasLowWeight() throws Exception {
-        check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks);
+    public void testBrandWithNoChildrenIsPickedWithTitleWeighting() throws Exception {
+        check(searcher.search(title("spook")).get(), spookyTheCat, spooks);
 
         Brand spookie = new Brand("/spookie", "curie", Publisher.ARCHIVE_ORG);
         spookie.setTitle("spookie");
         indexer.index(spookie);
         Thread.sleep(2000);
         
-        check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks, spookie);
+        check(searcher.search(title("spook")).get(), spookie, spookyTheCat, spooks);
+    }
+    
+    @Test
+    public void testBrandWithNoChildrenIsNotPickedWithBroadcastWeighting() throws Exception {
+        check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks);
+
+        Brand spookie = new Brand("/spookie2", "curie", Publisher.ARCHIVE_ORG);
+        spookie.setTitle("spookie2");
+        indexer.index(spookie);
+        Thread.sleep(2000);
+        
+        check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks);
     }
     
     protected static SearchQuery title(String term) {

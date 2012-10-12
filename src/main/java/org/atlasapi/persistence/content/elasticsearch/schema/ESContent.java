@@ -2,13 +2,14 @@ package org.atlasapi.persistence.content.elasticsearch.schema;
 
 import com.google.common.collect.Iterables;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  */
 public class ESContent extends ESObject {
 
-    public final static String CONTAINER_TYPE = "container";
-    public final static String CHILD_ITEM_TYPE = "child_item";
+    public final static String TOP_LEVEL_TYPE = "container";
+    public final static String CHILD_TYPE = "child_item";
     public final static String TOP_ITEM_TYPE = "top_item";
     //
     public final static String URI = "uri";

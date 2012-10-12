@@ -5,9 +5,9 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_END_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.BROADCASTS;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.CHILD_ITEM_TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.CHILD_TYPE;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.TOP_ITEM_TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.TOP_LEVEL_TYPE;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.INDEX_NAME;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
@@ -181,7 +181,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         
         esClient.client()
             .prepareSearch(INDEX_NAME)
-            .setTypes(TOP_ITEM_TYPE, CHILD_ITEM_TYPE)
+            .setTypes(TOP_LEVEL_TYPE, CHILD_TYPE)
             .setSearchType(SearchType.SCAN)
             .setScroll(SCROLL_TIMEOUT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
