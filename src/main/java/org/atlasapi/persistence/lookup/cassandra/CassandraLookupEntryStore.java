@@ -48,12 +48,13 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     private final AstyanaxContext<Keyspace> context;
     private final CassandraIndex index;
     private final int requestTimeout;
-    private Keyspace keyspace;
+    private final Keyspace keyspace;
 
     public CassandraLookupEntryStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.context = context;
         this.requestTimeout = requestTimeout;
         this.index = new CassandraIndex();
+        this.keyspace = context.getEntity();
     }
 
     @Override
