@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.cassandra;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
@@ -17,6 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -89,6 +89,10 @@ public class CassandraIndex {
             public void execute(long time, TimeUnit unit) throws Exception {
                 mutation.executeAsync().get(time, unit);
             }
+
+            public Future execute() throws Exception {
+                return mutation.executeAsync();
+            }
         }
 
         public class Lookup {
@@ -130,15 +134,15 @@ public class CassandraIndex {
             this.source = source;
             return this;
         }
-        
+
         public Index index(String... values) {
             return index(Iterators.forArray(values));
         }
-        
+
         public Index delete(String... values) {
             return delete(Iterators.forArray(values));
         }
-        
+
         public Index index(Iterator<String> values) {
             if (source == null) {
                 throw new IllegalStateException("Indexing requires you to call the 'from' method.");
@@ -168,6 +172,10 @@ public class CassandraIndex {
 
             public void execute(long time, TimeUnit unit) throws Exception {
                 mutation.executeAsync().get(time, unit);
+            }
+
+            public Future execute() throws Exception {
+                return mutation.executeAsync();
             }
         }
 
