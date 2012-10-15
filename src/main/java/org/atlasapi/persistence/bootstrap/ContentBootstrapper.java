@@ -129,9 +129,15 @@ public class ContentBootstrapper {
                 listener.beforeChange();
                 try {
                     if (contentListers.length > 0) {
-                        log.info("Bootstrapping contents...");
-                        int processedContents = bootstrapContent(listener);
-                        log.info(String.format("Finished bootstrapping %s contents.", processedContents));
+                        log.info("Bootstrapping containers...");
+                        int processedContainers = bootstrapContent(ContentCategory.CONTAINERS, listener);
+                        log.info(String.format("Finished bootstrapping %s containers.", processedContainers));
+                    }
+                    
+                    if (contentListers.length > 0) {
+                        log.info("Bootstrapping items...");
+                        int processedItems = bootstrapContent(ContentCategory.ITEMS, listener);
+                        log.info(String.format("Finished bootstrapping %s items.", processedItems));
                     }
 
                     if (lookupEntryListers.length > 0) {
@@ -215,10 +221,9 @@ public class ContentBootstrapper {
         return lastStatus.get();
     }
     
-    private int bootstrapContent(final ChangeListener listener) throws RuntimeException {
+    private int bootstrapContent(Set<ContentCategory> contentCategories, final ChangeListener listener) throws RuntimeException {
         int processed = 0;
         for (ContentLister lister : contentListers) {
-            Set<ContentCategory> contentCategories = Sets.union(ContentCategory.CONTAINERS, ContentCategory.ITEMS);
             Iterator<Content> content = lister.listContent(defaultCriteria().forContent(contentCategories).build());
             Iterator<List<Content>> partitionedContent = Iterators.paddedPartition(content, 100);
             while (partitionedContent.hasNext()) {
