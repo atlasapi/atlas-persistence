@@ -77,6 +77,16 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     @Override
     public void createOrUpdate(final Item item) {
         try {
+            FutureList results = new FutureList();
+            // First ensure lookup, asynchronously:
+            results.delay(new Runnable() {
+
+                @Override
+                public void run() {
+                    lookupWriter.ensureLookup(item);
+                }
+            });
+            //
             Container container = null;
             ParentRef parent = item.getContainer();
             if (parent != null) {
@@ -89,16 +99,8 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                     }
                 }
             }
-            FutureList results = new FutureList();
             results.add(writeItem(container, item));
             results.addAll(attachItemToParent(container, item));
-            results.delay(new Runnable() {
-
-                @Override
-                public void run() {
-                    lookupWriter.ensureLookup(item);
-                }
-            });
             results.get(requestTimeout, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
@@ -109,13 +111,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     public void createOrUpdate(final Container container) {
         try {
             FutureList results = new FutureList();
-            results.add(writeContainer(container));
-            for (Identified child : findByCanonicalUris(Iterables.transform(container.getChildRefs(), ChildRef.TO_URI)).getAllResolvedResults()) {
-                if (child instanceof Item) {
-                    Item item = (Item) child;
-                    results.add(writeDenormalizedContainerData(container, item));
-                }
-            }
+            // First ensure lookup, asynchronously:
             results.delay(new Runnable() {
 
                 @Override
@@ -123,6 +119,14 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                     lookupWriter.ensureLookup(container);
                 }
             });
+            //
+            results.add(writeContainer(container));
+            for (Identified child : findByCanonicalUris(Iterables.transform(container.getChildRefs(), ChildRef.TO_URI)).getAllResolvedResults()) {
+                if (child instanceof Item) {
+                    Item item = (Item) child;
+                    results.add(writeDenormalizedContainerData(container, item));
+                }
+            }
             results.get(requestTimeout, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
