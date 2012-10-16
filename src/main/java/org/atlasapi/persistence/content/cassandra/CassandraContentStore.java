@@ -80,10 +80,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
             Container container = null;
             ParentRef parent = item.getContainer();
             if (parent != null) {
-                Content candidate = readContent(parent.getUri());
-                if (candidate != null) {
-                    if (candidate instanceof Container) {
-                        container = (Container) candidate;
+                Maybe<Identified> candidate = readContent(parent.getUri());
+                if (candidate.hasValue()) {
+                    if (candidate.requireValue() instanceof Container) {
+                        container = (Container) candidate.requireValue();
                     } else {
                         throw new IllegalStateException("The following content should be a container: " + parent.getUri());
                     }
@@ -132,16 +132,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
         try {
-            Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
-            for (String uri : canonicalUris) {
-                Content foundContent = readContent(uri);
-                if (foundContent != null) {
-                    results.put(uri, Maybe.<Identified>just(foundContent));
-                } else {
-                    results.put(uri, Maybe.<Identified>nothing());
-                }
-            }
-            return new ResolvedContent(results);
+            return new ResolvedContent(readContents(canonicalUris));
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -229,21 +220,37 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         return result;
     }
 
-    private Content readContent(String id) throws Exception {
-        try {
-            Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(CONTENT_CF).
+    private Maybe<Identified> readContent(String id) throws Exception {
+        Future<OperationResult<ColumnList<String>>> result = keyspace.prepareQuery(CONTENT_CF).
+                setConsistencyLevel(ConsistencyLevel.CL_ONE).
+                getKey(id.toString()).
+                executeAsync();
+        OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
+        if (!columns.getResult().isEmpty()) {
+            return Maybe.<Identified>just(unmarshalContent(columns.getResult()));
+        } else {
+            return Maybe.nothing();
+        }
+    }
+
+    private Map<String, Maybe<Identified>> readContents(Iterable<String> ids) throws Exception {
+        Map<String, Future<OperationResult<ColumnList<String>>>> futures = new HashMap<String, Future<OperationResult<ColumnList<String>>>>();
+        Map<String, Maybe<Identified>> contents = new HashMap<String, Maybe<Identified>>();
+        for (String id : ids) {
+            futures.put(id, keyspace.prepareQuery(CONTENT_CF).
                     setConsistencyLevel(ConsistencyLevel.CL_ONE).
                     getKey(id.toString()).
-                    executeAsync();
-            OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
-            if (!columns.getResult().isEmpty()) {
-                return unmarshalContent(columns.getResult());
-            } else {
-                return null;
-            }
-        } catch (Exception ex) {
-            throw new CassandraPersistenceException(ex.getMessage(), ex);
+                    executeAsync());
         }
+        for (Map.Entry<String, Future<OperationResult<ColumnList<String>>>> future : futures.entrySet()) {
+            OperationResult<ColumnList<String>> columns = future.getValue().get(requestTimeout, TimeUnit.MILLISECONDS);
+            if (!columns.getResult().isEmpty()) {
+                contents.put(future.getKey(), Maybe.<Identified>just(unmarshalContent(columns.getResult())));
+            } else {
+                contents.put(future.getKey(), Maybe.<Identified>nothing());
+            }
+        }
+        return contents;
     }
 
     private void marshalItem(Item item, MutationBatch mutation) throws IOException {
