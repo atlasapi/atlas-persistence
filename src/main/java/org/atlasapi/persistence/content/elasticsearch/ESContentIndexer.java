@@ -37,6 +37,9 @@ import org.elasticsearch.node.NodeBuilder;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.*;
 
 import com.metabroadcast.common.time.DateTimeZones;
+import org.atlasapi.persistence.elasticsearch.ESPersistenceException;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 
 /**
  */
@@ -110,9 +113,7 @@ public class ESContentIndexer implements ContentIndexer {
                 specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null);
         if (!container.getChildRefs().isEmpty()) {
             indexed.hasChildren(Boolean.TRUE);
-            for (ChildRef child : container.getChildRefs()) {
-                indexChildData(container, child);
-            }
+            indexChildrenData(container);
         } else {
             indexed.hasChildren(Boolean.FALSE);
         }
@@ -264,20 +265,28 @@ public class ESContentIndexer implements ContentIndexer {
         }
     }
 
-    private void indexChildData(Container parent, ChildRef child) {
-        Map<String, Object> indexedChild = trySearchChild(parent, child);
-        if (indexedChild != null) {
-            if (parent.getTitle() != null) {
-                indexedChild.put(ESContent.PARENT_TITLE, parent.getTitle());
-                indexedChild.put(ESContent.PARENT_FLATTENED_TITLE, Strings.flatten(parent.getTitle()));
+    private void indexChildrenData(Container parent) {
+        BulkRequest bulk = Requests.bulkRequest();
+        for (ChildRef child : parent.getChildRefs()) {
+            Map<String, Object> indexedChild = trySearchChild(parent, child);
+            if (indexedChild != null) {
+                if (parent.getTitle() != null) {
+                    indexedChild.put(ESContent.PARENT_TITLE, parent.getTitle());
+                    indexedChild.put(ESContent.PARENT_FLATTENED_TITLE, Strings.flatten(parent.getTitle()));
+                    bulk.add(Requests.indexRequest(INDEX_NAME).
+                            type(ESContent.CHILD_TYPE).
+                            parent(parent.getCanonicalUri()).
+                            id(child.getUri()).
+                            source(indexedChild));
+                }
             }
-            ActionFuture<IndexResponse> result = esClient.client().index(
-                    Requests.indexRequest(INDEX_NAME).
-                    type(ESContent.CHILD_TYPE).
-                    parent(parent.getCanonicalUri()).
-                    id(child.getUri()).
-                    source(indexedChild));
-            result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        }
+        if (bulk.numberOfActions() > 0) {
+            ActionFuture<BulkResponse> result = esClient.client().bulk(bulk);
+            BulkResponse response = result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+            if (response.hasFailures()) {
+                throw new ESPersistenceException("Failed to index children for container: " + parent.getCanonicalUri());
+            }
         }
     }
 
