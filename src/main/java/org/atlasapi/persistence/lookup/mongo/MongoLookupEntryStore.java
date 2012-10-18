@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.lookup.mongo;
 
+import com.google.common.base.Predicates;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.filter;
@@ -42,12 +43,12 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
         this.lookup = mongo.collection("lookup");
         this.translator = new LookupEntryTranslator();
     }
-    
+
     @Override
     public void store(LookupEntry entry) {
         lookup.update(MongoBuilders.where().idEquals(entry.uri()).build(), translator.toDbo(entry), UPSERT, SINGLE);
     }
-    
+
     @Override
     public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
         DBCursor found = lookup.find(where().idIn(uris).build());
@@ -66,7 +67,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
         }
         return Iterables.transform(found, translator.FROM_DBO);
     }
-    
+
     @Override
     public void ensureLookup(Content content) {
         LookupEntry newEntry = lookupEntryFrom(content);
@@ -74,7 +75,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
         LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, content.getCanonicalUri())));
         if (existing == null) {
             store(newEntry);
-        } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
+        } else if (!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
             updateEntry(content, newEntry, existing);
         } else if (!newEntry.aliases().equals(existing.aliases())) {
             store(merge(content, newEntry, existing));
@@ -86,9 +87,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
         LookupRef ref = merged.lookupRef();
 
         store(merged);
-        
+
         for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_ID))) {
-            if(entry.directEquivalents().contains(ref)) {
+            if (entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }
             entry = entry.copyWithEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build());
@@ -109,14 +110,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
     public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
         return Iterables.transform(find(identifiers), translator.FROM_DBO);
     }
-    
+
     @Override
     public Iterable<LookupEntry> all() {
-        return Iterables.transform(lookup.find(), translator.FROM_DBO);
+        return Iterables.filter(Iterables.transform(lookup.find(), translator.FROM_DBO), Predicates.notNull());
     }
 
     private Iterable<DBObject> find(Iterable<String> identifiers) {
-        return lookup.find(where().or(where().fieldIn(ALIASES, identifiers),where().idIn(identifiers)).build());
+        return lookup.find(where().or(where().fieldIn(ALIASES, identifiers), where().idIn(identifiers)).build());
     }
-
 }
