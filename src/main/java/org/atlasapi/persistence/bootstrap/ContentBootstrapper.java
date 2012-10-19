@@ -128,7 +128,7 @@ public class ContentBootstrapper {
                 destination = listener.getClass().toString();
                 listener.beforeChange();
                 try {
-                    /*if (contentListers.length > 0) {
+                    if (contentListers.length > 0) {
                         log.info("Bootstrapping items...");
                         int processedItems = bootstrapContent(ContentCategory.ITEMS, listener);
                         log.info(String.format("Finished bootstrapping %s items.", processedItems));
@@ -138,7 +138,7 @@ public class ContentBootstrapper {
                         log.info("Bootstrapping containers...");
                         int processedContainers = bootstrapContent(ContentCategory.CONTAINERS, listener);
                         log.info(String.format("Finished bootstrapping %s containers.", processedContainers));
-                    }*/
+                    }
 
                     if (lookupEntryListers.length > 0) {
                         log.info("Bootstrapping lookup entries...");
