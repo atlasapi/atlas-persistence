@@ -154,7 +154,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                         public Content apply(Row<String, String> input) {
                             try {
                                 if (!input.getColumns().isEmpty()) {
-                                    return unmarshalContent(input.getColumns());
+                                    return unmarshalContent(input.getKey(), input.getColumns());
                                 } else {
                                     return null;
                                 }
@@ -231,7 +231,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 executeAsync();
         OperationResult<ColumnList<String>> columns = result.get(requestTimeout, TimeUnit.MILLISECONDS);
         if (!columns.getResult().isEmpty()) {
-            return Maybe.<Identified>just(unmarshalContent(columns.getResult()));
+            return Maybe.<Identified>just(unmarshalContent(id, columns.getResult()));
         } else {
             return Maybe.nothing();
         }
@@ -249,7 +249,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         for (Map.Entry<String, Future<OperationResult<ColumnList<String>>>> future : futures.entrySet()) {
             OperationResult<ColumnList<String>> columns = future.getValue().get(requestTimeout, TimeUnit.MILLISECONDS);
             if (!columns.getResult().isEmpty()) {
-                contents.put(future.getKey(), Maybe.<Identified>just(unmarshalContent(columns.getResult())));
+                contents.put(future.getKey(), Maybe.<Identified>just(unmarshalContent(future.getKey(), columns.getResult())));
             } else {
                 contents.put(future.getKey(), Maybe.<Identified>nothing());
             }
@@ -288,14 +288,14 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 putColumn(CHILDREN_COLUMN, childrenBytes, null);
     }
 
-    private Content unmarshalContent(ColumnList<String> columns) throws IllegalStateException, IOException {
-        String type = columns.getStringValue(CONTENT_TYPE_COLUMN, "");
+    private Content unmarshalContent(String key, ColumnList<String> columns) throws IllegalStateException, IOException {
+        String type = columns.getStringValue(CONTENT_TYPE_COLUMN, "null");
         if (type.equals(EntityType.ITEM.name())) {
             return unmarshalItem(columns);
         } else if (type.equals(EntityType.CONTAINER.name())) {
             return unmarshalContainer(columns);
         } else {
-            throw new IllegalStateException("Unknown content type: " + type);
+            throw new IllegalStateException("Unknown content type: " + type + " with id: " + key);
         }
     }
 
