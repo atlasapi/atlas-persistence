@@ -55,7 +55,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
         if (found == null) {
             return ImmutableList.of();
         }
-        return Iterables.transform(found, translator.FROM_DBO);
+        return Iterables.filter(Iterables.transform(found, translator.FROM_DBO), Predicates.notNull());
     }
 
     @Override
