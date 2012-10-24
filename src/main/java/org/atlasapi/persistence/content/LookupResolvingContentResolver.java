@@ -5,24 +5,27 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import java.util.Set;
 
 public class LookupResolvingContentResolver implements ContentResolver {
 
     private final KnownTypeContentResolver knownTypeResolver;
     private final LookupEntryStore lookupResolver;
 
-    public LookupResolvingContentResolver(KnownTypeContentResolver knownTypeResolver, LookupEntryStore lookupEntryStore) {
+    public LookupResolvingContentResolver(KnownTypeContentResolver knownTypeResolver, LookupEntryStore mongoLookupEntryStore) {
         this.knownTypeResolver = knownTypeResolver;
-        this.lookupResolver = lookupEntryStore;
+        this.lookupResolver = mongoLookupEntryStore;
     }
-    
+
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
-        Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesForCanonicalUris(canonicalUris), LookupEntry.TO_SELF);
-        Iterable<LookupRef> resolvedLookups = Iterables.filter(lookupRefs, Predicates.notNull());
+        Set<String> dedupedUris = Sets.newHashSet(canonicalUris);
+        Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesForCanonicalUris(dedupedUris), LookupEntry.TO_SELF);
+        ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(lookupRefs, Predicates.notNull()));
         ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);
-        return resolvedContent.copyWithAllRequestedUris(canonicalUris);
+        return resolvedContent.copyWithAllRequestedUris(dedupedUris);
     }
 }
-
