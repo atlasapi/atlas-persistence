@@ -85,8 +85,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     private Iterable<LookupEntry> entries(Iterable<String> uris, ColumnFamily<String, String> cf) throws ConnectionException, InterruptedException, ExecutionException, TimeoutException {
-        Future<OperationResult<Rows<String, String>>> op = keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_QUORUM).getKeySlice(ImmutableList.copyOf(uris)).withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).executeAsync();
-
+        Future<OperationResult<Rows<String, String>>> op = keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_ONE).getKeySlice(uris).withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).executeAsync();
         Rows<String, String> rows = op.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
         return Iterables.filter(Iterables.transform(rows, ROW_TO_LOOKUP_ENTRY), notNull());
     }
@@ -142,7 +141,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     private Iterable<LookupEntry> entriesForIds(Iterable<String> identifiers, final ColumnFamily<String, String> cf) {
-        final ConsistencyLevel cl = ConsistencyLevel.CL_QUORUM;
+        final ConsistencyLevel cl = ConsistencyLevel.CL_ONE;
         return Iterables.concat(Iterables.transform(identifiers, new Function<String, Iterable<LookupEntry>>() {
 
             @Override
