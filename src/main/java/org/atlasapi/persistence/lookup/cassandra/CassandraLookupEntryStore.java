@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.concurrency.FutureList;
 import com.netflix.astyanax.AstyanaxContext;
@@ -38,8 +37,7 @@ import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.ConsistencyLevel;
-import com.netflix.astyanax.model.Row;
-import com.netflix.astyanax.model.Rows;
+import java.util.List;
 
 public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
@@ -85,16 +83,27 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     private Iterable<LookupEntry> entries(Iterable<String> uris, ColumnFamily<String, String> cf) throws ConnectionException, InterruptedException, ExecutionException, TimeoutException {
-        Future<OperationResult<Rows<String, String>>> op = keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_ONE).getKeySlice(uris).withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).executeAsync();
-        Rows<String, String> rows = op.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
-        return Iterables.filter(Iterables.transform(rows, ROW_TO_LOOKUP_ENTRY), notNull());
+        FutureList<OperationResult<ColumnList<String>>> futures = new FutureList<OperationResult<ColumnList<String>>>();
+        for (String uri : uris) {
+            Future<OperationResult<ColumnList<String>>> future = keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_ONE).
+                    getKey(uri).
+                    withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).
+                    executeAsync();
+            futures.add(future);
+        }
+        List<OperationResult<ColumnList<String>>> results = futures.get(requestTimeout, TimeUnit.MILLISECONDS);
+        return Iterables.filter(Iterables.transform(results, COLUMNS_TO_LOOKUP_ENTRY), notNull());
     }
-    private final Function<Row<String, String>, LookupEntry> ROW_TO_LOOKUP_ENTRY = new Function<Row<String, String>, LookupEntry>() {
+    private final Function<OperationResult<ColumnList<String>>, LookupEntry> COLUMNS_TO_LOOKUP_ENTRY = new Function<OperationResult<ColumnList<String>>, LookupEntry>() {
 
         @Override
-        public LookupEntry apply(@Nullable Row<String, String> input) {
+        public LookupEntry apply(OperationResult<ColumnList<String>> input) {
             try {
-                return unmarshalEntry(input.getColumns());
+                if (!input.getResult().isEmpty()) {
+                    return unmarshalEntry(input.getResult());
+                } else {
+                    return null;
+                }
             } catch (Exception e) {
                 log.warn("Failed to unmarshall lookup entry", e);
                 throw Throwables.propagate(e);
