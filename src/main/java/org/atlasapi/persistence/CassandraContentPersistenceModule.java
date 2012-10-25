@@ -1,5 +1,6 @@
 package org.atlasapi.persistence;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.metabroadcast.common.ids.IdGenerator;
 
 import org.atlasapi.equiv.CassandraEquivalenceSummaryStore;
@@ -13,6 +14,7 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolType;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import java.util.concurrent.Executors;
 import org.atlasapi.persistence.content.cassandra.CassandraContentStore;
 import org.atlasapi.persistence.content.cassandra.CassandraContentGroupStore;
 import org.atlasapi.persistence.content.cassandra.CassandraProductStore;
@@ -43,7 +45,9 @@ public class CassandraContentPersistenceModule {
 
     public CassandraContentPersistenceModule(String environment, String seeds, int port, int connectionTimeout, int requestTimeout, IdGenerator idGenerator) {
         this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
-                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE).setConnectionPoolType(ConnectionPoolType.TOKEN_AWARE)).
+                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE).
+                setConnectionPoolType(ConnectionPoolType.TOKEN_AWARE).
+                setAsyncExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 25, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("AstyanaxAsync-%d").build()))).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
                 setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).
                 setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 25).
@@ -70,11 +74,11 @@ public class CassandraContentPersistenceModule {
     public void destroy() {
         cassandraContext.shutdown();
     }
-    
+
     public CassandraLookupEntryStore cassandraLookupEntryStore() {
         return cassandraLookupEntryStore;
     }
-    
+
     public CassandraEquivalenceSummaryStore cassandraEquivalenceSummaryStore() {
         return cassandraEquivalenceSummaryStore;
     }
