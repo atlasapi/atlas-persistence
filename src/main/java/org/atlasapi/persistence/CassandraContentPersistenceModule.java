@@ -9,6 +9,7 @@ import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
+import com.netflix.astyanax.connectionpool.impl.ConnectionPoolType;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
@@ -42,10 +43,11 @@ public class CassandraContentPersistenceModule {
 
     public CassandraContentPersistenceModule(String environment, String seeds, int port, int connectionTimeout, int requestTimeout, IdGenerator idGenerator) {
         this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
-                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
+                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE).setConnectionPoolType(ConnectionPoolType.TOKEN_AWARE)).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
                 setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).
-                setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 10).
+                setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 25).
+                setMaxConns(Runtime.getRuntime().availableProcessors() * 25 * 4).
                 setConnectTimeout(connectionTimeout).
                 setSeeds(seeds)).
                 withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
