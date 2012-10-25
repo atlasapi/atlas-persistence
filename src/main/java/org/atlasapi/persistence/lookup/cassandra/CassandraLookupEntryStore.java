@@ -37,7 +37,8 @@ import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.ConsistencyLevel;
-import java.util.List;
+import com.netflix.astyanax.model.Row;
+import com.netflix.astyanax.model.Rows;
 
 public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
@@ -83,24 +84,17 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     private Iterable<LookupEntry> entries(Iterable<String> uris, ColumnFamily<String, String> cf) throws ConnectionException, InterruptedException, ExecutionException, TimeoutException {
-        FutureList<OperationResult<ColumnList<String>>> futures = new FutureList<OperationResult<ColumnList<String>>>();
-        for (String uri : uris) {
-            Future<OperationResult<ColumnList<String>>> future = keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_ONE).
-                    getKey(uri).
-                    withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).
-                    executeAsync();
-            futures.add(future);
-        }
-        List<OperationResult<ColumnList<String>>> results = futures.get(requestTimeout, TimeUnit.MILLISECONDS);
-        return Iterables.filter(Iterables.transform(results, COLUMNS_TO_LOOKUP_ENTRY), notNull());
+        Future<OperationResult<Rows<String, String>>> op = keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_ONE).getKeySlice(uris).withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).executeAsync();
+        Rows<String, String> rows = op.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
+        return Iterables.filter(Iterables.transform(rows, ROW_TO_LOOKUP_ENTRY), notNull());
     }
-    private final Function<OperationResult<ColumnList<String>>, LookupEntry> COLUMNS_TO_LOOKUP_ENTRY = new Function<OperationResult<ColumnList<String>>, LookupEntry>() {
+    private final Function<Row<String, String>, LookupEntry> ROW_TO_LOOKUP_ENTRY = new Function<Row<String, String>, LookupEntry>() {
 
         @Override
-        public LookupEntry apply(OperationResult<ColumnList<String>> input) {
+        public LookupEntry apply(@Nullable Row<String, String> input) {
             try {
-                if (!input.getResult().isEmpty()) {
-                    return unmarshalEntry(input.getResult());
+                if (!input.getColumns().isEmpty()) {
+                    return unmarshalEntry(input.getColumns());
                 } else {
                     return null;
                 }

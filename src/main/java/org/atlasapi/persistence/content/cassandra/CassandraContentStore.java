@@ -19,6 +19,7 @@ import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
+import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.query.AllRowsQuery;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -238,20 +239,21 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private Map<String, Maybe<Identified>> readContents(Iterable<String> ids) throws Exception {
-        Map<String, Future<OperationResult<ColumnList<String>>>> futures = new HashMap<String, Future<OperationResult<ColumnList<String>>>>();
         Map<String, Maybe<Identified>> contents = new HashMap<String, Maybe<Identified>>();
-        for (String id : ids) {
-            futures.put(id, keyspace.prepareQuery(CONTENT_CF).
-                    setConsistencyLevel(ConsistencyLevel.CL_ONE).
-                    getKey(id.toString()).
-                    executeAsync());
+        OperationResult<Rows<String, String>> rows = keyspace.prepareQuery(CONTENT_CF).
+                setConsistencyLevel(ConsistencyLevel.CL_ONE).
+                getKeySlice(ids).
+                executeAsync().
+                get(requestTimeout, TimeUnit.MILLISECONDS);
+        // Sacrifice CPU performance in favor of memory with this double for:
+        for (Row<String, String> row : rows.getResult()) {
+            if (!row.getColumns().isEmpty()) {
+                contents.put(row.getKey(), Maybe.<Identified>just(unmarshalContent(row.getKey(), row.getColumns())));
+            }
         }
-        for (Map.Entry<String, Future<OperationResult<ColumnList<String>>>> future : futures.entrySet()) {
-            OperationResult<ColumnList<String>> columns = future.getValue().get(requestTimeout, TimeUnit.MILLISECONDS);
-            if (!columns.getResult().isEmpty()) {
-                contents.put(future.getKey(), Maybe.<Identified>just(unmarshalContent(future.getKey(), columns.getResult())));
-            } else {
-                contents.put(future.getKey(), Maybe.<Identified>nothing());
+        for (String id : ids) {
+            if (!contents.containsKey(id)) {
+                contents.put(id, Maybe.<Identified>nothing());
             }
         }
         return contents;
