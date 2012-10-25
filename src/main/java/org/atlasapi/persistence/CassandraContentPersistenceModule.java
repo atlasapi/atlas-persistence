@@ -47,11 +47,11 @@ public class CassandraContentPersistenceModule {
         this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE).
                 setConnectionPoolType(ConnectionPoolType.TOKEN_AWARE).
-                setAsyncExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 25, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("AstyanaxAsync-%d").build()))).
+                setAsyncExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 10, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("AstyanaxAsync-%d").build()))).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
                 setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).
-                setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 25).
-                setMaxConns(Runtime.getRuntime().availableProcessors() * 25 * 4).
+                setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 10).
+                setMaxConns(Runtime.getRuntime().availableProcessors() * 10 * 5).
                 setConnectTimeout(connectionTimeout).
                 setSeeds(seeds)).
                 withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
