@@ -240,17 +240,20 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
 
     private Map<String, Maybe<Identified>> readContents(Iterable<String> ids) throws Exception {
         Map<String, Maybe<Identified>> contents = new HashMap<String, Maybe<Identified>>();
-        OperationResult<Rows<String, String>> rows = keyspace.prepareQuery(CONTENT_CF).
-                setConsistencyLevel(ConsistencyLevel.CL_ONE).
-                getKeySlice(ids).
-                executeAsync().
-                get(requestTimeout, TimeUnit.MILLISECONDS);
-        // Sacrifice CPU performance in favor of memory with this double for:
-        for (Row<String, String> row : rows.getResult()) {
-            if (!row.getColumns().isEmpty()) {
-                contents.put(row.getKey(), Maybe.<Identified>just(unmarshalContent(row.getKey(), row.getColumns())));
+        // Avoid doing a self-DoS by partitioning the requested ids and hence doing multiple requests:
+        for (Iterable<String> partition : Iterables.partition(ids, 10)) {
+            OperationResult<Rows<String, String>> rows = keyspace.prepareQuery(CONTENT_CF).
+                    setConsistencyLevel(ConsistencyLevel.CL_ONE).
+                    getKeySlice(partition).
+                    executeAsync().
+                    get(requestTimeout, TimeUnit.MILLISECONDS);
+            for (Row<String, String> row : rows.getResult()) {
+                if (!row.getColumns().isEmpty()) {
+                    contents.put(row.getKey(), Maybe.<Identified>just(unmarshalContent(row.getKey(), row.getColumns())));
+                }
             }
         }
+        // Sacrifice CPU performance in favor of memory with this other for:
         for (String id : ids) {
             if (!contents.containsKey(id)) {
                 contents.put(id, Maybe.<Identified>nothing());
