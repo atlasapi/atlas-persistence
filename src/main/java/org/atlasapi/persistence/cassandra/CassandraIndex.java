@@ -3,6 +3,7 @@ package org.atlasapi.persistence.cassandra;
 import com.google.common.collect.Iterators;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
@@ -114,6 +115,10 @@ public class CassandraIndex {
                 }
             }
         }
+
+        public Future<OperationResult<Column<String>>> execute() throws Exception {
+            return query.executeAsync();
+        }
     }
 
     public static class InvertedIndex {
@@ -196,6 +201,10 @@ public class CassandraIndex {
                         throw ex;
                     }
                 }
+            }
+
+            public Future<OperationResult<ColumnList<String>>> execute() throws Exception {
+                return query.executeAsync();
             }
         }
     }

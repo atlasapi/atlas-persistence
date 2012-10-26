@@ -39,6 +39,7 @@ import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
+import java.util.Collections;
 
 public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
@@ -84,9 +85,13 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     private Iterable<LookupEntry> entries(Iterable<String> uris, ColumnFamily<String, String> cf) throws ConnectionException, InterruptedException, ExecutionException, TimeoutException {
-        Future<OperationResult<Rows<String, String>>> op = keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_ONE).getKeySlice(uris).withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).executeAsync();
+        Future<OperationResult<Rows<String, String>>> op = queryForEquivColumns(uris, cf);
         Rows<String, String> rows = op.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
         return Iterables.filter(Iterables.transform(rows, ROW_TO_LOOKUP_ENTRY), notNull());
+    }
+
+    private Future<OperationResult<Rows<String, String>>> queryForEquivColumns(Iterable<String> uris, ColumnFamily<String, String> cf) throws ConnectionException {
+        return keyspace.prepareQuery(cf).setConsistencyLevel(ConsistencyLevel.CL_ONE).getKeySlice(uris).withColumnSlice(DFLT_EQUIV_COLUMN, EQUIV_COLUMN).executeAsync();
     }
     private final Function<Row<String, String>, LookupEntry> ROW_TO_LOOKUP_ENTRY = new Function<Row<String, String>, LookupEntry>() {
 
@@ -144,18 +149,24 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     private Iterable<LookupEntry> entriesForIds(Iterable<String> identifiers, final ColumnFamily<String, String> cf) {
-        final ConsistencyLevel cl = ConsistencyLevel.CL_ONE;
-        return Iterables.concat(Iterables.transform(identifiers, new Function<String, Iterable<LookupEntry>>() {
-
-            @Override
-            public Iterable<LookupEntry> apply(@Nullable String input) {
-                try {
-                    Collection<String> ids = index.inverted(keyspace, cf, cl).lookup(input).execute(1, TimeUnit.MINUTES);
-                    return entries(ids, cf);
-                } catch (Exception e) {
-                    throw new CassandraPersistenceException(e.getMessage(), e);
+        Iterable<LookupEntry> result = Collections.EMPTY_LIST;
+        try {
+            FutureList<OperationResult<ColumnList<String>>> indexes = new FutureList<OperationResult<ColumnList<String>>>();
+            FutureList<OperationResult<Rows<String, String>>> rows = new FutureList<OperationResult<Rows<String, String>>>();
+            for (String current : identifiers) {
+                indexes.add(index.inverted(keyspace, cf, ConsistencyLevel.CL_ONE).lookup(current).execute());
+            }
+            for (OperationResult<ColumnList<String>> current : indexes.get(requestTimeout, TimeUnit.MILLISECONDS)) {
+                if (!current.getResult().isEmpty()) {
+                    rows.add(queryForEquivColumns(current.getResult().getColumnNames(), cf));
                 }
             }
-        }));
+            for (OperationResult<Rows<String, String>> current : rows.get(requestTimeout, TimeUnit.MILLISECONDS)) {
+                result = Iterables.concat(result, Iterables.filter(Iterables.transform(current.getResult(), ROW_TO_LOOKUP_ENTRY), notNull()));
+            }
+        } catch (Exception e) {
+            throw new CassandraPersistenceException(e.getMessage(), e);
+        }
+        return result;
     }
 }
