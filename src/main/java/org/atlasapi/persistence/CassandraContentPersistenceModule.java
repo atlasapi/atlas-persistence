@@ -43,14 +43,14 @@ public class CassandraContentPersistenceModule {
     private final CassandraSegmentStore cassandraSegmentStore;
     private final CassandraTopicStore cassandraTopicStore;
 
-    public CassandraContentPersistenceModule(String environment, String seeds, int port, int connectionTimeout, int requestTimeout, IdGenerator idGenerator) {
+    public CassandraContentPersistenceModule(String environment, String seeds, int port, int connectionTimeout, int requestTimeout, int clientThreads, IdGenerator idGenerator) {
         this.cassandraContext = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
                 withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE).
                 setConnectionPoolType(ConnectionPoolType.TOKEN_AWARE).
-                setAsyncExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 10, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("AstyanaxAsync-%d").build()))).
+                setAsyncExecutor(Executors.newFixedThreadPool(clientThreads, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("AstyanaxAsync-%d").build()))).
                 withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
-                setMaxBlockedThreadsPerHost(Runtime.getRuntime().availableProcessors() * 10).
-                setMaxConnsPerHost(Runtime.getRuntime().availableProcessors() * 10).
+                setMaxBlockedThreadsPerHost(clientThreads).
+                setMaxConnsPerHost(clientThreads).
                 setMaxConns(Runtime.getRuntime().availableProcessors() * 10 * 5).
                 setConnectTimeout(connectionTimeout).
                 setSeeds(seeds)).
