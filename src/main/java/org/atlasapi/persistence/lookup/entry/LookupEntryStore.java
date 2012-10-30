@@ -10,14 +10,15 @@ public interface LookupEntryStore {
     void store(LookupEntry entry);
 
     /**
-     * Get entries for given URIs or Aliases. There is a one-to-many mapping
+     * Get entries for given URIs or Aliases (in case withAliases is set to true). There is a one-to-many mapping
      * from identifier to entry so more entries maybe returned than were
      * requested.
      * 
      * @param identifiers
+     * @param withAliases
      * @return
      */
-    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers);
+    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean withAliases);
 
     /**
      * Get entries for specified <b>canonical</b> URIs.

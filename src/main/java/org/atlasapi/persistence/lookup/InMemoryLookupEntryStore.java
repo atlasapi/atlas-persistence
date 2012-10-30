@@ -46,7 +46,10 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
+    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean withAliases) {
+        if (withAliases == false) {
+            throw new UnsupportedOperationException("Look up with no aliases is not supported here, so failing fast...");
+        }
         return Iterables.concat(Iterables.filter(Iterables.transform(identifiers, Functions.forMap(identifierStore.asMap(),null)),Predicates.notNull()));
     }
 }

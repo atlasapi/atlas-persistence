@@ -5,7 +5,6 @@ import static org.atlasapi.persistence.cassandra.CassandraSchema.CONTENT_CF;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.DFLT_EQUIV_COLUMN;
 import static org.atlasapi.persistence.cassandra.CassandraSchema.EQUIV_COLUMN;
 
-import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -144,25 +143,30 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
-        return entriesForIds(identifiers, CONTENT_CF);
+    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean withAliases) {
+        return entriesForIds(identifiers, CONTENT_CF, withAliases);
     }
 
-    private Iterable<LookupEntry> entriesForIds(Iterable<String> identifiers, final ColumnFamily<String, String> cf) {
+    private Iterable<LookupEntry> entriesForIds(Iterable<String> identifiers, final ColumnFamily<String, String> cf, boolean withAliases) {
         Iterable<LookupEntry> result = Collections.EMPTY_LIST;
         try {
-            FutureList<OperationResult<ColumnList<String>>> indexes = new FutureList<OperationResult<ColumnList<String>>>();
-            FutureList<OperationResult<Rows<String, String>>> rows = new FutureList<OperationResult<Rows<String, String>>>();
-            for (String current : identifiers) {
-                indexes.add(index.inverted(keyspace, cf, ConsistencyLevel.CL_ONE).lookup(current).execute());
-            }
-            for (OperationResult<ColumnList<String>> current : indexes.get(requestTimeout, TimeUnit.MILLISECONDS)) {
-                if (!current.getResult().isEmpty()) {
-                    rows.add(queryForEquivColumns(current.getResult().getColumnNames(), cf));
+            if (withAliases) {
+                FutureList<OperationResult<ColumnList<String>>> indexes = new FutureList<OperationResult<ColumnList<String>>>();
+                FutureList<OperationResult<Rows<String, String>>> rows = new FutureList<OperationResult<Rows<String, String>>>();
+                for (String current : identifiers) {
+                    indexes.add(index.inverted(keyspace, cf, ConsistencyLevel.CL_ONE).lookup(current).execute());
                 }
-            }
-            for (OperationResult<Rows<String, String>> current : rows.get(requestTimeout, TimeUnit.MILLISECONDS)) {
-                result = Iterables.concat(result, Iterables.filter(Iterables.transform(current.getResult(), ROW_TO_LOOKUP_ENTRY), notNull()));
+                for (OperationResult<ColumnList<String>> current : indexes.get(requestTimeout, TimeUnit.MILLISECONDS)) {
+                    if (!current.getResult().isEmpty()) {
+                        rows.add(queryForEquivColumns(current.getResult().getColumnNames(), cf));
+                    }
+                }
+                for (OperationResult<Rows<String, String>> current : rows.get(requestTimeout, TimeUnit.MILLISECONDS)) {
+                    result = Iterables.concat(result, Iterables.filter(Iterables.transform(current.getResult(), ROW_TO_LOOKUP_ENTRY), notNull()));
+                }
+            } else {
+                Rows<String, String> rows = queryForEquivColumns(identifiers, cf).get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
+                result = Iterables.filter(Iterables.transform(rows, ROW_TO_LOOKUP_ENTRY), notNull());
             }
         } catch (Exception e) {
             throw new CassandraPersistenceException(e.getMessage(), e);

@@ -33,8 +33,8 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
     @Override
-    public EquivalentContent resolveUris(Iterable<String> uris, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations) {
-        Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris);
+    public EquivalentContent resolveUris(Iterable<String> uris, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations, boolean withAliases) {
+        Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris, withAliases);
         return filterAndResolveEntries(entries, uris, selectedSources);
     }
     

@@ -41,7 +41,7 @@ public class DefaultEquivalentContentResolverTest {
         Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
-        when(lookupResolver.entriesForIdentifiers(uris)).thenReturn(ImmutableSet.of(
+        when(lookupResolver.entriesForIdentifiers(uris, false)).thenReturn(ImmutableSet.of(
             LookupEntry.lookupEntryFrom(subject).copyWithEquivalents(ImmutableSet.of(
                 LookupRef.from(equiv)
             ))
@@ -52,7 +52,7 @@ public class DefaultEquivalentContentResolverTest {
                 .put(equiv.getCanonicalUri(), equiv)
                 .build());
         
-        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations);
+        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, true);
         
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get("equiv"));
@@ -76,7 +76,7 @@ public class DefaultEquivalentContentResolverTest {
         Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
-        when(lookupResolver.entriesForIdentifiers(uris)).thenReturn(ImmutableSet.of(
+        when(lookupResolver.entriesForIdentifiers(uris, false)).thenReturn(ImmutableSet.of(
             LookupEntry.lookupEntryFrom(subject1).copyWithEquivalents(ImmutableSet.of(
                 LookupRef.from(equiv)
             )),
@@ -89,7 +89,7 @@ public class DefaultEquivalentContentResolverTest {
                 .put(equiv.getCanonicalUri(), equiv)
                 .build());
         
-        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations);
+        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, true);
         
         assertEquals(2, content.asMap().size());
         assertNull(content.asMap().get("equiv"));

@@ -107,7 +107,10 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers) {
+    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean withAliases) {
+        if (withAliases == false) {
+            throw new UnsupportedOperationException("Lookup with no aliases is not supported here, so failing fast...");
+        }
         return Iterables.transform(find(identifiers), translator.FROM_DBO);
     }
 
