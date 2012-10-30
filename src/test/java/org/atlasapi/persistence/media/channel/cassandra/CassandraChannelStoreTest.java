@@ -21,7 +21,7 @@ public class CassandraChannelStoreTest extends BaseCassandraTest {
     @Override
     public void before() {
         super.before();
-        store = new CassandraChannelStore(context, 10000, new UUIDGenerator(), Duration.millis(60000));
+        store = new CassandraChannelStore(context, 10000, new UUIDGenerator(), Duration.standardSeconds(60));
         //
         channel = new Channel(Publisher.METABROADCAST, "channel1", "k1", MediaType.AUDIO, "channel1");
         channel.setId(1l);
