@@ -246,7 +246,7 @@ public class EsScheduleIndex implements ScheduleIndex {
                     refBuilder.addEntries(validEntries(hit,channel, scheduleInterval));
                 }
                 ScheduleRef ref = refBuilder.build();
-                log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{input.getTookInMillis(), hits, ref.getScheduleEntries().size(), 1, input.tookInMillis()});
+                log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{Thread.currentThread().getId(), hits, ref.getScheduleEntries().size(), 1, input.tookInMillis()});
                 return ref;
             }
         };
