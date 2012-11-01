@@ -13,12 +13,13 @@ import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.orFilter;
 import static org.elasticsearch.index.query.FilterBuilders.rangeFilter;
+import static org.elasticsearch.index.query.FilterBuilders.termFilter;
+import static org.elasticsearch.index.query.MatchQueryBuilder.Operator.AND;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.fieldQuery;
 import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.MatchQueryBuilder.Operator.AND;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 import java.util.Date;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
 import org.joda.time.DateTime;
+import org.joda.time.Days;
 import org.joda.time.Interval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +58,8 @@ import com.metabroadcast.common.time.DateTimeZones;
 
 public class EsScheduleIndex implements ScheduleIndex {
 
+    //defines the maximum number of entries per day.
+    private static final int SIZE_MULTIPLIER = 100;
     private static final String SCROLL_TIMEOUT = "1m";
     private static final int MAX_SCROLLS = 10;
 
@@ -182,31 +186,37 @@ public class EsScheduleIndex implements ScheduleIndex {
         esClient.client()
             .prepareSearch(INDEX_NAME)
             .setTypes(TOP_LEVEL_TYPE, CHILD_TYPE)
-            .setSearchType(SearchType.SCAN)
-            .setScroll(SCROLL_TIMEOUT)
+            .setSearchType(SearchType.DEFAULT)
+//            .setScroll(SCROLL_TIMEOUT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
             .addFields(FIELDS)
-            .setSize(10)
+            .setSize(SIZE_MULTIPLIER*daysIn(scheduleInterval))
             .execute(resultSettingListener(result));
         
-        return Futures.transform(Futures.transform(result, scrollSearchFunction), resultTransformer(broadcastOn, scheduleInterval));
+        return Futures.transform(result, resultTransformer(broadcastOn, scheduleInterval));
     }
     
+    private int daysIn(Interval scheduleInterval) {
+        return Math.max(1, Days.daysIn(scheduleInterval).getDays());
+    }
+
     private QueryBuilder scheduleQueryFor(String publisher, String broadcastOn, Date from, Date to) {
         return filteredQuery(
             boolQuery()
                 .must(fieldQuery(PUBLISHER, publisher))
                 .must(nestedQuery(BROADCASTS, matchQuery(CHANNEL, broadcastOn).operator(AND)))
             ,
-            nestedFilter(BROADCASTS, orFilter(andFilter(
-                //inside or overlapping the interval ends
-                rangeFilter(TRANSMISSION_TIME).lt(to),
-                rangeFilter(TRANSMISSION_END_TIME).gt(from)
-            ), andFilter(
-                //containing the interval
-                rangeFilter(TRANSMISSION_TIME).lte(from),
-                rangeFilter(TRANSMISSION_END_TIME).gte(to)
-            )))
+            nestedFilter(BROADCASTS, 
+                orFilter(andFilter(
+                    //inside or overlapping the interval ends
+                    rangeFilter(TRANSMISSION_TIME).lt(to),
+                    rangeFilter(TRANSMISSION_END_TIME).gt(from)
+                ), andFilter(
+                    //containing the interval
+                    rangeFilter(TRANSMISSION_TIME).lte(from),
+                    rangeFilter(TRANSMISSION_END_TIME).gte(to)
+                ))
+            )
         );
     }
 
@@ -225,10 +235,10 @@ public class EsScheduleIndex implements ScheduleIndex {
     }
 
     
-    private Function<HitAccumulator, ScheduleRef> resultTransformer(final String channel, final Interval scheduleInterval) {
-        return new Function<HitAccumulator, ScheduleRef>() {
+    private Function<SearchResponse, ScheduleRef> resultTransformer(final String channel, final Interval scheduleInterval) {
+        return new Function<SearchResponse, ScheduleRef>() {
             @Override
-            public ScheduleRef apply(@Nullable HitAccumulator input) {
+            public ScheduleRef apply(@Nullable SearchResponse input) {
                 ScheduleRef.Builder refBuilder = ScheduleRef.forChannel(channel);
                 int hits = 0;
                 for (SearchHit hit : input.hits()) {
@@ -236,7 +246,7 @@ public class EsScheduleIndex implements ScheduleIndex {
                     refBuilder.addEntries(validEntries(hit,channel, scheduleInterval));
                 }
                 ScheduleRef ref = refBuilder.build();
-                log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{input.scrollId().hashCode(), hits, ref.getScheduleEntries().size(), input.queries(), input.millis()});
+                log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{input.getTookInMillis(), hits, ref.getScheduleEntries().size(), 1, input.tookInMillis()});
                 return ref;
             }
         };
