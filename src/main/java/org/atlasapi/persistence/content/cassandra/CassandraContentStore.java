@@ -22,8 +22,6 @@ import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.query.AllRowsQuery;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -100,8 +98,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                     }
                 }
             }
-            results.add(writeItem(container, item));
-            results.addAll(attachItemToParent(container, item));
+            results.add(writeItem(container, item).executeAsync());
             results.get(requestTimeout, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
@@ -121,12 +118,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 }
             });
             //
-            results.add(writeContainer(container));
-            for (Identified child : findByCanonicalUris(Iterables.transform(container.getChildRefs(), ChildRef.TO_URI)).getAllResolvedResults()) {
-                if (child instanceof Item) {
-                    Item item = (Item) child;
-                    results.add(writeDenormalizedContainerData(container, item));
-                }
+            results.add(writeContainer(container).executeAsync());
+            for (String child : Iterables.transform(container.getChildRefs(), ChildRef.TO_URI)) {
+                results.add(writeDenormalizedContainerData(child, container).executeAsync());
             }
             results.get(requestTimeout, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
@@ -193,36 +187,30 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         }
     }
 
-    private Future writeItem(Container container, Item item) throws Exception {
+    private MutationBatch writeItem(Container container, Item item) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
         marshalItem(item, mutation);
-        marshalContainerSummary(container, item, mutation);
-        return mutation.executeAsync();
+        if (container != null) {
+            container.setChildRefs(ChildRef.dedupeAndSort(Iterables.concat(container.getChildRefs(), ImmutableList.of(item.childRef()))));
+            marshalContainerChildren(container, mutation);
+            marshalContainerSummary(item.getCanonicalUri(), container, mutation);
+        }
+        return mutation;
     }
 
-    private Future writeContainer(Container container) throws Exception {
+    private MutationBatch writeContainer(Container container) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
         marshalContainer(container, mutation);
-        return mutation.executeAsync();
+        return mutation;
     }
 
-    private Future writeDenormalizedContainerData(Container container, Item item) throws Exception {
+    private MutationBatch writeDenormalizedContainerData(String item, Container container) throws Exception {
         MutationBatch mutation = keyspace.prepareMutationBatch();
         mutation.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-        marshalContainerSummary(container, item, mutation);
-        return mutation.executeAsync();
-    }
-
-    private Collection<Future> attachItemToParent(Container container, Item item) throws Exception {
-        List<Future> result = new ArrayList<Future>(2);
-        if (container != null) {
-            container.setChildRefs(ChildRef.dedupeAndSort(Iterables.concat(container.getChildRefs(), ImmutableList.of(item.childRef()))));
-            result.add(writeContainer(container));
-            result.add(writeDenormalizedContainerData(container, item));
-        }
-        return result;
+        marshalContainerSummary(item, container, mutation);
+        return mutation;
     }
 
     private Maybe<Identified> readContent(String id) throws Exception {
@@ -241,12 +229,15 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private Map<String, Maybe<Identified>> readContents(Iterable<String> ids) throws Exception {
         Map<String, Maybe<Identified>> contents = new HashMap<String, Maybe<Identified>>();
         // Avoid doing a self-DoS by partitioning the requested ids and hence doing multiple requests:
+        FutureList<OperationResult<Rows<String, String>>> futures = new FutureList<OperationResult<Rows<String, String>>>();
         for (Iterable<String> partition : Iterables.partition(ids, 10)) {
-            OperationResult<Rows<String, String>> rows = keyspace.prepareQuery(CONTENT_CF).
+            futures.add(keyspace.prepareQuery(CONTENT_CF).
                     setConsistencyLevel(ConsistencyLevel.CL_ONE).
                     getKeySlice(partition).
-                    executeAsync().
-                    get(requestTimeout, TimeUnit.MILLISECONDS);
+                    executeAsync());
+        }
+        List<OperationResult<Rows<String, String>>> allRows = futures.get(requestTimeout, TimeUnit.MILLISECONDS);
+        for (OperationResult<Rows<String, String>> rows : allRows) {
             for (Row<String, String> row : rows.getResult()) {
                 if (!row.getColumns().isEmpty()) {
                     contents.put(row.getKey(), Maybe.<Identified>just(unmarshalContent(row.getKey(), row.getColumns())));
@@ -273,11 +264,11 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 putColumn(VERSIONS_COLUMN, versionsBytes, null);
     }
 
-    private void marshalContainerSummary(Container container, Item item, MutationBatch mutation) throws IOException {
+    private void marshalContainerSummary(String item, Container container, MutationBatch mutation) throws IOException {
         Item.ContainerSummary containerSummary = buildContainerSummary(container);
         if (containerSummary != null) {
             byte[] containerSummaryBytes = mapper.writeValueAsBytes(containerSummary);
-            mutation.withRow(CONTENT_CF, item.getCanonicalUri()).
+            mutation.withRow(CONTENT_CF, item).
                     putColumn(CONTAINER_SUMMARY_COLUMN, containerSummaryBytes, null);
         }
     }
@@ -290,6 +281,12 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 putColumn(CONTENT_TYPE_COLUMN, EntityType.CONTAINER.name()).
                 putColumn(CONTAINER_COLUMN, containerBytes, null).
                 putColumn(CLIPS_COLUMN, clipsBytes, null).
+                putColumn(CHILDREN_COLUMN, childrenBytes, null);
+    }
+
+    private void marshalContainerChildren(Container container, MutationBatch mutation) throws IOException {
+        byte[] childrenBytes = mapper.writeValueAsBytes(container.getChildRefs());
+        mutation.withRow(CONTENT_CF, container.getCanonicalUri()).
                 putColumn(CHILDREN_COLUMN, childrenBytes, null);
     }
 
