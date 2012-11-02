@@ -75,6 +75,7 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         	case EPISODE:
         	case CLIP:
         	case FILM:
+        	case SONG:
         		return itemTranslator.fromDBObject(dbo, null);
         }
         throw new IllegalArgumentException("Unknown type: " + type);
