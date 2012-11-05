@@ -269,7 +269,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		if (entity instanceof Song) {
 		    Song song = (Song) entity;
             TranslatorUtils.from(itemDbo, "isrc", song.getIsrc());
-            TranslatorUtils.from(itemDbo, "duration", song.getDuration().getStandardSeconds());
+            if (song.getDuration() != null) {
+                TranslatorUtils.from(itemDbo, "duration", song.getDuration().getStandardSeconds());
+            }
 		}
 		
         return itemDbo;
