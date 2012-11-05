@@ -10,9 +10,11 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.ReleaseDate;
 import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
+import org.atlasapi.media.entity.Song;
 import org.atlasapi.media.entity.Subtitles;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.media.ModelTranslator;
+import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
 import com.google.common.base.Function;
@@ -125,6 +127,15 @@ public class ItemTranslator implements ModelTranslator<Item> {
             }
             if (dbObject.containsField(FILM_RELEASES_KEY)) {
                 film.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
+            }
+        }
+        
+        if (item instanceof Song) {
+            Song song = (Song) item;
+            song.setIsrc(TranslatorUtils.toString(dbObject, "isrc"));
+            Long duration = TranslatorUtils.toLong(dbObject, "duration");
+            if (duration != null) {
+                song.setDuration(Duration.standardSeconds(duration));
             }
         }
         
@@ -253,6 +264,12 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		    encodeSubtitles(itemDbo, film.getSubtitles());
 		    encodeReleases(itemDbo, film.getReleaseDates());
 		    
+		}
+		
+		if (entity instanceof Song) {
+		    Song song = (Song) entity;
+            TranslatorUtils.from(itemDbo, "isrc", song.getIsrc());
+            TranslatorUtils.from(itemDbo, "duration", song.getDuration().getStandardSeconds());
 		}
 		
         return itemDbo;
