@@ -24,6 +24,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String AVAILABLE_ON = "availableOn";
 	public static final String HIGH_DEFINITION = "highDefinition";
 	public static final String KEY = "key";
+	public static final String IMAGE = "image";
 
 	private ModelTranslator<Identified> identifiedTranslator;
 
@@ -39,11 +40,12 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		
 		TranslatorUtils.from(dbObject, TITLE, model.title());
 		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.mediaType().name());
-		TranslatorUtils.from(dbObject, PUBLISHER, model.publisher().key());
+		TranslatorUtils.from(dbObject, PUBLISHER, model.source().key());
 		TranslatorUtils.from(dbObject, HIGH_DEFINITION, model.highDefinition());
 		TranslatorUtils.from(dbObject, BROADCASTER, model.broadcaster() != null ? model.broadcaster().key() : null);
 		TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableFrom(), Publisher.TO_KEY)), AVAILABLE_ON);
 		TranslatorUtils.from(dbObject, KEY, model.key());
+		TranslatorUtils.from(dbObject, IMAGE, model.image());
 		return dbObject;
 	}
 
@@ -54,15 +56,16 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	    }
 	    
 		if (model == null) {
-			model = new Channel();
+			model = Channel.builder().build();
 		}
 
-        model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER)).requireValue());
+        model.setSource(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER)).requireValue());
 		model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
 		model.setTitle((String) dbObject.get(TITLE));
 		model.setKey((String) dbObject.get(KEY));
 		model.setHighDefinition((Boolean) dbObject.get(HIGH_DEFINITION));
 		model.setAvailableFrom(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
+		model.setImage(TranslatorUtils.toString(dbObject, IMAGE));
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
 		model.setBroadcaster(broadcaster != null ? Publisher.fromKey(broadcaster).valueOrNull() : null);

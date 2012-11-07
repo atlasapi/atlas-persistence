@@ -272,7 +272,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
             if (song.getDuration() != null) {
                 TranslatorUtils.from(itemDbo, "duration", song.getDuration().getStandardSeconds());
             }
-		}
+        }
 		
         return itemDbo;
     }
