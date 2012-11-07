@@ -43,7 +43,7 @@ public class MongoChannelStoreTest {
         channel.setId(id);
         channel.setCanonicalUri(uri);
         channel.setAliases(ImmutableSet.copyOf(alias));
-        channel.setPublisher(Publisher.BBC);
+        channel.setSource(Publisher.BBC);
         channel.setMediaType(MediaType.VIDEO);
         channel.setKey(key);
         return channel;
