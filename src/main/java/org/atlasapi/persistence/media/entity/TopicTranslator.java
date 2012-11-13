@@ -34,7 +34,9 @@ public class TopicTranslator implements ModelTranslator<Topic> {
         
         describedTranslator.toDBObject(dbObject, model);
         
-        TranslatorUtils.from(dbObject, TOPIC_TYPE, model.getType().key());
+        if (model.getType() != null) {
+            TranslatorUtils.from(dbObject, TOPIC_TYPE, model.getType().key());
+        }
         TranslatorUtils.from(dbObject, NAMESPACE, model.getNamespace());
         TranslatorUtils.from(dbObject, VALUE, model.getValue());
         TranslatorUtils.from(dbObject, PUBLISHER, Publisher.TO_KEY.apply(model.getPublisher()));
@@ -54,7 +56,10 @@ public class TopicTranslator implements ModelTranslator<Topic> {
         
         describedTranslator.fromDBObject(dbObject, model);
         
-        model.setType(Topic.Type.fromKey(TranslatorUtils.toString(dbObject, TOPIC_TYPE)));
+        String typeKey = TranslatorUtils.toString(dbObject, TOPIC_TYPE);
+        if (typeKey != null) {
+            model.setType(Topic.Type.fromKey(typeKey));
+        }
         model.setNamespace(TranslatorUtils.toString(dbObject, NAMESPACE));
         model.setValue(TranslatorUtils.toString(dbObject, VALUE));
         model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER)).valueOrNull());
