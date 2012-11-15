@@ -12,6 +12,7 @@ public class TopicRefTranslator {
 	private static final String WEIGHTING_KEY = "weighting";
 	private static final String SUPERVISED_KEY = "supervised";
 	private static final String RELATIONSHIP_KEY = "relationship";
+	private static final String OFFSET_KEY = "offset";
 
 	public DBObject toDBObject(TopicRef contentTopic) {
 		  DBObject dbo = new BasicDBObject();
@@ -19,6 +20,7 @@ public class TopicRefTranslator {
 		  TranslatorUtils.from(dbo, WEIGHTING_KEY, (Float)contentTopic.getWeighting());
 		  TranslatorUtils.from(dbo, SUPERVISED_KEY, contentTopic.isSupervised());
 		  TranslatorUtils.from(dbo, RELATIONSHIP_KEY, contentTopic.getRelationship().name());
+		  TranslatorUtils.from(dbo, OFFSET_KEY, contentTopic.getOffset());
 		  
 		  return dbo;
 	}
@@ -27,7 +29,8 @@ public class TopicRefTranslator {
 		return new TopicRef(TranslatorUtils.toLong(dbo, TOPIC_KEY), 
 				TranslatorUtils.toFloat(dbo, WEIGHTING_KEY),
 				TranslatorUtils.toBoolean(dbo, SUPERVISED_KEY),
-                TopicRef.Relationship.valueOf(TranslatorUtils.toString(dbo, RELATIONSHIP_KEY)));
+                TopicRef.Relationship.valueOf(TranslatorUtils.toString(dbo, RELATIONSHIP_KEY)),
+                TranslatorUtils.toInteger(dbo, OFFSET_KEY));
 	}
 
 }
