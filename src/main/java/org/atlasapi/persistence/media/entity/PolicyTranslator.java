@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Currency;
 
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Policy.Network;
 import org.atlasapi.media.entity.Policy.Platform;
 import org.atlasapi.media.entity.Policy.RevenueContract;
 import org.atlasapi.persistence.media.ModelTranslator;
@@ -19,6 +20,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
     	
         if (entity == null) {
             entity = new Policy();
+         }
+        if (dbObject.containsField("actualAvailabilityStart")) {
+            entity.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "actualAvailabilityStart"));
         }
         entity.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "availabilityStart"));
         entity.setAvailabilityEnd(TranslatorUtils.toDateTime(dbObject, "availabilityEnd"));
@@ -40,6 +44,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         if(dbObject.containsField("platform")) {
         	entity.setPlatform(Platform.fromKey(TranslatorUtils.toString(dbObject, "platform")));
         }
+        if (dbObject.containsField("network")) {
+            entity.setNetwork(Network.fromKey(TranslatorUtils.toString(dbObject, "network")));
+        }
         
         return entity;
     }
@@ -47,6 +54,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
 	@Override
     public DBObject toDBObject(DBObject dbObject, Policy entity) {
         
+	    if (entity.getActualAvailabilityStart() != null) {
+	        TranslatorUtils.fromDateTime(dbObject, "actualAvailabilityStart", entity.getActualAvailabilityStart());
+	    }
         TranslatorUtils.fromDateTime(dbObject, "availabilityStart", entity.getAvailabilityStart());
         TranslatorUtils.fromDateTime(dbObject, "availabilityEnd", entity.getAvailabilityEnd());
         TranslatorUtils.fromDateTime(dbObject, "drmPlayableFrom", entity.getDrmPlayableFrom());
@@ -64,6 +74,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         }
         if(entity.getPlatform() != null) {
         	TranslatorUtils.from(dbObject, "platform", entity.getPlatform().key());
+        }
+        if (entity.getNetwork().isPresent()) {
+            TranslatorUtils.from(dbObject, "network", entity.getNetwork().get().key());
         }
         return dbObject;
     }
