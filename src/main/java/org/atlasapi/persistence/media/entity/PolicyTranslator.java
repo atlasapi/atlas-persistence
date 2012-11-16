@@ -21,9 +21,7 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         if (entity == null) {
             entity = new Policy();
          }
-        if (dbObject.containsField("actualAvailabilityStart")) {
-            entity.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "actualAvailabilityStart"));
-        }
+        entity.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "actualAvailabilityStart"));
         entity.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "availabilityStart"));
         entity.setAvailabilityEnd(TranslatorUtils.toDateTime(dbObject, "availabilityEnd"));
         entity.setDrmPlayableFrom(TranslatorUtils.toDateTime(dbObject, "drmPlayableFrom"));
@@ -54,9 +52,7 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
 	@Override
     public DBObject toDBObject(DBObject dbObject, Policy entity) {
         
-	    if (entity.getActualAvailabilityStart() != null) {
-	        TranslatorUtils.fromDateTime(dbObject, "actualAvailabilityStart", entity.getActualAvailabilityStart());
-	    }
+	    TranslatorUtils.fromDateTime(dbObject, "actualAvailabilityStart", entity.getActualAvailabilityStart());
         TranslatorUtils.fromDateTime(dbObject, "availabilityStart", entity.getAvailabilityStart());
         TranslatorUtils.fromDateTime(dbObject, "availabilityEnd", entity.getAvailabilityEnd());
         TranslatorUtils.fromDateTime(dbObject, "drmPlayableFrom", entity.getDrmPlayableFrom());
