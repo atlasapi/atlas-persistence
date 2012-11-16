@@ -99,9 +99,9 @@ public class ESContentSearcher implements ContentSearcher {
 
     private static class SearchResponseListener implements ActionListener<SearchResponse> {
 
-        private final SettableFuture result;
+        private final SettableFuture<SearchResults> result;
 
-        public SearchResponseListener(SettableFuture result) {
+        public SearchResponseListener(SettableFuture<SearchResults> result) {
             this.result = result;
         }
 

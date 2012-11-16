@@ -20,6 +20,7 @@ import static org.elasticsearch.index.query.QueryBuilders.fieldQuery;
 import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.util.Date;
 import java.util.List;
@@ -36,7 +37,9 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.common.primitives.Ints;
+import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
@@ -203,10 +206,10 @@ public class EsScheduleIndex implements ScheduleIndex {
     private QueryBuilder scheduleQueryFor(String publisher, String broadcastOn, Date from, Date to) {
         return filteredQuery(
             boolQuery()
-                .must(fieldQuery(PUBLISHER, publisher))
-                .must(nestedQuery(BROADCASTS, matchQuery(CHANNEL, broadcastOn).operator(AND)))
+                .must(termQuery(PUBLISHER, publisher))
+                .must(nestedQuery(BROADCASTS, termQuery(CHANNEL, broadcastOn)))
             ,
-            nestedFilter(BROADCASTS, 
+            nestedFilter(BROADCASTS, andFilter(termFilter(CHANNEL, broadcastOn),
                 orFilter(andFilter(
                     //inside or overlapping the interval ends
                     rangeFilter(TRANSMISSION_TIME).lt(to),
@@ -216,7 +219,7 @@ public class EsScheduleIndex implements ScheduleIndex {
                     rangeFilter(TRANSMISSION_TIME).lte(from),
                     rangeFilter(TRANSMISSION_END_TIME).gte(to)
                 ))
-            )
+            ))
         );
     }
 

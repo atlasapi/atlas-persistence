@@ -12,6 +12,7 @@ import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.ParentRef;
+import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentIndexer;
@@ -27,11 +28,10 @@ import org.atlasapi.persistence.content.elasticsearch.schema.ESTopic;
 import org.atlasapi.persistence.content.elasticsearch.support.Strings;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.NoShardAvailableActionException;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.IndicesExistsResponse;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.*;
@@ -40,6 +40,7 @@ import com.metabroadcast.common.time.DateTimeZones;
 import org.atlasapi.persistence.elasticsearch.ESPersistenceException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.joda.time.DateTime;
 
 /**
  */
@@ -49,9 +50,14 @@ public class ESContentIndexer implements ContentIndexer {
     private final long requestTimeout;
 
     public ESContentIndexer(String seeds, long requestTimeout) {
-        this.esClient = NodeBuilder.nodeBuilder().client(true).clusterName(CLUSTER_NAME).
-                settings(ImmutableSettings.settingsBuilder().put("discovery.zen.ping.unicast.hosts", seeds)).
-                build().start();
+        this.esClient = NodeBuilder.nodeBuilder()
+            .client(true)
+            .clusterName(CLUSTER_NAME)
+            .settings(ImmutableSettings.settingsBuilder()
+                .put("discovery.zen.ping.unicast.hosts", seeds)
+            )
+            .build()
+            .start();
         this.requestTimeout = requestTimeout;
     }
 
@@ -72,64 +78,10 @@ public class ESContentIndexer implements ContentIndexer {
         }
     }
 
-    @Override
-    public void index(Item item) {
-        ESContent indexed = new ESContent().uri(item.getCanonicalUri()).
-                title(item.getTitle() != null ? item.getTitle() : null).
-                flattenedTitle(item.getTitle() != null ? Strings.flatten(item.getTitle()) : null).
-                parentTitle(item.getTitle() != null ? item.getTitle() : null).
-                parentFlattenedTitle(item.getTitle() != null ? Strings.flatten(item.getTitle()) : null).
-                publisher(item.getPublisher() != null ? item.getPublisher().key() : null).
-                specialization(item.getSpecialization() != null ? item.getSpecialization().name() : null).
-                broadcasts(makeESBroadcasts(item)).
-                locations(makeESLocations(item)).
-                topics(makeESTopics(item));
-        if (item.getContainer() != null) {
-            fillParentData(indexed, item.getContainer());
-            IndexRequest request = Requests.indexRequest(INDEX_NAME).
-                    type(ESContent.CHILD_TYPE).
-                    id(item.getCanonicalUri()).
-                    source(indexed.toMap()).
-                    parent(item.getContainer().getUri());
-            esClient.client().index(request).actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-        } else {
-            IndexRequest request = Requests.indexRequest(INDEX_NAME).
-                    type(ESContent.TOP_LEVEL_TYPE).
-                    id(item.getCanonicalUri()).
-                    source(indexed.hasChildren(false).toMap());
-            esClient.client().index(request).actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-        }
-
-    }
-
-    @Override
-    public void index(Container container) {
-        ESContent indexed = new ESContent().uri(container.getCanonicalUri()).
-                title(container.getTitle() != null ? container.getTitle() : null).
-                flattenedTitle(container.getTitle() != null ? Strings.flatten(container.getTitle()) : null).
-                parentTitle(container.getTitle() != null ? container.getTitle() : null).
-                parentFlattenedTitle(container.getTitle() != null ? Strings.flatten(container.getTitle()) : null).
-                publisher(container.getPublisher() != null ? container.getPublisher().key() : null).
-                specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null);
-        if (!container.getChildRefs().isEmpty()) {
-            indexed.hasChildren(Boolean.TRUE);
-            indexChildrenData(container);
-        } else {
-            indexed.hasChildren(Boolean.FALSE);
-        }
-        ActionFuture<IndexResponse> result = esClient.client().index(
-                Requests.indexRequest(INDEX_NAME).
-                type(ESContent.TOP_LEVEL_TYPE).
-                id(container.getCanonicalUri()).
-                source(indexed.toMap()));
-        result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-    }
-
     private boolean createIndex() throws ElasticSearchException {
         ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(Requests.indicesExistsRequest(INDEX_NAME));
-        if (!exists.actionGet(requestTimeout, TimeUnit.MILLISECONDS).isExists()) {
-            ActionFuture<CreateIndexResponse> create = esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME));
-            create.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        if (!timeoutGet(exists).isExists()) {
+            timeoutGet(esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME)));
             return true;
         } else {
             return false;
@@ -137,101 +89,198 @@ public class ESContentIndexer implements ContentIndexer {
     }
 
     private void putTopContentMapping() throws IOException, ElasticSearchException {
-        ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
-                Requests.putMappingRequest(INDEX_NAME).type(ESContent.TOP_LEVEL_TYPE).source(
-                XContentFactory.jsonBuilder().
-                startObject().
-                startObject(ESContent.TOP_LEVEL_TYPE).
-                startObject("properties").
-                startObject(ESContent.URI).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.TITLE).
-                field("type").value("string").
-                field("index").value("analyzed").
-                endObject().
-                startObject(ESContent.FLATTENED_TITLE).
-                field("type").value("string").
-                field("index").value("analyzed").
-                endObject().
-                startObject(ESContent.PUBLISHER).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.SPECIALIZATION).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.BROADCASTS).
-                field("type").value("nested").
-                endObject().
-                startObject(ESContent.LOCATIONS).
-                field("type").value("nested").
-                endObject().
-                endObject().
-                endObject().
-                endObject()));
+        ActionFuture<PutMappingResponse> putMapping = esClient
+            .client()
+            .admin()
+            .indices()
+            .putMapping(Requests.putMappingRequest(INDEX_NAME)
+                .type(ESContent.TOP_LEVEL_TYPE)
+                .source(XContentFactory.jsonBuilder()
+                    .startObject()
+                        .startObject(ESContent.TOP_LEVEL_TYPE)
+                            .startObject("properties")
+                                .startObject(ESContent.URI)
+                                    .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(ESContent.TITLE)
+                                    .field("type").value("string")
+                                    .field("index").value("analyzed")
+                                .endObject()
+                                .startObject(ESContent.FLATTENED_TITLE)
+                                    .field("type").value("string")
+                                    .field("index").value("analyzed")
+                                .endObject()
+                                .startObject(ESContent.PUBLISHER)
+                                    .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(ESContent.SPECIALIZATION)
+                                    .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(ESContent.BROADCASTS)
+                                    .field("type").value("nested")
+                                    .startObject("properties")
+                                        .startObject(ESBroadcast.CHANNEL)
+                                            .field("type").value("string")
+                                            .field("index").value("not_analyzed")
+                                        .endObject()
+                                    .endObject()
+                                .endObject()
+                                .startObject(ESContent.LOCATIONS)
+                                    .field("type").value("nested")
+                                .endObject()
+                            .endObject()
+                        .endObject()
+                    .endObject()
+                )
+            );
         putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
     private void putChildContentMapping() throws ElasticSearchException, IOException {
-        ActionFuture<PutMappingResponse> putMapping = esClient.client().admin().indices().putMapping(
-                Requests.putMappingRequest(INDEX_NAME).type(ESContent.CHILD_TYPE).source(
-                XContentFactory.jsonBuilder().
-                startObject().
-                startObject(ESContent.CHILD_TYPE).
-                startObject("_parent").
-                field("type").value(ESContent.TOP_LEVEL_TYPE).
-                endObject().
-                startObject("properties").
-                startObject(ESContent.URI).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.TITLE).
-                field("type").value("string").
-                field("index").value("analyzed").
-                endObject().
-                startObject(ESContent.FLATTENED_TITLE).
-                field("type").value("string").
-                field("index").value("analyzed").
-                endObject().
-                startObject(ESContent.PUBLISHER).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.SPECIALIZATION).
-                field("type").value("string").
-                field("index").value("not_analyzed").
-                endObject().
-                startObject(ESContent.BROADCASTS).
-                field("type").value("nested").
-                endObject().
-                startObject(ESContent.LOCATIONS).
-                field("type").value("nested").
-                endObject().
-                endObject().
-                endObject().
-                endObject()));
+        ActionFuture<PutMappingResponse> putMapping = esClient
+            .client()
+            .admin()
+            .indices()
+            .putMapping(Requests.putMappingRequest(INDEX_NAME)
+                .type(ESContent.CHILD_TYPE)
+                .source(XContentFactory.jsonBuilder()
+                    .startObject()
+                        .startObject(ESContent.CHILD_TYPE)
+                            .startObject("_parent")
+                                .field("type").value(ESContent.TOP_LEVEL_TYPE)
+                            .endObject()
+                            .startObject("properties")
+                                .startObject(ESContent.URI)
+                                    .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(ESContent.TITLE)
+                                    .field("type").value("string")
+                                    .field("index").value("analyzed")
+                                .endObject()
+                                .startObject(ESContent.FLATTENED_TITLE)
+                                        .field("type").value("string")
+                                        .field("index").value("analyzed")
+                                .endObject()
+                                .startObject(ESContent.PUBLISHER)
+                                    .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(ESContent.SPECIALIZATION)
+                                    .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(ESContent.BROADCASTS)
+                                    .field("type").value("nested")
+                                    .startObject("properties")
+                                        .startObject(ESBroadcast.CHANNEL)
+                                            .field("type").value("string")
+                                            .field("index").value("not_analyzed")
+                                        .endObject()
+                                    .endObject()
+                                .endObject()
+                                .startObject(ESContent.LOCATIONS)
+                                    .field("type").value("nested")
+                                .endObject()
+                            .endObject()
+                        .endObject()
+                    .endObject()
+                )
+            );
         putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
+
+    @Override
+    public void index(Item item) {
+        ESContent indexed = new ESContent()
+            .uri(item.getCanonicalUri())
+            .title(item.getTitle())
+            .flattenedTitle(flattenedOrNull(item.getTitle()))
+            .parentTitle(item.getTitle())
+            .parentFlattenedTitle(flattenedOrNull(item.getTitle()))
+            .publisher(item.getPublisher() != null ? item.getPublisher().key() : null)
+            .specialization(item.getSpecialization() != null ? item.getSpecialization().name() : null)
+            .broadcasts(makeESBroadcasts(item))
+            .locations(makeESLocations(item))
+            .topics(makeESTopics(item));
+        
+        IndexRequest request;
+        if (item.getContainer() != null) {
+            fillParentData(indexed, item.getContainer());
+            request = Requests.indexRequest(INDEX_NAME)
+                .type(ESContent.CHILD_TYPE)
+                .id(item.getCanonicalUri())
+                .source(indexed.toMap())
+                .parent(item.getContainer().getUri());
+        } else {
+            request = Requests.indexRequest(INDEX_NAME)
+                .type(ESContent.TOP_LEVEL_TYPE)
+                .id(item.getCanonicalUri())
+                .source(indexed.hasChildren(false).toMap());
+        }
+        doIndex(request);
+    }
+
+    @Override
+    public void index(Container container) {
+        ESContent indexed = new ESContent()
+            .uri(container.getCanonicalUri())
+            .title(container.getTitle())
+            .flattenedTitle(flattenedOrNull(container.getTitle()))
+            .parentTitle(container.getTitle())
+            .parentFlattenedTitle(flattenedOrNull(container.getTitle()))
+            .publisher(container.getPublisher() != null ? container.getPublisher().key() : null)
+            .specialization(container.getSpecialization() != null ? container.getSpecialization().name() : null);
+        
+        if (!container.getChildRefs().isEmpty()) {
+            indexed.hasChildren(Boolean.TRUE);
+            indexChildrenData(container);
+        } else {
+            indexed.hasChildren(Boolean.FALSE);
+        }
+        IndexRequest request = Requests.indexRequest(INDEX_NAME)
+            .type(ESContent.TOP_LEVEL_TYPE)
+            .id(container.getCanonicalUri())
+            .source(indexed.toMap());
+        doIndex(request);
+    }
+
+    private void doIndex(IndexRequest request) {
+        timeoutGet(esClient.client().index(request));
+    }
+
+    private String flattenedOrNull(String string) {
+        return string != null ? Strings.flatten(string) : null;
+    }
+    
     private Collection<ESBroadcast> makeESBroadcasts(Item item) {
         Collection<ESBroadcast> esBroadcasts = new LinkedList<ESBroadcast>();
         for (Version version : item.getVersions()) {
             for (Broadcast broadcast : version.getBroadcasts()) {
                 if (broadcast.isActivelyPublished()) {
-                    esBroadcasts.add(new ESBroadcast().id(broadcast.getSourceId()).
-                            channel(broadcast.getBroadcastOn()).
-                            transmissionTime(broadcast.getTransmissionTime().toDateTime(DateTimeZones.UTC).toDate()).
-                            transmissionEndTime(broadcast.getTransmissionEndTime().toDateTime(DateTimeZones.UTC).toDate()).
-                            transmissionTimeInMillis(broadcast.getTransmissionTime().toDateTime(DateTimeZones.UTC).getMillis()).
-                            repeat(broadcast.getRepeat() != null ? broadcast.getRepeat() : false));
+                    esBroadcasts.add(toEsBroadcast(broadcast));
                 }
             }
         }
         return esBroadcasts;
+    }
+
+    private ESBroadcast toEsBroadcast(Broadcast broadcast) {
+        return new ESBroadcast()
+            .id(broadcast.getSourceId())
+            .channel(broadcast.getBroadcastOn())
+            .transmissionTime(toUtc(broadcast.getTransmissionTime()).toDate())
+            .transmissionEndTime(toUtc(broadcast.getTransmissionEndTime()).toDate())
+            .transmissionTimeInMillis(toUtc(broadcast.getTransmissionTime()).getMillis())
+            .repeat(broadcast.getRepeat() != null ? broadcast.getRepeat() : false);
+    }
+
+    private DateTime toUtc(DateTime transmissionTime) {
+        return transmissionTime.toDateTime(DateTimeZones.UTC);
     }
 
     private Collection<ESLocation> makeESLocations(Item item) {
@@ -239,14 +288,21 @@ public class ESContentIndexer implements ContentIndexer {
         for (Version version : item.getVersions()) {
             for (Encoding encoding : version.getManifestedAs()) {
                 for (Location location : encoding.getAvailableAt()) {
-                    if (location.getPolicy() != null && location.getPolicy().getAvailabilityStart() != null && location.getPolicy().getAvailabilityEnd() != null) {
-                        esLocations.add(new ESLocation().availabilityTime(location.getPolicy().getAvailabilityStart().toDateTime(DateTimeZones.UTC).toDate()).
-                                availabilityEndTime(location.getPolicy().getAvailabilityEnd().toDateTime(DateTimeZones.UTC).toDate()));
+                    if (location.getPolicy() != null 
+                        && location.getPolicy().getAvailabilityStart() != null
+                        && location.getPolicy().getAvailabilityEnd() != null) {
+                            esLocations.add(toEsLocation(location.getPolicy()));
                     }
                 }
             }
         }
         return esLocations;
+    }
+
+    private ESLocation toEsLocation(Policy policy) {
+        return new ESLocation()
+            .availabilityTime(toUtc(policy.getAvailabilityStart()).toDate())
+            .availabilityEndTime(toUtc(policy.getAvailabilityEnd()).toDate());
     }
 
     private Collection<ESTopic> makeESTopics(Item item) {
@@ -260,8 +316,10 @@ public class ESContentIndexer implements ContentIndexer {
     private void fillParentData(ESContent child, ParentRef parent) {
         Map<String, Object> indexedContainer = trySearchParent(parent);
         if (indexedContainer != null) {
-            child.parentTitle(indexedContainer.containsKey(ESContent.TITLE) ? indexedContainer.get(ESContent.TITLE).toString() : null);
-            child.parentFlattenedTitle(indexedContainer.containsKey(ESContent.FLATTENED_TITLE) ? indexedContainer.get(ESContent.FLATTENED_TITLE).toString() : null);
+            Object title = indexedContainer.get(ESContent.TITLE);
+            child.parentTitle(title != null ? title.toString() : null);
+            Object flatTitle = indexedContainer.get(ESContent.FLATTENED_TITLE);
+            child.parentFlattenedTitle(flatTitle != null ? flatTitle.toString() : null);
         }
     }
 
@@ -282,8 +340,7 @@ public class ESContentIndexer implements ContentIndexer {
             }
         }
         if (bulk.numberOfActions() > 0) {
-            ActionFuture<BulkResponse> result = esClient.client().bulk(bulk);
-            BulkResponse response = result.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+            BulkResponse response = timeoutGet(esClient.client().bulk(bulk));
             if (response.hasFailures()) {
                 throw new ESPersistenceException("Failed to index children for container: " + parent.getCanonicalUri());
             }
@@ -291,8 +348,8 @@ public class ESContentIndexer implements ContentIndexer {
     }
 
     private Map<String, Object> trySearchParent(ParentRef parent) {
-        ActionFuture<GetResponse> future = esClient.client().get(Requests.getRequest(INDEX_NAME).id(parent.getUri()));
-        GetResponse response = future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+        GetRequest request = Requests.getRequest(INDEX_NAME).id(parent.getUri());
+        GetResponse response = timeoutGet(esClient.client().get(request));
         if (response.exists()) {
             return response.sourceAsMap();
         } else {
@@ -302,8 +359,10 @@ public class ESContentIndexer implements ContentIndexer {
 
     private Map<String, Object> trySearchChild(Container parent, ChildRef child) {
         try {
-            ActionFuture<GetResponse> future = esClient.client().get(Requests.getRequest(INDEX_NAME).parent(parent.getCanonicalUri()).id(child.getUri()));
-            GetResponse response = future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
+            GetRequest request = Requests.getRequest(INDEX_NAME)
+                    .parent(parent.getCanonicalUri())
+                    .id(child.getUri());
+            GetResponse response = timeoutGet(esClient.client().get(request));
             if (response.exists()) {
                 return response.sourceAsMap();
             } else {
@@ -312,5 +371,9 @@ public class ESContentIndexer implements ContentIndexer {
         } catch (NoShardAvailableActionException ex) {
             return null;
         }
+    }
+    
+    private <T> T timeoutGet(ActionFuture<T> future) {
+        return future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 }
