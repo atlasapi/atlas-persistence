@@ -14,11 +14,8 @@ import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.orFilter;
 import static org.elasticsearch.index.query.FilterBuilders.rangeFilter;
 import static org.elasticsearch.index.query.FilterBuilders.termFilter;
-import static org.elasticsearch.index.query.MatchQueryBuilder.Operator.AND;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.fieldQuery;
 import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -36,10 +33,7 @@ import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.common.primitives.Ints;
-import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
@@ -52,8 +46,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -63,52 +55,6 @@ public class EsScheduleIndex implements ScheduleIndex {
 
     //defines the maximum number of entries per day.
     private static final int SIZE_MULTIPLIER = 100;
-    private static final String SCROLL_TIMEOUT = "1m";
-    private static final int MAX_SCROLLS = 10;
-
-    private static class HitAccumulator {
-        
-        private final String scrollId;
-        private final long total;
-        private final List<SearchHit> hits;
-        private int seen = 0;
-        private int queries = 1;
-        private long millis = 0;
-        
-        private HitAccumulator(SearchResponse scanResult) {
-            this.scrollId = scanResult.scrollId();
-            this.total = scanResult.hits().totalHits();
-            this.hits = Lists.newArrayListWithCapacity(Ints.saturatedCast(total));
-            this.millis = scanResult.tookInMillis();
-        }
-
-        public void foldIn(SearchResponse scrollResponse) {
-            this.seen += scrollResponse.hits().hits().length;
-            this.millis += scrollResponse.tookInMillis(); 
-            this.queries++;
-            Iterables.addAll(this.hits, scrollResponse.hits());
-        }
-        
-        public String scrollId() {
-            return this.scrollId;
-        }
-        
-        public boolean canScrollMore() {
-            return this.seen < this.total && this.queries < MAX_SCROLLS;
-        }
-
-        public int queries() {
-            return this.queries;
-        }
-
-        public Iterable<SearchHit> hits() {
-            return this.hits;
-        }
-        
-        public long millis() {
-            return this.millis;
-        }
-    }
 
     public static final Logger log = LoggerFactory.getLogger(EsScheduleIndex.class);
     
@@ -126,52 +72,6 @@ public class EsScheduleIndex implements ScheduleIndex {
     };
     
     private final Node esClient;
-    private final AsyncFunction<SearchResponse, HitAccumulator> scrollSearchFunction = new AsyncFunction<SearchResponse, HitAccumulator>() {
-        
-        @Override
-        public ListenableFuture<HitAccumulator> apply(SearchResponse input) throws Exception {
-            log.info("{}: scan   {} hits ({}ms)", new Object[]{input.scrollId().hashCode(), input.hits().totalHits(), input.tookInMillis()});
-            SettableFuture<HitAccumulator> searchResult = SettableFuture.create();
-            HitAccumulator accumulator = new HitAccumulator(input);
-            if (accumulator.canScrollMore()) {
-                scrollSearch(input.scrollId(), scrollingListener(searchResult, accumulator));
-            } else {
-                searchResult.set(accumulator);
-            }
-            return searchResult;
-        }
-
-        private void scrollSearch(String scrollId, ActionListener<SearchResponse> listener) {
-            esClient.client()
-                .prepareSearchScroll(scrollId)
-                .setScroll(SCROLL_TIMEOUT)
-                .execute(listener);
-        }
-
-        private ActionListener<SearchResponse> scrollingListener(final SettableFuture<HitAccumulator> searchResult, final HitAccumulator accumulator) {
-            return new ActionListener<SearchResponse>() {
-
-                @Override
-                public void onResponse(SearchResponse response) {
-                    log.info("{}: scroll {} hits ({}ms)", new Object[]{accumulator.scrollId().hashCode(), response.hits().hits().length, response.tookInMillis()});
-                                        
-                    accumulator.foldIn(response);
-
-                    if (accumulator.canScrollMore()) {
-                        scrollSearch(response.scrollId(), this);
-                    } else {
-                        searchResult.set(accumulator);
-                    }
-                }
-
-                @Override
-                public void onFailure(Throwable e) {
-                    searchResult.setException(e);
-                }
-            };
-        }
-        
-    };
 
     public EsScheduleIndex(Node esClient) {
         this.esClient = esClient;
@@ -190,7 +90,6 @@ public class EsScheduleIndex implements ScheduleIndex {
             .prepareSearch(INDEX_NAME)
             .setTypes(TOP_LEVEL_TYPE, CHILD_TYPE)
             .setSearchType(SearchType.DEFAULT)
-//            .setScroll(SCROLL_TIMEOUT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
             .addFields(FIELDS)
             .setSize(SIZE_MULTIPLIER*daysIn(scheduleInterval))
@@ -209,7 +108,8 @@ public class EsScheduleIndex implements ScheduleIndex {
                 .must(termQuery(PUBLISHER, publisher))
                 .must(nestedQuery(BROADCASTS, termQuery(CHANNEL, broadcastOn)))
             ,
-            nestedFilter(BROADCASTS, andFilter(termFilter(CHANNEL, broadcastOn),
+            nestedFilter(BROADCASTS, andFilter(
+                termFilter(CHANNEL, broadcastOn),
                 orFilter(andFilter(
                     //inside or overlapping the interval ends
                     rangeFilter(TRANSMISSION_TIME).lt(to),
