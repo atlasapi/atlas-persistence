@@ -3,6 +3,11 @@ package org.atlasapi.persistence.content.elasticsearch;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -27,19 +32,28 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
 
+import com.metabroadcast.common.time.DateTimeZones;
+
 /**
  */
 public class ESContentIndexerTest {
     
     private Node esClient;
+    private ESContentIndexer contentIndexer;
 
     @Before
     public void before() throws Exception {
+        Logger root = Logger.getRootLogger();
+        root.addAppender(new ConsoleAppender(
+            new PatternLayout(PatternLayout.TTCC_CONVERSION_PATTERN)));
+        root.setLevel(Level.WARN);
         esClient = NodeBuilder.nodeBuilder()
                 .local(true)
                 .clusterName(ESSchema.CLUSTER_NAME)
                 .build()
                 .start();
+        contentIndexer = new ESContentIndexer(esClient);
+        contentIndexer.init();
     }
     
     @After
@@ -51,20 +65,18 @@ public class ESContentIndexerTest {
 
     @Test
     public void testScheduleQueries() throws IOException, InterruptedException {
-        Broadcast broadcast = new Broadcast("MB", new DateTime(), new DateTime().plusHours(1));
+        DateTime broadcastStart = new DateTime(1980, 10, 10, 10, 10, 10, 10, DateTimeZones.UTC);
+        Broadcast broadcast = new Broadcast("MB", broadcastStart, broadcastStart.plusHours(1));
         Version version = new Version();
         Item item = new Item("uri", "curie", Publisher.METABROADCAST);
         version.addBroadcast(broadcast);
         item.addVersion(version);
         
-        ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
-        contentIndexer.init();
-        
-        Thread.sleep(1000);
-        
         contentIndexer.index(item);
         
         Thread.sleep(1000);
+        
+        assertTrue(esClient.client().admin().indices().exists(Requests.indicesExistsRequest("schedule-1980")).actionGet().exists());
         
         ListenableActionFuture<SearchResponse> result1 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
                 QueryBuilders.nestedQuery("broadcasts", QueryBuilders.fieldQuery("channel", "MB"))).execute();
@@ -72,7 +84,7 @@ public class ESContentIndexerTest {
         assertEquals(1, hits1.totalHits());
         
         ListenableActionFuture<SearchResponse> result2 = esClient.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
-                QueryBuilders.nestedQuery("broadcasts", QueryBuilders.rangeQuery("transmissionTime").from(new DateTime().minusDays(1).toDate()))).execute();
+                QueryBuilders.nestedQuery("broadcasts", QueryBuilders.rangeQuery("transmissionTime").from(broadcastStart.minusDays(1).toDate()))).execute();
         SearchHits hits2 = result2.actionGet(60, TimeUnit.SECONDS).getHits();
         assertEquals(1, hits2.totalHits());
         
@@ -104,9 +116,6 @@ public class ESContentIndexerTest {
         Item item3 = new Item("uri3", "curie3", Publisher.METABROADCAST);
         item3.addVersion(version2);
         item3.addTopicRef(topic2);
-        
-        ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
-        contentIndexer.init();
         
         Thread.sleep(1000);
         

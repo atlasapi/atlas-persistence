@@ -45,10 +45,12 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
 
 public class EsScheduleIndex implements ScheduleIndex {
@@ -72,9 +74,11 @@ public class EsScheduleIndex implements ScheduleIndex {
     };
     
     private final Node esClient;
+    private final EsScheduleIndexNames scheduleNames;
 
-    public EsScheduleIndex(Node esClient) {
+    public EsScheduleIndex(Node esClient, Clock clock) {
         this.esClient = esClient;
+        this.scheduleNames = new EsScheduleIndexNames(clock);
     }
     
     @Override
@@ -87,7 +91,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         SettableFuture<SearchResponse> result = SettableFuture.create();
         
         esClient.client()
-            .prepareSearch(INDEX_NAME)
+            .prepareSearch(indicesFor(scheduleInterval))
             .setTypes(TOP_LEVEL_TYPE, CHILD_TYPE)
             .setSearchType(SearchType.DEFAULT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
@@ -98,6 +102,11 @@ public class EsScheduleIndex implements ScheduleIndex {
         return Futures.transform(result, resultTransformer(broadcastOn, scheduleInterval));
     }
     
+    private String[] indicesFor(Interval scheduleInterval) {
+        ImmutableSet<String> indices = scheduleNames.queryingNamesFor(scheduleInterval.getStart(), scheduleInterval.getEnd());
+        return indices.toArray(new String[indices.size()]);
+    }
+
     private int daysIn(Interval scheduleInterval) {
         return Math.max(1, Days.daysIn(scheduleInterval).getDays());
     }

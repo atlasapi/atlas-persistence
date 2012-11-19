@@ -1,10 +1,14 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.INDEX_NAME;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
@@ -16,59 +20,56 @@ import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentIndexer;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
-import org.elasticsearch.client.Requests;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
+import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESLocation;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESTopic;
 import org.atlasapi.persistence.content.elasticsearch.support.Strings;
+import org.atlasapi.persistence.elasticsearch.ESPersistenceException;
 import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.action.ActionFuture;
+import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.NoShardAvailableActionException;
 import org.elasticsearch.action.admin.indices.exists.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.*;
-
-import com.metabroadcast.common.time.DateTimeZones;
-import org.atlasapi.persistence.elasticsearch.ESPersistenceException;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.joda.time.DateTime;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.Multimap;
+import com.metabroadcast.common.time.Clock;
+import com.metabroadcast.common.time.DateTimeZones;
+import com.metabroadcast.common.time.SystemClock;
 
 /**
  */
 public class ESContentIndexer implements ContentIndexer {
 
     private final Node esClient;
+    private final EsScheduleIndexNames scheduleNames;
     private final long requestTimeout;
-
-    public ESContentIndexer(String seeds, long requestTimeout) {
-        this.esClient = NodeBuilder.nodeBuilder()
-            .client(true)
-            .clusterName(CLUSTER_NAME)
-            .settings(ImmutableSettings.settingsBuilder()
-                .put("discovery.zen.ping.unicast.hosts", seeds)
-            )
-            .build()
-            .start();
-        this.requestTimeout = requestTimeout;
-    }
-
-    public ESContentIndexer(Node index, long requestTimeout) {
-        this.esClient = index;
-        this.requestTimeout = requestTimeout;
-    }
-
+    
     protected ESContentIndexer(Node esClient) {
-        this.esClient = esClient;
-        this.requestTimeout = 60000;
+        this(esClient, new SystemClock());
+    }
+
+    protected ESContentIndexer(Node esClient, Clock clock) {
+        this(esClient, clock, 60000);
+    }
+
+    public ESContentIndexer(Node index, Clock clock, long requestTimeout) {
+        this.esClient = index;
+        this.scheduleNames = new EsScheduleIndexNames(clock);
+        this.requestTimeout = requestTimeout;
     }
 
     public void init() throws IOException {
@@ -76,10 +77,18 @@ public class ESContentIndexer implements ContentIndexer {
             putTopContentMapping();
             putChildContentMapping();
         }
+//        this.existingIndexes = getExistingIndexes();
     }
 
+//    private Set<String> getExistingIndexes() {
+//        esClient.client().admin().indices().
+//        return null;
+//    }
+
     private boolean createIndex() throws ElasticSearchException {
-        ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(Requests.indicesExistsRequest(INDEX_NAME));
+        ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(
+            Requests.indicesExistsRequest(INDEX_NAME)
+        );
         if (!timeoutGet(exists).isExists()) {
             timeoutGet(esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME)));
             return true;
@@ -193,7 +202,6 @@ public class ESContentIndexer implements ContentIndexer {
         putMapping.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-
     @Override
     public void index(Item item) {
         ESContent indexed = new ESContent()
@@ -208,21 +216,55 @@ public class ESContentIndexer implements ContentIndexer {
             .locations(makeESLocations(item))
             .topics(makeESTopics(item));
         
-        IndexRequest request;
+        BulkRequest requests = Requests.bulkRequest();
+        IndexRequest mainIndexRequest;
         if (item.getContainer() != null) {
             fillParentData(indexed, item.getContainer());
-            request = Requests.indexRequest(INDEX_NAME)
+            mainIndexRequest = Requests.indexRequest(INDEX_NAME)
                 .type(ESContent.CHILD_TYPE)
                 .id(item.getCanonicalUri())
                 .source(indexed.toMap())
                 .parent(item.getContainer().getUri());
         } else {
-            request = Requests.indexRequest(INDEX_NAME)
+            mainIndexRequest = Requests.indexRequest(INDEX_NAME)
                 .type(ESContent.TOP_LEVEL_TYPE)
                 .id(item.getCanonicalUri())
                 .source(indexed.hasChildren(false).toMap());
         }
-        doIndex(request);
+        requests.add(mainIndexRequest);
+        requests.add(scheduleIndexRequests(item).values());
+        timeoutGet(esClient.client().bulk(requests));
+    }
+
+    private Map<String,ActionRequest> scheduleIndexRequests(Item item) {
+        Multimap<String, ESBroadcast> indicesBroadcasts = HashMultimap.create();
+        for (Version version : item.getVersions()) {
+            for (Broadcast broadcast : version.getBroadcasts()) {
+                ESBroadcast esBroadcast = toEsBroadcast(broadcast);
+                Iterable<String> indices = scheduleNames.indexingNamesFor(
+                    broadcast.getTransmissionTime(),
+                    broadcast.getTransmissionEndTime()
+                );
+                for (String index : indices) {
+                    indicesBroadcasts.put(index, esBroadcast);
+                };
+            }
+        }
+        
+        Builder<String, ActionRequest> requests = ImmutableMap.builder();
+        for (Entry<String, Collection<ESBroadcast>> indexBroadcasts : indicesBroadcasts.asMap().entrySet()) {
+            requests.put(indexBroadcasts.getKey(), 
+                Requests.indexRequest(indexBroadcasts.getKey())
+                    .type(ESContent.TOP_LEVEL_TYPE)
+                    .id(item.getCanonicalUri())
+                    .source(new ESContent()
+                        .uri(item.getCanonicalUri())
+                        .broadcasts(indexBroadcasts.getValue()).toMap()
+                    )
+            );
+        }
+        
+        return requests.build();
     }
 
     @Override

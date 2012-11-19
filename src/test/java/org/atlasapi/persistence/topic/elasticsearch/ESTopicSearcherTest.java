@@ -2,6 +2,8 @@ package org.atlasapi.persistence.topic.elasticsearch;
 
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.SystemClock;
+
 import org.atlasapi.persistence.content.elasticsearch.*;
 import java.io.IOException;
 import java.util.List;
@@ -36,7 +38,7 @@ public class ESTopicSearcherTest {
     @Before
     public void before() throws Exception {
         esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
-        indexer = new ESContentIndexer(esClient, 60000);
+        indexer = new ESContentIndexer(esClient, new SystemClock(), 60000);
         indexer.init();
         Thread.sleep(1000);
     }

@@ -132,7 +132,7 @@ public class ESContentSearcherV3CompatibilityTest {
             esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
         } catch (Exception ex) {
         }
-        indexer = new ESContentIndexer(esClient);
+        indexer = new ESContentIndexer(esClient, new SystemClock());
         searcher = new ESContentSearcher(esClient);
         //
         indexer.init();

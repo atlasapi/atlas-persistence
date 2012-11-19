@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.time.DateTimeZones;
+import com.metabroadcast.common.time.SystemClock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class EsScheduleIndexTest {
@@ -57,7 +58,7 @@ public class EsScheduleIndexTest {
         esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
         contentIndexer = new ESContentIndexer(esClient);
         contentIndexer.init();
-        scheduleIndex = new EsScheduleIndex(esClient);
+        scheduleIndex = new EsScheduleIndex(esClient, new SystemClock());
     }
     
     @After

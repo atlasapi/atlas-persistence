@@ -11,6 +11,8 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 
+import com.metabroadcast.common.time.SystemClock;
+
 public class ElasticSearchContentIndexModule {
 
     private final ESContentIndexer contentIndexer;
@@ -23,7 +25,7 @@ public class ElasticSearchContentIndexModule {
                 clusterName(ESSchema.CLUSTER_NAME).
                 settings(ImmutableSettings.settingsBuilder().put("discovery.zen.ping.unicast.hosts", seeds)).
                 build().start();
-        this.contentIndexer = new ESContentIndexer(index, requestTimeout);
+        this.contentIndexer = new ESContentIndexer(index, new SystemClock(), requestTimeout);
         this.scheduleIndex = new EsScheduleIndex(index);
         this.topicSearcher = new ESTopicSearcher(index, requestTimeout);
         this.contentSearcher = new ESContentSearcher(index);
