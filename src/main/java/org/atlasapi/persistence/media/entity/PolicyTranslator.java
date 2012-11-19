@@ -21,7 +21,7 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         if (entity == null) {
             entity = new Policy();
          }
-        entity.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "actualAvailabilityStart"));
+        entity.setActualAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "actualAvailabilityStart"));
         entity.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, "availabilityStart"));
         entity.setAvailabilityEnd(TranslatorUtils.toDateTime(dbObject, "availabilityEnd"));
         entity.setDrmPlayableFrom(TranslatorUtils.toDateTime(dbObject, "drmPlayableFrom"));
