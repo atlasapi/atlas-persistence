@@ -1,7 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
+import java.util.Set;
 
+import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.CrewMember;
@@ -13,7 +15,9 @@ import org.atlasapi.persistence.media.ModelTranslator;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -28,6 +32,9 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String LINKS_KEY = "links";
     private static final String PHRASES_KEY = "phrases";
     private static String CONTENT_GROUP_KEY = "contentGroups";
+    private static final String CERTIFICATES_KEY = "certificates";
+    private static final String LANGUAGES_KEY = "languages";
+    private static final String YEAR_KEY = "year";
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
@@ -60,7 +67,15 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeRelatedLinks(dbObject, entity);
         decodeTopics(dbObject, entity);
         decodeContentGroups(dbObject, entity);
-
+        decodeLanguages(dbObject, entity);
+        decodeCertificates(dbObject, entity); 
+        entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
+        
+        try {
+            entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
+        } catch (ClassCastException e) {
+            entity.setId(TranslatorUtils.toDouble(dbObject, ID_KEY).longValue());
+        }
         
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, "people");
         if (list != null && ! list.isEmpty()) {
@@ -72,10 +87,28 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
         }
         
-        entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
-
         return entity;
     }
+
+    protected void decodeLanguages(DBObject dbObject, Content entity) {
+        if (dbObject.containsField(LANGUAGES_KEY)) {
+            entity.setLanguages(TranslatorUtils.toSet(dbObject, LANGUAGES_KEY));
+        }
+    }
+    
+    protected void decodeCertificates(DBObject dbObject, Content entity) {
+        if (dbObject.containsField(CERTIFICATES_KEY)) {
+            List<DBObject> dbos = TranslatorUtils.toDBObjectList(dbObject, CERTIFICATES_KEY);
+            entity.setCertificates(Iterables.transform(dbos, certificateFromDbo));
+        }
+    }
+    
+    private final Function<DBObject, Certificate> certificateFromDbo = new Function<DBObject, Certificate>() {
+        @Override
+        public Certificate apply(DBObject input) {
+            return new Certificate(TranslatorUtils.toString(input, "class"),Countries.fromCode(TranslatorUtils.toString(input, "country")));
+        }
+    };
 
     @SuppressWarnings("unchecked")
     private void decodeContentGroups(DBObject dbObject, Content entity) {
@@ -150,6 +183,9 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeRelatedLinks(dbObject, entity);
         encodeTopics(dbObject, entity);
         encodeContentGroups(dbObject, entity);
+        encodeLanguages(dbObject, entity);
+        encodeCertificates(dbObject, entity.getCertificates());
+        TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
         
         if (! entity.people().isEmpty()) {
             BasicDBList list = new BasicDBList();
@@ -162,6 +198,25 @@ public class ContentTranslator implements ModelTranslator<Content> {
         TranslatorUtils.from(dbObject, ID_KEY, entity.getId());
 
         return dbObject;
+    }
+
+    protected void encodeLanguages(DBObject dbObject, Content entity) {
+        if (!entity.getLanguages().isEmpty()) {
+            TranslatorUtils.fromSet(dbObject, entity.getLanguages(), LANGUAGES_KEY);
+        }
+    }
+    
+    private void encodeCertificates(DBObject dbo, Set<Certificate> certificates) {
+        if(!certificates.isEmpty()) {
+            BasicDBList values = new BasicDBList();
+            for(Certificate releaseDate : certificates) {
+                DBObject certDbo = new BasicDBObject();
+                TranslatorUtils.from(certDbo, "class", releaseDate.classification());
+                TranslatorUtils.from(certDbo, "country", releaseDate.country().code());
+                values.add(certDbo);
+            }
+            dbo.put(CERTIFICATES_KEY, values);
+        }  
     }
 
     private void encodeContentGroups(DBObject dbObject, Content entity) {
@@ -212,5 +267,24 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
             dbObject.put(PHRASES_KEY, values);
         }
+    }
+    
+    public DBObject removeFieldsForHash(DBObject dbObject) {
+        if (dbObject == null) {
+            return null;
+        }
+        dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
+        dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
+        dbObject.removeField(IdentifiedTranslator.LAST_UPDATED);
+        @SuppressWarnings("unchecked")
+        Iterable<DBObject> clips = (Iterable<DBObject>) dbObject.get(CLIPS_KEY);
+        if (clips != null) {
+            Set<DBObject> unorderedClips = Sets.newHashSet();
+            for (DBObject clipDbo : clips) {
+                unorderedClips.add(clipTranslator.removeFieldsForHash(clipDbo));
+            }
+            dbObject.put(CLIPS_KEY, unorderedClips);
+        }
+        return dbObject;
     }
 }

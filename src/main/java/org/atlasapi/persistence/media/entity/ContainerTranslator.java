@@ -89,16 +89,13 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         if (entity instanceof Brand) {
             ((Brand) entity).setSeriesRefs(series((Iterable<DBObject>) dbObject.get(FULL_SERIES_KEY)));
         }
-        
         entity.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
         return entity;
     }
 
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
         // don't include the last-fetched time in the hash
-        dbObject.removeField(DescribedTranslator.LAST_FETCHED_KEY);
-        dbObject.removeField(DescribedTranslator.THIS_OR_CHILD_LAST_UPDATED_KEY);
-        dbObject.removeField(IdentifiedTranslator.LAST_UPDATED);
+        dbObject = contentTranslator.removeFieldsForHash(dbObject);
         dbObject.removeField(CHILDREN_KEY);
         dbObject.removeField(FULL_SERIES_KEY);
         return String.valueOf(dbObject.hashCode());
@@ -130,7 +127,6 @@ public class ContainerTranslator implements ModelTranslator<Container> {
               }
           }
         }
-        
         return dbObject;
     }
 

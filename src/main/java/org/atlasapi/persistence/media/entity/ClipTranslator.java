@@ -33,4 +33,8 @@ public class ClipTranslator implements ModelTranslator<Clip> {
         
         return dbObject;
     }
+
+    public DBObject removeFieldsForHash(DBObject clipDbo) {
+        return itemTranslator.removeFieldsForHash(clipDbo);
+    }
 }
