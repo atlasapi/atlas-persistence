@@ -4,6 +4,9 @@ import static com.metabroadcast.common.time.DateTimeZones.UTC;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
 
+import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
@@ -12,9 +15,10 @@ import com.metabroadcast.common.time.TimeMachine;
 
 public class EsScheduleIndexNamesTest {
 
+    private final Node esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
     private final DateTime time = new DateTime(2012, 11, 17, 0, 0, 0, 0, UTC);
     private final Clock clock = new TimeMachine(time);
-    private final EsScheduleIndexNames scheduleNames = new EsScheduleIndexNames(clock);
+    private final EsScheduleIndexNames scheduleNames = new EsScheduleIndexNames(esClient, clock);
     
     @Test
     public void testGetsMonthAndYearIndexForDatesWithinYear() {
@@ -47,6 +51,15 @@ public class EsScheduleIndexNamesTest {
         assertThat(scheduleNames.indexingNamesFor(start, end), 
             hasItems("schedule-2011-11", "schedule-2011", 
                 "schedule-2012-11", "schedule-2012"));
+    }
+    
+    @Test
+    public void testGetIntermediateMonthsWhenSpansMoreThanOne() {
+        DateTime start = new DateTime(2012, 9, 16, 0, 0, 0, 0, UTC);
+        DateTime end = new DateTime(2012, 11, 17, 12, 0, 0, 0, UTC);
+        assertThat(scheduleNames.indexingNamesFor(start, end), 
+            hasItems("schedule-2012-11",   "schedule-2012-09",
+                "schedule-2012-10", "schedule-2012"));
     }
     
     @Test

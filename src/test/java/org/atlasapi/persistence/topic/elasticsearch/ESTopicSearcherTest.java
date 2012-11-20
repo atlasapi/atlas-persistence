@@ -1,12 +1,11 @@
 package org.atlasapi.persistence.topic.elasticsearch;
 
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.query.Selection;
-import com.metabroadcast.common.time.SystemClock;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.atlasapi.persistence.content.elasticsearch.*;
-import java.io.IOException;
 import java.util.List;
+
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -14,6 +13,7 @@ import org.atlasapi.media.entity.Topic;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.TopicRef.Relationship;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.content.elasticsearch.ESContentIndexer;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicSearcher;
@@ -23,10 +23,12 @@ import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.junit.After;
-import org.junit.Test;
 import org.junit.Before;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import org.junit.Test;
+
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.SystemClock;
 
 /**
  */
@@ -39,7 +41,7 @@ public class ESTopicSearcherTest {
     public void before() throws Exception {
         esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
         indexer = new ESContentIndexer(esClient, new SystemClock(), 60000);
-        indexer.init();
+        indexer.startAndWait();
         Thread.sleep(1000);
     }
 
@@ -51,7 +53,7 @@ public class ESTopicSearcherTest {
     }
 
     @Test
-    public void testPopularTopics() throws IOException, InterruptedException {
+    public void testPopularTopics() throws Exception {
         Broadcast broadcast1 = new Broadcast("MB", new DateTime(), new DateTime().plusHours(1));
         Version version1 = new Version();
         Broadcast broadcast2 = new Broadcast("MB", new DateTime().plusHours(2), new DateTime().plusHours(3));

@@ -1,5 +1,11 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.elasticsearch.client.Requests.indicesStatusRequest;
+
+import org.elasticsearch.action.admin.indices.status.IndicesStatusRequest;
+import org.elasticsearch.action.admin.indices.status.IndicesStatusResponse;
+import org.elasticsearch.node.Node;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableSet;
@@ -13,10 +19,25 @@ class EsScheduleIndexNames {
     private static final String yearFormat = prefix+"-%04d";
     private static final String monthFormat = prefix+"-%04d-%02d";
     
+    private final Node esClient;
     private final Clock clock;
 
-    public EsScheduleIndexNames(Clock clock) {
-        this.clock = clock;
+    public EsScheduleIndexNames(Node esClient, Clock clock) {
+        this.esClient = checkNotNull(esClient);
+        this.clock = checkNotNull(clock);
+    }
+    
+    public ImmutableSet<String> existingIndexNames() {
+        IndicesStatusRequest req = indicesStatusRequest((String[]) null);
+        IndicesStatusResponse statuses = esClient.client().admin()
+                .indices().status(req).actionGet();
+        Builder<String> names = ImmutableSet.builder();
+        for (String index : statuses.getIndices().keySet()) {
+            if (index.startsWith(prefix)) {
+                names.add(index);
+            }
+        }
+        return names.build();
     }
     
     public ImmutableSet<String> indexingNamesFor(DateTime start, DateTime end) {
@@ -28,8 +49,9 @@ class EsScheduleIndexNames {
         
         DateTime aYearAgo = clock.now().minusYears(1);
         if (start.isAfter(aYearAgo) || end.isAfter(aYearAgo)) {
-            names.add(monthIndex(start));
-            names.add(monthIndex(end));
+            for (DateTime cur = start; cur.isBefore(end); cur = cur.plusMonths(1)) {
+                names.add(monthIndex(cur));
+            }
         }
         
         return names.build();

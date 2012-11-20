@@ -1,11 +1,10 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.metabroadcast.common.query.Selection;
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
+
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.ExecutionException;
+
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
@@ -20,9 +19,11 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.Test;
 import org.junit.Before;
-import static org.junit.Assert.*;
+import org.junit.Test;
+
+import com.google.common.util.concurrent.ListenableFuture;
+import com.metabroadcast.common.query.Selection;
 
 public class ESContentSearcherTest {
 
@@ -41,7 +42,7 @@ public class ESContentSearcherTest {
     }
 
     @Test
-    public void testSearch() throws IOException, InterruptedException, ExecutionException {
+    public void testSearch() throws Exception {
         Broadcast broadcast1 = new Broadcast("MB", new DateTime(), new DateTime().plusHours(1));
         Version version1 = new Version();
         Broadcast broadcast2 = new Broadcast("MB", new DateTime().plusHours(3), new DateTime().plusHours(4));
@@ -74,7 +75,7 @@ public class ESContentSearcherTest {
         item3.setParentRef(ParentRef.parentRefFrom(brand2));
 
         ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
-        contentIndexer.init();
+        contentIndexer.startAndWait();
 
         ESContentSearcher contentSearcher = new ESContentSearcher(esClient);
 

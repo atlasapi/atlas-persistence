@@ -8,7 +8,6 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.BR
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.CHILD_TYPE;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
 import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.TOP_LEVEL_TYPE;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.INDEX_NAME;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.orFilter;
@@ -22,6 +21,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -39,17 +40,19 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
 import org.joda.time.DateTime;
 import org.joda.time.Days;
+import org.joda.time.Duration;
 import org.joda.time.Interval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.metabroadcast.common.caching.BackgroundTask;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
 
@@ -75,10 +78,24 @@ public class EsScheduleIndex implements ScheduleIndex {
     
     private final Node esClient;
     private final EsScheduleIndexNames scheduleNames;
+    private final AtomicReference<Set<String>> existingIndices;
+    private final BackgroundTask updateTask;
 
     public EsScheduleIndex(Node esClient, Clock clock) {
         this.esClient = esClient;
-        this.scheduleNames = new EsScheduleIndexNames(clock);
+        this.scheduleNames = new EsScheduleIndexNames(esClient, clock);
+        this.existingIndices = new AtomicReference<Set<String>>();
+        this.updateTask = new BackgroundTask(Duration.standardHours(1), new Runnable() {
+            @Override
+            public void run() {
+                updateExistingIndices();
+            }
+        });
+        updateTask.start(true);
+    }
+    
+    public void updateExistingIndices() {
+        this.existingIndices.set(scheduleNames.existingIndexNames());
     }
     
     @Override
@@ -96,14 +113,19 @@ public class EsScheduleIndex implements ScheduleIndex {
             .setSearchType(SearchType.DEFAULT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
             .addFields(FIELDS)
-            .setSize(SIZE_MULTIPLIER*daysIn(scheduleInterval))
+            .setSize(SIZE_MULTIPLIER * daysIn(scheduleInterval))
             .execute(resultSettingListener(result));
         
         return Futures.transform(result, resultTransformer(broadcastOn, scheduleInterval));
     }
     
-    private String[] indicesFor(Interval scheduleInterval) {
-        ImmutableSet<String> indices = scheduleNames.queryingNamesFor(scheduleInterval.getStart(), scheduleInterval.getEnd());
+    /* Take the intersection here to avoid missing index problems.
+     */
+    private String[] indicesFor(Interval interval) {
+        Set<String> indices = Sets.intersection(
+            existingIndices.get(),
+            scheduleNames.queryingNamesFor(interval.getStart(), interval.getEnd()) 
+        );
         return indices.toArray(new String[indices.size()]);
     }
 
@@ -133,17 +155,7 @@ public class EsScheduleIndex implements ScheduleIndex {
     }
 
     private <T> ActionListener<T> resultSettingListener(final SettableFuture<T> result) {
-        return new ActionListener<T>() {
-            @Override
-            public void onResponse(T input) {
-                result.set(input);
-            }
-            
-            @Override
-            public void onFailure(Throwable e) {
-                result.setException(e);
-            }
-        };
+        return new FutureSettingActionListener<T>(result);
     }
 
     

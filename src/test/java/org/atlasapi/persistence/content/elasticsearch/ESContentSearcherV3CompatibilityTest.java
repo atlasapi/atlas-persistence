@@ -19,37 +19,36 @@ import static org.atlasapi.media.entity.testing.ComplexItemTestDataBuilder.compl
 import static org.atlasapi.media.entity.testing.VersionTestDataBuilder.version;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
 
 import java.util.Arrays;
 import java.util.List;
 
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.media.entity.testing.ComplexBroadcastTestDataBuilder;
+import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.Duration;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.SystemClock;
-import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.ParentRef;
-import org.atlasapi.media.entity.Specialization;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
-import org.elasticsearch.client.Requests;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class ESContentSearcherV3CompatibilityTest {
 
@@ -135,7 +134,7 @@ public class ESContentSearcherV3CompatibilityTest {
         indexer = new ESContentIndexer(esClient, new SystemClock());
         searcher = new ESContentSearcher(esClient);
         //
-        indexer.init();
+        indexer.startAndWait();
         //
         for (Container c : brands) {
             indexer.index(c);

@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.media.entity.Broadcast;
@@ -20,6 +21,7 @@ import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentIndexer;
+import org.atlasapi.persistence.content.IndexException;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESLocation;
@@ -41,22 +43,30 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.node.Node;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
 
 /**
  */
-public class ESContentIndexer implements ContentIndexer {
+public class ESContentIndexer extends AbstractIdleService implements ContentIndexer {
 
+    private final Logger log = LoggerFactory.getLogger(ESContentIndexer.class);
+    
     private final Node esClient;
     private final EsScheduleIndexNames scheduleNames;
     private final long requestTimeout;
+    
+    private Set<String> existingIndexes;
     
     protected ESContentIndexer(Node esClient) {
         this(esClient, new SystemClock());
@@ -66,43 +76,48 @@ public class ESContentIndexer implements ContentIndexer {
         this(esClient, clock, 60000);
     }
 
-    public ESContentIndexer(Node index, Clock clock, long requestTimeout) {
-        this.esClient = index;
-        this.scheduleNames = new EsScheduleIndexNames(clock);
+    public ESContentIndexer(Node esClient, Clock clock, long requestTimeout) {
+        this.esClient = esClient;
+        this.scheduleNames = new EsScheduleIndexNames(esClient, clock);
         this.requestTimeout = requestTimeout;
     }
 
-    public void init() throws IOException {
-        if (createIndex()) {
-            putTopContentMapping();
+    @Override
+    protected void startUp() throws IOException {
+        if (createIndex(INDEX_NAME)) {
+            putTopContentMapping(INDEX_NAME);
             putChildContentMapping();
         }
-//        this.existingIndexes = getExistingIndexes();
+        this.existingIndexes = Sets.newHashSet(scheduleNames.existingIndexNames());
+        log.info("Found existing indices {}", existingIndexes);
+    }
+    
+    @Override
+    protected void shutDown() throws Exception {
+        
     }
 
-//    private Set<String> getExistingIndexes() {
-//        esClient.client().admin().indices().
-//        return null;
-//    }
-
-    private boolean createIndex() throws ElasticSearchException {
+    private boolean createIndex(String name) {
         ActionFuture<IndicesExistsResponse> exists = esClient.client().admin().indices().exists(
-            Requests.indicesExistsRequest(INDEX_NAME)
+            Requests.indicesExistsRequest(name)
         );
         if (!timeoutGet(exists).isExists()) {
-            timeoutGet(esClient.client().admin().indices().create(Requests.createIndexRequest(INDEX_NAME)));
+            log.info("Creating index {}", name);
+            timeoutGet(esClient.client().admin().indices().create(Requests.createIndexRequest(name)));
             return true;
         } else {
+            log.info("Index {} exists", name);
             return false;
         }
     }
 
-    private void putTopContentMapping() throws IOException, ElasticSearchException {
+    private void putTopContentMapping(String index) throws IOException, ElasticSearchException {
+        log.info("Putting mapping for index {}", index);
         ActionFuture<PutMappingResponse> putMapping = esClient
             .client()
             .admin()
             .indices()
-            .putMapping(Requests.putMappingRequest(INDEX_NAME)
+            .putMapping(Requests.putMappingRequest(index)
                 .type(ESContent.TOP_LEVEL_TYPE)
                 .source(XContentFactory.jsonBuilder()
                     .startObject()
@@ -203,8 +218,38 @@ public class ESContentIndexer implements ContentIndexer {
     }
 
     @Override
-    public void index(Item item) {
-        ESContent indexed = new ESContent()
+    public void index(Item item) throws IndexException {
+        try {
+            ESContent esContent = toEsContent(item);
+            
+            BulkRequest requests = Requests.bulkRequest();
+            IndexRequest mainIndexRequest;
+            if (item.getContainer() != null) {
+                fillParentData(esContent, item.getContainer());
+                mainIndexRequest = Requests.indexRequest(INDEX_NAME)
+                    .type(ESContent.CHILD_TYPE)
+                    .id(item.getCanonicalUri())
+                    .source(esContent.toMap())
+                    .parent(item.getContainer().getUri());
+            } else {
+                mainIndexRequest = Requests.indexRequest(INDEX_NAME)
+                    .type(ESContent.TOP_LEVEL_TYPE)
+                    .id(item.getCanonicalUri())
+                    .source(esContent.hasChildren(false).toMap());
+            }
+            
+            requests.add(mainIndexRequest);
+            Map<String, ActionRequest> scheduleRequests = scheduleIndexRequests(item);
+            ensureIndices(scheduleRequests);
+            requests.add(scheduleRequests.values());
+            timeoutGet(esClient.client().bulk(requests));
+        } catch (Exception e) {
+            throw new IndexException("Error indexing " + item, e);
+        }
+    }
+
+    private ESContent toEsContent(Item item) {
+        return new ESContent()
             .uri(item.getCanonicalUri())
             .title(item.getTitle())
             .flattenedTitle(flattenedOrNull(item.getTitle()))
@@ -215,25 +260,16 @@ public class ESContentIndexer implements ContentIndexer {
             .broadcasts(makeESBroadcasts(item))
             .locations(makeESLocations(item))
             .topics(makeESTopics(item));
-        
-        BulkRequest requests = Requests.bulkRequest();
-        IndexRequest mainIndexRequest;
-        if (item.getContainer() != null) {
-            fillParentData(indexed, item.getContainer());
-            mainIndexRequest = Requests.indexRequest(INDEX_NAME)
-                .type(ESContent.CHILD_TYPE)
-                .id(item.getCanonicalUri())
-                .source(indexed.toMap())
-                .parent(item.getContainer().getUri());
-        } else {
-            mainIndexRequest = Requests.indexRequest(INDEX_NAME)
-                .type(ESContent.TOP_LEVEL_TYPE)
-                .id(item.getCanonicalUri())
-                .source(indexed.hasChildren(false).toMap());
+    }
+
+    private void ensureIndices(Map<String, ActionRequest> scheduleRequests) throws IOException {
+        Set<String> missingIndices = Sets.difference(scheduleRequests.keySet(), existingIndexes);
+        for (String missingIndex : missingIndices) {
+            if (createIndex(missingIndex)) {
+                putTopContentMapping(missingIndex);
+                existingIndexes.add(missingIndex);
+            }
         }
-        requests.add(mainIndexRequest);
-        requests.add(scheduleIndexRequests(item).values());
-        timeoutGet(esClient.client().bulk(requests));
     }
 
     private Map<String,ActionRequest> scheduleIndexRequests(Item item) {
@@ -253,13 +289,17 @@ public class ESContentIndexer implements ContentIndexer {
         
         Builder<String, ActionRequest> requests = ImmutableMap.builder();
         for (Entry<String, Collection<ESBroadcast>> indexBroadcasts : indicesBroadcasts.asMap().entrySet()) {
-            requests.put(indexBroadcasts.getKey(), 
+            requests.put(
+                indexBroadcasts.getKey(), 
                 Requests.indexRequest(indexBroadcasts.getKey())
                     .type(ESContent.TOP_LEVEL_TYPE)
                     .id(item.getCanonicalUri())
                     .source(new ESContent()
                         .uri(item.getCanonicalUri())
-                        .broadcasts(indexBroadcasts.getValue()).toMap()
+                        .publisher(item.getPublisher() != null ? item.getPublisher().key() : null)
+                        .broadcasts(indexBroadcasts.getValue())
+                        .hasChildren(false)
+                        .toMap()
                     )
             );
         }
@@ -418,4 +458,5 @@ public class ESContentIndexer implements ContentIndexer {
     private <T> T timeoutGet(ActionFuture<T> future) {
         return future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
     }
+
 }

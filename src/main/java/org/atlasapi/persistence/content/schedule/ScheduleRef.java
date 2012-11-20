@@ -9,6 +9,7 @@ import org.joda.time.DateTime;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 
 public final class ScheduleRef {
@@ -20,11 +21,11 @@ public final class ScheduleRef {
     public static final class Builder {
 
         private String channelId;
-        private ImmutableList.Builder<ScheduleRefEntry> entries;
+        private ImmutableSet.Builder<ScheduleRefEntry> entries;
 
         private Builder(String channelId) {
             this.channelId = channelId;
-            this.entries = ImmutableList.builder();
+            this.entries = ImmutableSet.builder();
         }
 
         public Builder addEntry(ScheduleRefEntry entry) {

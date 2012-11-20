@@ -1,6 +1,8 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -28,9 +30,8 @@ import org.elasticsearch.search.facet.terms.TermsFacet;
 import org.elasticsearch.search.facet.terms.TermsFacet.Entry;
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.Test;
-import static org.junit.Assert.*;
 import org.junit.Before;
+import org.junit.Test;
 
 import com.metabroadcast.common.time.DateTimeZones;
 
@@ -53,7 +54,7 @@ public class ESContentIndexerTest {
                 .build()
                 .start();
         contentIndexer = new ESContentIndexer(esClient);
-        contentIndexer.init();
+        contentIndexer.startAndWait();
     }
     
     @After
@@ -64,7 +65,7 @@ public class ESContentIndexerTest {
     }
 
     @Test
-    public void testScheduleQueries() throws IOException, InterruptedException {
+    public void testScheduleQueries() throws Exception {
         DateTime broadcastStart = new DateTime(1980, 10, 10, 10, 10, 10, 10, DateTimeZones.UTC);
         Broadcast broadcast = new Broadcast("MB", broadcastStart, broadcastStart.plusHours(1));
         Version version = new Version();
@@ -95,7 +96,7 @@ public class ESContentIndexerTest {
     }
     
     @Test
-    public void testTopicFacets() throws IOException, InterruptedException {
+    public void testTopicFacets() throws Exception {
         Broadcast broadcast1 = new Broadcast("MB", new DateTime(), new DateTime().plusHours(1));
         Version version1 = new Version();
         Broadcast broadcast2 = new Broadcast("MB", new DateTime().plusHours(2), new DateTime().plusHours(3));
