@@ -8,8 +8,8 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import org.atlasapi.persistence.content.ContentSearcher;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.atlasapi.persistence.content.elasticsearch.support.AvailabilityQueryBuilder;
 import org.atlasapi.persistence.content.elasticsearch.support.BroadcastQueryBuilder;
 import org.atlasapi.persistence.content.elasticsearch.support.FiltersBuilder;
@@ -31,15 +31,15 @@ import org.elasticsearch.search.sort.SortOrder;
 
 /**
  */
-public class ESContentSearcher implements ContentSearcher {
+public class EsContentSearcher implements ContentSearcher {
 
     private final Client index;
 
-    public ESContentSearcher(Node index) {
+    public EsContentSearcher(Node index) {
         this.index = index.client();
     }
 
-    protected ESContentSearcher(Client index) {
+    protected EsContentSearcher(Client index) {
         this.index = index;
     }
 
@@ -84,11 +84,11 @@ public class ESContentSearcher implements ContentSearcher {
         }
 
         QueryBuilder finalQuery = QueryBuilders.boolQuery().
-                should(QueryBuilders.filteredQuery(contentQuery, FilterBuilders.andFilter(FilterBuilders.typeFilter(ESContent.TOP_LEVEL_TYPE), FilterBuilders.termFilter(ESContent.HAS_CHILDREN, Boolean.FALSE)))).
-                should(QueryBuilders.topChildrenQuery(ESContent.CHILD_TYPE, contentQuery).score("sum"));
+                should(QueryBuilders.filteredQuery(contentQuery, FilterBuilders.andFilter(FilterBuilders.typeFilter(EsContent.TOP_LEVEL_TYPE), FilterBuilders.termFilter(EsContent.HAS_CHILDREN, Boolean.FALSE)))).
+                should(QueryBuilders.topChildrenQuery(EsContent.CHILD_TYPE, contentQuery).score("sum"));
 
         final SettableFuture<SearchResults> result = SettableFuture.create();
-        index.prepareSearch(ESSchema.INDEX_NAME).
+        index.prepareSearch(EsSchema.INDEX_NAME).
                 setQuery(finalQuery).
                 addSort(SortBuilders.scoreSort().order(SortOrder.DESC)).
                 setFrom(search.getSelection().getOffset()).
@@ -121,7 +121,7 @@ public class ESContentSearcher implements ContentSearcher {
 
         @Override
         public String apply(SearchHit input) {
-            return input.sourceAsMap().get(ESContent.URI).toString();
+            return input.sourceAsMap().get(EsContent.URI).toString();
         }
     }
 }

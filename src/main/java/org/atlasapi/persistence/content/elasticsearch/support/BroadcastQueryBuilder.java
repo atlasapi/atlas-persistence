@@ -1,8 +1,8 @@
 package org.atlasapi.persistence.content.elasticsearch.support;
 
 import java.util.concurrent.TimeUnit;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -12,8 +12,8 @@ public class BroadcastQueryBuilder {
 
     public static QueryBuilder build(QueryBuilder childQuery, float timeBoost, float firstBroadcastBoost) {
         return QueryBuilders.customScoreQuery(QueryBuilders.filteredQuery(childQuery,
-                FilterBuilders.nestedFilter(ESContent.BROADCASTS,
-                FilterBuilders.rangeFilter(ESBroadcast.TRANSMISSION_TIME).from(new DateTime().minusDays(30)).to(new DateTime().plusDays(30))))).
+                FilterBuilders.nestedFilter(EsContent.BROADCASTS,
+                FilterBuilders.rangeFilter(EsBroadcast.TRANSMISSION_TIME).from(new DateTime().minusDays(30)).to(new DateTime().plusDays(30))))).
                 param("firstBroadcastBoost", firstBroadcastBoost).
                 param("timeBoost", timeBoost).
                 param("oneWeek", TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS)).

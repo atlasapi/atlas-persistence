@@ -19,7 +19,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.elasticsearch.action.admin.indices.status.IndicesStatusRequest;
@@ -52,10 +52,10 @@ public class EsScheduleIndexTest {
         root.setLevel(Level.WARN);
     }
     
-    private final Node esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
+    private final Node esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
     private final Clock clock = new TimeMachine(new DateTime(2012,11,19,10,10,10,10,DateTimeZones.UTC));
     private final EsScheduleIndex scheduleIndex = new EsScheduleIndex(esClient, clock);
-    private final ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
+    private final EsContentIndexer contentIndexer = new EsContentIndexer(esClient);
 
     private final Channel channel1 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
     private final Channel channel2 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbctwo");

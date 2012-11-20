@@ -11,7 +11,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
 import org.elasticsearch.client.Requests;
@@ -25,18 +25,18 @@ import org.junit.Test;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.query.Selection;
 
-public class ESContentSearcherTest {
+public class EsContentSearcherTest {
 
     private Node esClient;
 
     @Before
     public void before() throws Exception {
-        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
+        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
     }
 
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
+        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME));
         esClient.close();
         Thread.sleep(1000);
     }
@@ -74,10 +74,10 @@ public class ESContentSearcherTest {
         item2.setParentRef(ParentRef.parentRefFrom(brand1));
         item3.setParentRef(ParentRef.parentRefFrom(brand2));
 
-        ESContentIndexer contentIndexer = new ESContentIndexer(esClient);
+        EsContentIndexer contentIndexer = new EsContentIndexer(esClient);
         contentIndexer.startAndWait();
 
-        ESContentSearcher contentSearcher = new ESContentSearcher(esClient);
+        EsContentSearcher contentSearcher = new EsContentSearcher(esClient);
 
         Thread.sleep(1000);
 

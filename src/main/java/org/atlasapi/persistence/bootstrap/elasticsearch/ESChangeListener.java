@@ -5,7 +5,7 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.bootstrap.AbstractMultiThreadedChangeListener;
 import org.atlasapi.persistence.content.IndexException;
-import org.atlasapi.persistence.content.elasticsearch.ESContentIndexer;
+import org.atlasapi.persistence.content.elasticsearch.EsContentIndexer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,7 @@ public class ESChangeListener extends AbstractMultiThreadedChangeListener {
 
     private final Logger log = LoggerFactory.getLogger(ESChangeListener.class);
     
-    private ESContentIndexer esContentIndexer;
+    private EsContentIndexer esContentIndexer;
 
     public ESChangeListener(int concurrencyLevel) {
         super(concurrencyLevel);
@@ -25,7 +25,7 @@ public class ESChangeListener extends AbstractMultiThreadedChangeListener {
         super(executor);
     }
 
-    public void setESContentIndexer(ESContentIndexer esContentIndexer) {
+    public void setESContentIndexer(EsContentIndexer esContentIndexer) {
         this.esContentIndexer = esContentIndexer;
     }
 

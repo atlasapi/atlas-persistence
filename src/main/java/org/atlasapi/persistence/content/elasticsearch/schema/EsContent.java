@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  */
-public class ESContent extends ESObject {
+public class EsContent extends EsObject {
 
     public final static String TOP_LEVEL_TYPE = "container";
     public final static String CHILD_TYPE = "child_item";
@@ -24,57 +24,57 @@ public class ESContent extends ESObject {
     public final static String TOPICS = "topics";
     public final static String HAS_CHILDREN = "hasChildren";
 
-    public ESContent uri(String uri) {
+    public EsContent uri(String uri) {
         properties.put(URI, uri);
         return this;
     }
 
-    public ESContent title(String title) {
+    public EsContent title(String title) {
         properties.put(TITLE, title);
         return this;
     }
     
-    public ESContent flattenedTitle(String flattenedTitle) {
+    public EsContent flattenedTitle(String flattenedTitle) {
         properties.put(FLATTENED_TITLE, flattenedTitle);
         return this;
     }
 
-    public ESContent parentTitle(String parentTitle) {
+    public EsContent parentTitle(String parentTitle) {
         properties.put(PARENT_TITLE, parentTitle);
         return this;
     }
     
-    public ESContent parentFlattenedTitle(String parentFlattenedTitle) {
+    public EsContent parentFlattenedTitle(String parentFlattenedTitle) {
         properties.put(PARENT_FLATTENED_TITLE, parentFlattenedTitle);
         return this;
     }
     
-    public ESContent publisher(String publisher) {
+    public EsContent publisher(String publisher) {
         properties.put(PUBLISHER, publisher);
         return this;
     }
 
-    public ESContent specialization(String specialization) {
+    public EsContent specialization(String specialization) {
         properties.put(SPECIALIZATION, specialization);
         return this;
     }
 
-    public ESContent broadcasts(Collection<ESBroadcast> broadcasts) {
+    public EsContent broadcasts(Collection<EsBroadcast> broadcasts) {
         properties.put(BROADCASTS, Iterables.transform(broadcasts, TO_MAP));
         return this;
     }
 
-    public ESContent locations(Collection<ESLocation> locations) {
+    public EsContent locations(Collection<EsLocation> locations) {
         properties.put(LOCATIONS, Iterables.transform(locations, TO_MAP));
         return this;
     }
 
-    public ESContent topics(Collection<ESTopic> topics) {
+    public EsContent topics(Collection<EsTopic> topics) {
         properties.put(TOPICS, Iterables.transform(topics, TO_MAP));
         return this;
     }
     
-    public ESContent hasChildren(Boolean hasChildren) {
+    public EsContent hasChildren(Boolean hasChildren) {
         properties.put(HAS_CHILDREN, hasChildren);
         return this;
     }

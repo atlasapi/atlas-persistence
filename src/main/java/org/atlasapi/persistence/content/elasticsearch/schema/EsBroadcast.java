@@ -4,7 +4,7 @@ import java.util.Date;
 
 /**
  */
-public class ESBroadcast extends ESObject {
+public class EsBroadcast extends EsObject {
     
     public final static String ID = "id";
     public final static String CHANNEL = "channel";
@@ -13,32 +13,32 @@ public class ESBroadcast extends ESObject {
     public final static String TRANSMISSION_TIME_IN_MILLIS = "transmissionTimeInMillis";
     public final static String REPEAT = "repeat";
     
-    public ESBroadcast id(String id) {
+    public EsBroadcast id(String id) {
         properties.put(ID, id);
         return this;
     }
     
-    public ESBroadcast channel(String channel) {
+    public EsBroadcast channel(String channel) {
         properties.put(CHANNEL, channel);
         return this;
     }
     
-    public ESBroadcast transmissionTime(Date transmissionTime) {
+    public EsBroadcast transmissionTime(Date transmissionTime) {
         properties.put(TRANSMISSION_TIME, transmissionTime);
         return this;
     }
     
-    public ESBroadcast transmissionEndTime(Date transmissionEndTime) {
+    public EsBroadcast transmissionEndTime(Date transmissionEndTime) {
         properties.put(TRANSMISSION_END_TIME, transmissionEndTime);
         return this;
     }
     
-    public ESBroadcast transmissionTimeInMillis(Long transmissionTimeInMillis) {
+    public EsBroadcast transmissionTimeInMillis(Long transmissionTimeInMillis) {
         properties.put(TRANSMISSION_TIME_IN_MILLIS, transmissionTimeInMillis);
         return this;
     }
     
-    public ESBroadcast repeat(Boolean repeat) {
+    public EsBroadcast repeat(Boolean repeat) {
         properties.put(REPEAT, repeat);
         return this;
     }

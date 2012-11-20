@@ -7,10 +7,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.entity.Topic;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESTopic;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsTopic;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicSearcher;
 import org.elasticsearch.action.ListenableActionFuture;
@@ -24,12 +24,12 @@ import org.joda.time.Interval;
 
 /**
  */
-public class ESTopicSearcher implements TopicSearcher {
+public class EsTopicSearcher implements TopicSearcher {
 
     private final Node index;
     private final long timeout;
 
-    public ESTopicSearcher(Node index, long timeout) {
+    public EsTopicSearcher(Node index, long timeout) {
         this.index = index;
         this.timeout = timeout;
     }
@@ -37,7 +37,7 @@ public class ESTopicSearcher implements TopicSearcher {
     @Override
     public List<Topic> popularTopics(Interval interval, TopicQueryResolver resolver, Selection selection) {
         Facets facets = buildQuery(interval, selection).actionGet(timeout, TimeUnit.MILLISECONDS).getFacets();
-        TermsFacet terms = facets.facet(TermsFacet.class, ESContent.TOPICS);
+        TermsFacet terms = facets.facet(TermsFacet.class, EsContent.TOPICS);
         List<Topic> result = new LinkedList<Topic>();
         for (TermsFacet.Entry term : Iterables.limit(Iterables.skip(terms.entries(), selection.getOffset()), selection.getLimit())) {
             Maybe<Topic> topic = resolver.topicForId(Long.parseLong(term.getTerm()));
@@ -49,9 +49,9 @@ public class ESTopicSearcher implements TopicSearcher {
     }
 
     private ListenableActionFuture<SearchResponse> buildQuery(Interval interval, Selection selection) {
-        ListenableActionFuture<SearchResponse> result = index.client().prepareSearch(ESSchema.INDEX_NAME).setQuery(
-                QueryBuilders.nestedQuery(ESContent.BROADCASTS, QueryBuilders.rangeQuery(ESBroadcast.TRANSMISSION_TIME).from(interval.getStart()).to(interval.getEnd()))).
-                addFacet(FacetBuilders.termsFacet(ESContent.TOPICS).field(ESContent.TOPICS + "." + ESTopic.ID).size(selection.getOffset() + selection.getLimit())).
+        ListenableActionFuture<SearchResponse> result = index.client().prepareSearch(EsSchema.INDEX_NAME).setQuery(
+                QueryBuilders.nestedQuery(EsContent.BROADCASTS, QueryBuilders.rangeQuery(EsBroadcast.TRANSMISSION_TIME).from(interval.getStart()).to(interval.getEnd()))).
+                addFacet(FacetBuilders.termsFacet(EsContent.TOPICS).field(EsContent.TOPICS + "." + EsTopic.ID).size(selection.getOffset() + selection.getLimit())).
                 execute();
         return result;
     }

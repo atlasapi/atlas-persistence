@@ -1,10 +1,10 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.persistence.content.elasticsearch.ESContentIndexer;
-import org.atlasapi.persistence.content.elasticsearch.ESContentSearcher;
+import org.atlasapi.persistence.content.elasticsearch.EsContentIndexer;
+import org.atlasapi.persistence.content.elasticsearch.EsContentSearcher;
 import org.atlasapi.persistence.content.elasticsearch.EsScheduleIndex;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
-import org.atlasapi.persistence.topic.elasticsearch.ESTopicSearcher;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
+import org.atlasapi.persistence.topic.elasticsearch.EsTopicSearcher;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -18,20 +18,20 @@ import com.metabroadcast.common.time.SystemClock;
 
 public class ElasticSearchContentIndexModule {
 
-    private final ESContentIndexer contentIndexer;
+    private final EsContentIndexer contentIndexer;
     private final EsScheduleIndex scheduleIndex;
-    private final ESTopicSearcher topicSearcher;
-    private final ESContentSearcher contentSearcher;
+    private final EsTopicSearcher topicSearcher;
+    private final EsContentSearcher contentSearcher;
 
     public ElasticSearchContentIndexModule(String seeds, long requestTimeout) {
         Node index = NodeBuilder.nodeBuilder().client(true).
-                clusterName(ESSchema.CLUSTER_NAME).
+                clusterName(EsSchema.CLUSTER_NAME).
                 settings(ImmutableSettings.settingsBuilder().put("discovery.zen.ping.unicast.hosts", seeds)).
                 build().start();
-        this.contentIndexer = new ESContentIndexer(index, new SystemClock(), requestTimeout);
+        this.contentIndexer = new EsContentIndexer(index, new SystemClock(), requestTimeout);
         this.scheduleIndex = new EsScheduleIndex(index, new SystemClock());
-        this.topicSearcher = new ESTopicSearcher(index, requestTimeout);
-        this.contentSearcher = new ESContentSearcher(index);
+        this.topicSearcher = new EsTopicSearcher(index, requestTimeout);
+        this.contentSearcher = new EsContentSearcher(index);
     }
 
     public void init() {
@@ -51,7 +51,7 @@ public class ElasticSearchContentIndexModule {
         });
     }
 
-    public ESContentIndexer contentIndexer() {
+    public EsContentIndexer contentIndexer() {
         return contentIndexer;
     }
 
@@ -59,11 +59,11 @@ public class ElasticSearchContentIndexModule {
         return scheduleIndex;
     }
 
-    public ESTopicSearcher topicSearcher() {
+    public EsTopicSearcher topicSearcher() {
         return topicSearcher;
     }
     
-    public ESContentSearcher contentSearcher() {
+    public EsContentSearcher contentSearcher() {
         return contentSearcher;
     }
 }

@@ -2,7 +2,7 @@ package org.atlasapi.persistence.content.elasticsearch.schema;
 
 /**
  */
-public interface ESSchema {
+public interface EsSchema {
     
     public final static String CLUSTER_NAME = "Atlas";
     //

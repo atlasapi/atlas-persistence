@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  */
-public class ESObject {
+public class EsObject {
 
     public final static FromEsObjectToMap TO_MAP = new FromEsObjectToMap();
     //
@@ -26,10 +26,10 @@ public class ESObject {
         return properties;
     }
 
-    private static class FromEsObjectToMap implements Function<ESObject, Map> {
+    private static class FromEsObjectToMap implements Function<EsObject, Map> {
 
         @Override
-        public Map apply(ESObject input) {
+        public Map apply(EsObject input) {
             return input.toMap();
         }
     }

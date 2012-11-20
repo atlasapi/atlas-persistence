@@ -4,7 +4,7 @@ import static com.metabroadcast.common.time.DateTimeZones.UTC;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
 
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
@@ -15,7 +15,7 @@ import com.metabroadcast.common.time.TimeMachine;
 
 public class EsScheduleIndexNamesTest {
 
-    private final Node esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
+    private final Node esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
     private final DateTime time = new DateTime(2012, 11, 17, 0, 0, 0, 0, UTC);
     private final Clock clock = new TimeMachine(time);
     private final EsScheduleIndexNames scheduleNames = new EsScheduleIndexNames(esClient, clock);

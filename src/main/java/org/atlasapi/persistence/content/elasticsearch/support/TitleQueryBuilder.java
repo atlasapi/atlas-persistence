@@ -6,7 +6,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.FuzzyQueryBuilder;
 import org.elasticsearch.index.query.PrefixQueryBuilder;
@@ -48,7 +48,7 @@ public class TitleQueryBuilder {
     }
 
     private static QueryBuilder prefixQuery(String prefix) {
-        return new PrefixQueryBuilder(ESContent.PARENT_FLATTENED_TITLE, prefix);
+        return new PrefixQueryBuilder(EsContent.PARENT_FLATTENED_TITLE, prefix);
     }
 
     private static QueryBuilder fuzzyTermSearch(String value, List<String> tokens) {
@@ -57,10 +57,10 @@ public class TitleQueryBuilder {
             BoolQueryBuilder queryForThisTerm = new BoolQueryBuilder();
             queryForThisTerm.minimumNumberShouldMatch(1);
 
-            QueryBuilder prefix = QueryBuilders.customBoostFactorQuery(new PrefixQueryBuilder(ESContent.PARENT_TITLE, token)).boostFactor(20);
+            QueryBuilder prefix = QueryBuilders.customBoostFactorQuery(new PrefixQueryBuilder(EsContent.PARENT_TITLE, token)).boostFactor(20);
             queryForThisTerm.should(prefix);
 
-            QueryBuilder fuzzy = new FuzzyQueryBuilder(ESContent.PARENT_TITLE, token).minSimilarity(0.65f).prefixLength(USE_PREFIX_SEARCH_UP_TO);
+            QueryBuilder fuzzy = new FuzzyQueryBuilder(EsContent.PARENT_TITLE, token).minSimilarity(0.65f).prefixLength(USE_PREFIX_SEARCH_UP_TO);
             queryForThisTerm.should(fuzzy);
 
             queryForTerms.must(queryForThisTerm);
@@ -84,7 +84,7 @@ public class TitleQueryBuilder {
     private static QueryBuilder exactMatch(String value, Iterable<String> tokens) {
         BoolQueryBuilder exactMatch = new BoolQueryBuilder();
         exactMatch.minimumNumberShouldMatch(1);
-        exactMatch.should(new TermQueryBuilder(ESContent.PARENT_FLATTENED_TITLE, value));
+        exactMatch.should(new TermQueryBuilder(EsContent.PARENT_FLATTENED_TITLE, value));
 
         Iterable<String> transformed = Iterables.transform(tokens, new Function<String, String>() {
 
@@ -101,12 +101,12 @@ public class TitleQueryBuilder {
         String flattenedAndExpanded = JOINER.join(transformed);
 
         if (!flattenedAndExpanded.equals(value)) {
-            exactMatch.should(new TermQueryBuilder(ESContent.PARENT_FLATTENED_TITLE, flattenedAndExpanded));
+            exactMatch.should(new TermQueryBuilder(EsContent.PARENT_FLATTENED_TITLE, flattenedAndExpanded));
         }
         return exactMatch;
     }
 
     private static QueryBuilder fuzzyWithoutSpaces(String value) {
-        return new FuzzyQueryBuilder(ESContent.PARENT_FLATTENED_TITLE, value).minSimilarity(0.8f).prefixLength(USE_PREFIX_SEARCH_UP_TO);
+        return new FuzzyQueryBuilder(EsContent.PARENT_FLATTENED_TITLE, value).minSimilarity(0.8f).prefixLength(USE_PREFIX_SEARCH_UP_TO);
     }
 }

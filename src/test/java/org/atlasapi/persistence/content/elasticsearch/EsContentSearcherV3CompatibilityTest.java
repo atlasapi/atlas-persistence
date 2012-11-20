@@ -33,7 +33,7 @@ import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.media.entity.testing.ComplexBroadcastTestDataBuilder;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
 import org.elasticsearch.client.Requests;
@@ -50,7 +50,7 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.SystemClock;
 
-public class ESContentSearcherV3CompatibilityTest {
+public class EsContentSearcherV3CompatibilityTest {
 
     private static final ImmutableSet<Publisher> ALL_PUBLISHERS = ImmutableSet.copyOf(Publisher.values());
     
@@ -121,18 +121,18 @@ public class ESContentSearcherV3CompatibilityTest {
     private final List<Item> itemsUpdated = Arrays.asList(u2);
 
     private Node esClient;
-    private ESContentIndexer indexer;
-    private ESContentSearcher searcher;
+    private EsContentIndexer indexer;
+    private EsContentSearcher searcher;
 
     @Before
     public void before() throws Exception {
-        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
+        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
         try {
-            esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
+            esClient.client().admin().indices().delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME));
         } catch (Exception ex) {
         }
-        indexer = new ESContentIndexer(esClient, new SystemClock());
-        searcher = new ESContentSearcher(esClient);
+        indexer = new EsContentIndexer(esClient, new SystemClock());
+        searcher = new EsContentSearcher(esClient);
         //
         indexer.startAndWait();
         //
@@ -150,7 +150,7 @@ public class ESContentSearcherV3CompatibilityTest {
 
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
+        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME));
         esClient.close();
         Thread.sleep(3000);
     }

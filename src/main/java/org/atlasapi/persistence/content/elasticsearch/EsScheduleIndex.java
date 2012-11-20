@@ -1,13 +1,13 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.CHANNEL;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.ID;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_END_TIME;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast.TRANSMISSION_TIME;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.BROADCASTS;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.CHILD_TYPE;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.PUBLISHER;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESContent.TOP_LEVEL_TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.CHANNEL;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.ID;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.TRANSMISSION_END_TIME;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.TRANSMISSION_TIME;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.BROADCASTS;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.CHILD_TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.PUBLISHER;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.TOP_LEVEL_TYPE;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.FilterBuilders.orFilter;
@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.elasticsearch.support.FutureSettingActionListener;
 import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
@@ -155,7 +156,7 @@ public class EsScheduleIndex implements ScheduleIndex {
     }
 
     private <T> ActionListener<T> resultSettingListener(final SettableFuture<T> result) {
-        return new FutureSettingActionListener<T>(result);
+        return FutureSettingActionListener.setting(result);
     }
 
     

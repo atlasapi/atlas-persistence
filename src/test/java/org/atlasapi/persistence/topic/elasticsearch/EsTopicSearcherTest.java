@@ -13,8 +13,8 @@ import org.atlasapi.media.entity.Topic;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.TopicRef.Relationship;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.elasticsearch.ESContentIndexer;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
+import org.atlasapi.persistence.content.elasticsearch.EsContentIndexer;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicSearcher;
 import org.elasticsearch.client.Requests;
@@ -32,22 +32,22 @@ import com.metabroadcast.common.time.SystemClock;
 
 /**
  */
-public class ESTopicSearcherTest {
+public class EsTopicSearcherTest {
 
     private Node esClient;
-    private ESContentIndexer indexer;
+    private EsContentIndexer indexer;
 
     @Before
     public void before() throws Exception {
-        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(ESSchema.CLUSTER_NAME).build().start();
-        indexer = new ESContentIndexer(esClient, new SystemClock(), 60000);
+        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
+        indexer = new EsContentIndexer(esClient, new SystemClock(), 60000);
         indexer.startAndWait();
         Thread.sleep(1000);
     }
 
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(ESSchema.INDEX_NAME));
+        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME));
         esClient.close();
         Thread.sleep(1000);
     }
@@ -93,7 +93,7 @@ public class ESTopicSearcherTest {
         when(resolver.topicForId(1l)).thenReturn(Maybe.just(new Topic(1l)));
         when(resolver.topicForId(2l)).thenReturn(Maybe.just(new Topic(2l)));
         //
-        TopicSearcher searcher = new ESTopicSearcher(esClient, 60000);
+        TopicSearcher searcher = new EsTopicSearcher(esClient, 60000);
         List<Topic> topics = searcher.popularTopics(new Interval(new DateTime().minusHours(1), new DateTime().plusHours(1)), resolver, Selection.offsetBy(0).withLimit(Integer.MAX_VALUE));
         assertEquals(2, topics.size());
         assertEquals(Long.valueOf(1), topics.get(0).getId());

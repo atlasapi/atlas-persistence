@@ -1,13 +1,18 @@
-package org.atlasapi.persistence.content.elasticsearch;
+package org.atlasapi.persistence.content.elasticsearch.support;
 
 import org.elasticsearch.action.ActionListener;
 
 import com.google.common.util.concurrent.SettableFuture;
 
-final class FutureSettingActionListener<T> implements ActionListener<T> {
+public final class FutureSettingActionListener<T> implements ActionListener<T> {
+
+    public static <T> ActionListener<T> setting(SettableFuture<T> future) {
+        return new FutureSettingActionListener<T>(future);
+    }
+
     private final SettableFuture<T> result;
 
-    FutureSettingActionListener(SettableFuture<T> result) {
+    private FutureSettingActionListener(SettableFuture<T> result) {
         this.result = result;
     }
 
