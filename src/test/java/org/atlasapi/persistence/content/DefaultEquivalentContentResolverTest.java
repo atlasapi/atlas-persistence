@@ -1,14 +1,17 @@
 package org.atlasapi.persistence.content;
 
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,6 +26,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 public class DefaultEquivalentContentResolverTest {
@@ -38,7 +42,7 @@ public class DefaultEquivalentContentResolverTest {
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
-        Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
+        List<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA).asList();
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
         when(lookupResolver.entriesForIdentifiers(uris, false)).thenReturn(ImmutableSet.of(
@@ -52,7 +56,7 @@ public class DefaultEquivalentContentResolverTest {
                 .put(equiv.getCanonicalUri(), equiv)
                 .build());
         
-        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, true);
+        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, false);
         
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get("equiv"));
@@ -73,10 +77,10 @@ public class DefaultEquivalentContentResolverTest {
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
         
         Iterable<String> uris = ImmutableSet.of(subject1.getCanonicalUri(), subject2.getCanonicalUri());
-        Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
+        List<Publisher> selectedSources = ImmutableSet.of(Publisher.PA, Publisher.BBC).asList();
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
-        when(lookupResolver.entriesForIdentifiers(uris, false)).thenReturn(ImmutableSet.of(
+        when(lookupResolver.entriesForIdentifiers(uris, true)).thenReturn(ImmutableSet.of(
             LookupEntry.lookupEntryFrom(subject1).copyWithEquivalents(ImmutableSet.of(
                 LookupRef.from(equiv)
             )),
@@ -100,6 +104,9 @@ public class DefaultEquivalentContentResolverTest {
         assertEquals(2, equivMap.size());
         assertEquals(subject1, equivMap.get(subject1.getCanonicalUri()));
         assertEquals(equiv, equivMap.get(equiv.getCanonicalUri()));
+        
+        assertThat(Iterables.get(equivContent, 0).getCanonicalUri(), is(equiv.getCanonicalUri()));
+        assertThat(Iterables.get(equivContent, 1).getCanonicalUri(), is(subject1.getCanonicalUri()));
         
         equivContent = content.asMap().get("testUri2");
         assertNotNull(equivContent);
