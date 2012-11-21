@@ -2,12 +2,13 @@ package org.atlasapi.media.channel;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableSet;
 import com.mongodb.DBObject;
 
 public class ChannelTranslatorTest {
@@ -17,12 +18,17 @@ public class ChannelTranslatorTest {
     @Test
     public void testEncodesAndDecodesChannels() {
         
-        Channel channel = new Channel();
-        
-        channel.setTitle("title");
-        channel.setKey("key");
-        channel.setMediaType(MediaType.AUDIO);
-        channel.setPublisher(Publisher.BBC);
+        Channel channel = Channel.builder()
+            .withSource(Publisher.BBC)
+            .withUri("uri")
+            .withKey("key")
+            .withBroadcaster(Publisher.BBC)
+            .withTitle("title")
+            .withImage("image")
+            .withMediaType(MediaType.AUDIO)
+            .withHighDefinition(false)
+            .withAvailableFrom(ImmutableSet.of(Publisher.BBC))
+            .build();
         
         DBObject encoded = channelTranslator.toDBObject(null, channel);
         
@@ -30,9 +36,13 @@ public class ChannelTranslatorTest {
         
         assertThat(decoded, is(equalTo(channel)));
         assertThat(decoded.title(), is(equalTo(channel.title())));
+        assertThat(decoded.uri(), is(equalTo(channel.uri())));
         assertThat(decoded.key(), is(equalTo(channel.key())));
         assertThat(decoded.mediaType(), is(equalTo(channel.mediaType())));
-        assertThat(decoded.publisher(),is(equalTo(channel.publisher())));
+        assertThat(decoded.source(),is(equalTo(channel.source())));
+        assertThat(decoded.availableFrom(), is(equalTo(channel.availableFrom())));
+        assertThat(decoded.highDefinition(), is(equalTo(channel.highDefinition())));
+        assertThat(decoded.image(), is(equalTo(channel.image())));
         
     }
 
