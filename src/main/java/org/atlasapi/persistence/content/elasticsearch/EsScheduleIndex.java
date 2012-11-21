@@ -16,6 +16,7 @@ import static org.elasticsearch.index.query.FilterBuilders.termFilter;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.util.Date;
@@ -32,7 +33,6 @@ import org.atlasapi.persistence.content.elasticsearch.support.FutureSettingActio
 import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -102,20 +102,24 @@ public class EsScheduleIndex implements ScheduleIndex {
     @Override
     public ListenableFuture<ScheduleRef> resolveSchedule(Publisher publisher, Channel channel, Interval scheduleInterval) {
         String broadcastOn = channel.getCanonicalUri();
-        Date from = scheduleInterval.getStart().toDate();
-        Date to = scheduleInterval.getEnd().toDate();
+        DateTime from = scheduleInterval.getStart();
+        DateTime to = scheduleInterval.getEnd();
         String pub = publisher.key();
         
         SettableFuture<SearchResponse> result = SettableFuture.create();
         
+        String[] queryIndices = indicesFor(scheduleInterval);
+        if (queryIndices == null ) { // there are no existing indices for this request
+            return Futures.immediateFuture(ScheduleRef.forChannel(broadcastOn).build());
+        }
         esClient.client()
-            .prepareSearch(indicesFor(scheduleInterval))
+            .prepareSearch(queryIndices)
             .setTypes(TOP_LEVEL_TYPE, CHILD_TYPE)
             .setSearchType(SearchType.DEFAULT)
             .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
             .addFields(FIELDS)
             .setSize(SIZE_MULTIPLIER * daysIn(scheduleInterval))
-            .execute(resultSettingListener(result));
+            .execute(FutureSettingActionListener.setting(result));
         
         return Futures.transform(result, resultTransformer(broadcastOn, scheduleInterval));
     }
@@ -127,6 +131,9 @@ public class EsScheduleIndex implements ScheduleIndex {
             existingIndices.get(),
             scheduleNames.queryingNamesFor(interval.getStart(), interval.getEnd()) 
         );
+        if (indices.isEmpty()) {
+            return null;
+        }
         return indices.toArray(new String[indices.size()]);
     }
 
@@ -134,32 +141,34 @@ public class EsScheduleIndex implements ScheduleIndex {
         return Math.max(1, Days.daysIn(scheduleInterval).getDays());
     }
 
-    private QueryBuilder scheduleQueryFor(String publisher, String broadcastOn, Date from, Date to) {
+    private QueryBuilder scheduleQueryFor(String publisher, String broadcastOn, DateTime from, DateTime to) {
+        Date fromDate = from.toDate();
+        Date toDate = to.toDate();
         return filteredQuery(
             boolQuery()
                 .must(termQuery(PUBLISHER, publisher))
-                .must(nestedQuery(BROADCASTS, termQuery(CHANNEL, broadcastOn)))
+                .must(nestedQuery(BROADCASTS,
+                    boolQuery()
+                        .must(termQuery(CHANNEL, broadcastOn))
+                        .must(rangeQuery(TRANSMISSION_TIME).gte(from.minusHours(12).toDate()))
+                        .must(rangeQuery(TRANSMISSION_END_TIME).lte(to.plusHours(12).toDate()))
+                ))
             ,
             nestedFilter(BROADCASTS, andFilter(
                 termFilter(CHANNEL, broadcastOn),
                 orFilter(andFilter(
                     //inside or overlapping the interval ends
-                    rangeFilter(TRANSMISSION_TIME).lt(to),
-                    rangeFilter(TRANSMISSION_END_TIME).gt(from)
+                    rangeFilter(TRANSMISSION_TIME).lt(toDate),
+                    rangeFilter(TRANSMISSION_END_TIME).gt(fromDate)
                 ), andFilter(
                     //containing the interval
-                    rangeFilter(TRANSMISSION_TIME).lte(from),
-                    rangeFilter(TRANSMISSION_END_TIME).gte(to)
+                    rangeFilter(TRANSMISSION_TIME).lte(fromDate),
+                    rangeFilter(TRANSMISSION_END_TIME).gte(toDate)
                 ))
             ))
         );
     }
 
-    private <T> ActionListener<T> resultSettingListener(final SettableFuture<T> result) {
-        return FutureSettingActionListener.setting(result);
-    }
-
-    
     private Function<SearchResponse, ScheduleRef> resultTransformer(final String channel, final Interval scheduleInterval) {
         return new Function<SearchResponse, ScheduleRef>() {
             @Override
