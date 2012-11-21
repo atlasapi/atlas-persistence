@@ -55,6 +55,12 @@
             <groupId>com.netflix.astyanax</groupId>
             <artifactId>astyanax</artifactId>
             <version>1.56.14</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch</groupId>

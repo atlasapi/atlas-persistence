@@ -48,6 +48,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.atlasapi.persistence.media.TranslatorContentHasher;
 
 import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
 import org.atlasapi.serialization.json.configuration.model.FilteredContainerConfiguration;
@@ -63,6 +64,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     private final int requestTimeout;
     private final Keyspace keyspace;
     private final NewLookupWriter lookupWriter;
+    private final TranslatorContentHasher contentHasher;
 
     public CassandraContentStore(AstyanaxContext<Keyspace> context, int requestTimeout, NewLookupWriter lookupWriter) {
         this.mapper.setFilters(new SimpleFilterProvider().addFilter(FilteredItemConfiguration.FILTER, SimpleBeanPropertyFilter.serializeAllExcept(FilteredItemConfiguration.CLIPS_FILTER, FilteredItemConfiguration.VERSIONS_FILTER)).
@@ -71,10 +73,14 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         this.requestTimeout = requestTimeout;
         this.keyspace = context.getEntity();
         this.lookupWriter = lookupWriter;
+        this.contentHasher = new TranslatorContentHasher();
     }
 
     @Override
     public void createOrUpdate(final Item item) {
+        if (!item.hashChanged(contentHasher.hash(item))) {
+            return;
+        }
         try {
             FutureList results = new FutureList();
             // First ensure lookup, asynchronously:
@@ -107,6 +113,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
 
     @Override
     public void createOrUpdate(final Container container) {
+        if (!container.hashChanged(contentHasher.hash(container))) {
+            return;
+        }
         try {
             FutureList results = new FutureList();
             // First ensure lookup, asynchronously:
@@ -311,6 +320,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         item.setClips(clips);
         item.setVersions(versions);
         item.setContainerSummary(containerSummary);
+        item.setReadHash(contentHasher.hash(item));
         return item;
     }
 
@@ -320,6 +330,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         List<ChildRef> children = mapper.readValue(columns.getColumnByName(CHILDREN_COLUMN).getByteArrayValue(), TypeFactory.defaultInstance().constructCollectionType(List.class, ChildRef.class));
         container.setClips(clips);
         container.setChildRefs(children);
+        container.setReadHash(contentHasher.hash(container));
         return container;
     }
 
