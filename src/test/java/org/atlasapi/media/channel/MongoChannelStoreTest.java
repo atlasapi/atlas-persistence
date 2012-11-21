@@ -46,6 +46,7 @@ public class MongoChannelStoreTest {
         channel.setSource(Publisher.BBC);
         channel.setMediaType(MediaType.VIDEO);
         channel.setKey(key);
+        channel.setAvailableFrom(ImmutableSet.<Publisher>of());
         return channel;
     }
 

@@ -42,7 +42,9 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		TranslatorUtils.from(dbObject, PUBLISHER, model.source().key());
 		TranslatorUtils.from(dbObject, HIGH_DEFINITION, model.highDefinition());
 		TranslatorUtils.from(dbObject, BROADCASTER, model.broadcaster() != null ? model.broadcaster().key() : null);
-		TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableFrom(), Publisher.TO_KEY)), AVAILABLE_ON);
+		if (model.availableFrom() != null) {
+		    TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableFrom(), Publisher.TO_KEY)), AVAILABLE_ON);
+		}
 		TranslatorUtils.from(dbObject, KEY, model.key());
 		TranslatorUtils.from(dbObject, IMAGE, model.image());
 		return dbObject;
