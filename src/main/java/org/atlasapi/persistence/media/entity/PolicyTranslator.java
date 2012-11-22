@@ -71,8 +71,8 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         if(entity.getPlatform() != null) {
         	TranslatorUtils.from(dbObject, "platform", entity.getPlatform().key());
         }
-        if (entity.getNetwork().isPresent()) {
-            TranslatorUtils.from(dbObject, "network", entity.getNetwork().get().key());
+        if (entity.getNetwork() != null) {
+            TranslatorUtils.from(dbObject, "network", entity.getNetwork().key());
         }
         return dbObject;
     }
