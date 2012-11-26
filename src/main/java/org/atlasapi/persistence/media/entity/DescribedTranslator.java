@@ -6,6 +6,7 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
+import org.atlasapi.media.entity.Synopses;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -19,8 +20,13 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String THIS_OR_CHILD_LAST_UPDATED_KEY = "thisOrChildLastUpdated";
     public static final String TYPE_KEY = "type";
 	public static final String LAST_FETCHED_KEY = "lastFetched";
+    public static final String SYNOPSES_KEY = "synopses";
+    public static final String SHORT_DESC_KEY = "shortDescription";
+    public static final String MEDIUM_DESC_KEY = "mediumDescription";
+    public static final String LONG_DESC_KEY = "longDescription";
 	
 	private final IdentifiedTranslator descriptionTranslator;
+    
 
 	public DescribedTranslator(IdentifiedTranslator descriptionTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
@@ -32,6 +38,19 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		descriptionTranslator.fromDBObject(dbObject, entity);
 
 		entity.setDescription((String) dbObject.get("description"));
+		
+		DBObject synopsesDbo = TranslatorUtils.toDBObject(dbObject, SYNOPSES_KEY);
+		if (synopsesDbo != null) {
+		    Synopses synopses = new Synopses();
+		    synopses.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESC_KEY));
+		    synopses.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESC_KEY));
+		    synopses.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESC_KEY));
+		    if (synopses.getShortDescription() != null
+		            || synopses.getMediumDescription() != null
+		            || synopses.getLongDescription() != null) {
+		        entity.setSynopses(synopses);
+		    }
+		}
 
 		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
 		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY));
@@ -73,6 +92,17 @@ public class DescribedTranslator implements ModelTranslator<Described> {
          }
 		 
 	    descriptionTranslator.toDBObject(dbObject, entity);
+
+        if (entity.getSynopses() != null) {
+            DBObject synopsesDbo = new BasicDBObject();
+            
+            TranslatorUtils.from(synopsesDbo, SHORT_DESC_KEY, entity.getSynopses().getShortDescription());
+            TranslatorUtils.from(synopsesDbo, MEDIUM_DESC_KEY, entity.getSynopses().getMediumDescription());
+            TranslatorUtils.from(synopsesDbo, LONG_DESC_KEY, entity.getSynopses().getLongDescription());
+            
+            TranslatorUtils.from(dbObject, SYNOPSES_KEY, synopsesDbo);
+        }
+	    
 
         TranslatorUtils.from(dbObject, "description", entity.getDescription());
         TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
