@@ -10,7 +10,6 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.media.entity.Synopses;
-import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ImmutableSet;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
