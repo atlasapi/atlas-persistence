@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.content;
 
-import static org.atlasapi.media.entity.LookupRef.TO_SOURCE;
-
 import java.util.List;
 import java.util.Set;
 
@@ -17,14 +15,11 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Ordering;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.base.MoreOrderings;
 import com.metabroadcast.common.base.MorePredicates;
 
 public class DefaultEquivalentContentResolver implements EquivalentContentResolver {
@@ -38,13 +33,13 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
     @Override
-    public EquivalentContent resolveUris(Iterable<String> uris, List<Publisher> selectedSources, Set<Annotation> activeAnnotations, boolean withAliases) {
+    public EquivalentContent resolveUris(Iterable<String> uris, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations, boolean withAliases) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris, withAliases);
         return filterAndResolveEntries(entries, uris, selectedSources);
     }
     
     @Override
-    public EquivalentContent resolveIds(Iterable<Long> ids, List<Publisher> selectedSources, Set<Annotation> activeAnnotations) {
+    public EquivalentContent resolveIds(Iterable<Long> ids, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIds(ids);
         Set<String> uris = Sets.newHashSet();
         for (LookupEntry entry : entries) {
@@ -53,58 +48,47 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         return filterAndResolveEntries(entries, uris, selectedSources);
     }
 
-    protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<String> uris, List<Publisher> selectedSources) {
+    protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<String> uris, Set<Publisher> selectedSources) {
         Iterable<LookupEntry> selectedEntries = filter(entries, selectedSources);
         
         if (Iterables.isEmpty(selectedEntries)) {
             return EquivalentContent.empty();
         }
         
-        ImmutableSetMultimap<String, String> uriToEquivs = uriToEquivs(selectedEntries, selectedSources);
+        SetMultimap<String, String> uriToEquivs = uriToEquivs(selectedEntries, selectedSources);
         
         ResolvedContent resolvedContent = contentResolver.findByCanonicalUris(uriToEquivs.values());
         
         EquivalentContent.Builder equivalentContent = EquivalentContent.builder();
         for (String uri : uris) {
-            ImmutableSet<String> equivUris = uriToEquivs.get(uri);
+            Set<String> equivUris = uriToEquivs.get(uri);
             Iterable<Content> content = equivContent(equivUris, resolvedContent);
             equivalentContent.putEquivalents(uri, content);
         }
         return equivalentContent.build();
     }
 
-    protected List<Content> equivContent(Set<String> equivUris, ResolvedContent resolved) {
+    protected Iterable<Content> equivContent(Set<String> equivUris, ResolvedContent resolved) {
         if (equivUris == null) {
-            return ImmutableList.of();
+            return ImmutableSet.of();
         }
-        ImmutableList.Builder<Content> builder = ImmutableList.builder();
-        for (String uri : equivUris) {
-            Maybe<Identified> resolvedContent = resolved.get(uri);
-            if (resolvedContent.hasValue() && resolvedContent.requireValue() instanceof Content) {
-                builder.add((Content)resolvedContent.requireValue());
-            }
-        }
-        return builder.build();
+        List<Identified> resolvedEquivs = resolved.getResolvedResults(equivUris);
+        return Iterables.filter(resolvedEquivs, Content.class);
     }
     
 
-    private ImmutableSetMultimap<String, String> uriToEquivs(Iterable<LookupEntry> resolved, List<Publisher> selectedSources) {
+    private SetMultimap<String, String> uriToEquivs(Iterable<LookupEntry> resolved, Set<Publisher> selectedSources) {
         Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(selectedSources));
 
         ImmutableSetMultimap.Builder<String, String> builder = ImmutableSetMultimap.builder();
         for (LookupEntry entry : resolved) {
-            Iterable<LookupRef> selectedEquivs = Iterables.filter(entry.equivalents(), sourceFilter);
-            selectedEquivs = sort(selectedEquivs, selectedSources);
+            Set<LookupRef> selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter);
             builder.putAll(entry.uri(), Iterables.transform(selectedEquivs,LookupRef.TO_ID));
         }
         return builder.build();
     }
 
-    private Iterable<LookupRef> sort(Iterable<LookupRef> selectedEquivs, List<Publisher> selectedSources) {
-        return MoreOrderings.transformingOrdering(TO_SOURCE, Ordering.explicit(selectedSources)).sortedCopy(selectedEquivs);
-    }
-
-    private Iterable<LookupEntry> filter(Iterable<LookupEntry> entries, List<Publisher> selectedSources) {
+    private Iterable<LookupEntry> filter(Iterable<LookupEntry> entries, Set<Publisher> selectedSources) {
         Predicate<Publisher> sourceFilter = Predicates.in(selectedSources);
         Function<LookupEntry, Publisher> toSource = Functions.compose(LookupRef.TO_SOURCE, LookupEntry.TO_SELF);
         
