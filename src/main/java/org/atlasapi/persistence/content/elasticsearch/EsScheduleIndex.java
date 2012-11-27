@@ -10,7 +10,6 @@ import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.PU
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.TOP_LEVEL_TYPE;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
 import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
-import static org.elasticsearch.index.query.FilterBuilders.orFilter;
 import static org.elasticsearch.index.query.FilterBuilders.rangeFilter;
 import static org.elasticsearch.index.query.FilterBuilders.termFilter;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -30,11 +29,13 @@ import javax.annotation.Nullable;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.elasticsearch.support.FutureSettingActionListener;
+import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
@@ -102,8 +103,6 @@ public class EsScheduleIndex implements ScheduleIndex {
     @Override
     public ListenableFuture<ScheduleRef> resolveSchedule(Publisher publisher, Channel channel, Interval scheduleInterval) {
         String broadcastOn = channel.getCanonicalUri();
-        DateTime from = scheduleInterval.getStart();
-        DateTime to = scheduleInterval.getEnd();
         String pub = publisher.key();
         
         SettableFuture<SearchResponse> result = SettableFuture.create();
@@ -116,12 +115,12 @@ public class EsScheduleIndex implements ScheduleIndex {
             .prepareSearch(queryIndices)
             .setTypes(TOP_LEVEL_TYPE, CHILD_TYPE)
             .setSearchType(SearchType.DEFAULT)
-            .setQuery(scheduleQueryFor(pub, broadcastOn, from, to))
+            .setQuery(scheduleQueryFor(pub, broadcastOn, scheduleInterval))
             .addFields(FIELDS)
             .setSize(SIZE_MULTIPLIER * daysIn(scheduleInterval))
             .execute(FutureSettingActionListener.setting(result));
         
-        return Futures.transform(result, resultTransformer(broadcastOn, scheduleInterval));
+        return Futures.transform(result, resultTransformer(broadcastOn, ScheduleBroadcastFilter.valueOf(scheduleInterval)));
     }
     
     /* Take the intersection here to avoid missing index problems.
@@ -141,35 +140,46 @@ public class EsScheduleIndex implements ScheduleIndex {
         return Math.max(1, Days.daysIn(scheduleInterval).getDays());
     }
 
-    private QueryBuilder scheduleQueryFor(String publisher, String broadcastOn, DateTime from, DateTime to) {
-        Date fromDate = from.toDate();
-        Date toDate = to.toDate();
+    private QueryBuilder scheduleQueryFor(String publisher, String broadcastOn, Interval scheduleInterval) {
+        DateTime looseFrom = scheduleInterval.getStart().minusHours(12);
+        DateTime looseTo = scheduleInterval.getEnd().plusHours(12);
+
         return filteredQuery(
             boolQuery()
                 .must(termQuery(PUBLISHER, publisher))
                 .must(nestedQuery(BROADCASTS,
                     boolQuery()
                         .must(termQuery(CHANNEL, broadcastOn))
-                        .must(rangeQuery(TRANSMISSION_TIME).gte(from.minusHours(12).toDate()))
-                        .must(rangeQuery(TRANSMISSION_END_TIME).lte(to.plusHours(12).toDate()))
-                ))
-            ,
+                        .must(rangeQuery(TRANSMISSION_TIME).gte(looseFrom.toDate()))
+                        .must(rangeQuery(TRANSMISSION_END_TIME).lte(looseTo.toDate()))
+                )),
             nestedFilter(BROADCASTS, andFilter(
                 termFilter(CHANNEL, broadcastOn),
-                orFilter(andFilter(
-                    //inside or overlapping the interval ends
-                    rangeFilter(TRANSMISSION_TIME).lt(toDate),
-                    rangeFilter(TRANSMISSION_END_TIME).gt(fromDate)
-                ), andFilter(
-                    //containing the interval
-                    rangeFilter(TRANSMISSION_TIME).lte(fromDate),
-                    rangeFilter(TRANSMISSION_END_TIME).gte(toDate)
-                ))
+                filterForInterval(scheduleInterval)
             ))
         );
     }
 
-    private Function<SearchResponse, ScheduleRef> resultTransformer(final String channel, final Interval scheduleInterval) {
+    private FilterBuilder filterForInterval(Interval scheduleInterval) {
+        Date fromDate = scheduleInterval.getStart().toDate();
+        Date toDate = scheduleInterval.getEnd().toDate();
+        
+        if (Duration.ZERO.equals(scheduleInterval.toDuration())) {
+            return andFilter(
+                rangeFilter(TRANSMISSION_TIME).lte(fromDate),
+                rangeFilter(TRANSMISSION_END_TIME).gt(toDate)
+            );
+        }
+        // this is an adaptation of joda's Interval.overlaps which is fine when
+        // the scheduleInterval is non-empty
+        // (otherStart < thisEnd && otherEnd > thisStart);
+        return andFilter(
+            rangeFilter(TRANSMISSION_TIME).lt(toDate),
+            rangeFilter(TRANSMISSION_END_TIME).gt(fromDate)
+        );
+    }
+
+    private Function<SearchResponse, ScheduleRef> resultTransformer(final String channel, final ScheduleBroadcastFilter scheduleBroadcastFilter) {
         return new Function<SearchResponse, ScheduleRef>() {
             @Override
             public ScheduleRef apply(@Nullable SearchResponse input) {
@@ -177,7 +187,7 @@ public class EsScheduleIndex implements ScheduleIndex {
                 int hits = 0;
                 for (SearchHit hit : input.hits()) {
                     hits++;
-                    refBuilder.addEntries(validEntries(hit,channel, scheduleInterval));
+                    refBuilder.addEntries(validEntries(hit,channel, scheduleBroadcastFilter));
                 }
                 ScheduleRef ref = refBuilder.build();
                 log.info("{}: {} hits => {} entries, ({} queries, {}ms)", new Object[]{Thread.currentThread().getId(), hits, ref.getScheduleEntries().size(), 1, input.tookInMillis()});
@@ -186,7 +196,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         };
     }
     
-    private Iterable<ScheduleRefEntry> validEntries(SearchHit hit, String channel, Interval scheduleInterval) {
+    private Iterable<ScheduleRefEntry> validEntries(SearchHit hit, String channel, ScheduleBroadcastFilter scheduleBroadcastFilter) {
         ImmutableList.Builder<ScheduleRefEntry> entries = ImmutableList.builder();
         
         SearchHitField broadcastsHitField = hit.field(BROADCASTS);
@@ -194,7 +204,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         List<Object> fieldValues = broadcastsHitField.getValues();
         for (List<?> fieldValue : Iterables.filter(fieldValues, List.class)) {
             for (Map<Object,Object> broadcast : Iterables.filter(fieldValue, Map.class)) {
-                ScheduleRefEntry validRef = getValidRef(id, channel, scheduleInterval, broadcast);
+                ScheduleRefEntry validRef = getValidRef(id, channel, scheduleBroadcastFilter, broadcast);
                 if (validRef != null) {
                     entries.add(validRef);
                 }
@@ -203,12 +213,12 @@ public class EsScheduleIndex implements ScheduleIndex {
         return entries.build();
     }
 
-    private ScheduleRefEntry getValidRef(String id, String channel, Interval scheduleInterval, Map<Object, Object> broadcast) {
+    private ScheduleRefEntry getValidRef(String id, String channel, ScheduleBroadcastFilter scheduleBroadcastFilter, Map<Object, Object> broadcast) {
         String broadcastChannel = (String) broadcast.get(CHANNEL);
         if (channel.equals(broadcastChannel)) {
             DateTime start = new DateTime(broadcast.get(TRANSMISSION_TIME)).toDateTime(DateTimeZones.UTC);
             DateTime end = new DateTime(broadcast.get(TRANSMISSION_END_TIME)).toDateTime(DateTimeZones.UTC);
-            if (valid(scheduleInterval, start, end)) {
+            if (valid(scheduleBroadcastFilter, start, end)) {
                 String broadcastId = (String) broadcast.get(BROADCAST_ID);
                 return new ScheduleRefEntry(id, channel, start, end, broadcastId);
             }
@@ -216,11 +226,8 @@ public class EsScheduleIndex implements ScheduleIndex {
         return null;
     }
 
-    private boolean valid(Interval scheduleInterval, DateTime start, DateTime end) {
-        return start.isBefore(scheduleInterval.getEnd()) 
-            && end.isAfter(scheduleInterval.getStart())
-            || !start.isAfter(scheduleInterval.getStart()) 
-            && !end.isBefore(scheduleInterval.getEnd());
+    private boolean valid(ScheduleBroadcastFilter scheduleBroadcastFilter, DateTime start, DateTime end) {
+        return scheduleBroadcastFilter.apply(new Interval(start, end));
     }
 
 }

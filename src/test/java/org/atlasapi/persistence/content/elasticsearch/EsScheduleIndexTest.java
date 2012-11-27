@@ -82,7 +82,8 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(contained);
         Thread.sleep(1000);
-
+        scheduleIndex.updateExistingIndices();
+        
         Interval interval = new Interval(new DateTime(00, UTC), new DateTime(30, UTC));
         Future<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval);
         
@@ -103,8 +104,8 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(overlapEnd);
         contentIndexer.index(overlapStart);
-        
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
 
         ListenableFuture<ScheduleRef> futureEntries = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
         
@@ -123,8 +124,8 @@ public class EsScheduleIndexTest {
         Item containsInterval = itemWithBroadcast("contains", channel1.getCanonicalUri(), start, start.plusHours(3));
         
         contentIndexer.index(containsInterval);
-        
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
 
@@ -142,8 +143,8 @@ public class EsScheduleIndexTest {
         Item wrongChannel = itemWithBroadcast("wrong", "http://www.bbc.co.uk/services/bbctwo", start.plusHours(1), start.plusHours(2));
         
         contentIndexer.index(wrongChannel);
-        
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
         
@@ -161,12 +162,67 @@ public class EsScheduleIndexTest {
       
         contentIndexer.index(tooLate);
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
           
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start.plusMinutes(30), start.plusMinutes(150)));
           
         ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
           
+        assertThat(entries.size(), is(0));
+    }
+
+    @Test
+    public void testReturnsContentContainingInstanceInterval() throws Exception {
+        DateTime start = new DateTime(DateTimeZones.UTC);
+        
+        Item containsInstance = itemWithBroadcast("late", channel1.getCanonicalUri(), start.minusHours(1), start.plusHours(4));
+        
+        contentIndexer.index(containsInstance);
+        Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
+        
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start, start));
+        
+        ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+        ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
+        
+        assertThat(entries.size(), is(1));
+    }
+
+    @Test
+    public void testReturnsContentAbuttingInstanceIntervalEnd() throws Exception {
+        DateTime start = new DateTime(DateTimeZones.UTC);
+        
+        Item abutting = itemWithBroadcast("late", channel1.getCanonicalUri(), start, start.plusHours(4));
+        
+        contentIndexer.index(abutting);
+        Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
+        
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start, start));
+        
+        ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+        ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
+        
+        assertThat(entries.size(), is(1));
+    }
+
+    @Test
+    public void testDoesntReturnContentAbuttingInstanceIntervalStart() throws Exception {
+        DateTime start = new DateTime(DateTimeZones.UTC);
+        
+        Item abutting = itemWithBroadcast("late", channel1.getCanonicalUri(), start.minusHours(1), start);
+        
+        contentIndexer.index(abutting);
+        Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
+        
+        ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, new Interval(start, start));
+        
+        ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
+        ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
+        
         assertThat(entries.size(), is(0));
     }
     
@@ -179,6 +235,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(exactMatch);
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval);
         
@@ -202,6 +259,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(itemWith2Broadcasts);
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
         
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, interval2);
         ScheduleRef scheduleRef  = futureRef.get(5, TimeUnit.SECONDS);
@@ -236,6 +294,7 @@ public class EsScheduleIndexTest {
         
         contentIndexer.index(itemWith2Broadcasts);
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
         
         Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, queryInterval);
@@ -259,6 +318,7 @@ public class EsScheduleIndexTest {
         contentIndexer.index(childItem);
         contentIndexer.index(topItem);
         Thread.sleep(1000);
+        scheduleIndex.updateExistingIndices();
         
         Interval queryInterval = new Interval(interval1.getStartMillis(), interval2.getEndMillis(), DateTimeZones.UTC);
         ListenableFuture<ScheduleRef> futureRef = scheduleIndex.resolveSchedule(METABROADCAST, channel1, queryInterval);

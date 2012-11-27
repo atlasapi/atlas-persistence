@@ -65,11 +65,11 @@ class EsScheduleIndexNames {
 
         DateTime aYearAgo = clock.now().minusYears(1);
         if (start.isAfter(aYearAgo)) {
-            for (DateTime cur = start; cur.isBefore(end); cur = cur.plusMonths(1)) {
+            for (DateTime cur = start; cur.isBefore(end) || cur.isEqual(end); cur = cur.plusMonths(1)) {
                 names.add(monthIndex(cur));
             }
         } else {
-            for (DateTime cur = start; cur.isBefore(end); cur = cur.plusYears(1)) {
+            for (DateTime cur = start; cur.isBefore(end) || cur.isEqual(end); cur = cur.plusYears(1)) {
                 names.add(yearIndex(cur));
             }
         }

@@ -8,9 +8,9 @@ import org.junit.Test;
 public class ScheduleBroadcastFilterTest {
 
     private final Interval scheduleInterval = new Interval(1000, 2000);
-    private final ScheduleBroadcastFilter filter = new ScheduleBroadcastFilter(scheduleInterval);
+    private final ScheduleBroadcastFilter filter = ScheduleBroadcastFilter.valueOf(scheduleInterval);
     private final Interval emptyInterval = new Interval(1000, 1000);
-    private final ScheduleBroadcastFilter emptyFilter = new ScheduleBroadcastFilter(emptyInterval);
+    private final ScheduleBroadcastFilter emptyFilter = ScheduleBroadcastFilter.valueOf(emptyInterval);
     
     @Test
     public void testFailsEntirelyBefore() {

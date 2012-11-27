@@ -9,7 +9,7 @@ import com.google.common.base.Predicate;
  * broadcast intervals either entirely or partially overlap with the schedule
  * interval or, if the schedule interval is an instance, abut its end.
  * 
- * Along with abutting the end of an empty interval, the following cases are
+ * For a non-empty schedule interval the following cases are
  * covered:
  * 
  * <pre>
@@ -21,34 +21,54 @@ import com.google.common.base.Predicate;
  * Entirely Overlapping:   bs----------------------------be
  * </pre>
  * 
+ * For an empty interval the following cases are covered:
+ * <pre>
+ * Schedule Interval:          |
+ * Contains:              bs--------be
+ * Abuts end:                  bs------be
+ * </pre>
+ * 
  * @author Fred van den Driessche (fred@metabroadcast.com)
  * 
  */
-public final class ScheduleBroadcastFilter implements Predicate<Interval> {
+public abstract class ScheduleBroadcastFilter implements Predicate<Interval> {
 
-    private final Interval scheduleInterval;
-    private final boolean scheduleIntervalEmpty;
+    public static final ScheduleBroadcastFilter valueOf(Interval scheduleInterval) {
+        if (scheduleInterval.toDuration().getMillis() == 0) {
+            return new EmptyScheduleBroadcastFilter(scheduleInterval);
+        }
+        return new RegularScheduleBroadcastFilter(scheduleInterval);
+    }
+    
+    private static class EmptyScheduleBroadcastFilter extends ScheduleBroadcastFilter {
+        
+        private Interval scheduleInterval;
 
-    public ScheduleBroadcastFilter(Interval scheduleInterval) {
-        this.scheduleInterval = scheduleInterval;
-        this.scheduleIntervalEmpty = scheduleInterval.toDuration().getMillis() == 0;
+        public EmptyScheduleBroadcastFilter(Interval scheduleInterval) {
+            this.scheduleInterval = scheduleInterval;
+        }
+
+        @Override
+        public boolean apply(Interval broadcastInterval) {
+            return !broadcastInterval.getStart().isAfter(scheduleInterval.getStart())
+                && broadcastInterval.getEnd().isAfter(scheduleInterval.getEnd());
+        }
+        
     }
 
-    /*
-     * The first clause of the disjunction covers the general overlapping case
-     * whether or not the schedule interval is empty. The other case that to
-     * cover is a broadcast which starts at the end of an empty interval.
-     */
-    @Override
-    public boolean apply(Interval broadcastInterval) {
-        return scheduleInterval.overlaps(broadcastInterval)
-            || abutsEndOfEmptyScheduleInterval(broadcastInterval);
-    }
+    private static class RegularScheduleBroadcastFilter extends ScheduleBroadcastFilter {
 
-    private boolean abutsEndOfEmptyScheduleInterval(Interval broadcastInterval) {
-        return scheduleIntervalEmpty
-            && scheduleInterval.abuts(broadcastInterval)
-            && scheduleInterval.isBefore(broadcastInterval);
+        private final Interval scheduleInterval;
+
+        private RegularScheduleBroadcastFilter(Interval scheduleInterval) {
+            this.scheduleInterval = scheduleInterval;
+        }
+
+        @Override
+        public boolean apply(Interval broadcastInterval) {
+            return scheduleInterval.overlaps(broadcastInterval);
+        }
+
     }
 
 }

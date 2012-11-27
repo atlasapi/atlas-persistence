@@ -268,8 +268,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private static final Function<Item, Interval> ITEM_TO_BROADCAST_INTERVAL = Functions.compose(TO_BROADCAST, ScheduleEntry.BROADCAST);
     
     private Iterable<Item> filterItems(Iterable<Item> items, final Interval interval) {
-        final Predicate<Item> validBroadcast = MorePredicates.transformingPredicate(ITEM_TO_BROADCAST_INTERVAL, new ScheduleBroadcastFilter(interval));
         
+        final Predicate<Item> validBroadcast = MorePredicates.transformingPredicate(ITEM_TO_BROADCAST_INTERVAL, ScheduleBroadcastFilter.valueOf(interval));
         return Iterables.transform(ImmutableSet.copyOf(Iterables.transform(Iterables.filter(items, validBroadcast), ItemScheduleEntry.ITEM_SCHEDULE_ENTRY)), ItemScheduleEntry.ITEM);
     }
     
