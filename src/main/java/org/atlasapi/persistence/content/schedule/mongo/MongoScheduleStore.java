@@ -23,12 +23,14 @@ import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ScheduleResolver;
+import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Interval;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -42,6 +44,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 
@@ -255,14 +258,17 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         return Ordering.from(ScheduleEntry.START_TIME_ITEM_COMPARATOR).immutableSortedCopy(items);
     }
     
+    private static final Function<Broadcast, Interval> TO_BROADCAST = new Function<Broadcast, Interval>() {
+        @Override
+        public Interval apply(Broadcast input) {
+            return new Interval(input.getTransmissionTime(), input.getTransmissionEndTime());
+        }
+    };
+
+    private static final Function<Item, Interval> ITEM_TO_BROADCAST_INTERVAL = Functions.compose(TO_BROADCAST, ScheduleEntry.BROADCAST);
+    
     private Iterable<Item> filterItems(Iterable<Item> items, final Interval interval) {
-        final Predicate<Item> validBroadcast = new Predicate<Item>() {
-            @Override
-            public boolean apply(Item item) {
-                Broadcast broadcast = ScheduleEntry.BROADCAST.apply(item);
-                return interval.overlaps(new Interval(broadcast.getTransmissionTime(), broadcast.getTransmissionEndTime()));
-            }
-        };
+        final Predicate<Item> validBroadcast = MorePredicates.transformingPredicate(ITEM_TO_BROADCAST_INTERVAL, new ScheduleBroadcastFilter(interval));
         
         return Iterables.transform(ImmutableSet.copyOf(Iterables.transform(Iterables.filter(items, validBroadcast), ItemScheduleEntry.ITEM_SCHEDULE_ENTRY)), ItemScheduleEntry.ITEM);
     }
