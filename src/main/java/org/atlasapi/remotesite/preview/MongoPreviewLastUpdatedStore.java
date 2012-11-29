@@ -1,5 +1,6 @@
 package org.atlasapi.remotesite.preview;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -10,29 +11,29 @@ import com.mongodb.DBObject;
 
 public class MongoPreviewLastUpdatedStore implements PreviewLastUpdatedStore {
 
-    private static final String LAST_UPDATED_COLLECTION = "lastUpdated";
+    private static final String LAST_UPDATED_COLLECTION = "previewNetworksLastUpdated";
     private static final String LAST_UPDATED_KEY = "lastUpdated";
-    private final DBCollection lastUpdatedTimes;
+    private final DBCollection lastUpdatedId;
 
     public MongoPreviewLastUpdatedStore(DatabasedMongo mongo) {
-        lastUpdatedTimes = mongo.collection(LAST_UPDATED_COLLECTION);
+        lastUpdatedId = mongo.collection(LAST_UPDATED_COLLECTION);
     }
     
     @Override
     public void store(String lastUpdated) {
         DBObject dbo = new BasicDBObject();
         TranslatorUtils.from(dbo, LAST_UPDATED_KEY, lastUpdated);
-        lastUpdatedTimes.update(new BasicDBObject(), dbo);
+        lastUpdatedId.update(new BasicDBObject(), dbo);
     }
 
     @Override
-    public String retrieve() {
-        DBCursor cursor = lastUpdatedTimes.find();
+    public Optional<String> retrieve() {
+        DBCursor cursor = lastUpdatedId.find();
         if (cursor.size() == 0) {
-            return null;
+            return Optional.absent();
         }
         DBObject dbo = Iterables.getOnlyElement(cursor);
-        return TranslatorUtils.toString(dbo, LAST_UPDATED_KEY);
+        return Optional.fromNullable(TranslatorUtils.toString(dbo, LAST_UPDATED_KEY));
     }
 
 }
