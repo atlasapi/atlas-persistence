@@ -13,6 +13,7 @@ import org.atlasapi.media.channel.Channel;
 import org.atlasapi.persistence.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.entity.ChannelSchedule;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
@@ -20,7 +21,6 @@ import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Schedule;
-import org.atlasapi.media.entity.Schedule.ScheduleChannel;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
@@ -180,8 +180,8 @@ public class MongoScheduleStoreTest {
     	store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, itemsAndBroadcasts);
     	Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC));
     	
-    	assertEquals(1, schedule.scheduleChannels().size());
-        ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
+    	assertEquals(1, schedule.channelSchedules().size());
+        ChannelSchedule channel = Iterables.getOnlyElement(schedule.channelSchedules());
         
         assertEquals(3, channel.items().size());
         
@@ -198,8 +198,8 @@ public class MongoScheduleStoreTest {
         
     	store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, replacementItemAndBcast);
         Schedule updatedSchedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC));
-    	assertEquals(1, updatedSchedule.scheduleChannels().size());
-        ScheduleChannel replacementChannel = Iterables.getOnlyElement(updatedSchedule.scheduleChannels());
+    	assertEquals(1, updatedSchedule.channelSchedules().size());
+        ChannelSchedule replacementChannel = Iterables.getOnlyElement(updatedSchedule.channelSchedules());
         
         assertEquals(3, replacementChannel.items().size());
         
@@ -253,7 +253,7 @@ public class MongoScheduleStoreTest {
         
         schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC));
         
-        ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
+        ChannelSchedule channel = Iterables.getOnlyElement(schedule.channelSchedules());
         Item item1 = Iterables.getOnlyElement(channel.items());
         Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
         assertEquals(now.minusHours(6), broadcast1.getTransmissionTime());
@@ -268,16 +268,16 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item2);
         
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC));
-        ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
+        ChannelSchedule channel = Iterables.getOnlyElement(schedule.channelSchedules());
         Item item1 = Iterables.getOnlyElement(channel.items());
         Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
         assertEquals(now.minusHours(2), broadcast1.getTransmissionTime());
     }
     
     private void assertSchedule(Schedule schedule) {
-        assertEquals(2, schedule.scheduleChannels().size());
+        assertEquals(2, schedule.channelSchedules().size());
         
-        for (ScheduleChannel channel: schedule.scheduleChannels()) {
+        for (ChannelSchedule channel: schedule.channelSchedules()) {
             assertEquals(2, channel.items().size());
             
             Item item1 = channel.items().get(0);
