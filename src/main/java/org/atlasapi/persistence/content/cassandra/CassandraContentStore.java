@@ -300,7 +300,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private Content unmarshalContent(String key, ColumnList<String> columns) throws IllegalStateException, IOException {
-        String type = columns.getStringValue(CONTENT_TYPE_COLUMN, "null");
+        String type = columns.getStringValue(CONTENT_TYPE_COLUMN, "ITEM"); //hack to read content.
         if (type.equals(EntityType.ITEM.name())) {
             return unmarshalItem(columns);
         } else if (type.equals(EntityType.CONTAINER.name())) {
