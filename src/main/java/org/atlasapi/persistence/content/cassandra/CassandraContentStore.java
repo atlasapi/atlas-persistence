@@ -300,13 +300,25 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     private Content unmarshalContent(String key, ColumnList<String> columns) throws IllegalStateException, IOException {
-        String type = columns.getStringValue(CONTENT_TYPE_COLUMN, "ITEM"); //hack to read content.
-        if (type.equals(EntityType.ITEM.name())) {
-            return unmarshalItem(columns);
-        } else if (type.equals(EntityType.CONTAINER.name())) {
-            return unmarshalContainer(columns);
+        String type = columns.getStringValue(CONTENT_TYPE_COLUMN, null);
+        if (type != null) {
+            if (type.equals(EntityType.ITEM.name())) {
+                return unmarshalItem(columns);
+            } else if (type.equals(EntityType.CONTAINER.name())) {
+                return unmarshalContainer(columns);
+            } else {
+                throw new IllegalStateException("Unknown content type: " + type + " with id: " + key);
+            }
         } else {
-            throw new IllegalStateException("Unknown content type: " + type + " with id: " + key);
+            try {
+                return unmarshalItem(columns);
+            } catch (Exception ie) {
+                try {
+                    return unmarshalContainer(columns);
+                } catch (Exception ce) {
+                    throw new IllegalStateException("Failed to deserialize: " + key);
+                }
+            }
         }
     }
 
