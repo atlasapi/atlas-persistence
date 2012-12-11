@@ -1,7 +1,9 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.persistence.media.channel.ChannelResolver;
 import org.atlasapi.persistence.media.channel.MongoChannelGroupStore;
 import org.atlasapi.persistence.media.channel.MongoChannelStore;
+import org.atlasapi.persistence.media.product.ProductResolver;
 import org.atlasapi.persistence.media.segment.MongoSegmentResolver;
 import org.atlasapi.persistence.media.segment.MongoSegmentWriter;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
@@ -25,8 +27,18 @@ import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.time.SystemClock;
 import org.atlasapi.persistence.messaging.mongo.MongoMessageStore;
+import com.mongodb.Mongo;
+import com.mongodb.WriteConcern;
+import org.atlasapi.persistence.content.ContentGroupResolver;
+import org.atlasapi.persistence.content.ContentGroupWriter;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
 public class MongoContentPersistenceModule {
 
@@ -49,6 +61,10 @@ public class MongoContentPersistenceModule {
     private final MongoChannelGroupStore channelGroupStore;
     private final MongoProductStore productStore;
     private final MongoMessageStore messageStore;
+
+    private @Autowired Mongo mongo;
+	private @Autowired DatabasedMongo db;
+	private @Autowired AdapterLog log;
 
     public MongoContentPersistenceModule(DatabasedMongo db) {
         AdapterLog log = new SystemOutAdapterLog();
@@ -143,5 +159,21 @@ public class MongoContentPersistenceModule {
 
     public MongoMessageStore messageStore() {
         return messageStore;
+	}
+
+    public @Primary @Bean TopicQueryResolver topicQueryResolver() {
+        return new MongoTopicStore(db);
+    }
+        
+    public @Primary @Bean ChannelResolver channelResolver() {
+    	return new MongoChannelStore(db);
+    }
+    public @Primary @Bean ProductResolver productResolver() {
+        return new MongoProductStore(db);
+    }
+
+    @Bean
+    MongoIOProbe mongoIoSetProbe() {
+        return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
     }
 }
