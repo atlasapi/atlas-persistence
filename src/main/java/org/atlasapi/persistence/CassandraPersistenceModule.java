@@ -3,6 +3,8 @@ package org.atlasapi.persistence;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.properties.Configurer;
+
+import org.atlasapi.equiv.CassandraEquivalenceSummaryStore;
 import org.atlasapi.persistence.content.cassandra.CassandraContentStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -23,5 +25,11 @@ public class CassandraPersistenceModule {
     @Qualifier(value = "cassandra")
     public CassandraContentStore cassandraContentStore() {
         return new CassandraContentStore(environment, Lists.newArrayList(Splitter.on(',').split(seeds)), Integer.parseInt(port), Runtime.getRuntime().availableProcessors() * 10, Integer.parseInt(connectionTimeout), Integer.parseInt(requestTimeout));
+    }
+    
+    @Bean
+    @Qualifier(value = "cassandra")
+    public CassandraEquivalenceSummaryStore cassandraEquivalenceSummaryStore() {
+        return new CassandraEquivalenceSummaryStore(environment, Lists.newArrayList(Splitter.on(',').split(seeds)), Integer.parseInt(port), Runtime.getRuntime().availableProcessors() * 10, Integer.parseInt(connectionTimeout), Integer.parseInt(requestTimeout));
     }
 }
