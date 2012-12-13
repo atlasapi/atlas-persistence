@@ -19,8 +19,12 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String THIS_OR_CHILD_LAST_UPDATED_KEY = "thisOrChildLastUpdated";
     public static final String TYPE_KEY = "type";
 	public static final String LAST_FETCHED_KEY = "lastFetched";
+    public static final String SHORT_DESC_KEY = "shortDescription";
+    public static final String MEDIUM_DESC_KEY = "mediumDescription";
+    public static final String LONG_DESC_KEY = "longDescription";
 	
 	private final IdentifiedTranslator descriptionTranslator;
+    
 
 	public DescribedTranslator(IdentifiedTranslator descriptionTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
@@ -32,6 +36,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		descriptionTranslator.fromDBObject(dbObject, entity);
 
 		entity.setDescription((String) dbObject.get("description"));
+		
+		entity.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESC_KEY));
+		entity.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESC_KEY));
+		entity.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESC_KEY));
 
 		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, "firstSeen"));
 		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY));
@@ -73,6 +81,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
          }
 		 
 	    descriptionTranslator.toDBObject(dbObject, entity);
+
+	    TranslatorUtils.from(dbObject, SHORT_DESC_KEY, entity.getShortDescription());
+	    TranslatorUtils.from(dbObject, MEDIUM_DESC_KEY, entity.getMediumDescription());
+	    TranslatorUtils.from(dbObject, LONG_DESC_KEY, entity.getLongDescription());
 
         TranslatorUtils.from(dbObject, "description", entity.getDescription());
         TranslatorUtils.fromDateTime(dbObject, "firstSeen", entity.getFirstSeen());
