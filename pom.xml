@@ -54,7 +54,7 @@
         <dependency>
             <groupId>com.netflix.astyanax</groupId>
             <artifactId>astyanax</artifactId>
-            <version>1.56.14</version>
+            <version>1.56.18</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
