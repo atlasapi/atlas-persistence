@@ -239,7 +239,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
         Map<String, Maybe<Identified>> contents = new HashMap<String, Maybe<Identified>>();
         // Avoid doing a self-DoS by partitioning the requested ids and hence doing multiple requests:
         FutureList<OperationResult<Rows<String, String>>> futures = new FutureList<OperationResult<Rows<String, String>>>();
-        for (Iterable<String> partition : Iterables.partition(ids, 10)) {
+        for (Iterable<String> partition : Iterables.partition(ids, 50)) {
             futures.add(keyspace.prepareQuery(CONTENT_CF).
                     setConsistencyLevel(ConsistencyLevel.CL_ONE).
                     getKeySlice(partition).
