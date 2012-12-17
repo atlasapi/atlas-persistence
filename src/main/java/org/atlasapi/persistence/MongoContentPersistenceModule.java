@@ -14,7 +14,9 @@ import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.DefaultEquivalentContentResolver;
 import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
+import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
@@ -27,6 +29,7 @@ import org.atlasapi.persistence.content.mongo.MongoTopicStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
+import org.atlasapi.persistence.content.query.KnownTypeQueryExecutor;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
@@ -104,10 +107,14 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Primary @Bean MongoScheduleStore scheduleStore() {
 	    try {
-            return new MongoScheduleStore(db, contentResolver(), channelResolver);
+            return new MongoScheduleStore(db, contentResolver(), channelResolver, equivContentResolver());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+	}
+
+	public @Primary @Bean EquivalentContentResolver equivContentResolver() {
+	    return new DefaultEquivalentContentResolver(knownTypeContentResolver(), lookupStore());
 	}
 	
 	public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
