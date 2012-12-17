@@ -69,7 +69,7 @@ public class MongoLookupEntryStoreTest {
         Iterable<LookupEntry> aliasEntry = entryStore.entriesForCanonicalUris(ImmutableList.of("testItemOneAlias"));
         assertTrue("Found entry by canonical URI using alias", Iterables.isEmpty(aliasEntry));
 
-        aliasEntry = entryStore.entriesForIdentifiers(ImmutableList.of("testItemOneAlias"));
+        aliasEntry = entryStore.entriesForIdentifiers(ImmutableList.of("testItemOneAlias"), true);
         assertEquals(testEntryOne, Iterables.getOnlyElement(uriEntry));
         
         uriEntry = entryStore.entriesForCanonicalUris(ImmutableList.of("testItemTwoUri"));
@@ -79,7 +79,7 @@ public class MongoLookupEntryStoreTest {
         aliasEntry = entryStore.entriesForCanonicalUris(ImmutableList.of("testItemTwoAlias"));
         assertTrue("Found entry by canonical URI using alias", Iterables.isEmpty(aliasEntry));
         
-        aliasEntry = entryStore.entriesForIdentifiers(ImmutableList.of("sharedAlias"));
+        aliasEntry = entryStore.entriesForIdentifiers(ImmutableList.of("sharedAlias"), true);
         LookupEntry first = Iterables.get(aliasEntry, 0);
         LookupEntry second = Iterables.get(aliasEntry, 1);
         assertThat(first, isOneOf(testEntryOne, testEntryTwo));

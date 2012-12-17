@@ -15,9 +15,10 @@ public interface LookupEntryStore {
      * requested.
      * 
      * @param identifiers
+     * @param useAliases TODO
      * @return
      */
-    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers);
+    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean useAliases);
 
     /**
      * Get entries for specified <b>canonical</b> URIs.
