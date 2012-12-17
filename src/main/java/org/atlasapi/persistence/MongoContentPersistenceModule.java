@@ -47,7 +47,6 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
-import com.mongodb.MongoReplicaSetProbe;
 import com.mongodb.WriteConcern;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
@@ -159,11 +158,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoProductStore(db);
     }
     
-    @Bean
-    MongoReplicaSetProbe mongoReplicaSetProbe() {
-        return new MongoReplicaSetProbe(mongo);
-    }
-
     @Bean
     MongoIOProbe mongoIoSetProbe() {
         return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
