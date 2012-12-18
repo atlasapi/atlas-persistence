@@ -8,6 +8,7 @@ import static org.junit.Assert.assertThat;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -23,6 +24,7 @@ import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 
+@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraEquivalenceSummaryStoreTest {
 
     private CassandraEquivalenceSummaryStore store;
