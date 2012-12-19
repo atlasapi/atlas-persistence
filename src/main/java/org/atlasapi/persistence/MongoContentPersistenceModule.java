@@ -1,11 +1,6 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.persistence.media.channel.ChannelResolver;
-import org.atlasapi.persistence.media.channel.MongoChannelGroupStore;
-import org.atlasapi.persistence.media.channel.MongoChannelStore;
-import org.atlasapi.persistence.media.product.ProductResolver;
-import org.atlasapi.persistence.media.segment.MongoSegmentResolver;
-import org.atlasapi.persistence.media.segment.MongoSegmentWriter;
+import org.atlasapi.persistence.content.DefaultEquivalentContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
@@ -22,23 +17,26 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.logging.SystemOutAdapterLog;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.media.channel.ChannelResolver;
+import org.atlasapi.persistence.media.channel.MongoChannelGroupStore;
+import org.atlasapi.persistence.media.channel.MongoChannelStore;
+import org.atlasapi.persistence.media.product.ProductResolver;
+import org.atlasapi.persistence.media.segment.MongoSegmentResolver;
+import org.atlasapi.persistence.media.segment.MongoSegmentWriter;
+import org.atlasapi.persistence.messaging.mongo.MongoMessageStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.time.SystemClock;
-import org.atlasapi.persistence.messaging.mongo.MongoMessageStore;
 import com.mongodb.Mongo;
 import com.mongodb.WriteConcern;
-import org.atlasapi.persistence.content.ContentGroupResolver;
-import org.atlasapi.persistence.content.ContentGroupWriter;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 
 public class MongoContentPersistenceModule {
 
@@ -75,7 +73,7 @@ public class MongoContentPersistenceModule {
         this.knownTypeContentResolver = new MongoContentResolver(db);
         this.contentResolver = new LookupResolvingContentResolver(knownTypeContentResolver, lookupStore);
         this.channelStore = new MongoChannelStore(db);
-        this.scheduleStore = new MongoScheduleStore(db, contentResolver, channelStore);
+        this.scheduleStore = new MongoScheduleStore(db, contentResolver, channelStore, new DefaultEquivalentContentResolver(knownTypeContentResolver, lookupStore));
         this.personStore = new MongoPersonStore(db);
         this.itemsPeopleWriter = new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore, log), log);
         this.shortUrlSaver = new MongoShortUrlSaver(db);
@@ -124,7 +122,7 @@ public class MongoContentPersistenceModule {
     public MongoPersonStore personStore() {
         return personStore;
     }
-
+    
     public MongoShortUrlSaver shortUrlSaver() {
         return shortUrlSaver;
     }
