@@ -19,37 +19,36 @@ import static org.atlasapi.media.entity.testing.ComplexItemTestDataBuilder.compl
 import static org.atlasapi.media.entity.testing.VersionTestDataBuilder.version;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
 
 import java.util.Arrays;
 import java.util.List;
 
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.media.entity.testing.ComplexBroadcastTestDataBuilder;
+import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.search.model.SearchQuery;
 import org.atlasapi.search.model.SearchResults;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.Duration;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.SystemClock;
-import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.ParentRef;
-import org.atlasapi.media.entity.Specialization;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
-import org.elasticsearch.client.Requests;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class ESContentSearcherV3CompatibilityTest {
 
@@ -219,8 +218,8 @@ public class ESContentSearcherV3CompatibilityTest {
 
     @Test
     public void testLimitingToPublishers() throws Exception {
-        check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.BBC), 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings, politicsEast);
-        check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.ARCHIVE_ORG), 1.0f, 0.0f, 0.0f)).get());
+        check(searcher.search(SearchQuery.builder("east").withPublishers(ImmutableSet.of(Publisher.BBC)).withTitleWeighting(1.0f).build()).get(), eastenders, eastendersWeddings, politicsEast);
+        check(searcher.search(SearchQuery.builder("east").withPublishers(ImmutableSet.of(Publisher.ARCHIVE_ORG)).withTitleWeighting(1.0f).build()).get());
 
         Brand eastBrand = new Brand("/east", "curie", Publisher.ARCHIVE_ORG);
         eastBrand.setTitle("east");
@@ -233,7 +232,7 @@ public class ESContentSearcherV3CompatibilityTest {
         indexer.index(eastItem);
         Thread.sleep(2000);
         
-        check(searcher.search(new SearchQuery("east", Selection.ALL, ImmutableSet.of(Publisher.ARCHIVE_ORG), 1.0f, 0.0f, 0.0f)).get(), eastBrand);
+        check(searcher.search(SearchQuery.builder("east").withPublishers(ImmutableSet.of(Publisher.ARCHIVE_ORG)).withTitleWeighting(1.0f).build()).get(), eastBrand);
     }
 
     @Test
@@ -245,9 +244,9 @@ public class ESContentSearcherV3CompatibilityTest {
 
     @Test
     public void testLimitAndOffset() throws Exception {
-        check(searcher.search(new SearchQuery("eas", Selection.ALL, ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings, politicsEast);
-        check(searcher.search(new SearchQuery("eas", Selection.limitedTo(2), ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings);
-        check(searcher.search(new SearchQuery("eas", Selection.offsetBy(2), ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f)).get(), politicsEast);
+        check(searcher.search(SearchQuery.builder("eas").withPublishers(ALL_PUBLISHERS).withTitleWeighting(1.0f).build()).get(), eastenders, eastendersWeddings, politicsEast);
+        check(searcher.search(SearchQuery.builder("eas").withPublishers(ALL_PUBLISHERS).withSelection(Selection.limitedTo(2)).withTitleWeighting(1.0f).build()).get(), eastenders, eastendersWeddings);
+        check(searcher.search(SearchQuery.builder("eas").withPublishers(ALL_PUBLISHERS).withSelection(Selection.offsetBy(2)).withTitleWeighting(1.0f).build()).get(), politicsEast);
     }
 
     @Test
@@ -271,15 +270,17 @@ public class ESContentSearcherV3CompatibilityTest {
     }
     
     protected static SearchQuery title(String term) {
-        return new SearchQuery(term, Selection.ALL, ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f);
+        return SearchQuery.builder(term).withPublishers(ALL_PUBLISHERS).withTitleWeighting(1.0f).build();
     }
     
     protected static SearchQuery specializedTitle(String term, Specialization specialization) {
-        return new SearchQuery(term, Selection.ALL, Sets.newHashSet(specialization), ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f);
+        return SearchQuery.builder(term).withPublishers(ALL_PUBLISHERS)
+            .withSpecializations(Sets.newHashSet(specialization)).withTitleWeighting(1.0f).build();
     }
 
     protected static SearchQuery currentWeighted(String term) {
-        return new SearchQuery(term, Selection.ALL, ALL_PUBLISHERS, 1.0f, 0.2f, 0.2f);
+        return SearchQuery.builder(term).withPublishers(ALL_PUBLISHERS)
+            .withTitleWeighting(1.0f).withBroadcastWeighting(0.2f).withCatchupWeighting(0.2f).build();
     }
 
     protected static void check(SearchResults result, Identified... content) {
