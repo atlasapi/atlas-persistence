@@ -1,7 +1,7 @@
 package org.atlasapi.persistence.media;
 
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Container;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.content.ContentHasher;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;

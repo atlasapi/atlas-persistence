@@ -2,8 +2,8 @@ package org.atlasapi.persistence.content;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.explicitTransitiveLookupWriter;
 
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Container;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;

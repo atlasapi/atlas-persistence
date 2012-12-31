@@ -3,9 +3,9 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Comparator;
 import java.util.List;
 
+import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
-import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;

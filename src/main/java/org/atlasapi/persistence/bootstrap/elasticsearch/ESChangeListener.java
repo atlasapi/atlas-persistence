@@ -1,7 +1,8 @@
 package org.atlasapi.persistence.bootstrap.elasticsearch;
 
 import java.util.concurrent.ThreadPoolExecutor;
-import org.atlasapi.media.entity.Container;
+
+import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.bootstrap.AbstractMultiThreadedChangeListener;
 import org.atlasapi.persistence.content.IndexException;

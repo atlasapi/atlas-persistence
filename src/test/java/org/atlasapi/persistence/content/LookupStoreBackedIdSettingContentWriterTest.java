@@ -2,7 +2,7 @@ package org.atlasapi.persistence.content;
 
 import static org.hamcrest.Matchers.hasItem;
 
-import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;

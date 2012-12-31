@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.persistence.cassandra.CassandraIndex;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.lookup.NewLookupWriter;

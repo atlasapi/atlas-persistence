@@ -3,7 +3,7 @@ package org.atlasapi.persistence.bootstrap.cassandra;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
-import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;

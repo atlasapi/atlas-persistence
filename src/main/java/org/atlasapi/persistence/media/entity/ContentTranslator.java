@@ -3,9 +3,9 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.RelatedLink;

@@ -2,7 +2,7 @@ package org.atlasapi.persistence.content;
 
 import java.util.Iterator;
 
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
