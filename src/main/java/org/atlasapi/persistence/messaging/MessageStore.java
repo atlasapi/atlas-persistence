@@ -3,6 +3,8 @@ package org.atlasapi.persistence.messaging;
 import org.atlasapi.messaging.Message;
 import org.joda.time.DateTime;
 
+import com.google.common.base.Optional;
+
 public interface MessageStore {
 
     /**
@@ -15,7 +17,8 @@ public interface MessageStore {
      *
      * @param from
      * @param to
+     * @param source 
      * @return
      */
-    Iterable<Message> get(DateTime from, DateTime to);
+    Iterable<Message> get(DateTime from, DateTime to, Optional<String> source);
 }

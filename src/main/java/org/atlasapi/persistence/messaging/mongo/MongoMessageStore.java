@@ -1,18 +1,25 @@
 package org.atlasapi.persistence.messaging.mongo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.GREATER_THAN_OR_EQUAL_TO;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.LESS_THAN;
+
+import java.io.IOException;
+
+import org.atlasapi.messaging.Message;
+import org.atlasapi.persistence.messaging.MessageStore;
+import org.atlasapi.serialization.json.JsonFactory;
 import org.joda.time.DateTime;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
-import java.io.IOException;
-import org.atlasapi.messaging.Message;
-import org.atlasapi.persistence.messaging.MessageStore;
-import org.atlasapi.serialization.json.JsonFactory;
 
 public class MongoMessageStore implements MessageStore {
 
@@ -35,11 +42,17 @@ public class MongoMessageStore implements MessageStore {
     }
 
     @Override
-    public Iterable<Message> get(DateTime from, DateTime to) {
+    public Iterable<Message> get(DateTime from, DateTime to, Optional<String> source) {
         DBObject query = new BasicDBObject();
-        query.put("timestamp", new BasicDBObject("$gte", from.getMillis()).append("$lt", to.getMillis()));
-        DBObject keys = new BasicDBObject();
-        keys.put("_id", 0);
+        query.put("timestamp", ImmutableMap.of(
+            GREATER_THAN_OR_EQUAL_TO, from.getMillis(),
+            LESS_THAN, to.getMillis()
+        ));
+        if (source.isPresent()) {
+            query.put("entitySource", source.get());
+        }
+        //fixes deserialization problem.
+        DBObject keys = new BasicDBObject("_id", 0);
         return Iterables.transform(messages.find(query, keys).sort(new BasicDBObject("timestamp", 1)), new Function<DBObject, Message>() {
 
             @Override
