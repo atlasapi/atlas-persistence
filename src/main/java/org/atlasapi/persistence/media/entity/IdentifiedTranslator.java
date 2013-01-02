@@ -29,6 +29,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 	public static final String CANONICAL_URL = "uri";
 	public static final String TYPE = "type";
     public static final String PUBLISHER = "publisher";
+    public static final String OPAQUE_ID = "aid";
     
     private final AliasTranslator aliasTranslator = new AliasTranslator();
 
@@ -86,12 +87,13 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
             dbObject = new BasicDBObject();
         }
         
-        if(useAtlasIdAsId) {
-        	TranslatorUtils.from(dbObject, CANONICAL_URL, entity.getCanonicalUri());
-        	TranslatorUtils.from(dbObject, ID, entity.getId());
+        if (useAtlasIdAsId) {
+            TranslatorUtils.from(dbObject, CANONICAL_URL, entity.getCanonicalUri());
+            TranslatorUtils.from(dbObject, ID, entity.getId());
         }
         else {
-        	TranslatorUtils.from(dbObject, ID, entity.getCanonicalUri());
+            TranslatorUtils.from(dbObject, ID, entity.getCanonicalUri());
+            TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId());
         }
         
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
