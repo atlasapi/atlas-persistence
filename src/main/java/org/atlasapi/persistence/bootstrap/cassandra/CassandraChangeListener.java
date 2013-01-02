@@ -83,11 +83,15 @@ public class CassandraChangeListener extends AbstractMultiThreadedChangeListener
     @Override
     protected void onChange(Object change) {
         if (change instanceof Item) {
-            cassandraContentStore.createOrUpdate((Item) change);
+            Item item = (Item) change;
+            item.setReadHash(null);
+            cassandraContentStore.createOrUpdate(item);
         } else if (change instanceof LookupEntry) {
             cassandraLookupEntryStore.store((LookupEntry) change);
         } else if (change instanceof Container) {
-            cassandraContentStore.createOrUpdate((Container) change);
+            Container container = (Container) change;
+            container.setReadHash(null);
+            cassandraContentStore.createOrUpdate(container);
         } else if (change instanceof Person) {
             cassandraPersonStore.createOrUpdatePerson((Person) change);
         } else if (change instanceof Channel) {
