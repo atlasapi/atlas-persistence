@@ -242,7 +242,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             Map<String, ActionRequest> scheduleRequests = scheduleIndexRequests(item);
             ensureIndices(scheduleRequests);
             requests.add(scheduleRequests.values());
-            timeoutGet(esClient.client().bulk(requests));
+            BulkResponse resp = timeoutGet(esClient.client().bulk(requests));
+            log.info("Indexed {} ({}ms, {})", new Object[]{item, resp.getTookInMillis(), scheduleRequests.keySet()});
         } catch (Exception e) {
             throw new IndexException("Error indexing " + item, e);
         }
@@ -328,10 +329,6 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             .type(EsContent.TOP_LEVEL_TYPE)
             .id(container.getCanonicalUri())
             .source(indexed.toMap());
-        doIndex(request);
-    }
-
-    private void doIndex(IndexRequest request) {
         timeoutGet(esClient.client().index(request));
     }
 
