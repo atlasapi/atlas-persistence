@@ -9,25 +9,25 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 import org.junit.runner.RunWith;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.ids.IdGenerator;
 
 @RunWith(JMock.class)
-public class IdSettingContentWriterTest {
+public class LookupStoreBackedIdSettingContentWriterTest {
 
     private final Mockery context = new Mockery();
     private final LookupEntryStore lookupStore = context.mock(LookupEntryStore.class);
     private final ContentWriter delegate = context.mock(ContentWriter.class);
     private final IdGenerator idGenerator = context.mock(IdGenerator.class);
     
-    private final IdSettingContentWriter writer = new IdSettingContentWriter(lookupStore, idGenerator, delegate);
+    private final AbstractIdSettingContentWriter writer = new LookupStoreBackedIdSettingContentWriter(lookupStore, idGenerator, delegate);
     
     @Test
     public void testCreatingItemGeneratesNewId() {
