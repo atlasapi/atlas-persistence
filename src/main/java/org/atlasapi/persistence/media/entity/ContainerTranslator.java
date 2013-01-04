@@ -20,7 +20,8 @@ import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container> {
 
-	public static final String CHILDREN_KEY = "childRefs";
+	public static final String CONTAINER_ID = "containerId";
+    public static final String CHILDREN_KEY = "childRefs";
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
     private static final String TOTAL_EPISODES = "totalEpisodes";
 
@@ -80,8 +81,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         if (entity instanceof Series) {
             Series series = (Series) entity;
             series.withSeriesNumber((Integer) dbObject.get(SERIES_NUMBER_KEY));
+            Long containerId = TranslatorUtils.toLong(dbObject, CONTAINER_ID);
             if(dbObject.containsField("container")) {
-                series.setParentRef(new ParentRef((String)dbObject.get("container")));
+                series.setParentRef(new ParentRef((String)dbObject.get("container"), containerId));
             }
             series.setTotalEpisodes(TranslatorUtils.toInteger(dbObject, TOTAL_EPISODES));
         }
@@ -151,6 +153,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
             }
             if (series.getParent() != null) {
                 dbObject.put("container", series.getParent().getUri());
+                dbObject.put(CONTAINER_ID, series.getParent().getId());
             }
             if(series.getTotalEpisodes() != null) {
                 TranslatorUtils.from(dbObject, TOTAL_EPISODES, series.getTotalEpisodes());
