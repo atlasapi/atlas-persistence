@@ -44,7 +44,7 @@ public class ChildRefWriter {
         ChildRef childRef = episode.childRef();
 
         if (episode.getSeriesRef() == null) { // just ensure item in container.
-            includeChildRefInContainer(episode.getContainer().getUri(), childRef, containers, CHILDREN_KEY);
+            includeChildRefInContainer(episode, childRef, containers, CHILDREN_KEY);
             return;
         }
 
@@ -60,6 +60,9 @@ public class ChildRefWriter {
             throw new IllegalStateException(String.format("Container or series not found for episode %s", episode.getCanonicalUri()));
         }
 
+        episode.setContainer(maybeBrand.requireValue());
+        episode.setSeries((Series)maybeSeries.requireValue());
+        
         addChildRef(childRef, containers, maybeBrand.requireValue());
         addChildRef(childRef, programmeGroups, maybeSeries.requireValue());
 
@@ -78,6 +81,7 @@ public class ChildRefWriter {
                 brand.setSeriesRefs(merged);
                 brand.setThisOrChildLastUpdated(laterOf(brand.getThisOrChildLastUpdated(), series.getThisOrChildLastUpdated()));
                 containers.save(containerTranslator.toDBO(container, true));
+                series.setParent(brand);
             } else {
                 throw new IllegalStateException(String.format("Container %s for series child ref %s is not brand", containerUri, series.getCanonicalUri()));
             }
@@ -97,15 +101,18 @@ public class ChildRefWriter {
     }
 
     public void includeItemInTopLevelContainer(Item item) {
-        includeChildRefInContainer(item.getContainer().getUri(), item.childRef(), containers, CHILDREN_KEY);
+        includeChildRefInContainer(item, item.childRef(), containers, CHILDREN_KEY);
     }
 
-    private void includeChildRefInContainer(String containerUri, ChildRef ref, DBCollection collection, String key) {
+    private void includeChildRefInContainer(Item item, ChildRef ref, DBCollection collection, String key) {
 
+        String containerUri = item.getContainer().getUri();
         Maybe<Container> maybeContainer = getContainer(containerUri, collection);
 
         if (maybeContainer.hasValue()) {
-            addChildRef(ref, collection, maybeContainer.requireValue());
+            Container container = maybeContainer.requireValue();
+            addChildRef(ref, collection, container);
+            item.setContainer(container);
         } else {
             throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s", containerUri, collection.getName(), ref.getUri()));
         }
