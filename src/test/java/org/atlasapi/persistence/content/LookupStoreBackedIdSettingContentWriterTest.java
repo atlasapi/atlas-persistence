@@ -3,6 +3,7 @@ package org.atlasapi.persistence.content;
 import static org.hamcrest.Matchers.hasItem;
 
 import org.atlasapi.media.content.Container;
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -86,17 +87,17 @@ public class LookupStoreBackedIdSettingContentWriterTest {
     @Test
     public void testCreatingContainerGeneratesNewId() {
         
-        final Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
+        final Brand brand = new Brand("containerUri", "containerCurie", Publisher.BBC);
             
         final long newId = 1234;
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(brand.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
             oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(containerWithId(newId)));
         }});
         
-        writer.createOrUpdate(container);
+        writer.createOrUpdate(brand);
         
         context.assertIsSatisfied();
     }
@@ -104,17 +105,17 @@ public class LookupStoreBackedIdSettingContentWriterTest {
     @Test
     public void testUpdatingContainerDoesntGenerateNewId() {
         
-        final Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
+        final Brand brand = new Brand("containerUri", "containerCurie", Publisher.BBC);
         final long oldId = 1234l;
-        container.setId(oldId);
+        brand.setId(oldId);
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(container))));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(brand.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(brand))));
             never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(containerWithId(oldId)));
         }});
         
-        writer.createOrUpdate(container);
+        writer.createOrUpdate(brand);
         
         context.assertIsSatisfied();
         
