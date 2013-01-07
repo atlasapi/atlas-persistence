@@ -2,10 +2,12 @@ package org.atlasapi.media.channel;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
+import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.joda.time.Duration;
 
@@ -120,6 +122,19 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 			// TODO: skip ids of legacy channel names
 			channel.setId(codec.decode(idGenerator.generate()).longValue());
 		}
+
+		if (channel.parent() != null) {
+		    // channel is child, add reference to it to the parent channel
+		    Maybe<Channel> maybeParent = fromId(channel.parent());
+		    
+		    if (maybeParent.isNothing()) {
+	            throw new IllegalStateException(String.format("Parent channel not found for channel with id %s", channel.getId()));
+	        }
+		    
+		    Channel parent = maybeParent.requireValue();
+		    parent.addVariation(channel.parent());
+		    write(parent);
+		}
 		collection.insert(translator.toDBObject(null, channel));
 	}
 
@@ -144,5 +159,17 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 			return translator.fromDBObject(input, null);
 		}
 	};
+
+    @Override
+    public Maybe<Channel> forAlias(String alias) {
+        for (Channel channel : channels.get().values()) {
+            for (String channelAlias : channel.getAliases()) {
+                if (alias.equals(channelAlias)) {
+                    return Maybe.just(channel);
+                }
+            }
+        }
+        return Maybe.nothing();
+    }
 
 }

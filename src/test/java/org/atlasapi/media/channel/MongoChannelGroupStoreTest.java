@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertTrue;
 
-import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,10 +38,9 @@ public class MongoChannelGroupStoreTest {
     }
 
     private static ChannelGroup channelGroupWithId(long id) {
-        ChannelGroup channelGroup = new ChannelGroup();
+        ChannelGroup channelGroup = new Region();
         channelGroup.setId(id);
         channelGroup.setAvailableCountries(ImmutableSet.of(Countries.GB));
-        channelGroup.setType(ChannelGroupType.REGION);
         channelGroup.setTitle("ChannelGroup" + id);
         channelGroup.setPublisher(Publisher.METABROADCAST);
         return channelGroup;

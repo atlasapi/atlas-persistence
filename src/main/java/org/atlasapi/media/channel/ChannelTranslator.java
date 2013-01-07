@@ -2,6 +2,9 @@ package org.atlasapi.media.channel;
 
 import static com.google.common.collect.Iterables.transform;
 
+import java.util.List;
+import java.util.Set;
+
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
@@ -10,7 +13,9 @@ import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
@@ -24,11 +29,16 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String HIGH_DEFINITION = "highDefinition";
 	public static final String KEY = "key";
 	public static final String IMAGE = "image";
+	public static final String PARENT = "parent";
+	public static final String VARIATIONS = "variations";
+	public static final String NUMBERINGS = "numberings";
 
 	private ModelTranslator<Identified> identifiedTranslator;
+	private ModelTranslator<ChannelNumbering> channelNumberingTranslator;
 
 	public ChannelTranslator() {
 		this.identifiedTranslator = new IdentifiedTranslator(true);
+		this.channelNumberingTranslator = new ChannelNumberingTranslator();
 	}
 
 	@Override
@@ -47,6 +57,13 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		}
 		TranslatorUtils.from(dbObject, KEY, model.key());
 		TranslatorUtils.from(dbObject, IMAGE, model.image());
+		TranslatorUtils.from(dbObject, PARENT, model.parent());
+		if (model.variations() != null) {
+		    TranslatorUtils.fromLongSet(dbObject, VARIATIONS, model.variations());
+		}
+		
+		fromChannelNumberingSet(dbObject, NUMBERINGS, model.channelNumbers());
+		
 		return dbObject;
 	}
 
@@ -70,8 +87,29 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
 		model.setBroadcaster(broadcaster != null ? Publisher.fromKey(broadcaster).valueOrNull() : null);
+		model.setParent(TranslatorUtils.toLong(dbObject, PARENT));
+		model.setVariationIds(TranslatorUtils.toLongSet(dbObject, VARIATIONS));
+		model.setChannelNumbers(toChannelNumberingSet(dbObject, NUMBERINGS));
 		
 		return (Channel) identifiedTranslator.fromDBObject(dbObject, model);
 	}
-
+	
+	private void fromChannelNumberingSet(DBObject dbObject, String key, Set<ChannelNumbering> set) {
+	    BasicDBList values = new BasicDBList();
+        for (ChannelNumbering value : set) {
+            if (value != null) {
+                values.add(channelNumberingTranslator.toDBObject(null, value));
+            }
+        }
+        dbObject.put(key, values);
+	}
+	
+	@SuppressWarnings("unchecked")
+    private Set<ChannelNumbering> toChannelNumberingSet(DBObject object, String name) {
+        if (object.containsField(name)) {
+            List<ChannelNumbering> dbValues = (List<ChannelNumbering>) channelNumberingTranslator.fromDBObject(object, null);
+            return Sets.newLinkedHashSet(dbValues);
+        }
+        return Sets.newLinkedHashSet();
+    }
 }

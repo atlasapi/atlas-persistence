@@ -15,7 +15,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-public class MongoChannelGroupStore implements ChannelGroupStore {
+public class MongoChannelGroupStore implements ChannelGroupResolver, ChannelGroupWriter {
 
     private DBCollection channelGroups;
     private ChannelGroupTranslator translator = new ChannelGroupTranslator();
@@ -60,4 +60,16 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
         return transform(channelGroups.find(MongoBuilders.where().fieldEquals(ChannelGroupTranslator.CHANNELS_KEY, channel.getId()).build()));
     }
 
+    @Override
+    public Optional<ChannelGroup> fromAlias(String alias) {
+        for (DBObject dbo : channelGroups.find()) {
+            ChannelGroup channelGroup = translator.fromDBObject(dbo, null);
+            for (String channelGroupAlias : channelGroup.getAliases()) {
+                if (alias.equals(channelGroupAlias)) {
+                    return Optional.of(channelGroup);
+                }
+            }
+        }
+        return Optional.absent();
+    }
 }

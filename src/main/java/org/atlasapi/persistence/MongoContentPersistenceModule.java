@@ -1,6 +1,6 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.media.channel.ChannelGroupStore;
+import org.atlasapi.media.channel.ChannelGroupResolver;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
@@ -12,12 +12,16 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.persistence.content.ContentGroupResolver;
+import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
@@ -48,10 +52,6 @@ import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
 import com.mongodb.WriteConcern;
-import org.atlasapi.persistence.content.ContentGroupResolver;
-import org.atlasapi.persistence.content.ContentGroupWriter;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
@@ -146,7 +146,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     	return new MongoChannelStore(db);
     }
     
-    public @Primary @Bean ChannelGroupStore channelGroupStore() {
+    public @Primary @Bean ChannelGroupResolver channelGroupResolver() {
         return new MongoChannelGroupStore(db);
     }
 
