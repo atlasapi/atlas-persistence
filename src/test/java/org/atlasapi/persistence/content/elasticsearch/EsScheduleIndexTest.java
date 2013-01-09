@@ -5,6 +5,7 @@ import static org.atlasapi.media.entity.Publisher.METABROADCAST;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -19,7 +20,6 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.elasticsearch.action.admin.indices.status.IndicesStatusRequest;
@@ -31,6 +31,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -44,15 +45,10 @@ import com.metabroadcast.common.time.TimeMachine;
 
 @RunWith(MockitoJUnitRunner.class)
 public class EsScheduleIndexTest {
-    
-    {
-        Logger root = Logger.getRootLogger();
-        root.addAppender(new ConsoleAppender(
-            new PatternLayout(PatternLayout.TTCC_CONVERSION_PATTERN)));
-        root.setLevel(Level.WARN);
-    }
-    
-    private final Node esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
+
+    private final Node esClient = NodeBuilder.nodeBuilder()
+        .local(true).clusterName(UUID.randomUUID().toString())
+        .build().start();
     private final Clock clock = new TimeMachine(new DateTime(2012,11,19,10,10,10,10,DateTimeZones.UTC));
     private final EsScheduleIndex scheduleIndex = new EsScheduleIndex(esClient, clock);
     private final EsContentIndexer contentIndexer = new EsContentIndexer(esClient);
@@ -60,13 +56,21 @@ public class EsScheduleIndexTest {
     private final Channel channel1 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbcone");
     private final Channel channel2 = new Channel(Publisher.METABROADCAST,"MB1","MB1",MediaType.VIDEO, "http://www.bbc.co.uk/services/bbctwo");
     
+    @BeforeClass
+    public static void before() throws Exception {
+        Logger root = Logger.getRootLogger();
+        root.addAppender(new ConsoleAppender(
+            new PatternLayout(PatternLayout.TTCC_CONVERSION_PATTERN)));
+        root.setLevel(Level.WARN);
+    }
+    
     @Before
-    public void before() throws Exception {
+    public void setUp() throws Exception {
         contentIndexer.startAndWait();
     }
     
     @After
-    public void after() throws Exception {
+    public void tearDown() throws Exception {
         IndicesStatusRequest req = Requests.indicesStatusRequest((String[]) null);
         IndicesStatusResponse statuses = esClient.client().admin().indices().status(req).actionGet();
         for (String index : statuses.getIndices().keySet()) {

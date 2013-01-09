@@ -23,7 +23,12 @@ import static org.junit.Assert.assertFalse;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Identified;
@@ -42,6 +47,7 @@ import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.Duration;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -51,8 +57,6 @@ import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.SystemClock;
 
 public class EsContentSearcherV3CompatibilityTest {
-
-    private static final ImmutableSet<Publisher> ALL_PUBLISHERS = ImmutableSet.copyOf(Publisher.values());
     
     private final Brand dragonsDen = brand("/den", "Dragon's den");
     private final Item dragonsDenItem = complexItem().withBrand(dragonsDen).withVersions(broadcast().buildInVersion()).build();
@@ -120,22 +124,26 @@ public class EsContentSearcherV3CompatibilityTest {
 
     private final List<Item> itemsUpdated = Arrays.asList(u2);
 
-    private Node esClient;
-    private EsContentIndexer indexer;
-    private EsContentSearcher searcher;
-
+    private final Node esClient = NodeBuilder.nodeBuilder()
+        .local(true).clusterName(UUID.randomUUID().toString())
+        .build().start();
+    private final EsContentIndexer indexer = new EsContentIndexer(esClient, new SystemClock());
+    private final EsContentSearcher searcher = new EsContentSearcher(esClient);
+    
+    @BeforeClass
+    public static void before() {
+        Logger root = Logger.getRootLogger();
+        root.addAppender(new ConsoleAppender(
+            new PatternLayout(PatternLayout.TTCC_CONVERSION_PATTERN)));
+        root.setLevel(Level.WARN);
+        
+    }
+    
     @Before
-    public void before() throws Exception {
-        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
-        try {
-            esClient.client().admin().indices().delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME));
-        } catch (Exception ex) {
-        }
-        indexer = new EsContentIndexer(esClient, new SystemClock());
-        searcher = new EsContentSearcher(esClient);
-        //
+    public void setUp() throws Exception {
+
         indexer.startAndWait();
-        //
+
         for (Container c : brands) {
             indexer.index(c);
         }
@@ -145,14 +153,15 @@ public class EsContentSearcherV3CompatibilityTest {
         for (Item i : itemsUpdated) {
             indexer.index(i);
         }
-        Thread.sleep(2000);
+        Thread.sleep(1000);
     }
 
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME));
+        esClient.client().admin().indices()
+            .delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME)).get();
         esClient.close();
-        Thread.sleep(3000);
+        Thread.sleep(1000);
     }
 
     @Test
@@ -244,9 +253,9 @@ public class EsContentSearcherV3CompatibilityTest {
 
     @Test
     public void testLimitAndOffset() throws Exception {
-        check(searcher.search(new SearchQuery("eas", Selection.ALL, ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings, politicsEast);
-        check(searcher.search(new SearchQuery("eas", Selection.limitedTo(2), ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings);
-        check(searcher.search(new SearchQuery("eas", Selection.offsetBy(2), ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f)).get(), politicsEast);
+        check(searcher.search(new SearchQuery("eas", Selection.ALL, Publisher.all(), 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings, politicsEast);
+        check(searcher.search(new SearchQuery("eas", Selection.limitedTo(2), Publisher.all(), 1.0f, 0.0f, 0.0f)).get(), eastenders, eastendersWeddings);
+        check(searcher.search(new SearchQuery("eas", Selection.offsetBy(2), Publisher.all(), 1.0f, 0.0f, 0.0f)).get(), politicsEast);
     }
 
     @Test
@@ -282,15 +291,15 @@ public class EsContentSearcherV3CompatibilityTest {
     }
     
     protected static SearchQuery title(String term) {
-        return new SearchQuery(term, Selection.ALL, ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f);
+        return new SearchQuery(term, Selection.ALL, Publisher.all(), 1.0f, 0.0f, 0.0f);
     }
     
     protected static SearchQuery specializedTitle(String term, Specialization specialization) {
-        return new SearchQuery(term, Selection.ALL, Sets.newHashSet(specialization), ALL_PUBLISHERS, 1.0f, 0.0f, 0.0f);
+        return new SearchQuery(term, Selection.ALL, Sets.newHashSet(specialization), Publisher.all(), 1.0f, 0.0f, 0.0f);
     }
 
     protected static SearchQuery currentWeighted(String term) {
-        return new SearchQuery(term, Selection.ALL, ALL_PUBLISHERS, 1.0f, 0.2f, 0.2f);
+        return new SearchQuery(term, Selection.ALL, Publisher.all(), 1.0f, 0.2f, 0.2f);
     }
 
     protected static void check(SearchResults result, Identified... content) {

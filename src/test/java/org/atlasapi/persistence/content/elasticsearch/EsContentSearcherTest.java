@@ -4,12 +4,18 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.UUID;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
 import org.atlasapi.search.model.SearchQuery;
@@ -20,27 +26,34 @@ import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.query.Selection;
 
 public class EsContentSearcherTest {
 
-    private Node esClient;
+    private final Node esClient = NodeBuilder.nodeBuilder()
+        .local(true).clusterName(UUID.randomUUID().toString())
+        .build().start();
 
-    @Before
-    public void before() throws Exception {
-        esClient = NodeBuilder.nodeBuilder().local(true).clusterName(EsSchema.CLUSTER_NAME).build().start();
+    @BeforeClass
+    public static void before() throws Exception {
+        Logger root = Logger.getRootLogger();
+        root.addAppender(new ConsoleAppender(
+            new PatternLayout(PatternLayout.TTCC_CONVERSION_PATTERN)));
+        root.setLevel(Level.WARN);
     }
 
     @After
     public void after() throws Exception {
-        esClient.client().admin().indices().delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME));
+        esClient.client().admin().indices()
+            .delete(Requests.deleteIndexRequest(EsSchema.INDEX_NAME)).get();
         esClient.close();
-        Thread.sleep(1000);
     }
-
+    
     @Test
     public void testSearch() throws Exception {
         Broadcast broadcast1 = new Broadcast("MB", new DateTime(), new DateTime().plusHours(1));
@@ -79,8 +92,6 @@ public class EsContentSearcherTest {
 
         EsContentSearcher contentSearcher = new EsContentSearcher(esClient);
 
-        Thread.sleep(1000);
-
         contentIndexer.index(brand1);
         contentIndexer.index(brand2);
         contentIndexer.index(item1);
@@ -92,8 +103,8 @@ public class EsContentSearcherTest {
 
         ListenableFuture<SearchResults> future = contentSearcher.search(new SearchQuery("title",
                 Selection.offsetBy(0),
-                Collections.EMPTY_SET,
-                Collections.EMPTY_SET,
+                ImmutableSet.<Specialization>of(),
+                ImmutableSet.<Publisher>of(),
                 1, 0f, 0f));
         SearchResults results = future.get();
         assertEquals(2, results.toUris().size());
