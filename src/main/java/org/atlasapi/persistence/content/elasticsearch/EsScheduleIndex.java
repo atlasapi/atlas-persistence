@@ -1,11 +1,11 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.CHANNEL;
-import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.ID;
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.TRANSMISSION_END_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast.TRANSMISSION_TIME;
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.BROADCASTS;
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.CHILD_TYPE;
+import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.ID;
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.PUBLISHER;
 import static org.atlasapi.persistence.content.elasticsearch.schema.EsContent.TOP_LEVEL_TYPE;
 import static org.elasticsearch.index.query.FilterBuilders.andFilter;
@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
 
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.atlasapi.persistence.content.elasticsearch.support.FutureSettingActionListener;
 import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.content.schedule.ScheduleIndex;
@@ -65,12 +67,13 @@ public class EsScheduleIndex implements ScheduleIndex {
 
     public static final Logger log = LoggerFactory.getLogger(EsScheduleIndex.class);
     
-    private static final String BROADCAST_ID = BROADCASTS+"."+ID;
+    private static final String BROADCAST_ID = BROADCASTS+"."+EsBroadcast.ID;
     private static final String BROADCAST_CHANNEL = BROADCASTS+"."+CHANNEL;
     private static final String BROADCAST_TRANSMISSION_TIME = BROADCASTS+"."+TRANSMISSION_TIME;
     private static final String BROADCAST_TRANSMISSION_END_TIME = BROADCASTS+"."+TRANSMISSION_END_TIME;
     
     private static final String[] FIELDS = new String[]{
+        ID,
         BROADCASTS,
         BROADCAST_ID,
         BROADCAST_CHANNEL,
@@ -200,7 +203,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         ImmutableList.Builder<ScheduleRefEntry> entries = ImmutableList.builder();
         
         SearchHitField broadcastsHitField = hit.field(BROADCASTS);
-        String id = hit.id();
+        Long id = hit.field(ID).<Number>value().longValue();
         List<Object> fieldValues = broadcastsHitField.getValues();
         for (List<?> fieldValue : Iterables.filter(fieldValues, List.class)) {
             for (Map<Object,Object> broadcast : Iterables.filter(fieldValue, Map.class)) {
@@ -213,7 +216,7 @@ public class EsScheduleIndex implements ScheduleIndex {
         return entries.build();
     }
 
-    private ScheduleRefEntry getValidRef(String id, String channel, ScheduleBroadcastFilter scheduleBroadcastFilter, Map<Object, Object> broadcast) {
+    private ScheduleRefEntry getValidRef(Long id, String channel, ScheduleBroadcastFilter scheduleBroadcastFilter, Map<Object, Object> broadcast) {
         String broadcastChannel = (String) broadcast.get(CHANNEL);
         if (channel.equals(broadcastChannel)) {
             DateTime start = new DateTime(broadcast.get(TRANSMISSION_TIME)).toDateTime(DateTimeZones.UTC);

@@ -100,7 +100,6 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         dbObject = contentTranslator.removeFieldsForHash(dbObject);
         dbObject.removeField(CHILDREN_KEY);
         dbObject.removeField(FULL_SERIES_KEY);
-        //System.out.println(dbObject);
         return String.valueOf(dbObject.hashCode());
     }
     

@@ -18,32 +18,27 @@ import static org.atlasapi.persistence.content.listing.ContentListingCriteria.de
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Person;
-import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.people.PeopleLister;
-import org.atlasapi.persistence.content.PeopleListerListener;
-import org.atlasapi.persistence.content.listing.ContentLister;
-import org.atlasapi.persistence.content.listing.ContentListingProgress;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Sets;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentGroup;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.media.product.Product;
 import org.atlasapi.media.segment.Segment;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentGroupLister;
+import org.atlasapi.persistence.content.PeopleListerListener;
+import org.atlasapi.persistence.content.listing.ContentLister;
+import org.atlasapi.persistence.content.listing.ContentListingProgress;
+import org.atlasapi.persistence.content.people.PeopleLister;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryLister;
 import org.atlasapi.persistence.media.channel.ChannelGroupLister;
@@ -51,6 +46,10 @@ import org.atlasapi.persistence.media.channel.ChannelLister;
 import org.atlasapi.persistence.media.product.ProductLister;
 import org.atlasapi.persistence.media.segment.SegmentLister;
 import org.atlasapi.persistence.topic.TopicLister;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 
 public class ContentBootstrapper {
 

@@ -30,7 +30,7 @@ public class CassandraContentGroupStoreTest extends BaseCassandraTest {
     @Test
     public void testContentGroupByUri() {
         ContentGroup contentGroup = new ContentGroup("cg1", Publisher.METABROADCAST);
-        contentGroup.addContent(new ChildRef("child1", "", new DateTime(), EntityType.ITEM));
+        contentGroup.addContent(new ChildRef(1L,"child1", "", new DateTime(), EntityType.ITEM));
         
         store.createOrUpdate(contentGroup);
         
@@ -41,7 +41,7 @@ public class CassandraContentGroupStoreTest extends BaseCassandraTest {
     public void testContentGroupById() {
         ContentGroup contentGroup = new ContentGroup("cg1", Publisher.METABROADCAST);
         contentGroup.setId(1l);
-        contentGroup.addContent(new ChildRef("child1", "", new DateTime(), EntityType.ITEM));
+        contentGroup.addContent(new ChildRef(1L,"child1", "", new DateTime(), EntityType.ITEM));
         
         store.createOrUpdate(contentGroup);
         
@@ -52,10 +52,10 @@ public class CassandraContentGroupStoreTest extends BaseCassandraTest {
     public void testAllContentGroups() {
         ContentGroup contentGroup1 = new ContentGroup("cg1", Publisher.METABROADCAST);
         contentGroup1.setId(1l);
-        contentGroup1.addContent(new ChildRef("child1", "", new DateTime(), EntityType.ITEM));
+        contentGroup1.addContent(new ChildRef(1L,"child1", "", new DateTime(), EntityType.ITEM));
         ContentGroup contentGroup2 = new ContentGroup("cg2", Publisher.METABROADCAST);
         contentGroup1.setId(2l);
-        contentGroup1.addContent(new ChildRef("child2", "", new DateTime(), EntityType.ITEM));
+        contentGroup1.addContent(new ChildRef(2L,"child2", "", new DateTime(), EntityType.ITEM));
         
         store.createOrUpdate(contentGroup1);
         store.createOrUpdate(contentGroup2);

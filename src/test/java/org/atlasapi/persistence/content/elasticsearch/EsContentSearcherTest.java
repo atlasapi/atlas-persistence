@@ -3,7 +3,6 @@ package org.atlasapi.persistence.content.elasticsearch;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.UUID;
 
 import org.apache.log4j.ConsoleAppender;
@@ -25,7 +24,6 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,27 +60,33 @@ public class EsContentSearcherTest {
         Version version2 = new Version();
         version1.addBroadcast(broadcast1);
         version2.addBroadcast(broadcast2);
-        //
+
         Item item1 = new Item("uri1", "curie1", Publisher.METABROADCAST);
         item1.setTitle("title1");
+        item1.setId(1L);
         item1.addVersion(version1);
         Item item2 = new Item("uri2", "curie2", Publisher.METABROADCAST);
         item2.setTitle("title2");
+        item2.setId(2L);
         item2.addVersion(version1);
         Item item3 = new Item("uri3", "curie3", Publisher.METABROADCAST);
         item3.setTitle("pippo");
+        item3.setId(3L);
         item3.addVersion(version2);
         Item item4 = new Item("uri4", "curie4", Publisher.METABROADCAST);
         item4.setTitle("title4");
+        item4.setId(4L);
         item4.addVersion(version2);
-        //
+        
         Brand brand1 = new Brand("buri1", "buri1", Publisher.METABROADCAST);
         brand1.setTitle("title");
+        brand1.setId(5L);
         brand1.setChildRefs(Arrays.asList(item1.childRef(), item2.childRef()));
         Brand brand2 = new Brand("buri2", "buri2", Publisher.METABROADCAST);
         brand2.setTitle("b");
+        brand2.setId(6L);
         brand2.setChildRefs(Arrays.asList(item3.childRef()));
-        //
+
         item1.setParentRef(ParentRef.parentRefFrom(brand1));
         item2.setParentRef(ParentRef.parentRefFrom(brand1));
         item3.setParentRef(ParentRef.parentRefFrom(brand2));
@@ -107,8 +111,8 @@ public class EsContentSearcherTest {
                 ImmutableSet.<Publisher>of(),
                 1, 0f, 0f));
         SearchResults results = future.get();
-        assertEquals(2, results.toUris().size());
-        assertEquals("buri1", results.toUris().get(0));
-        assertEquals("uri4", results.toUris().get(1));
+        assertEquals(2, results.getIds().size());
+        assertEquals("buri1", results.getIds().get(0));
+        assertEquals("uri4", results.getIds().get(1));
     }
 }

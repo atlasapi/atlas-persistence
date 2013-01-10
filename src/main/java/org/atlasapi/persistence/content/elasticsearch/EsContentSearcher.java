@@ -1,6 +1,14 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
+import static org.elasticsearch.index.query.FilterBuilders.andFilter;
+import static org.elasticsearch.index.query.FilterBuilders.termFilter;
+import static org.elasticsearch.index.query.FilterBuilders.typeFilter;
+import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
+import static org.elasticsearch.index.query.QueryBuilders.topChildrenQuery;
+
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -50,31 +58,35 @@ public class EsContentSearcher implements ContentSearcher {
         QueryBuilder broadcastQuery = null;
         QueryBuilder contentQuery = null;
 
-        if (search.getTerm() != null && !search.getTerm().isEmpty()) {
-            titleQuery = TitleQueryBuilder.build(search.getTerm(), search.getTitleWeighting());
-        } else {
-            throw new IllegalStateException("Search title should be provided!");
-        }
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(search.getTerm()),
+            "query term null or empty");
+
+        titleQuery = TitleQueryBuilder.build(search.getTerm(), search.getTitleWeighting());
 
         List<TermsFilterBuilder> filters = new LinkedList<TermsFilterBuilder>();
         if (search.getIncludedPublishers() != null && !search.getIncludedPublishers().isEmpty()) {
             filters.add(FiltersBuilder.buildForPublishers(search.getIncludedPublishers()));
         }
-        if (search.getIncludedSpecializations() != null && !search.getIncludedSpecializations().isEmpty()) {
+        if (search.getIncludedSpecializations() != null
+            && !search.getIncludedSpecializations().isEmpty()) {
             filters.add(FiltersBuilder.buildForSpecializations(search.getIncludedSpecializations()));
         }
         if (!filters.isEmpty()) {
-            titleQuery = QueryBuilders.filteredQuery(titleQuery, FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()])));
+            titleQuery = QueryBuilders.filteredQuery(titleQuery,
+                FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()])));
         }
 
         if (search.getBroadcastWeighting() != 0.0f) {
-            broadcastQuery = BroadcastQueryBuilder.build(titleQuery, search.getBroadcastWeighting(), 1f);
+            broadcastQuery = BroadcastQueryBuilder.build(titleQuery,
+                search.getBroadcastWeighting(),
+                1f);
         } else {
             broadcastQuery = titleQuery;
         }
 
         if (search.getCatchupWeighting() != 0.0f) {
-            availabilityQuery = AvailabilityQueryBuilder.build(new Date(), search.getCatchupWeighting());
+            availabilityQuery = AvailabilityQueryBuilder.build(new Date(),
+                search.getCatchupWeighting());
         }
 
         if (availabilityQuery != null) {
@@ -83,17 +95,28 @@ public class EsContentSearcher implements ContentSearcher {
             contentQuery = broadcastQuery;
         }
 
-        QueryBuilder finalQuery = QueryBuilders.boolQuery().
-                should(QueryBuilders.filteredQuery(contentQuery, FilterBuilders.andFilter(FilterBuilders.typeFilter(EsContent.TOP_LEVEL_TYPE), FilterBuilders.termFilter(EsContent.HAS_CHILDREN, Boolean.FALSE)))).
-                should(QueryBuilders.topChildrenQuery(EsContent.CHILD_TYPE, contentQuery).score("sum"));
+        QueryBuilder finalQuery = QueryBuilders.boolQuery()
+            .should(
+                filteredQuery(contentQuery,
+                    andFilter(
+                        typeFilter(EsContent.TOP_LEVEL_TYPE),
+                        termFilter(EsContent.HAS_CHILDREN, Boolean.FALSE)
+                    )
+                )
+            )
+            .should(
+                topChildrenQuery(EsContent.CHILD_TYPE, contentQuery)
+                    .score("sum")
+            );
 
         final SettableFuture<SearchResults> result = SettableFuture.create();
-        index.prepareSearch(EsSchema.INDEX_NAME).
-                setQuery(finalQuery).
-                addSort(SortBuilders.scoreSort().order(SortOrder.DESC)).
-                setFrom(search.getSelection().getOffset()).
-                setSize(search.getSelection().limitOrDefaultValue(10)).
-                execute(new SearchResponseListener(result));
+        index.prepareSearch(EsSchema.INDEX_NAME)
+            .setQuery(finalQuery)
+            .addField(EsContent.ID)
+            .addSort(SortBuilders.scoreSort().order(SortOrder.DESC))
+            .setFrom(search.getSelection().getOffset())
+            .setSize(search.getSelection().limitOrDefaultValue(10))
+            .execute(new SearchResponseListener(result));
         return result;
     }
 
@@ -107,7 +130,7 @@ public class EsContentSearcher implements ContentSearcher {
 
         @Override
         public void onResponse(SearchResponse response) {
-            Iterable<String> uris = Iterables.transform(response.getHits(), new SearchHitToURI());
+            Iterable<Long> uris = Iterables.transform(response.getHits(), new SearchHitToId());
             result.set(new SearchResults(uris));
         }
 
@@ -117,11 +140,12 @@ public class EsContentSearcher implements ContentSearcher {
         }
     }
 
-    private static class SearchHitToURI implements Function<SearchHit, String> {
+    private static class SearchHitToId implements Function<SearchHit, Long> {
 
         @Override
-        public String apply(SearchHit input) {
-            return input.sourceAsMap().get(EsContent.URI).toString();
+        public Long apply(SearchHit input) {
+            Number idNumber = input.field(EsContent.ID).value();
+            return idNumber.longValue();
         }
     }
 }

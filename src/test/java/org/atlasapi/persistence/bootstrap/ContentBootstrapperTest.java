@@ -1,30 +1,32 @@
 package org.atlasapi.persistence.bootstrap;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
-import org.jmock.Mockery;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+
 public class ContentBootstrapperTest {
     
-    private final Mockery context = new Mockery();
     private final Item item1 = new Item("1", "1", Publisher.ARCHIVE_ORG);
     private final Item item2 = new Item("2", "2", Publisher.ARCHIVE_ORG);
     private final Item item3 = new Item("3", "3", Publisher.ARCHIVE_ORG);
@@ -34,7 +36,10 @@ public class ContentBootstrapperTest {
         
         @Override
         public Iterator<Content> listContent(ContentListingCriteria criteria) {
-            return contents.iterator();
+            if (criteria.getCategories().containsAll(ContentCategory.ITEMS)) {
+                return contents.iterator();
+            }
+            return Iterators.emptyIterator();
         }
     };
     private final ContentLister lister2 = new ContentLister() {
@@ -43,7 +48,10 @@ public class ContentBootstrapperTest {
         
         @Override
         public Iterator<Content> listContent(ContentListingCriteria criteria) {
-            return contents.iterator();
+            if (criteria.getCategories().containsAll(ContentCategory.ITEMS)) {
+                return contents.iterator();
+            }
+            return Iterators.emptyIterator();
         }
     };
     private ContentBootstrapper bootstrapper = new ContentBootstrapper().withContentListers(lister1, lister2);
@@ -66,7 +74,7 @@ public class ContentBootstrapperTest {
         final ChangeListener listener = mock(ChangeListener.class);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {

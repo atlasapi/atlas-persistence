@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
@@ -32,7 +33,7 @@ import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.NoShardAvailableActionException;
-import org.elasticsearch.action.admin.indices.exists.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -122,9 +123,16 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                 .source(XContentFactory.jsonBuilder()
                     .startObject()
                         .startObject(EsContent.TOP_LEVEL_TYPE)
+                            .startObject("_all")
+                                .field("enabled").value(false)
+                            .endObject()
                             .startObject("properties")
                                 .startObject(EsContent.URI)
                                     .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(EsContent.ID)
+                                    .field("type").value("long")
                                     .field("index").value("not_analyzed")
                                 .endObject()
                                 .startObject(EsContent.TITLE)
@@ -176,9 +184,16 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                             .startObject("_parent")
                                 .field("type").value(EsContent.TOP_LEVEL_TYPE)
                             .endObject()
+                            .startObject("_all")
+                                .field("enabled").value(false)
+                            .endObject()
                             .startObject("properties")
                                 .startObject(EsContent.URI)
                                     .field("type").value("string")
+                                    .field("index").value("not_analyzed")
+                                .endObject()
+                                .startObject(EsContent.ID)
+                                    .field("type").value("long")
                                     .field("index").value("not_analyzed")
                                 .endObject()
                                 .startObject(EsContent.TITLE)
@@ -224,24 +239,27 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             
             BulkRequest requests = Requests.bulkRequest();
             IndexRequest mainIndexRequest;
-            if (item.getContainer() != null) {
-                fillParentData(esContent, item.getContainer());
+            ParentRef container = item.getContainer();
+            if (container != null) {
+                fillParentData(esContent, container);
                 mainIndexRequest = Requests.indexRequest(INDEX_NAME)
                     .type(EsContent.CHILD_TYPE)
-                    .id(item.getCanonicalUri())
+                    .id(getDocId(item))
                     .source(esContent.toMap())
-                    .parent(item.getContainer().getUri());
+                    .parent(getDocId(container));
             } else {
                 mainIndexRequest = Requests.indexRequest(INDEX_NAME)
                     .type(EsContent.TOP_LEVEL_TYPE)
-                    .id(item.getCanonicalUri())
+                    .id(getDocId(item))
                     .source(esContent.hasChildren(false).toMap());
             }
             
             requests.add(mainIndexRequest);
-            Map<String, ActionRequest> scheduleRequests = scheduleIndexRequests(item);
+            Map<String, ActionRequest<IndexRequest>> scheduleRequests = scheduleIndexRequests(item);
             ensureIndices(scheduleRequests);
-            requests.add(scheduleRequests.values());
+            for (ActionRequest<IndexRequest> ir : scheduleRequests.values()) {
+                requests.add(ir);
+            }
             BulkResponse resp = timeoutGet(esClient.client().bulk(requests));
             log.info("Indexed {} ({}ms, {})", new Object[]{item, resp.getTookInMillis(), scheduleRequests.keySet()});
         } catch (Exception e) {
@@ -251,6 +269,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
 
     private EsContent toEsContent(Item item) {
         return new EsContent()
+            .id(item.getId())
             .uri(item.getCanonicalUri())
             .title(item.getTitle())
             .flattenedTitle(flattenedOrNull(item.getTitle()))
@@ -263,7 +282,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             .topics(makeESTopics(item));
     }
 
-    private void ensureIndices(Map<String, ActionRequest> scheduleRequests) throws IOException {
+    private void ensureIndices(Map<String, ActionRequest<IndexRequest>> scheduleRequests) throws IOException {
         Set<String> missingIndices = Sets.difference(scheduleRequests.keySet(), existingIndexes);
         for (String missingIndex : missingIndices) {
             if (createIndex(missingIndex)) {
@@ -273,7 +292,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
         }
     }
 
-    private Map<String,ActionRequest> scheduleIndexRequests(Item item) {
+    private Map<String,ActionRequest<IndexRequest>> scheduleIndexRequests(Item item) {
         Multimap<String, EsBroadcast> indicesBroadcasts = HashMultimap.create();
         for (Version version : item.getVersions()) {
             for (Broadcast broadcast : version.getBroadcasts()) {
@@ -288,14 +307,15 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             }
         }
         
-        Builder<String, ActionRequest> requests = ImmutableMap.builder();
+        Builder<String, ActionRequest<IndexRequest>> requests = ImmutableMap.builder();
         for (Entry<String, Collection<EsBroadcast>> indexBroadcasts : indicesBroadcasts.asMap().entrySet()) {
             requests.put(
                 indexBroadcasts.getKey(), 
                 Requests.indexRequest(indexBroadcasts.getKey())
                     .type(EsContent.TOP_LEVEL_TYPE)
-                    .id(item.getCanonicalUri())
+                    .id(getDocId(item))
                     .source(new EsContent()
+                        .id(item.getId())
                         .uri(item.getCanonicalUri())
                         .publisher(item.getPublisher() != null ? item.getPublisher().key() : null)
                         .broadcasts(indexBroadcasts.getValue())
@@ -311,6 +331,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     @Override
     public void index(Container container) {
         EsContent indexed = new EsContent()
+            .id(container.getId())
             .uri(container.getCanonicalUri())
             .title(container.getTitle())
             .flattenedTitle(flattenedOrNull(container.getTitle()))
@@ -327,10 +348,11 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
         }
         IndexRequest request = Requests.indexRequest(INDEX_NAME)
             .type(EsContent.TOP_LEVEL_TYPE)
-            .id(container.getCanonicalUri())
+            .id(getDocId(container))
             .source(indexed.toMap());
         timeoutGet(esClient.client().index(request));
     }
+
 
     private String flattenedOrNull(String string) {
         return string != null ? Strings.flatten(string) : null;
@@ -412,8 +434,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                     indexedChild.put(EsContent.PARENT_FLATTENED_TITLE, Strings.flatten(parent.getTitle()));
                     bulk.add(Requests.indexRequest(INDEX_NAME).
                             type(EsContent.CHILD_TYPE).
-                            parent(parent.getCanonicalUri()).
-                            id(child.getUri()).
+                            parent(getDocId(parent)).
+                            id(getDocId(child)).
                             source(indexedChild));
                 }
             }
@@ -421,13 +443,25 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
         if (bulk.numberOfActions() > 0) {
             BulkResponse response = timeoutGet(esClient.client().bulk(bulk));
             if (response.hasFailures()) {
-                throw new ESPersistenceException("Failed to index children for container: " + parent.getCanonicalUri());
+                throw new ESPersistenceException("Failed to index children for container: " + getDocId(parent));
             }
         }
     }
 
+    private String getDocId(ChildRef child) {
+        return String.valueOf(child.getId());
+    }
+    
+    private String getDocId(Content content) {
+        return String.valueOf(content.getId());
+    }
+    
+    private String getDocId(ParentRef container) {
+        return String.valueOf(container.getId());
+    }
+
     private Map<String, Object> trySearchParent(ParentRef parent) {
-        GetRequest request = Requests.getRequest(INDEX_NAME).id(parent.getUri());
+        GetRequest request = Requests.getRequest(INDEX_NAME).id(getDocId(parent));
         GetResponse response = timeoutGet(esClient.client().get(request));
         if (response.exists()) {
             return response.sourceAsMap();
@@ -439,8 +473,8 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private Map<String, Object> trySearchChild(Container parent, ChildRef child) {
         try {
             GetRequest request = Requests.getRequest(INDEX_NAME)
-                    .parent(parent.getCanonicalUri())
-                    .id(child.getUri());
+                    .parent(getDocId(parent))
+                    .id(getDocId(child));
             GetResponse response = timeoutGet(esClient.client().get(request));
             if (response.exists()) {
                 return response.sourceAsMap();

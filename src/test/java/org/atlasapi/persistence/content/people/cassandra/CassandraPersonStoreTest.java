@@ -29,7 +29,7 @@ public class CassandraPersonStoreTest extends BaseCassandraTest {
     @Test
     public void testPerson() {
         Person person = new Person("person1", "curie", Publisher.METABROADCAST);
-        person.addContent(new ChildRef("child1", "", new DateTime(), EntityType.ITEM));
+        person.addContent(new ChildRef(1L, "child1", "", new DateTime(), EntityType.ITEM));
 
         store.createOrUpdatePerson(person);
 
@@ -40,11 +40,11 @@ public class CassandraPersonStoreTest extends BaseCassandraTest {
     @Test
     public void testUpdatePersonContents() {
         Person person = new Person("person1", "curie", Publisher.METABROADCAST);
-        person.addContent(new ChildRef("child1", "", new DateTime(), EntityType.ITEM));
+        person.addContent(new ChildRef(1L, "child1", "", new DateTime(), EntityType.ITEM));
 
         store.createOrUpdatePerson(person);
         
-        person.setContents(Arrays.asList(new ChildRef("child2", "", new DateTime(), EntityType.ITEM)));
+        person.setContents(Arrays.asList(new ChildRef(2L, "child2", "", new DateTime(), EntityType.ITEM)));
 
         store.createOrUpdatePerson(person);
         

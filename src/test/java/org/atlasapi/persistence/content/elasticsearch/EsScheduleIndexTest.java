@@ -82,7 +82,7 @@ public class EsScheduleIndexTest {
     @Test
     public void testReturnsContentContainedInInterval() throws Exception {
         
-        Item contained = itemWithBroadcast("contained", channel1.getCanonicalUri(), new DateTime(10, UTC), new DateTime(20, UTC));
+        Item contained = itemWithBroadcast(1L, "contained", channel1.getCanonicalUri(), new DateTime(10, UTC), new DateTime(20, UTC));
         
         contentIndexer.index(contained);
         Thread.sleep(1000);
@@ -95,7 +95,7 @@ public class EsScheduleIndexTest {
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
         
         assertThat(entries.size(), is(1));
-        assertThat(entries.get(0).getItemUri(), is(contained.getCanonicalUri()));
+        assertThat(entries.get(0).getItemId(), is(contained.getId()));
         
     }
     
@@ -103,8 +103,8 @@ public class EsScheduleIndexTest {
     public void testReturnsContentOverlappingInterval() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item overlapStart = itemWithBroadcast("overlapStart", channel1.getCanonicalUri(), start, start.plusHours(1));
-        Item overlapEnd = itemWithBroadcast("overlapEnd", channel1.getCanonicalUri(), start.plusHours(2), start.plusHours(3));
+        Item overlapStart = itemWithBroadcast(1L, "overlapStart", channel1.getCanonicalUri(), start, start.plusHours(1));
+        Item overlapEnd = itemWithBroadcast(2L, "overlapEnd", channel1.getCanonicalUri(), start.plusHours(2), start.plusHours(3));
         
         contentIndexer.index(overlapEnd);
         contentIndexer.index(overlapStart);
@@ -117,15 +117,15 @@ public class EsScheduleIndexTest {
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
         
         assertThat(entries.size(), is(2));
-        assertThat(entries.get(0).getItemUri(), is(overlapStart.getCanonicalUri()));
-        assertThat(entries.get(1).getItemUri(), is(overlapEnd.getCanonicalUri()));
+        assertThat(entries.get(0).getItemId(), is(overlapStart.getId()));
+        assertThat(entries.get(1).getItemId(), is(overlapEnd.getId()));
     }
     
     @Test
     public void testReturnsContentContainingInterval() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item containsInterval = itemWithBroadcast("contains", channel1.getCanonicalUri(), start, start.plusHours(3));
+        Item containsInterval = itemWithBroadcast(1L, "contains", channel1.getCanonicalUri(), start, start.plusHours(3));
         
         contentIndexer.index(containsInterval);
         Thread.sleep(1000);
@@ -137,14 +137,14 @@ public class EsScheduleIndexTest {
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
         
         assertThat(entries.size(), is(1));
-        assertThat(entries.get(0).getItemUri(), is(containsInterval.getCanonicalUri()));
+        assertThat(entries.get(0).getItemId(), is(containsInterval.getId()));
     }
 
     @Test
     public void testDoesntReturnContentOnDifferentChannel() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item wrongChannel = itemWithBroadcast("wrong", "http://www.bbc.co.uk/services/bbctwo", start.plusHours(1), start.plusHours(2));
+        Item wrongChannel = itemWithBroadcast(1L, "wrong", "http://www.bbc.co.uk/services/bbctwo", start.plusHours(1), start.plusHours(2));
         
         contentIndexer.index(wrongChannel);
         Thread.sleep(1000);
@@ -162,7 +162,7 @@ public class EsScheduleIndexTest {
     public void testDoesntReturnContentOutsideInterval() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
 
-        Item tooLate = itemWithBroadcast("late", channel1.getCanonicalUri(), start.plusHours(3), start.plusHours(4));
+        Item tooLate = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start.plusHours(3), start.plusHours(4));
       
         contentIndexer.index(tooLate);
         Thread.sleep(1000);
@@ -180,7 +180,7 @@ public class EsScheduleIndexTest {
     public void testReturnsContentContainingInstanceInterval() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
         
-        Item containsInstance = itemWithBroadcast("late", channel1.getCanonicalUri(), start.minusHours(1), start.plusHours(4));
+        Item containsInstance = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start.minusHours(1), start.plusHours(4));
         
         contentIndexer.index(containsInstance);
         Thread.sleep(1000);
@@ -198,7 +198,7 @@ public class EsScheduleIndexTest {
     public void testReturnsContentAbuttingInstanceIntervalEnd() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
         
-        Item abutting = itemWithBroadcast("late", channel1.getCanonicalUri(), start, start.plusHours(4));
+        Item abutting = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start, start.plusHours(4));
         
         contentIndexer.index(abutting);
         Thread.sleep(1000);
@@ -216,7 +216,7 @@ public class EsScheduleIndexTest {
     public void testDoesntReturnContentAbuttingInstanceIntervalStart() throws Exception {
         DateTime start = new DateTime(DateTimeZones.UTC);
         
-        Item abutting = itemWithBroadcast("late", channel1.getCanonicalUri(), start.minusHours(1), start);
+        Item abutting = itemWithBroadcast(1L, "late", channel1.getCanonicalUri(), start.minusHours(1), start);
         
         contentIndexer.index(abutting);
         Thread.sleep(1000);
@@ -235,7 +235,7 @@ public class EsScheduleIndexTest {
         
         Interval interval = new Interval(0, 100, DateTimeZones.UTC);
         
-        Item exactMatch = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
+        Item exactMatch = itemWithBroadcast(Long.MAX_VALUE-1, "exact", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
         
         contentIndexer.index(exactMatch);
         Thread.sleep(1000);
@@ -247,7 +247,7 @@ public class EsScheduleIndexTest {
         ImmutableList<ScheduleRefEntry> entries = scheduleRef.getScheduleEntries();
         
         assertThat(entries.size(), is(1));
-        assertThat(entries.get(0).getItemUri(), is(exactMatch.getCanonicalUri()));
+        assertThat(entries.get(0).getItemId(), is(exactMatch.getId()));
         
     }
     
@@ -257,7 +257,7 @@ public class EsScheduleIndexTest {
         Interval interval1 = new Interval(0, 100, DateTimeZones.UTC);
         Interval interval2 = new Interval(150, 200, DateTimeZones.UTC);
         
-        Item itemWith2Broadcasts = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
+        Item itemWith2Broadcasts = itemWithBroadcast(1L, "exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
         Broadcast broadcast = new Broadcast(channel2.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
         Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
         
@@ -292,7 +292,7 @@ public class EsScheduleIndexTest {
         Interval interval1 = new Interval(0, 100, DateTimeZones.UTC);
         Interval interval2 = new Interval(150, 200, DateTimeZones.UTC);
         
-        Item itemWith2Broadcasts = itemWithBroadcast("exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
+        Item itemWith2Broadcasts = itemWithBroadcast(1L, "exact", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
         Broadcast broadcast = new Broadcast(channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
         Iterables.getOnlyElement(itemWith2Broadcasts.getVersions()).addBroadcast(broadcast);
         
@@ -314,10 +314,12 @@ public class EsScheduleIndexTest {
         Interval interval1 = new Interval(0, 100, DateTimeZones.UTC);
         Interval interval2 = new Interval(150, 200, DateTimeZones.UTC);
         
-        Item childItem = itemWithBroadcast("exactone", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
-        childItem.setContainer(new Brand("brandUri","brandCurie",METABROADCAST));
+        Item childItem = itemWithBroadcast(1L, "exactone", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
+        Brand container = new Brand("brandUri","brandCurie",METABROADCAST);
+        container.setId(4L);
+        childItem.setContainer(container);
         
-        Item topItem = itemWithBroadcast("exacttwo", channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
+        Item topItem = itemWithBroadcast(2L, "exacttwo", channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
         
         contentIndexer.index(childItem);
         contentIndexer.index(topItem);
@@ -337,7 +339,7 @@ public class EsScheduleIndexTest {
         
         Interval interval = new Interval(clock.now().minusMonths(2), clock.now().plusMonths(1));
         
-        Item recentItem = itemWithBroadcast("recent", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
+        Item recentItem = itemWithBroadcast(1L, "recent", channel1.getCanonicalUri(), interval.getStart(), interval.getEnd());
         
         contentIndexer.index(recentItem);
         Thread.sleep(1000);
@@ -352,12 +354,14 @@ public class EsScheduleIndexTest {
         
     }
      
-    private Item itemWithBroadcast(String itemUri, String channelUri, DateTime start, DateTime end) {
+    private Item itemWithBroadcast(Long id, String itemUri, String channelUri, DateTime start, DateTime end) {
         
         Broadcast broadcast = new Broadcast(channelUri, start, end);
         Version version = new Version();
-        Item item = new Item(itemUri, itemUri, Publisher.METABROADCAST);
         version.addBroadcast(broadcast);
+
+        Item item = new Item(itemUri, itemUri, Publisher.METABROADCAST);
+        item.setId(id);
         item.addVersion(version);
         
         return item;

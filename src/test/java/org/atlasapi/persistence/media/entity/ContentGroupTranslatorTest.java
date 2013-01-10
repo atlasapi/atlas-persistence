@@ -33,7 +33,7 @@ public class ContentGroupTranslatorTest extends TestCase {
         group.setDescription("description");
         group.setTitle("title");
         group.setPublisher(Publisher.BBC);
-        group.addContent(new ChildRef("child", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM));
+        group.addContent(new ChildRef(1L, "child", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM));
 
         DBObject obj = translator.toDBObject(null, group);
 

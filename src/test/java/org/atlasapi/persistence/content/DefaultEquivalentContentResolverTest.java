@@ -52,7 +52,7 @@ public class DefaultEquivalentContentResolverTest {
                 .put(equiv.getCanonicalUri(), equiv)
                 .build());
         
-        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, true);
+        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, false);
         
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get("equiv"));
@@ -89,7 +89,7 @@ public class DefaultEquivalentContentResolverTest {
                 .put(equiv.getCanonicalUri(), equiv)
                 .build());
         
-        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, true);
+        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, false);
         
         assertEquals(2, content.asMap().size());
         assertNull(content.asMap().get("equiv"));

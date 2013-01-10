@@ -70,6 +70,7 @@ public final class EsContentIndexerTest {
         Broadcast broadcast = new Broadcast("MB", broadcastStart, broadcastStart.plusHours(1));
         Version version = new Version();
         Item item = new Item("uri", "curie", Publisher.METABROADCAST);
+        item.setId(1L);
         version.addBroadcast(broadcast);
         item.addVersion(version);
         
@@ -124,13 +125,16 @@ public final class EsContentIndexerTest {
         //
         Item item1 = new Item("uri1", "curie1", Publisher.METABROADCAST);
         item1.addVersion(version1);
+        item1.setId(1L);
         item1.addTopicRef(topic1);
         item1.addTopicRef(topic2);
         Item item2 = new Item("uri2", "curie2", Publisher.METABROADCAST);
         item2.addVersion(version1);
+        item2.setId(2L);
         item2.addTopicRef(topic1);
         Item item3 = new Item("uri3", "curie3", Publisher.METABROADCAST);
         item3.addVersion(version2);
+        item3.setId(3L);
         item3.addTopicRef(topic2);
         
         contentIndexer.index(item1);

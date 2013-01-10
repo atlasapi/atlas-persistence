@@ -1,19 +1,17 @@
 package org.atlasapi.persistence.content.elasticsearch.schema;
 
-import com.google.common.base.Function;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- */
+import com.google.common.base.Function;
+
 public class EsObject {
 
     public final static FromEsObjectToMap TO_MAP = new FromEsObjectToMap();
-    //
-    protected Map properties = new HashMap() {
 
+    protected Map<String, Object> properties = new HashMap<String,Object>() {
         @Override
-        public Object put(Object k, Object v) {
+        public Object put(String k, Object v) {
             if (k != null && v != null) {
                 return super.put(k, v);
             } else {
@@ -22,14 +20,14 @@ public class EsObject {
         }
     };
 
-    public Map toMap() {
+    public Map<String, Object> toMap() {
         return properties;
     }
 
-    private static class FromEsObjectToMap implements Function<EsObject, Map> {
+    private static class FromEsObjectToMap implements Function<EsObject, Map<String, Object>> {
 
         @Override
-        public Map apply(EsObject input) {
+        public Map<String, Object> apply(EsObject input) {
             return input.toMap();
         }
     }

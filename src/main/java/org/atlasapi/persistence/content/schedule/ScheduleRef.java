@@ -90,14 +90,14 @@ public final class ScheduleRef {
     
     public static final class ScheduleRefEntry implements Comparable<ScheduleRefEntry> {
         
-        private final String itemUri;
+        private final Long itemId;
         private final String channelId;
         private final DateTime broadcastTime;
         private final DateTime broadcastEndTime;
         private final Optional<String> broadcastId;
 
-        public ScheduleRefEntry(String itemUri, String channel, DateTime broadcastTime, DateTime broadcastEndTime, @Nullable String broadcastId) {
-            this.itemUri = checkNotNull(itemUri);
+        public ScheduleRefEntry(Long itemId, String channel, DateTime broadcastTime, DateTime broadcastEndTime, @Nullable String broadcastId) {
+            this.itemId = checkNotNull(itemId);
             this.channelId = checkNotNull(channel);
             this.broadcastTime = checkNotNull(broadcastTime);
             this.broadcastEndTime = checkNotNull(broadcastEndTime);
@@ -112,8 +112,8 @@ public final class ScheduleRef {
             return 0;
         }
 
-        public String getItemUri() {
-            return itemUri;
+        public Long getItemId() {
+            return itemId;
         }
 
         public String getChannelId() {
@@ -139,7 +139,7 @@ public final class ScheduleRef {
             }
             if (that instanceof ScheduleRefEntry) {
                 ScheduleRefEntry other = (ScheduleRefEntry) that;
-                return itemUri.equals(other.itemUri)
+                return itemId.equals(other.itemId)
                     && channelId.equals(other.channelId)
                     && broadcastTime.equals(other.broadcastTime);
             }
@@ -148,13 +148,13 @@ public final class ScheduleRef {
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(itemUri, channelId, broadcastTime);
+            return Objects.hashCode(itemId, channelId, broadcastTime);
         }
 
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
-                    .add("item", itemUri)
+                    .add("item", itemId)
                     .add("channel", channelId)
                     .add("start", broadcastTime)
                     .toString();

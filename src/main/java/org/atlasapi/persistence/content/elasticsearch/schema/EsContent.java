@@ -1,8 +1,8 @@
 package org.atlasapi.persistence.content.elasticsearch.schema;
 
-import com.google.common.collect.Iterables;
 import java.util.Collection;
-import java.util.Map;
+
+import com.google.common.collect.Iterables;
 
 /**
  */
@@ -11,7 +11,8 @@ public class EsContent extends EsObject {
     public final static String TOP_LEVEL_TYPE = "container";
     public final static String CHILD_TYPE = "child_item";
     public final static String TOP_ITEM_TYPE = "top_item";
-    //
+
+    public final static String ID = "aid";
     public final static String URI = "uri";
     public final static String TITLE = "title";
     public final static String FLATTENED_TITLE = "flattenedTitle";
@@ -24,6 +25,11 @@ public class EsContent extends EsObject {
     public final static String TOPICS = "topics";
     public final static String HAS_CHILDREN = "hasChildren";
 
+    public EsContent id(long id) {
+        properties.put(ID, id);
+        return this;
+    }
+    
     public EsContent uri(String uri) {
         properties.put(URI, uri);
         return this;
