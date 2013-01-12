@@ -28,4 +28,13 @@ public class LookupResolvingContentResolver implements ContentResolver {
         ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);
         return resolvedContent.copyWithAllRequestedUris(dedupedUris);
     }
+
+    @Override
+    public ResolvedContent findByIds(Iterable<Long> ids) {
+        Set<Long> dedupedIds = Sets.newHashSet(ids);
+        Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesForIds(dedupedIds), LookupEntry.TO_SELF);
+        ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(lookupRefs, Predicates.notNull()));
+        ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);
+        return resolvedContent;
+    }
 }

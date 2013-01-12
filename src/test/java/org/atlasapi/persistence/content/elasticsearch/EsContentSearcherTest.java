@@ -112,7 +112,7 @@ public class EsContentSearcherTest {
                 1, 0f, 0f));
         SearchResults results = future.get();
         assertEquals(2, results.getIds().size());
-        assertEquals("buri1", results.getIds().get(0));
-        assertEquals("uri4", results.getIds().get(1));
+        assertEquals(brand1.getId(), results.getIds().get(0));
+        assertEquals(item4.getId(), results.getIds().get(1));
     }
 }

@@ -19,4 +19,9 @@ public class NullContentResolver implements ContentResolver {
         return EMPTY;
     }
 
+    @Override
+    public ResolvedContent findByIds(Iterable<Long> ids) {
+        return EMPTY;
+    }
+
 }

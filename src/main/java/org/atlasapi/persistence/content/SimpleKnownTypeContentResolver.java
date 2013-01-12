@@ -15,6 +15,6 @@ public class SimpleKnownTypeContentResolver implements KnownTypeContentResolver 
 
     @Override
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
-        return resolver.findByCanonicalUris(Iterables.transform(lookupRefs, LookupRef.TO_ID));
+        return resolver.findByIds(Iterables.transform(lookupRefs, LookupRef.TO_ID));
     }
 }

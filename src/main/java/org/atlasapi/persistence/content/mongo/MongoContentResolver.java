@@ -41,7 +41,7 @@ public class MongoContentResolver implements KnownTypeContentResolver {
 
         Multimap<DBCollection, String> idsGroupedByTable = HashMultimap.create();
         for (LookupRef lookupRef : lookupRefs) {
-            idsGroupedByTable.put(contentTables.collectionFor(lookupRef.category()), lookupRef.id());
+            idsGroupedByTable.put(contentTables.collectionFor(lookupRef.category()), lookupRef.uri());
         }
         
         for (Entry<DBCollection, Collection<String>> lookupInOneTable : idsGroupedByTable.asMap().entrySet()) {

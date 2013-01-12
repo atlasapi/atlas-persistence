@@ -27,4 +27,6 @@ public interface ContentResolver {
 
 	ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris);
 
+    ResolvedContent findByIds(Iterable<Long> ids);
+
 }

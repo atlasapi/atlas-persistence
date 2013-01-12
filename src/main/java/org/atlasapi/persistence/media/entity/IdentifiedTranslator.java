@@ -72,7 +72,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
             String id = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, publisher, ContentCategory.valueOf(type));
+            Long aid = TranslatorUtils.toLong(input, OPAQUE_ID);
+            return new LookupRef(id, aid, publisher, ContentCategory.valueOf(type));
         }
     };
 
@@ -110,7 +111,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, ID, input.id());
+            TranslatorUtils.from(dbo, ID, input.uri());
+            TranslatorUtils.from(dbo, OPAQUE_ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
             

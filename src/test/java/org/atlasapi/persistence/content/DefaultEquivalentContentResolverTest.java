@@ -35,7 +35,9 @@ public class DefaultEquivalentContentResolverTest {
     public void testResolvesSimpleContent() {
         
         Episode subject = new Episode("testUri", "testCurie", Publisher.BBC);
+        subject.setId(1234L);
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
+        equiv.setId(4321L);
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
         Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
@@ -46,7 +48,7 @@ public class DefaultEquivalentContentResolverTest {
                 LookupRef.from(equiv)
             ))
         ));
-        when(contentResolver.findByCanonicalUris(argThat(hasItems("testUri","equiv"))))
+        when(contentResolver.findByIds(argThat(hasItems(subject.getId(), equiv.getId()))))
             .thenReturn(ResolvedContent.builder()
                 .put(subject.getCanonicalUri(), subject)
                 .put(equiv.getCanonicalUri(), equiv)
@@ -57,7 +59,7 @@ public class DefaultEquivalentContentResolverTest {
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get("equiv"));
         
-        Collection<Content> equivContent = content.asMap().get("testUri");
+        Collection<Content> equivContent = content.asMap().get(subject.getId());
         assertNotNull(equivContent);
         Map<String,Content> equivMap = Maps.uniqueIndex(equivContent, Identified.TO_URI);
         assertEquals(2, equivMap.size());
@@ -69,8 +71,11 @@ public class DefaultEquivalentContentResolverTest {
     public void testResolvesContentWithTwoKeys() {
         
         Episode subject1 = new Episode("testUri1", "testCurie", Publisher.BBC);
+        subject1.setId(1234L);
         Episode subject2 = new Episode("testUri2", "testCurie", Publisher.BBC);
+        subject2.setId(1235L);
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
+        equiv.setId(4321L);
         
         Iterable<String> uris = ImmutableSet.of(subject1.getCanonicalUri(), subject2.getCanonicalUri());
         Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
@@ -82,7 +87,7 @@ public class DefaultEquivalentContentResolverTest {
             )),
             LookupEntry.lookupEntryFrom(subject2)
         ));
-        when(contentResolver.findByCanonicalUris(argThat(hasItems("testUri1","equiv","testUri2"))))
+        when(contentResolver.findByIds(argThat(hasItems(subject1.getId(), subject2.getId(), equiv.getId()))))
             .thenReturn(ResolvedContent.builder()
                 .put(subject1.getCanonicalUri(), subject1)
                 .put(subject2.getCanonicalUri(), subject2)
@@ -94,14 +99,14 @@ public class DefaultEquivalentContentResolverTest {
         assertEquals(2, content.asMap().size());
         assertNull(content.asMap().get("equiv"));
         
-        Collection<Content> equivContent = content.asMap().get("testUri1");
+        Collection<Content> equivContent = content.asMap().get(subject1.getId());
         assertNotNull(equivContent);
         Map<String,Content> equivMap = Maps.uniqueIndex(equivContent, Identified.TO_URI);
         assertEquals(2, equivMap.size());
         assertEquals(subject1, equivMap.get(subject1.getCanonicalUri()));
         assertEquals(equiv, equivMap.get(equiv.getCanonicalUri()));
         
-        equivContent = content.asMap().get("testUri2");
+        equivContent = content.asMap().get(subject2.getId());
         assertNotNull(equivContent);
         equivMap = Maps.uniqueIndex(equivContent, Identified.TO_URI);
         assertEquals(1, equivMap.size());

@@ -30,4 +30,9 @@ public class FilterScheduleOnlyContentResolver implements ContentResolver {
             return true;
         }
     };
+
+    @Override
+    public ResolvedContent findByIds(Iterable<Long> ids) {
+        return contentResovler.findByIds(ids);
+    }
 }

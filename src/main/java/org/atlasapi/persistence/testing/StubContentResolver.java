@@ -14,9 +14,11 @@ public class StubContentResolver implements ContentResolver {
 	public static ContentResolver RESOLVES_NOTHING = new StubContentResolver();
 	
 	private Map<String, Content> data = Maps.newHashMap();
+	private Map<Long, Content> idData = Maps.newHashMap();
 	
 	public StubContentResolver respondTo(Content content) {
 		data.put(content.getCanonicalUri(), content);
+		idData.put(content.getId(), content);
 		return this;
 	}
 
@@ -28,5 +30,15 @@ public class StubContentResolver implements ContentResolver {
 		}
 		return builder.build();
 	}
+
+    @Override
+    public ResolvedContent findByIds(Iterable<Long> ids) {
+        ResolvedContentBuilder builder = ResolvedContent.builder();
+        for (Long id : ids) {
+            Content r = idData.get(id);
+            builder.put(r.getCanonicalUri(), r);
+        }
+        return builder.build();
+    }
 }
 

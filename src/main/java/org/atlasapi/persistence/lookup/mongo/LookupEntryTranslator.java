@@ -83,7 +83,8 @@ public class LookupEntryTranslator {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
 
-            TranslatorUtils.from(dbo, ID, input.id());
+            TranslatorUtils.from(dbo, ID, input.uri());
+            TranslatorUtils.from(dbo, OPAQUE_ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
 
@@ -117,9 +118,10 @@ public class LookupEntryTranslator {
         @Override
         public LookupRef apply(DBObject input) {
             String id = TranslatorUtils.toString(input, ID);
+            Long aid = TranslatorUtils.toLong(input, OPAQUE_ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, publisher, ContentCategory.valueOf(type));
+            return new LookupRef(id, aid, publisher, ContentCategory.valueOf(type));
         }
     };
 }
