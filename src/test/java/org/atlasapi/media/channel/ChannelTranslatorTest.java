@@ -4,6 +4,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.Set;
+
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.Test;
@@ -18,6 +20,14 @@ public class ChannelTranslatorTest {
     @Test
     public void testEncodesAndDecodesChannels() {
         
+        ChannelNumbering channelNumber = ChannelNumbering.builder()
+            .withChannelNumber(5)
+            .withChannel(1234L)
+            .withChannelGroup(5678L)
+            .build();
+        
+        Set<Long> variations = ImmutableSet.of(2345L, 2346L, 2347L);
+        
         Channel channel = Channel.builder()
             .withSource(Publisher.BBC)
             .withUri("uri")
@@ -28,6 +38,9 @@ public class ChannelTranslatorTest {
             .withMediaType(MediaType.AUDIO)
             .withHighDefinition(false)
             .withAvailableFrom(ImmutableSet.of(Publisher.BBC))
+            .withChannelNumber(channelNumber)
+            .withParent(2345L)
+            .withVariationIds(variations)
             .build();
         
         DBObject encoded = channelTranslator.toDBObject(null, channel);
@@ -43,6 +56,9 @@ public class ChannelTranslatorTest {
         assertThat(decoded.availableFrom(), is(equalTo(channel.availableFrom())));
         assertThat(decoded.highDefinition(), is(equalTo(channel.highDefinition())));
         assertThat(decoded.image(), is(equalTo(channel.image())));
+        assertThat(decoded.parent(), is(equalTo(channel.parent())));
+        assertThat(decoded.variations(), is(equalTo(channel.variations())));
+        assertThat(decoded.channelNumbers(), is(equalTo(channel.channelNumbers())));
         
     }
 

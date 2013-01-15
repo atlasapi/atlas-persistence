@@ -1,6 +1,7 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.media.channel.ChannelGroupResolver;
+import org.atlasapi.media.channel.CachingChannelStore;
+import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
@@ -143,13 +144,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
         
     public @Primary @Bean ChannelResolver channelResolver() {
-    	return new MongoChannelStore(db);
+    	return new CachingChannelStore(new MongoChannelStore(db, channelGroupStore(), channelGroupStore()));
     }
     
-    public @Primary @Bean ChannelGroupResolver channelGroupResolver() {
+    public @Primary @Bean ChannelGroupStore channelGroupStore() {
         return new MongoChannelGroupStore(db);
     }
-
+    
     public @Primary @Bean ProductStore productStore() {
         return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
     }

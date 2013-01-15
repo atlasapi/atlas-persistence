@@ -7,7 +7,6 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -22,6 +21,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
     private static final String REGION_VALUE = "region";
     private static final String SOURCE_KEY = "source";
     private static final String TITLE_KEY = "title";
+    private static final String TITLES_KEY = "titles";
     private static final String COUNTRIES_KEY = "countries";
     private static final String REGIONS_KEY = "regions";
     private static final String PLATFORM_KEY = "platform";
@@ -30,6 +30,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
     
     private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
     private final ModelTranslator<ChannelNumbering> channelNumberingTranslator = new ChannelNumberingTranslator();
+    private final TemporalStringTranslator temporalStringTranslator = new TemporalStringTranslator();
     
     @Override
     public DBObject toDBObject(DBObject dbObject, ChannelGroup model) {
@@ -51,18 +52,18 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             TranslatorUtils.from(dbObject, PLATFORM_KEY, ((Region)model).getPlatform());
         }
         
-        TranslatorUtils.from(dbObject, TITLE_KEY, model.getTitle());
+        fromTemporalStringSet(dbObject, TITLES_KEY, model.getAllTitles());
         
         if (model.getAvailableCountries() != null) {
             TranslatorUtils.fromSet(dbObject, Countries.toCodes(model.getAvailableCountries()), COUNTRIES_KEY);
         }
         
-        if (model.getChannels() != null && !model.getChannels().isEmpty()) {
-            dbObject.put(CHANNELS_KEY, model.getChannels());
-        }
+//        if (model.getChannels() != null && !model.getChannels().isEmpty()) {
+//            dbObject.put(CHANNELS_KEY, model.getChannels());
+//        }
         
-        if (model.getChannelNumberings() != null) {
-            fromChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY, model.getChannelNumberings());
+        if (model.getAllChannelNumberings() != null) {
+            fromChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY, model.getAllChannelNumberings());
         }
         
         return dbObject;
@@ -78,6 +79,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         if (!dbObject.containsField(TYPE_KEY)) {
             throw new IllegalStateException("Missing type field");
         }
+        
         ChannelGroupType type = ChannelGroupType.from(TranslatorUtils.toString(dbObject, TYPE_KEY));
         
         switch(type) {
@@ -103,7 +105,13 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         if (source != null) {
             model.setPublisher(Publisher.fromKey(source).valueOrNull());
         }
-        model.setTitle(TranslatorUtils.toString(dbObject, TITLE_KEY));
+        if (dbObject.containsField(TITLES_KEY)) {
+            model.setTitles(toTemporalStringSet(dbObject, TITLES_KEY));
+        }
+        // if there is an old style title, retrieve it and add it to the temporal set
+        if (dbObject.containsField(TITLE_KEY)) {
+            model.addTitle(TranslatorUtils.toString(dbObject, TITLE_KEY));
+        }
         
         Set<String> countryCodes = TranslatorUtils.toSet(dbObject, COUNTRIES_KEY);
         if (countryCodes != null) {
@@ -118,7 +126,6 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
                         .withChannelGroup(model)
                         .build());
             }
-            model.setChannels((Iterable<Long>)dbObject.get(CHANNELS_KEY));
         }
         
         if (dbObject.containsField(CHANNEL_NUMBERINGS_KEY)) {
@@ -146,6 +153,28 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
                 channelNumbers.add(channelNumberingTranslator.fromDBObject(element, null));
             }
             return channelNumbers;
+        }
+        return Sets.newLinkedHashSet();
+    }
+    
+    private void fromTemporalStringSet(DBObject dbObject, String key, Iterable<TemporalString> iterable) {
+        BasicDBList values = new BasicDBList();
+        for (TemporalString value : iterable) {
+            if (value != null) {
+                values.add(temporalStringTranslator.toDBObject(value));
+            }
+        }
+        dbObject.put(key, values);
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Set<TemporalString> toTemporalStringSet(DBObject object, String name) {
+        if (object.containsField(name)) {
+            Set<TemporalString> temporalString = Sets.newLinkedHashSet();
+            for (DBObject element : (List<DBObject>) object.get(name)) {
+                temporalString.add(temporalStringTranslator.fromDBObject(element));
+            }
+            return temporalString;
         }
         return Sets.newLinkedHashSet();
     }

@@ -25,7 +25,7 @@ public class ChannelGroupTranslatorTest {
         ChannelGroup channelGroup = new Platform();
         channelGroup.setId(5678L);
         channelGroup.setAvailableCountries(ImmutableSet.of(Countries.US,Countries.GB));
-        channelGroup.setTitle("Title");
+        channelGroup.addTitle("Title");
         channelGroup.setPublisher(Publisher.BBC);
         channelGroup.setChannels(Lists.newArrayList(1234L, 1235L, 1236L));
         

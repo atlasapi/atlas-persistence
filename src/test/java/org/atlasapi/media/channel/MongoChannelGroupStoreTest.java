@@ -41,7 +41,7 @@ public class MongoChannelGroupStoreTest {
         ChannelGroup channelGroup = new Region();
         channelGroup.setId(id);
         channelGroup.setAvailableCountries(ImmutableSet.of(Countries.GB));
-        channelGroup.setTitle("ChannelGroup" + id);
+        channelGroup.addTitle("ChannelGroup" + id);
         channelGroup.setPublisher(Publisher.METABROADCAST);
         return channelGroup;
     }

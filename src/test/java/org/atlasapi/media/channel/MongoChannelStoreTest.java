@@ -28,7 +28,9 @@ public class MongoChannelStoreTest {
 
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     
-    private static final MongoChannelStore store = new MongoChannelStore(mongo, Duration.standardSeconds(1));
+    private static final ChannelGroupStore channelGroupStore = new MongoChannelGroupStore(mongo);
+    
+    private static final MongoChannelStore store = new MongoChannelStore(mongo, channelGroupStore, channelGroupStore);
     
     @BeforeClass
     public static void setUp() throws InterruptedException {
