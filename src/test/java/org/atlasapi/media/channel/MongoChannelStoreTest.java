@@ -1,6 +1,5 @@
 package org.atlasapi.media.channel;
 
-import org.atlasapi.persistence.media.channel.MongoChannelStore;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -13,7 +12,9 @@ import java.util.Map;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
-import org.joda.time.Duration;
+import org.atlasapi.persistence.media.channel.ChannelGroupStore;
+import org.atlasapi.persistence.media.channel.MongoChannelGroupStore;
+import org.atlasapi.persistence.media.channel.MongoChannelStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,7 +30,9 @@ public class MongoChannelStoreTest {
 
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     
-    private static final MongoChannelStore store = new MongoChannelStore(mongo, Duration.standardSeconds(1));
+    private static final ChannelGroupStore channelGroupStore = new MongoChannelGroupStore(mongo);
+    
+    private static final MongoChannelStore store = new MongoChannelStore(mongo, channelGroupStore, channelGroupStore);
     
     @BeforeClass
     public static void setUp() throws InterruptedException {

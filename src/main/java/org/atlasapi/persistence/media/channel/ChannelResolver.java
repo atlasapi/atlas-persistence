@@ -20,6 +20,8 @@ public interface ChannelResolver {
 	
 	Iterable<Channel> all();
 	
+	Maybe<Channel> forAlias(String alias);
+	
 	/**
 	 * Return a map whose keys are aliases prefixed with aliasPrefix
 	 * 
