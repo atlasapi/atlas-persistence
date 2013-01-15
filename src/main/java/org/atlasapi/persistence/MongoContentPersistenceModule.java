@@ -147,6 +147,10 @@ public class MongoContentPersistenceModule {
     public MongoSegmentResolver segmentResolver() {
         return segmentResolver;
     }
+    
+    public CachingChannelStore channelStore() {
+        return channelStore;
+    }
 
     public MongoChannelGroupStore channelGroupStore() {
         return channelGroupStore;
