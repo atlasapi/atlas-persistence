@@ -8,6 +8,7 @@ import static com.metabroadcast.common.persistence.translator.TranslatorUtils.to
 
 import java.util.Comparator;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.joda.time.DateTime;
@@ -83,7 +84,7 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
     }
     
     @Override
-    public Iterable<String> availableChildrenFor(Container container) {
+    public Iterable<Id> availableChildrenFor(Container container) {
         final DateTime now = clock.now();
         return filterChildren(now, sortByAvailabilityStart(availablityWindowsForChildrenOf(container, now)));
     }
@@ -92,17 +93,17 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
         return AVAILABILITY_START_ORDERING.immutableSortedCopy(childDbos);
     }
 
-    private Iterable<String> filterChildren(final DateTime now, Iterable<DBObject> availbleChildren) {
-        return Iterables.filter(Iterables.transform(availbleChildren, new Function<DBObject, String>() {
+    private Iterable<Id> filterChildren(final DateTime now, Iterable<DBObject> availbleChildren) {
+        return Iterables.filter(Iterables.transform(availbleChildren, new Function<DBObject, Id>() {
 
             @Override
-            public String apply(DBObject input) {
+            public Id apply(DBObject input) {
                 for (DBObject version : toDBObjectList(input, versions)) {
                     for (DBObject encoding : toDBObjectList(version, encodings)) {
                         for (DBObject location : toDBObjectList(encoding, locations)) {
                             DBObject policy = toDBObject(location, MongoAvailableChildrenResolver.policy);
                             if (policy != null && before(toDateTime(policy, availabilityStart), now) && after(toDateTime(policy, availabilityEnd), now)) {
-                                return TranslatorUtils.toString(input, MongoConstants.ID);
+                                return Id.valueOf(TranslatorUtils.toLong(input, MongoConstants.ID));
                             }
                         }
                     }

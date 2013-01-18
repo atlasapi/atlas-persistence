@@ -12,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.persistence.cassandra.CassandraIndex;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
@@ -121,7 +122,7 @@ public class CassandraLookupEntryStore implements LookupEntryStore, NewLookupWri
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
+    public Iterable<LookupEntry> entriesForIds(Iterable<Id> ids) {
         throw new UnsupportedOperationException();
     }
 

@@ -5,6 +5,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDBObjectList;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDateTime;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.joda.time.DateTime;
@@ -45,16 +46,16 @@ public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
     }
     
     @Override
-    public Iterable<String> availableChildrenFor(Container container) {
+    public Iterable<Id> availableChildrenFor(Container container) {
         final DateTime now = clock.now();
-        return Iterables.filter(Iterables.transform(availablityWindowsForChildrenOf(container, now), new Function<DBObject, String>() {
+        return Iterables.filter(Iterables.transform(availablityWindowsForChildrenOf(container, now), new Function<DBObject, Id>() {
 
             @Override
-            public String apply(DBObject input) {
+            public Id apply(DBObject input) {
                 for (DBObject version : toDBObjectList(input, versions)) {
                     for (DBObject broadcast : toDBObjectList(version, broadcasts)) {
                             if (after(toDateTime(broadcast, transmissionEndTime), now)) {
-                                return TranslatorUtils.toString(input, MongoConstants.ID);
+                                return Id.valueOf(TranslatorUtils.toLong(input, MongoConstants.ID));
                             }
                         }
                     }

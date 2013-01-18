@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Publisher;
 
@@ -18,7 +19,7 @@ public class ContentGroupTranslatorTest extends TestCase {
 
     public void testFromGroup() throws Exception {
         ContentGroup group = new ContentGroup();
-        group.setId(1L);
+        group.setId(Id.valueOf(1));
         group.setCanonicalUri("uri");
 
 
@@ -33,7 +34,7 @@ public class ContentGroupTranslatorTest extends TestCase {
         group.setDescription("description");
         group.setTitle("title");
         group.setPublisher(Publisher.BBC);
-        group.addContent(new ChildRef(1L, "child", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM));
+        group.addContent(new ChildRef(Id.valueOf(1), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM));
 
         DBObject obj = translator.toDBObject(null, group);
 

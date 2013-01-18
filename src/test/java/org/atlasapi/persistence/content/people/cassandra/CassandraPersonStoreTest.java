@@ -1,6 +1,8 @@
 package org.atlasapi.persistence.content.people.cassandra;
 
 import java.util.Arrays;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Person;
@@ -29,26 +31,26 @@ public class CassandraPersonStoreTest extends BaseCassandraTest {
     @Test
     public void testPerson() {
         Person person = new Person("person1", "curie", Publisher.METABROADCAST);
-        person.addContent(new ChildRef(1L, "child1", "", new DateTime(), EntityType.ITEM));
+        person.addContent(new ChildRef(Id.valueOf(1), "", new DateTime(), EntityType.ITEM));
 
         store.createOrUpdatePerson(person);
 
         assertEquals(person, store.person("person1"));
-        assertEquals("child1", store.person("person1").getContents().get(0).getUri());
+        assertEquals("child1", store.person("person1").getContents().get(0).getId());
     }
 
     @Test
     public void testUpdatePersonContents() {
         Person person = new Person("person1", "curie", Publisher.METABROADCAST);
-        person.addContent(new ChildRef(1L, "child1", "", new DateTime(), EntityType.ITEM));
+        person.addContent(new ChildRef(Id.valueOf(1), "", new DateTime(), EntityType.ITEM));
 
         store.createOrUpdatePerson(person);
         
-        person.setContents(Arrays.asList(new ChildRef(2L, "child2", "", new DateTime(), EntityType.ITEM)));
+        person.setContents(Arrays.asList(new ChildRef(Id.valueOf(2), "", new DateTime(), EntityType.ITEM)));
 
         store.createOrUpdatePerson(person);
         
         assertEquals(person, store.person("person1"));
-        assertEquals("child2", store.person("person1").getContents().get(0).getUri());
+        assertEquals("child2", store.person("person1").getContents().get(0).getId());
     }
 }

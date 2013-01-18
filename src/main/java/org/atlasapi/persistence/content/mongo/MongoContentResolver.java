@@ -5,6 +5,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import java.util.Collection;
 import java.util.Map.Entry;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -16,6 +17,7 @@ import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -39,18 +41,18 @@ public class MongoContentResolver implements KnownTypeContentResolver {
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
         ResolvedContentBuilder results = ResolvedContent.builder();
 
-        Multimap<DBCollection, String> idsGroupedByTable = HashMultimap.create();
+        Multimap<DBCollection, Id> idsGroupedByTable = HashMultimap.create();
         for (LookupRef lookupRef : lookupRefs) {
-            idsGroupedByTable.put(contentTables.collectionFor(lookupRef.category()), lookupRef.uri());
+            idsGroupedByTable.put(contentTables.collectionFor(lookupRef.category()), lookupRef.id());
         }
         
-        for (Entry<DBCollection, Collection<String>> lookupInOneTable : idsGroupedByTable.asMap().entrySet()) {
+        for (Entry<DBCollection, Collection<Id>> lookupInOneTable : idsGroupedByTable.asMap().entrySet()) {
             
-            DBCursor found = lookupInOneTable.getKey().find(where().idIn(lookupInOneTable.getValue()).build());
+            DBCursor found = lookupInOneTable.getKey().find(where().longIdIn(Iterables.transform(lookupInOneTable.getValue(), Id.toLongValue())).build());
             if (found != null) {
                 for (DBObject dbo : found) {
                     Identified model = toModel(dbo);
-                    results.put(model.getCanonicalUri(), model);
+                    results.put(model.getId(), model);
                 }
             }
         }

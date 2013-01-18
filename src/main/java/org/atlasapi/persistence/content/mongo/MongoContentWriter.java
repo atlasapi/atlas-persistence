@@ -8,6 +8,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
@@ -19,6 +20,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.util.Identifiables;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -30,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -163,9 +166,9 @@ public class MongoContentWriter implements ContentWriter {
         if (container instanceof Brand) {
             Brand brand = (Brand) container;
             
-            Set<String> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeriesRefs(), ChildRef.TO_URI));
+            Set<Id> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeriesRefs(), Identifiables.toId()));
             if (!urisToRemove.isEmpty()) {
-                containers.remove(where().idIn(urisToRemove).build());
+                containers.remove(where().longIdIn(Iterables.transform(urisToRemove,Id.toLongValue())).build());
             }
         }
 

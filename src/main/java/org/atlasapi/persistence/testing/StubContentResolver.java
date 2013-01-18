@@ -2,6 +2,7 @@ package org.atlasapi.persistence.testing;
 
 import java.util.Map;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
@@ -14,7 +15,7 @@ public class StubContentResolver implements ContentResolver {
 	public static ContentResolver RESOLVES_NOTHING = new StubContentResolver();
 	
 	private Map<String, Content> data = Maps.newHashMap();
-	private Map<Long, Content> idData = Maps.newHashMap();
+	private Map<Id, Content> idData = Maps.newHashMap();
 	
 	public StubContentResolver respondTo(Content content) {
 		data.put(content.getCanonicalUri(), content);
@@ -26,17 +27,18 @@ public class StubContentResolver implements ContentResolver {
 	public ResolvedContent findByCanonicalUris(Iterable<String> uris) {
 		ResolvedContentBuilder builder = ResolvedContent.builder();
 		for (String uri : uris) {
-			builder.put(uri, data.get(uri));
+			Content r = data.get(uri);
+            builder.put(r.getId(), r);
 		}
 		return builder.build();
 	}
 
     @Override
-    public ResolvedContent findByIds(Iterable<Long> ids) {
+    public ResolvedContent findByIds(Iterable<Id> ids) {
         ResolvedContentBuilder builder = ResolvedContent.builder();
-        for (Long id : ids) {
+        for (Id id : ids) {
             Content r = idData.get(id);
-            builder.put(r.getCanonicalUri(), r);
+            builder.put(r.getId(), r);
         }
         return builder.build();
     }

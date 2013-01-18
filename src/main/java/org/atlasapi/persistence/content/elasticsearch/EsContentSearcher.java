@@ -131,7 +131,7 @@ public class EsContentSearcher implements ContentSearcher {
         @Override
         public void onResponse(SearchResponse response) {
             Iterable<Long> uris = Iterables.transform(response.getHits(), new SearchHitToId());
-            result.set(new SearchResults(uris));
+            result.set(SearchResults.from(uris));
         }
 
         @Override

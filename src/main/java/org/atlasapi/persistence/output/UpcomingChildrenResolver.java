@@ -1,9 +1,10 @@
 package org.atlasapi.persistence.output;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 
 public interface UpcomingChildrenResolver {
 
-    Iterable<String> availableChildrenFor(Container container);
+    Iterable<Id> availableChildrenFor(Container container);
 
 }

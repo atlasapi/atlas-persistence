@@ -44,14 +44,14 @@ public class ChildRefWriter {
         ChildRef childRef = episode.childRef();
 
         if (episode.getSeriesRef() == null) { // just ensure item in container.
-            includeChildRefInContainer(episode.getContainer().getUri(), childRef, containers, CHILDREN_KEY);
+            includeChildRefInContainer(episode.getContainer().getId().toString(), childRef, containers, CHILDREN_KEY);
             return;
         }
 
         // otherwise retrieve the child references for both series and brand, if
         // either are missing, change nothing and error out.
-        String brandUri = episode.getContainer().getUri();
-        String seriesUri = episode.getSeriesRef().getUri();
+        String brandUri = episode.getContainer().getId().toString();
+        String seriesUri = episode.getSeriesRef().getId().toString();
 
         Maybe<Container> maybeBrand = getContainer(brandUri, containers);
         Maybe<Container> maybeSeries = getContainer(seriesUri, programmeGroups);
@@ -66,7 +66,7 @@ public class ChildRefWriter {
     }
 
     public void includeSeriesInTopLevelContainer(Series series) {
-        String containerUri = series.getParent().getUri();
+        String containerUri = series.getParent().getId().toString();
         
         Maybe<Container> maybeContainer = getContainer(containerUri, containers);
 
@@ -97,7 +97,7 @@ public class ChildRefWriter {
     }
 
     public void includeItemInTopLevelContainer(Item item) {
-        includeChildRefInContainer(item.getContainer().getUri(), item.childRef(), containers, CHILDREN_KEY);
+        includeChildRefInContainer(item.getContainer().getId().toString(), item.childRef(), containers, CHILDREN_KEY);
     }
 
     private void includeChildRefInContainer(String containerUri, ChildRef ref, DBCollection collection, String key) {
@@ -107,7 +107,7 @@ public class ChildRefWriter {
         if (maybeContainer.hasValue()) {
             addChildRef(ref, collection, maybeContainer.requireValue());
         } else {
-            throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s", containerUri, collection.getName(), ref.getUri()));
+            throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s", containerUri, collection.getName(), ref.getId()));
         }
     }
 

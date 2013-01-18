@@ -28,6 +28,7 @@ import com.netflix.astyanax.query.AllRowsQuery;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.serialization.json.JsonFactory;
 import org.atlasapi.persistence.media.channel.*;
@@ -40,19 +41,19 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
     private final Keyspace keyspace;
-    //
+
     private IdGenerator idGenerator;
-    private BackgroundComputingValue<Map<Long, Channel>> channels;
+    private BackgroundComputingValue<Map<Id, Channel>> channels;
 
     public CassandraChannelStore(AstyanaxContext<Keyspace> context, int requestTimeout, IdGenerator idGenerator, Duration cacheExpiry) {
         this.context = context;
         this.requestTimeout = requestTimeout;
         this.keyspace = context.getEntity();
         this.idGenerator = idGenerator;
-        this.channels = new BackgroundComputingValue<Map<Long, Channel>>(cacheExpiry, new Callable<Map<Long, Channel>>() {
+        this.channels = new BackgroundComputingValue<Map<Id, Channel>>(cacheExpiry, new Callable<Map<Id, Channel>>() {
 
             @Override
-            public Map<Long, Channel> call() throws Exception {
+            public Map<Id, Channel> call() throws Exception {
                 return getChannels();
             }
         });
@@ -62,7 +63,7 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
     @Override
     public void write(Channel channel) {
         if (channel.getId() == null) {
-            channel.setId(idGenerator.generateRaw());
+            channel.setId(Id.valueOf(idGenerator.generateRaw()));
         }
         try {
             MutationBatch mutation = keyspace.prepareMutationBatch();
@@ -77,7 +78,7 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
     }
 
     @Override
-    public Maybe<Channel> fromId(Long id) {
+    public Maybe<Channel> fromId(Id id) {
         return Maybe.fromPossibleNullValue(channels.get().get(id));
     }
 
@@ -87,9 +88,9 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
     }
 
     @Override
-    public Iterable<Channel> forIds(Iterable<Long> ids) {
+    public Iterable<Channel> forIds(Iterable<Id> ids) {
         com.google.common.collect.ImmutableList.Builder<Channel> returnedChannels = ImmutableList.builder();
-        for (Long id : ids) {
+        for (Id id : ids) {
             returnedChannels.add(channels.get().get(id));
         }
         return returnedChannels.build();
@@ -131,7 +132,7 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
         return channelMap.build();
     }
 
-    private Map<Long, Channel> getChannels() {
+    private Map<Id, Channel> getChannels() {
         try {
             AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(CHANNEL_CF).setConsistencyLevel(ConsistencyLevel.CL_ONE).getAllRows();
             allRowsQuery.setRowLimit(100);
@@ -151,10 +152,10 @@ public class CassandraChannelStore implements ChannelResolver, ChannelWriter {
                         return null;
                     }
                 }
-            }), Predicates.notNull()), new Function<Channel, Long>() {
+            }), Predicates.notNull()), new Function<Channel, Id>() {
 
                 @Override
-                public Long apply(Channel input) {
+                public Id apply(Channel input) {
                     return input.getId();
                 }
             });

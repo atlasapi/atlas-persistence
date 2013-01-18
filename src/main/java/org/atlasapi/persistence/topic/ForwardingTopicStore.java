@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.topic;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Topic;
 
 import com.metabroadcast.common.base.Maybe;
@@ -21,7 +22,7 @@ public abstract class ForwardingTopicStore implements TopicStore {
         delegate().write(topic);
     }
 
-    public Iterable<Topic> topicsForIds(Iterable<Long> ids) {
+    public Iterable<Topic> topicsForIds(Iterable<Id> ids) {
         return delegate().topicsForIds(ids);
     }
 
@@ -29,7 +30,7 @@ public abstract class ForwardingTopicStore implements TopicStore {
         return delegate().topicsFor(query);
     }
 
-    public Maybe<Topic> topicForId(Long id) {
+    public Maybe<Topic> topicForId(Id id) {
         return delegate().topicForId(id);
     }
 

@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
@@ -35,9 +36,9 @@ public class DefaultEquivalentContentResolverTest {
     public void testResolvesSimpleContent() {
         
         Episode subject = new Episode("testUri", "testCurie", Publisher.BBC);
-        subject.setId(1234L);
+        subject.setId(Id.valueOf(1234));
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
-        equiv.setId(4321L);
+        equiv.setId(Id.valueOf(4321));
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
         Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
@@ -50,8 +51,8 @@ public class DefaultEquivalentContentResolverTest {
         ));
         when(contentResolver.findByIds(argThat(hasItems(subject.getId(), equiv.getId()))))
             .thenReturn(ResolvedContent.builder()
-                .put(subject.getCanonicalUri(), subject)
-                .put(equiv.getCanonicalUri(), equiv)
+                .put(subject.getId(), subject)
+                .put(equiv.getId(), equiv)
                 .build());
         
         EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, false);
@@ -71,11 +72,11 @@ public class DefaultEquivalentContentResolverTest {
     public void testResolvesContentWithTwoKeys() {
         
         Episode subject1 = new Episode("testUri1", "testCurie", Publisher.BBC);
-        subject1.setId(1234L);
+        subject1.setId(Id.valueOf(1234));
         Episode subject2 = new Episode("testUri2", "testCurie", Publisher.BBC);
-        subject2.setId(1235L);
+        subject2.setId(Id.valueOf(1235));
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
-        equiv.setId(4321L);
+        equiv.setId(Id.valueOf(4321));
         
         Iterable<String> uris = ImmutableSet.of(subject1.getCanonicalUri(), subject2.getCanonicalUri());
         Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
@@ -89,9 +90,9 @@ public class DefaultEquivalentContentResolverTest {
         ));
         when(contentResolver.findByIds(argThat(hasItems(subject1.getId(), subject2.getId(), equiv.getId()))))
             .thenReturn(ResolvedContent.builder()
-                .put(subject1.getCanonicalUri(), subject1)
-                .put(subject2.getCanonicalUri(), subject2)
-                .put(equiv.getCanonicalUri(), equiv)
+                .put(subject1.getId(), subject1)
+                .put(subject2.getId(), subject2)
+                .put(equiv.getId(), equiv)
                 .build());
         
         EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, false);

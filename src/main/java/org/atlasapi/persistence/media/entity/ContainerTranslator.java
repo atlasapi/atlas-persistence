@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Comparator;
 import java.util.List;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
@@ -81,9 +82,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         if (entity instanceof Series) {
             Series series = (Series) entity;
             series.withSeriesNumber((Integer) dbObject.get(SERIES_NUMBER_KEY));
-            Long containerId = TranslatorUtils.toLong(dbObject, CONTAINER_ID);
+            Id containerId = Id.valueOf(TranslatorUtils.toLong(dbObject, CONTAINER_ID));
             if(dbObject.containsField("container")) {
-                series.setParentRef(new ParentRef((String)dbObject.get("container"), containerId));
+                series.setParentRef(new ParentRef(containerId));
             }
             series.setTotalEpisodes(TranslatorUtils.toInteger(dbObject, TOTAL_EPISODES));
         }
@@ -148,8 +149,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
                 dbObject.put(SERIES_NUMBER_KEY, series.getSeriesNumber());
             }
             if (series.getParent() != null) {
-                dbObject.put("container", series.getParent().getUri());
-                dbObject.put(CONTAINER_ID, series.getParent().getId());
+                dbObject.put(CONTAINER_ID, series.getParent().getId().longValue());
             }
             if(series.getTotalEpisodes() != null) {
                 TranslatorUtils.from(dbObject, TOTAL_EPISODES, series.getTotalEpisodes());

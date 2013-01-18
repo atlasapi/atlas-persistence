@@ -10,6 +10,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
@@ -41,7 +42,7 @@ public class MongoChannelStoreTest {
     
     private static Channel channel(long id, String uri, String key, String... alias) {
         Channel channel = new Channel();
-        channel.setId(id);
+        channel.setId(Id.valueOf(id));
         channel.setCanonicalUri(uri);
         channel.setAliases(ImmutableSet.copyOf(alias));
         channel.setPublisher(Publisher.BBC);
@@ -53,7 +54,7 @@ public class MongoChannelStoreTest {
     @Test
     public void testRetrievesAChannel() {
         
-        Maybe<Channel> channel = store.fromId(1234L);
+        Maybe<Channel> channel = store.fromId(Id.valueOf(1234L));
         
         assertTrue(channel.hasValue());
         assertThat(channel.requireValue().getCanonicalUri(), is(equalTo("uri1")));
@@ -63,14 +64,14 @@ public class MongoChannelStoreTest {
     @Test
     public void testRetrievesSomeChannels() {
         
-        List<Long> ids = Lists.newArrayList(1234L, 1236L);
+        List<Id> ids = Lists.newArrayList(Id.valueOf(1234L), Id.valueOf(1236L));
         Iterable<Channel> channels = store.forIds(ids);
         
         assertThat(Iterables.size(channels), is(2));
         Map<String,Channel> channelMap = Maps.uniqueIndex(channels, Identified.TO_URI);
-        assertThat(channelMap.get("uri1").getId(), is(1234L));
+        assertThat(channelMap.get("uri1").getId(), is(Id.valueOf(1234)));
         assertThat(channelMap.get("uri2"), is(nullValue()));
-        assertThat(channelMap.get("uri3").getId(), is(1236L));
+        assertThat(channelMap.get("uri3").getId(), is(Id.valueOf(1236)));
         
     }
     
@@ -82,9 +83,9 @@ public class MongoChannelStoreTest {
         assertThat(Iterables.size(channels), is(3));
         
         Map<String,Channel> channelMap = Maps.uniqueIndex(channels, Identified.TO_URI);
-        assertThat(channelMap.get("uri1").getId(), is(1234L));
-        assertThat(channelMap.get("uri2").getId(), is(1235L));
-        assertThat(channelMap.get("uri3").getId(), is(1236L));
+        assertThat(channelMap.get("uri1").getId(), is(Id.valueOf(1234)));
+        assertThat(channelMap.get("uri2").getId(), is(Id.valueOf(1235)));
+        assertThat(channelMap.get("uri3").getId(), is(Id.valueOf(1236)));
         
     }
 
@@ -94,18 +95,18 @@ public class MongoChannelStoreTest {
         Map<String, Channel> aliases = store.forAliases(prefix);
         
         assertThat(aliases.size(), is(3));
-        assertThat(aliases.get(prefix+1).getId(),is(1234L));
-        assertThat(aliases.get(prefix+2).getId(),is(1234L));
-        assertThat(aliases.get(prefix+3).getId(),is(1236L));
+        assertThat(aliases.get(prefix+1).getId(),is(Id.valueOf(1234)));
+        assertThat(aliases.get(prefix+2).getId(),is(Id.valueOf(1234)));
+        assertThat(aliases.get(prefix+3).getId(),is(Id.valueOf(1236)));
     }
     
     @Test 
     public void testRetrievesChannelByURI() {
-    	assertThat(store.fromUri("uri1").requireValue().getId(), is(1234L));
+    	assertThat(store.fromUri("uri1").requireValue().getId(), is(Id.valueOf(1234)));
     }
     
     @Test 
     public void testRetrievesChannelByKey() {
-    	assertThat(store.fromKey("key1").requireValue().getId(), is(1234L));
+    	assertThat(store.fromKey("key1").requireValue().getId(), is(Id.valueOf(1234)));
     }
 }

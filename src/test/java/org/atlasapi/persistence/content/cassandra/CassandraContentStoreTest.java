@@ -3,6 +3,8 @@ package org.atlasapi.persistence.content.cassandra;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Item;
@@ -38,13 +40,13 @@ public class CassandraContentStoreTest extends BaseCassandraTest {
     public void testItems() {
         Item item1 = new Item("item1", "item1", Publisher.METABROADCAST);
         item1.setTitle("item1");
-        item1.setId(1L);
+        item1.setId(Id.valueOf(1));
         item1.setClips(Arrays.asList(new Clip("clip1", "clip1", Publisher.METABROADCAST)));
         item1.setVersions(Sets.newHashSet(new Version()));
 
         Item item2 = new Item("item2", "item2", Publisher.METABROADCAST);
         item2.setTitle("item2");
-        item2.setId(2L);
+        item2.setId(Id.valueOf(2));
         item2.setClips(Arrays.asList(new Clip("clip2", "clip2", Publisher.METABROADCAST)));
         item2.setVersions(Sets.newHashSet(new Version()));
 
@@ -59,13 +61,13 @@ public class CassandraContentStoreTest extends BaseCassandraTest {
     public void testContainerWithChild() {
         Item child1 = new Item("child1", "child1", Publisher.METABROADCAST);
         child1.setTitle("child1");
-        child1.setId(3L);
+        child1.setId(Id.valueOf(3));
 
         Series container1 = new Series("container1", "curie1", Publisher.METABROADCAST);
         container1.setTitle("container1");
         container1.setDescription("description1");
         container1.withSeriesNumber(1);
-        container1.setId(4L);
+        container1.setId(Id.valueOf(4));
 
         container1.setChildRefs(Arrays.asList(child1.childRef()));
         child1.setParentRef(ParentRef.parentRefFrom(container1));
@@ -90,13 +92,13 @@ public class CassandraContentStoreTest extends BaseCassandraTest {
     public void testListDifferentContentTypes() {
         Item child1 = new Item("child1", "child1", Publisher.METABROADCAST);
         child1.setTitle("child1");
-        child1.setId(3L);
+        child1.setId(Id.valueOf(3));
 
         Series container1 = new Series("container1", "curie1", Publisher.METABROADCAST);
         container1.setTitle("container1");
         container1.setDescription("description1");
         container1.withSeriesNumber(1);
-        container1.setId(4L);
+        container1.setId(Id.valueOf(4));
 
         container1.setChildRefs(Arrays.asList(child1.childRef()));
         child1.setParentRef(ParentRef.parentRefFrom(container1));

@@ -2,11 +2,12 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -49,7 +50,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         
         if(useAtlasIdAsId) {
         	description.setCanonicalUri((String) dbObject.get(CANONICAL_URL));
-        	description.setId((Long) dbObject.get(ID));
+        	description.setId(Id.valueOf((Long)dbObject.get(ID)));
         }
         else {
         	description.setCanonicalUri((String) dbObject.get(ID));
@@ -69,11 +70,10 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
         @Override
         public LookupRef apply(DBObject input) {
-            String id = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
             Long aid = TranslatorUtils.toLong(input, OPAQUE_ID);
-            return new LookupRef(id, aid, publisher, ContentCategory.valueOf(type));
+            return new LookupRef(Id.valueOf(aid), publisher, ContentCategory.valueOf(type));
         }
     };
 
@@ -85,11 +85,11 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         
         if (useAtlasIdAsId) {
             TranslatorUtils.from(dbObject, CANONICAL_URL, entity.getCanonicalUri());
-            TranslatorUtils.from(dbObject, ID, entity.getId());
+            TranslatorUtils.from(dbObject, ID, entity.getId().longValue());
         }
         else {
             TranslatorUtils.from(dbObject, ID, entity.getCanonicalUri());
-            TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId());
+            TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId().longValue());
         }
         
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
@@ -111,7 +111,6 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, ID, input.uri());
             TranslatorUtils.from(dbo, OPAQUE_ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());

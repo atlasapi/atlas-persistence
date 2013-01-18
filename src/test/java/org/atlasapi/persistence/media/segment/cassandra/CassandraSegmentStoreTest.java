@@ -3,6 +3,8 @@ package org.atlasapi.persistence.media.segment.cassandra;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.ids.UUIDGenerator;
 import java.util.Arrays;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.segment.Segment;
 import org.atlasapi.media.segment.SegmentRef;
@@ -30,7 +32,7 @@ public class CassandraSegmentStoreTest extends BaseCassandraTest {
     @Test
     public void testFindByIdentifier() {
         Segment segment = new Segment();
-        segment.setId(1l);
+        segment.setId(Id.valueOf(1));
         segment.setIdentifier("s1");
         segment.setCanonicalUri("u1");
 
@@ -42,7 +44,7 @@ public class CassandraSegmentStoreTest extends BaseCassandraTest {
     @Test
     public void testFindByUri() {
         Segment segment = new Segment();
-        segment.setId(1l);
+        segment.setId(Id.valueOf(1));
         segment.setIdentifier("s1");
         segment.setCanonicalUri("u1");
         segment.setPublisher(Publisher.METABROADCAST);

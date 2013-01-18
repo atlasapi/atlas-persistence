@@ -7,6 +7,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.After;
 import org.junit.Before;
@@ -66,34 +67,37 @@ public class CassandraEquivalenceSummaryStoreTest {
     @Test
     public void testStoresAndResolvesSummaries() {
         
-        EquivalenceSummary summaryOne = summaryWithKey("one", null);
-        EquivalenceSummary summaryTwo = summaryWithKey("two", "parent");
+        Id one = Id.valueOf(1);
+        Id two = Id.valueOf(2);
+        Id three = Id.valueOf(3);
+
+        EquivalenceSummary summaryOne = summaryWithKey(one, null);
+        EquivalenceSummary summaryTwo = summaryWithKey(two, three);
         
         store.store(summaryOne);
         
-        OptionalMap<String, EquivalenceSummary> resolved = store.summariesForUris(ImmutableSet.of("one","two"));
+        OptionalMap<Id, EquivalenceSummary> resolved = store.summariesForIds(ImmutableSet.of(one,two));
         
         assertThat(resolved.get("one").get(), is(equalTo(summaryOne)));
         assertThat(resolved.get("two").isPresent(), is(false));
         
         store.store(summaryTwo);
         
-        resolved = store.summariesForUris(ImmutableSet.of("one","two"));
+        resolved = store.summariesForIds(ImmutableSet.of(one,two));
 
         assertThat(resolved.get("two").get(), is(equalTo(summaryTwo)));
         assertThat(resolved.get("one").get(), is(equalTo(summaryOne)));
         
-        Set<EquivalenceSummary> childSummaries = store.summariesForChildren("parent");
+        Set<EquivalenceSummary> childSummaries = store.summariesForChildren(three);
         assertThat(childSummaries.size(), is(1));
         assertThat(Iterables.getOnlyElement(childSummaries).getSubject(), is(summaryTwo.getSubject()));
         
     }
 
-    private EquivalenceSummary summaryWithKey(String key, String parent) {
-        String subject = key;
-        Iterable<String> candidates = ImmutableSet.of(key);
+    private EquivalenceSummary summaryWithKey(Id key, Id parent) {
+        Iterable<Id> candidates = ImmutableSet.of(key);
         ImmutableMap<Publisher, ContentRef> equivalents = ImmutableMap.of();
-        return new EquivalenceSummary(subject, parent, candidates, equivalents);
+        return new EquivalenceSummary(key, parent, candidates, equivalents);
     }
 
 }

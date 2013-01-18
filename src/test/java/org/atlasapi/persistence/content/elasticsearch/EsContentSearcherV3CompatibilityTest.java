@@ -17,6 +17,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Brand;
@@ -266,11 +267,11 @@ public class EsContentSearcherV3CompatibilityTest {
 
         Brand eastBrand = new Brand("/east", "curie", Publisher.ARCHIVE_ORG);
         eastBrand.setTitle("east");
-        eastBrand.setId(2517L);
+        eastBrand.setId(Id.valueOf(2517));
 
         Item eastItem = new Item("/eastItem", "curie", Publisher.ARCHIVE_ORG);
         eastItem.setTitle("east");
-        eastItem.setId(2518L);
+        eastItem.setId(Id.valueOf(2518));
         eastItem.setParentRef(ParentRef.parentRefFrom(eastBrand));
         
         eastBrand.setChildRefs(Arrays.asList(eastItem.childRef()));
@@ -332,7 +333,7 @@ public class EsContentSearcherV3CompatibilityTest {
 
         Brand spookie = new Brand("/spookie", "curie", Publisher.ARCHIVE_ORG);
         spookie.setTitle("spookie");
-        spookie.setId(10000L);
+        spookie.setId(Id.valueOf(10000));
         indexAndWait(spookie);
         
         check(searcher.search(title("spook")).get(), spookie, spookyTheCat, spooks);
@@ -360,7 +361,7 @@ public class EsContentSearcherV3CompatibilityTest {
 
         Brand spookie = new Brand("/spookie2", "curie", Publisher.ARCHIVE_ORG);
         spookie.setTitle("spookie2");
-        spookie.setId(666L);
+        spookie.setId(Id.valueOf(666));
         indexAndWait(spookie);
         
         check(searcher.search(currentWeighted("spook")).get(), spookyTheCat, spooks);
@@ -379,11 +380,11 @@ public class EsContentSearcherV3CompatibilityTest {
     }
 
     protected static void check(SearchResults result, Identified... content) {
-        assertThat(result.getIds(), is(toUris(Arrays.asList(content))));
+        assertThat(result.getIds(), is(toIds(Arrays.asList(content))));
     }
     
     protected static void checkNot(SearchResults result, Identified... content) {
-        assertFalse(result.getIds().equals(toUris(Arrays.asList(content))));
+        assertFalse(result.getIds().equals(toIds(Arrays.asList(content))));
     }
 
     private static long id = 100L;
@@ -391,7 +392,7 @@ public class EsContentSearcherV3CompatibilityTest {
     protected static Brand brand(String uri, String title) {
         Brand b = new Brand(uri, uri, Publisher.BBC);
         b.setTitle(title);
-        b.setId(id++);
+        b.setId(Id.valueOf(id++));
         return b;
     }
 
@@ -401,7 +402,7 @@ public class EsContentSearcherV3CompatibilityTest {
 
     protected static Item item(String uri, String title, String description) {
         Item i = new Item();
-        i.setId(id++);
+        i.setId(Id.valueOf(id++));
         i.setTitle(title);
         i.setCanonicalUri(uri);
         i.setDescription(description);
@@ -415,11 +416,11 @@ public class EsContentSearcherV3CompatibilityTest {
         return p;
     }
     
-    private static List<Long> toUris(List<? extends Identified> content) {
-        List<Long> uris = Lists.newArrayList();
+    private static List<Id> toIds(List<? extends Identified> content) {
+        List<Id> ids = Lists.newArrayList();
         for (Identified description : content) {
-            uris.add(description.getId());
+            ids.add(description.getId());
         }
-        return uris;
+        return ids;
     }
 }

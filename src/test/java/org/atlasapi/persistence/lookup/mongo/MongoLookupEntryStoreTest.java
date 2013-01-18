@@ -10,6 +10,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
@@ -132,7 +133,7 @@ public class MongoLookupEntryStoreTest {
 
         Episode testEpisode = new Episode("oldItemUri", "oldItemCurie", Publisher.BBC);
         testEpisode.addAlias("oldItemAlias");
-        testEpisode.setParentRef(new ParentRef("aBrand"));
+        testEpisode.setParentRef(new ParentRef(Id.valueOf(1244L)));
         
         entryStore.ensureLookup(testEpisode);
 

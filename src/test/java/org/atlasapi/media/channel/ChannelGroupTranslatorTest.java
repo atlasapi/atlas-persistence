@@ -6,11 +6,13 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.metabroadcast.common.intl.Countries;
 import com.mongodb.DBObject;
 
@@ -25,7 +27,7 @@ public class ChannelGroupTranslatorTest {
         channelGroup.setAvailableCountries(ImmutableSet.of(Countries.US,Countries.GB));
         channelGroup.setTitle("Title");
         channelGroup.setPublisher(Publisher.BBC);
-        channelGroup.setChannels(ImmutableList.of(1234L, 1235L, 1236L));
+        channelGroup.setChannels(Lists.transform(ImmutableList.of(1234L, 1235L, 1236L),Id.fromLongValue()));
         channelGroup.setType(ChannelGroupType.PLATFORM);
         
         DBObject encoded = channelGroupTranslator.toDBObject(null, channelGroup);

@@ -14,12 +14,13 @@ import javax.annotation.Nullable;
 import junit.framework.TestCase;
 
 import org.atlasapi.equiv.ContentRef;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Brand;
-import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.util.Identifiables;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -48,12 +49,12 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of("testUri")));
         assertEquals(item.getCanonicalUri(), uriEntry.uri());
         assertEquals(item.getAllUris(), uriEntry.aliases());
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.directEquivalents()).uri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(uriEntry.directEquivalents()).id());
 
         assertNotNull(uriEntry.created());
         assertNotNull(uriEntry.updated());
 
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).uri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
         assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).category());
 
@@ -64,7 +65,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
     private Item createItem(String itemName, Publisher publisher) {
         Item item = new Item(itemName + "Uri", itemName + "Curie", Publisher.BBC);
-        item.setId(Long.valueOf(itemName.hashCode()));
+        item.setId(Id.valueOf(itemName.hashCode()));
         item.addAlias(itemName + "Alias");
         item.setPublisher(publisher);
         return item;
@@ -181,27 +182,27 @@ public class TransitiveLookupWriterTest extends TestCase {
     private void hasEquivs(Content id, Content... transitiveEquivs) {
         LookupEntry entry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of(id.getCanonicalUri())));
         assertEquals(
-            ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(transitiveEquivs),Identified.TO_URI)), 
-            ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), LookupRef.TO_URI))
+            ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(transitiveEquivs),Identifiables.toId())), 
+            ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), LookupRef.TO_ID))
         );
     }
 
     private void hasDirectEquivs(Content id, Content... directEquivs) {
         LookupEntry entry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of(id.getCanonicalUri())));
         assertEquals(
-            ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(directEquivs),Identified.TO_URI)), 
-            ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(), LookupRef.TO_URI))
+            ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(directEquivs),Identifiables.toId())), 
+            ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(), LookupRef.TO_ID))
         );
     }
 
     public void testBreakingEquivs() {
         
         Brand pivot = new Brand("pivot", "cpivot", Publisher.PA);
-        pivot.setId(1L);
+        pivot.setId(Id.valueOf(1));
         Brand left = new Brand("left", "cleft", Publisher.PA);
-        left.setId(2L);
+        left.setId(Id.valueOf(2));
         Brand right = new Brand("right", "cright", Publisher.PA);
-        right.setId(3L);
+        right.setId(Id.valueOf(3));
         
         store.store(LookupEntry.lookupEntryFrom(pivot));
         store.store(LookupEntry.lookupEntryFrom(left));

@@ -5,6 +5,8 @@ import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.Clock;
 import com.mongodb.DBCollection;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
@@ -44,9 +46,10 @@ public class MongoContentGroupWriter implements ContentGroupWriter {
     
     private void ensureId(ContentGroup contentGroup) {
         boolean noId = contentGroup.getId() == null;
-        boolean noStoredId = contentGroup.getId() != null && contentGroups.count(where().fieldEquals(IdentifiedTranslator.ID, contentGroup.getId()).build()) == 0;
+        boolean noStoredId = contentGroup.getId() != null 
+            && contentGroups.count(where().fieldEquals(IdentifiedTranslator.ID, contentGroup.getId().longValue()).build()) == 0;
         if (noId || noStoredId) {
-            contentGroup.setId(idGenerator.generateRaw());
+            contentGroup.setId(Id.valueOf(idGenerator.generateRaw()));
         }
     }
 }

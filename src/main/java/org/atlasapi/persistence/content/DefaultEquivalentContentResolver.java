@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -36,7 +37,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     @Override
     public EquivalentContent resolveUris(Iterable<String> uris, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations, boolean withAliases) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris, withAliases);
-        Set<Long> ids = Sets.newHashSet();
+        Set<Id> ids = Sets.newHashSet();
         for (LookupEntry entry : entries) {
             ids.add(entry.id());
         }
@@ -44,7 +45,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
     @Override
-    public EquivalentContent resolveIds(Iterable<Long> ids, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations) {
+    public EquivalentContent resolveIds(Iterable<Id> ids, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIds(ids);
         Set<String> uris = Sets.newHashSet();
         for (LookupEntry entry : entries) {
@@ -53,39 +54,39 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         return filterAndResolveEntries(entries, ImmutableSet.copyOf(ids), selectedSources);
     }
 
-    protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<Long> ids, Set<Publisher> selectedSources) {
+    protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<Id> ids, Set<Publisher> selectedSources) {
         Iterable<LookupEntry> selectedEntries = filter(entries, selectedSources);
         
         if (Iterables.isEmpty(selectedEntries)) {
             return EquivalentContent.empty();
         }
         
-        SetMultimap<Long, Long> idToEquivs = idToEquivs(selectedEntries, selectedSources);
+        SetMultimap<Id, Id> idToEquivs = idToEquivs(selectedEntries, selectedSources);
         
         ResolvedContent resolvedContent = contentResolver.findByIds(idToEquivs.values());
         
         EquivalentContent.Builder equivalentContent = EquivalentContent.builder();
-        for (Long id : ids) {
-            Set<Long> equivUris = idToEquivs.get(id);
+        for (Id id : ids) {
+            Set<Id> equivUris = idToEquivs.get(id);
             Iterable<Content> content = equivContent(equivUris, resolvedContent);
             equivalentContent.putEquivalents(id, content);
         }
         return equivalentContent.build();
     }
 
-    protected Iterable<Content> equivContent(Set<Long> equivIds, ResolvedContent resolved) {
+    protected Iterable<Content> equivContent(Set<Id> equivIds, ResolvedContent resolved) {
         if (equivIds == null) {
             return ImmutableSet.of();
         }
-        ImmutableMap<Long, Identified> idIndex = Maps.uniqueIndex(resolved.getAllResolvedResults(), Identified.TO_ID);
+        ImmutableMap<Id, Identified> idIndex = Maps.uniqueIndex(resolved.getAllResolvedResults(), Identified.TO_ID);
         return Iterables.filter(Iterables.transform(equivIds, Functions.forMap(idIndex, null)), Content.class);
     }
     
 
-    private SetMultimap<Long, Long> idToEquivs(Iterable<LookupEntry> resolved, Set<Publisher> selectedSources) {
+    private SetMultimap<Id, Id> idToEquivs(Iterable<LookupEntry> resolved, Set<Publisher> selectedSources) {
         Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(selectedSources));
 
-        ImmutableSetMultimap.Builder<Long, Long> builder = ImmutableSetMultimap.builder();
+        ImmutableSetMultimap.Builder<Id, Id> builder = ImmutableSetMultimap.builder();
         for (LookupEntry entry : resolved) {
             Set<LookupRef> selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter);
             builder.putAll(entry.id(), Iterables.transform(selectedEquivs,LookupRef.TO_ID));

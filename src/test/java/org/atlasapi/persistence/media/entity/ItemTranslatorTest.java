@@ -5,6 +5,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Clip;
@@ -63,8 +64,8 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        TopicRef topic1 = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);
-        TopicRef topic2 = new TopicRef(2l, 0.02f, false, TopicRef.Relationship.ABOUT);
+        TopicRef topic1 = new TopicRef(Id.valueOf(1), 0.01f, true, TopicRef.Relationship.ABOUT);
+        TopicRef topic2 = new TopicRef(Id.valueOf(2), 0.02f, false, TopicRef.Relationship.ABOUT);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
@@ -139,11 +140,11 @@ public class ItemTranslatorTest extends TestCase {
         tags.add("tag");
         item.setTags(tags);
         
-        TopicRef topic1 = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);
-        TopicRef topic2 = new TopicRef(2l, 0.02f, false, TopicRef.Relationship.ABOUT);
+        TopicRef topic1 = new TopicRef(Id.valueOf(1), 0.01f, true, TopicRef.Relationship.ABOUT);
+        TopicRef topic2 = new TopicRef(Id.valueOf(2), 0.02f, false, TopicRef.Relationship.ABOUT);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
-        ContentGroupRef contentGroup1 = new ContentGroupRef(1L, "uri");
+        ContentGroupRef contentGroup1 = new ContentGroupRef(Id.valueOf(1L), "uri");
         item.addContentGroup(contentGroup1);
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);

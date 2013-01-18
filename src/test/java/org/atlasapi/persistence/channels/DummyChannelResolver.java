@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.media.channel.ChannelResolver;
 
 import com.google.common.base.Function;
@@ -51,7 +52,7 @@ public class DummyChannelResolver implements ChannelResolver {
 	}
 
 	@Override
-	public Maybe<Channel> fromId(Long id) {
+	public Maybe<Channel> fromId(Id id) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -71,7 +72,7 @@ public class DummyChannelResolver implements ChannelResolver {
 	}
 
     @Override
-    public Iterable<Channel> forIds(Iterable<Long> ids) {
+    public Iterable<Channel> forIds(Iterable<Id> ids) {
         throw new UnsupportedOperationException();
     }
 	

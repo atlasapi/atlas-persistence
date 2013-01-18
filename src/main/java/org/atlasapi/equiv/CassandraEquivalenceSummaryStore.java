@@ -8,15 +8,18 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.serialization.json.JsonFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.collect.ImmutableOptionalMap;
 import com.metabroadcast.common.collect.OptionalMap;
 import com.netflix.astyanax.AstyanaxContext;
@@ -98,15 +101,15 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
             MutationBatch mutationBatch = keyspace.prepareMutationBatch();
             mutationBatch.setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
             ColumnListMutation<String> mutation = mutationBatch
-                    .withRow(EQUIV_SUM_CF, summary.getSubject())
+                    .withRow(EQUIV_SUM_CF, summary.getSubject().toString())
                     .putColumn(SUMMARY_COL, serialize(summary), null);
             if (summary.getParent() != null) {
-                mutation.putColumn(PARENT_COL, summary.getParent(), null);
+                mutation.putColumn(PARENT_COL, summary.getParent().toString(), null);
             }
             Future<OperationResult<Void>> result = mutationBatch.executeAsync();
             result.get(requestTimeout, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            throw new CassandraPersistenceException(summary.getSubject(), e);
+            throw new CassandraPersistenceException(summary.getSubject().toString(), e);
         }
     }
 
@@ -115,8 +118,8 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
     }
 
     @Override
-    public Set<EquivalenceSummary> summariesForChildren(String parent) {
-        Rows<String, String> rows = rowsForParent(parent);
+    public Set<EquivalenceSummary> summariesForChildren(Id parent) {
+        Rows<String, String> rows = rowsForParent(parent.toString());
         ImmutableSet.Builder<EquivalenceSummary> result = ImmutableSet.builder();
         for (Row<String, String> row : rows) {
             result.add(deserialize(row));
@@ -137,16 +140,16 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
     }
 
     @Override
-    public OptionalMap<String, EquivalenceSummary> summariesForUris(Iterable<String> uris) {
-        return deserialize(uris, rowsForUris(uris));
+    public OptionalMap<Id, EquivalenceSummary> summariesForIds(Iterable<Id> ids) {
+        return deserialize(ids, rowsForUris(ids));
     }
 
-    private Rows<String, String> rowsForUris(Iterable<String> uris) {
+    private Rows<String, String> rowsForUris(Iterable<Id> ids) {
         try {
             ColumnFamilyQuery<String, String> query = keyspace
                     .prepareQuery(EQUIV_SUM_CF)
                     .setConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-            RowSliceQuery<String, String> slice = query.getKeySlice(ImmutableSet.copyOf(uris));
+            RowSliceQuery<String, String> slice = query.getKeySlice(ImmutableSet.copyOf(Iterables.transform(ids,Functions.toStringFunction())));
             Future<OperationResult<Rows<String, String>>> queryResult = slice.executeAsync();
             return queryResult.get(requestTimeout, TimeUnit.MILLISECONDS).getResult();
         } catch (Exception e) {
@@ -154,11 +157,11 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
         }
     }
 
-    private OptionalMap<String, EquivalenceSummary> deserialize(Iterable<String> uris, Rows<String, String> result) {
-        Builder<String, Optional<EquivalenceSummary>> resultMap = ImmutableMap.builder();
-        for (String uri : uris) {
-            EquivalenceSummary value = deserialize(result.getRow(uri));
-            resultMap.put(uri, Optional.fromNullable(value));
+    private OptionalMap<Id, EquivalenceSummary> deserialize(Iterable<Id> ids, Rows<String, String> result) {
+        Builder<Id, Optional<EquivalenceSummary>> resultMap = ImmutableMap.builder();
+        for (Id id : ids) {
+            EquivalenceSummary value = deserialize(result.getRow(id.toString()));
+            resultMap.put(id, Optional.fromNullable(value));
         }
         return ImmutableOptionalMap.copyOf(resultMap.build());
     }

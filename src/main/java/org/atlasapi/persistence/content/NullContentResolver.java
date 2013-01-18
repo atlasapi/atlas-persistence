@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
 
 public class NullContentResolver implements ContentResolver {
@@ -20,7 +21,7 @@ public class NullContentResolver implements ContentResolver {
     }
 
     @Override
-    public ResolvedContent findByIds(Iterable<Long> ids) {
+    public ResolvedContent findByIds(Iterable<Id> ids) {
         return EMPTY;
     }
 

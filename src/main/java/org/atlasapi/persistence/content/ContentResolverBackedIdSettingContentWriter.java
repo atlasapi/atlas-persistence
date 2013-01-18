@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Identified;
 
@@ -18,7 +19,7 @@ public class ContentResolverBackedIdSettingContentWriter extends AbstractIdSetti
     }
 
     @Override
-    protected <T extends Content> Long getExistingId(T content) {
+    protected <T extends Content> Id getExistingId(T content) {
         ResolvedContent resolved = contentResolver.findByCanonicalUris(ImmutableList.of(content.getCanonicalUri()));
         Maybe<Identified> ided = resolved.get(content.getCanonicalUri());
         if (ided.hasValue()) {

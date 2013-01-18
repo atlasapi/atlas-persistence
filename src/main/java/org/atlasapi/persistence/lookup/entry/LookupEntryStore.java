@@ -1,5 +1,7 @@
 package org.atlasapi.persistence.lookup.entry;
 
+import org.atlasapi.media.common.Id;
+
 public interface LookupEntryStore {
 
     /**
@@ -28,5 +30,5 @@ public interface LookupEntryStore {
      */
     Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris);
 
-    Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
+    Iterable<LookupEntry> entriesForIds(Iterable<Id> ids);
 }

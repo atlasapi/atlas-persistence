@@ -2,6 +2,8 @@ package org.atlasapi.persistence.content.cassandra;
 
 import com.google.common.collect.Iterables;
 import java.util.Arrays;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.EntityType;
@@ -30,7 +32,7 @@ public class CassandraContentGroupStoreTest extends BaseCassandraTest {
     @Test
     public void testContentGroupByUri() {
         ContentGroup contentGroup = new ContentGroup("cg1", Publisher.METABROADCAST);
-        contentGroup.addContent(new ChildRef(1L,"child1", "", new DateTime(), EntityType.ITEM));
+        contentGroup.addContent(new ChildRef(Id.valueOf(1L), "", new DateTime(), EntityType.ITEM));
         
         store.createOrUpdate(contentGroup);
         
@@ -40,22 +42,22 @@ public class CassandraContentGroupStoreTest extends BaseCassandraTest {
     @Test
     public void testContentGroupById() {
         ContentGroup contentGroup = new ContentGroup("cg1", Publisher.METABROADCAST);
-        contentGroup.setId(1l);
-        contentGroup.addContent(new ChildRef(1L,"child1", "", new DateTime(), EntityType.ITEM));
+        contentGroup.setId(Id.valueOf(1));
+        contentGroup.addContent(new ChildRef(Id.valueOf(1L), "", new DateTime(), EntityType.ITEM));
         
         store.createOrUpdate(contentGroup);
         
-        assertEquals(contentGroup, store.findByIds(Arrays.asList(1l)).asMap().get("1").requireValue());
+        assertEquals(contentGroup, store.findByIds(Arrays.asList(Id.valueOf(1l))).asMap().get("1").requireValue());
     }
     
     @Test
     public void testAllContentGroups() {
         ContentGroup contentGroup1 = new ContentGroup("cg1", Publisher.METABROADCAST);
-        contentGroup1.setId(1l);
-        contentGroup1.addContent(new ChildRef(1L,"child1", "", new DateTime(), EntityType.ITEM));
+        contentGroup1.setId(Id.valueOf(1));
+        contentGroup1.addContent(new ChildRef(Id.valueOf(1L), "", new DateTime(), EntityType.ITEM));
         ContentGroup contentGroup2 = new ContentGroup("cg2", Publisher.METABROADCAST);
-        contentGroup1.setId(2l);
-        contentGroup1.addContent(new ChildRef(2L,"child2", "", new DateTime(), EntityType.ITEM));
+        contentGroup1.setId(Id.valueOf(2));
+        contentGroup1.addContent(new ChildRef(Id.valueOf(1L), "", new DateTime(), EntityType.ITEM));
         
         store.createOrUpdate(contentGroup1);
         store.createOrUpdate(contentGroup2);

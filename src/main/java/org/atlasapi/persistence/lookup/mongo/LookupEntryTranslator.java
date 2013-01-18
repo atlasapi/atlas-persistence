@@ -4,6 +4,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
@@ -83,7 +84,6 @@ public class LookupEntryTranslator {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
 
-            TranslatorUtils.from(dbo, ID, input.uri());
             TranslatorUtils.from(dbo, OPAQUE_ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
@@ -98,7 +98,8 @@ public class LookupEntryTranslator {
         }
 
         String uri = TranslatorUtils.toString(dbo, ID);
-        Long id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
+        Long lid = TranslatorUtils.toLong(dbo, OPAQUE_ID);
+        Id id = lid != null ? Id.valueOf(lid) : null;
 
         Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
         aliases.add(uri);
@@ -117,11 +118,12 @@ public class LookupEntryTranslator {
 
         @Override
         public LookupRef apply(DBObject input) {
-            String id = TranslatorUtils.toString(input, ID);
+            String uri = TranslatorUtils.toString(input, ID);
             Long aid = TranslatorUtils.toLong(input, OPAQUE_ID);
+            Id id = aid != null ? Id.valueOf(aid) : null;
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, aid, publisher, ContentCategory.valueOf(type));
+            return new LookupRef(id, publisher, ContentCategory.valueOf(type));
         }
     };
 }

@@ -9,13 +9,13 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.media.entity.LookupRef.TO_URI;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -59,7 +59,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
+    public Iterable<LookupEntry> entriesForIds(Iterable<Id> ids) {
         DBObject queryDbo = new BasicDBObject(OPAQUE_ID, new BasicDBObject(IN, ids));
         DBCursor found = lookup.find(queryDbo);
         if (found == null) {
@@ -88,7 +88,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
 
         store(merged);
 
-        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_URI))) {
+        for (LookupEntry entry : entriesForIds(transform(filter(merged.equivalents(), not(equalTo(ref))), LookupRef.TO_ID))) {
             if (entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }

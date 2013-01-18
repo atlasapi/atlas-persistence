@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Item;
@@ -22,10 +23,10 @@ public abstract class AbstractIdSettingContentWriter implements ContentWriter {
     }
 
     private <T extends Content> T ensureId(T content) {
-        Long id = getExistingId(content);
+        Id id = getExistingId(content);
     
         if (id == null) {
-            content.setId(generator.generateRaw());
+            content.setId(Id.valueOf(generator.generateRaw()));
         } else { //ensures an adapter can't override and assign a new id for the content.
             content.setId(id);
         }
@@ -33,7 +34,7 @@ public abstract class AbstractIdSettingContentWriter implements ContentWriter {
         return content;
     }
 
-    protected abstract <T extends Content> Long getExistingId(T content);
+    protected abstract <T extends Content> Id getExistingId(T content);
 
     @Override
     public void createOrUpdate(Container container) {

@@ -11,7 +11,10 @@ import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.atlasapi.content.criteria.ContentQuery;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Item;
@@ -38,9 +41,6 @@ import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.mongodb.Bytes;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.atlasapi.persistence.bootstrap.ContentBootstrapper;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister {
 
@@ -187,12 +187,12 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 
     @Override
     //TODO: enable use of contentQuery?
-    public Iterator<Content> contentForTopic(final Long topicId, ContentQuery contentQuery) {
+    public Iterator<Content> contentForTopic(final Id topicId, ContentQuery contentQuery) {
         return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
 
             @Override
             public DBCursor cursorFor(ContentCategory category) {
-                return contentTables.collectionFor(category).find(where().fieldEquals("topics.topic", topicId).build()).sort(sort().ascending(ID).build());
+                return contentTables.collectionFor(category).find(where().fieldEquals("topics.topic", topicId.longValue()).build()).sort(sort().ascending(ID).build());
             }
         });
     }

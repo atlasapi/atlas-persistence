@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content;
 
 import java.util.Iterator;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -19,7 +20,7 @@ public class LookupStoreBackedIdSettingContentWriter extends AbstractIdSettingCo
     }
 
     @Override
-    protected <T extends Content> Long getExistingId(T content) {
+    protected <T extends Content> Id getExistingId(T content) {
         Iterable<LookupEntry> entries = lookupStore.entriesForCanonicalUris(ImmutableList.of(content.getCanonicalUri()));
         Iterator<LookupEntry> entryIterator = entries.iterator();
         if (entryIterator.hasNext()) {

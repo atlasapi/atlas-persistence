@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.annotation.Nullable;
 
+import org.atlasapi.media.common.Id;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Objects;
@@ -90,14 +91,14 @@ public final class ScheduleRef {
     
     public static final class ScheduleRefEntry implements Comparable<ScheduleRefEntry> {
         
-        private final Long itemId;
+        private final Id itemId;
         private final String channelId;
         private final DateTime broadcastTime;
         private final DateTime broadcastEndTime;
         private final Optional<String> broadcastId;
 
         public ScheduleRefEntry(Long itemId, String channel, DateTime broadcastTime, DateTime broadcastEndTime, @Nullable String broadcastId) {
-            this.itemId = checkNotNull(itemId);
+            this.itemId = Id.valueOf(checkNotNull(itemId));
             this.channelId = checkNotNull(channel);
             this.broadcastTime = checkNotNull(broadcastTime);
             this.broadcastEndTime = checkNotNull(broadcastEndTime);
@@ -112,7 +113,7 @@ public final class ScheduleRef {
             return 0;
         }
 
-        public Long getItemId() {
+        public Id getItemId() {
             return itemId;
         }
 

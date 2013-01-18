@@ -3,6 +3,8 @@ package org.atlasapi.persistence.content.cassandra;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.ids.UUIDGenerator;
 import java.util.Arrays;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.product.Product;
 import org.atlasapi.persistence.cassandra.BaseCassandraTest;
@@ -28,7 +30,7 @@ public class CassandraProductStoreTest extends BaseCassandraTest {
     @Test
     public void testProductById() {
         Product product = new Product();
-        product.setId(1l);
+        product.setId(Id.valueOf(1));
         product.setCanonicalUri("uri1");
         product.setPublisher(Publisher.METABROADCAST);
         
@@ -40,7 +42,7 @@ public class CassandraProductStoreTest extends BaseCassandraTest {
     @Test
     public void testProductByUri() {
         Product product = new Product();
-        product.setId(1l);
+        product.setId(Id.valueOf(1));
         product.setCanonicalUri("uri1");
         product.setPublisher(Publisher.METABROADCAST);
         
@@ -52,12 +54,12 @@ public class CassandraProductStoreTest extends BaseCassandraTest {
     @Test
     public void testProductByContent() {
         Product product1 = new Product();
-        product1.setId(1l);
+        product1.setId(Id.valueOf(1));
         product1.setCanonicalUri("uri1");
         product1.setPublisher(Publisher.METABROADCAST);
         product1.setContent(Arrays.asList("c1", "c2"));
         Product product2 = new Product();
-        product2.setId(2l);
+        product2.setId(Id.valueOf(2));
         product2.setCanonicalUri("uri2");
         product2.setPublisher(Publisher.METABROADCAST);
         product2.setContent(Arrays.asList("c1"));
@@ -80,10 +82,10 @@ public class CassandraProductStoreTest extends BaseCassandraTest {
     @Test
     public void testAllProducts() {
         Product product1 = new Product();
-        product1.setId(1l);
+        product1.setId(Id.valueOf(1));
         product1.setPublisher(Publisher.METABROADCAST);
         Product product2 = new Product();
-        product2.setId(2l);
+        product2.setId(Id.valueOf(2));
         product2.setPublisher(Publisher.METABROADCAST);
         
         store.store(product1);

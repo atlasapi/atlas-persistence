@@ -269,7 +269,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
 
     private EsContent toEsContent(Item item) {
         return new EsContent()
-            .id(item.getId())
+            .id(item.getId().longValue())
             .uri(item.getCanonicalUri())
             .title(item.getTitle())
             .flattenedTitle(flattenedOrNull(item.getTitle()))
@@ -315,7 +315,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
                     .type(EsContent.TOP_LEVEL_TYPE)
                     .id(getDocId(item))
                     .source(new EsContent()
-                        .id(item.getId())
+                        .id(item.getId().longValue())
                         .uri(item.getCanonicalUri())
                         .publisher(item.getPublisher() != null ? item.getPublisher().key() : null)
                         .broadcasts(indexBroadcasts.getValue())
@@ -331,7 +331,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     @Override
     public void index(Container container) {
         EsContent indexed = new EsContent()
-            .id(container.getId())
+            .id(container.getId().longValue())
             .uri(container.getCanonicalUri())
             .title(container.getTitle())
             .flattenedTitle(flattenedOrNull(container.getTitle()))
@@ -409,7 +409,7 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
     private Collection<EsTopic> makeESTopics(Item item) {
         Collection<EsTopic> esTopics = new LinkedList<EsTopic>();
         for (TopicRef topic : item.getTopicRefs()) {
-            esTopics.add(new EsTopic().id(topic.getTopic()));
+            esTopics.add(new EsTopic().id(topic.getTopic().longValue()));
         }
         return esTopics;
     }

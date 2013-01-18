@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.TopicRef;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -26,7 +27,7 @@ public class TopicRefTranslator {
 	}
 	
 	public TopicRef fromDBObject(DBObject dbo) {
-		return new TopicRef(TranslatorUtils.toLong(dbo, TOPIC_KEY), 
+		return new TopicRef(Id.valueOf(TranslatorUtils.toLong(dbo, TOPIC_KEY)), 
 				TranslatorUtils.toFloat(dbo, WEIGHTING_KEY),
 				TranslatorUtils.toBoolean(dbo, SUPERVISED_KEY),
                 TopicRef.Relationship.valueOf(TranslatorUtils.toString(dbo, RELATIONSHIP_KEY)),

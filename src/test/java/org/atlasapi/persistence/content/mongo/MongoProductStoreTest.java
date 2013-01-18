@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content.mongo;
 
 import static org.junit.Assert.*;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.product.Product;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
@@ -27,7 +28,7 @@ public class MongoProductStoreTest {
         
         Product product = new Product();
         
-        product.setId(1000l);
+        product.setId(Id.valueOf(1000l));
         product.setPublisher(Publisher.BBC);
         product.setCanonicalUri("canonicalUri");
         product.setTitle("title");

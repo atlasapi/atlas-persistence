@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.topic;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 
@@ -36,7 +37,7 @@ public class TopicCreatingTopicResolver extends ForwardingTopicStore {
         if (topic.hasValue()) {
             return topic;
         } else {
-            Topic newTopic = new Topic(idGenerator.generateRaw());
+            Topic newTopic = new Topic(Id.valueOf(idGenerator.generateRaw()));
             newTopic.setNamespace(namespace);
             newTopic.setValue(value);
             newTopic.setPublisher(publisher);

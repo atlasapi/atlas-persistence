@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Item;
@@ -32,7 +33,7 @@ public class IdSettingContentWriter implements ContentWriter {
         Iterable<LookupEntry> entries = lookupStore.entriesForCanonicalUris(ImmutableList.of(content.getCanonicalUri()));
 
         if (Iterables.isEmpty(entries)) {
-            content.setId(generator.generateRaw());
+            content.setId(Id.valueOf(generator.generateRaw()));
         } else { //ensures an adapter can't override and assign a new id for the content.
             LookupEntry entry = Iterables.getOnlyElement(entries);
             content.setId(entry.id());

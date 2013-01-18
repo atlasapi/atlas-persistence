@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.cassandra.CassandraIndex;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.persistence.media.channel.ChannelGroupStore;
@@ -31,7 +32,7 @@ import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
 public class CassandraChannelGroupStore implements ChannelGroupStore {
 
     private final ObjectMapper mapper = JsonFactory.makeJsonMapper();
-    //
+
     private final CassandraIndex index = new CassandraIndex();
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
@@ -59,14 +60,14 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
     }
 
     @Override
-    public Optional<ChannelGroup> channelGroupFor(Long id) {
+    public Optional<ChannelGroup> channelGroupFor(Id id) {
         return Optional.fromNullable(findChannelGroup(id));
     }
 
     @Override
-    public Iterable<ChannelGroup> channelGroupsFor(Iterable<Long> ids) {
+    public Iterable<ChannelGroup> channelGroupsFor(Iterable<Id> ids) {
         Set<ChannelGroup> result = new HashSet<ChannelGroup>();
-        for (Long id : ids) {
+        for (Id id : ids) {
             ChannelGroup found = findChannelGroup(id);
             if (found != null) {
                 result.add(found);
@@ -118,7 +119,7 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
                     execute(requestTimeout, TimeUnit.MILLISECONDS);
             Set<ChannelGroup> result = new HashSet<ChannelGroup>();
             for (String id : groups) {
-                ChannelGroup group = findChannelGroup(Long.parseLong(id));
+                ChannelGroup group = findChannelGroup(Id.valueOf(id));
                 if (group != null) {
                     result.add(group);
                 }
@@ -129,11 +130,11 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
         }
     }
 
-    private ChannelGroup findChannelGroup(Long id) {
+    private ChannelGroup findChannelGroup(Id id) {
         try {
             ColumnList<String> group = keyspace.prepareQuery(CHANNEL_GROUP_CF).
                     setConsistencyLevel(ConsistencyLevel.CL_ONE).
-                    getKey(id.toString()).
+                    getKey(String.valueOf(id.longValue())).
                     executeAsync().
                     get(requestTimeout, TimeUnit.MILLISECONDS).
                     getResult();
@@ -160,10 +161,10 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
     private void removeChannelsIndex(ChannelGroup old) throws Exception {
         index.inverted(keyspace, CHANNEL_GROUP_CHANNELS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(old.getId().toString()).
-                delete(Iterables.toArray(Iterables.transform(old.getChannels(), new Function<Long, String>() {
+                delete(Iterables.toArray(Iterables.transform(old.getChannels(), new Function<Id, String>() {
 
             @Override
-            public String apply(Long input) {
+            public String apply(Id input) {
                 return input.toString();
             }
         }), String.class)).execute(requestTimeout, TimeUnit.MILLISECONDS);
@@ -172,10 +173,10 @@ public class CassandraChannelGroupStore implements ChannelGroupStore {
     private void createChannelsIndex(ChannelGroup group) throws Exception {
         index.inverted(keyspace, CHANNEL_GROUP_CHANNELS_INDEX_CF, ConsistencyLevel.CL_QUORUM).
                 from(group.getId().toString()).
-                index(Iterables.toArray(Iterables.transform(group.getChannels(), new Function<Long, String>() {
+                index(Iterables.toArray(Iterables.transform(group.getChannels(), new Function<Id, String>() {
 
             @Override
-            public String apply(Long input) {
+            public String apply(Id input) {
                 return input.toString();
             }
         }), String.class)).execute(requestTimeout, TimeUnit.MILLISECONDS);

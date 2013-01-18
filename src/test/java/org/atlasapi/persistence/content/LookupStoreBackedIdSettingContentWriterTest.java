@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content;
 
 import static org.hamcrest.Matchers.hasItem;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
@@ -53,7 +54,7 @@ public class LookupStoreBackedIdSettingContentWriterTest {
         
         final Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
         final long oldId = 1234;
-        item.setId(oldId);
+        item.setId(Id.valueOf(oldId));
         
         context.checking(new Expectations(){{
             oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(item.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(item))));
@@ -61,7 +62,7 @@ public class LookupStoreBackedIdSettingContentWriterTest {
             oneOf(delegate).createOrUpdate(with(itemWithId(oldId)));
         }});
         
-        item.setId(1235l);
+        item.setId(Id.valueOf(1235l));
         
         writer.createOrUpdate(item);
         
@@ -107,7 +108,7 @@ public class LookupStoreBackedIdSettingContentWriterTest {
         
         final Brand brand = new Brand("containerUri", "containerCurie", Publisher.BBC);
         final long oldId = 1234l;
-        brand.setId(oldId);
+        brand.setId(Id.valueOf(oldId));
         
         context.checking(new Expectations(){{
             oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(brand.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(brand))));

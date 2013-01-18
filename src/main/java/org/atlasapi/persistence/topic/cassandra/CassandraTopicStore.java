@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.content.criteria.ContentQuery;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.cassandra.CassandraIndex;
@@ -66,7 +67,7 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
     }
 
     @Override
-    public Maybe<Topic> topicForId(Long id) {
+    public Maybe<Topic> topicForId(Id id) {
         try {
             Topic topic = findTopic(id.toString());
             return Maybe.fromPossibleNullValue(topic);
@@ -76,10 +77,10 @@ public class CassandraTopicStore implements TopicStore, TopicLookupResolver, Top
     }
 
     @Override
-    public Iterable<Topic> topicsForIds(Iterable<Long> ids) {
+    public Iterable<Topic> topicsForIds(Iterable<Id> ids) {
         try {
             Set<Topic> result = new HashSet<Topic>();
-            for (Long id : ids) {
+            for (Id id : ids) {
                 Topic topic = findTopic(id.toString());
                 if (topic != null) {
                     result.add(topic);

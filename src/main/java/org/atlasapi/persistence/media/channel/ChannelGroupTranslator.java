@@ -8,11 +8,13 @@ import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.atlasapi.media.channel.ChannelGroup;
+import org.atlasapi.media.common.Id;
 
 public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
 
@@ -45,7 +47,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         }
         
         if (model.getChannels() != null && !model.getChannels().isEmpty()) {
-            dbObject.put(CHANNELS_KEY, model.getChannels());
+            dbObject.put(CHANNELS_KEY, Iterables.transform(model.getChannels(), Id.toLongValue()));
         }
         
         return dbObject;
@@ -79,7 +81,9 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         }
         
         if (dbObject.containsField(CHANNELS_KEY)) {
-            model.setChannels(ImmutableSet.copyOf((Iterable<Long>)dbObject.get(CHANNELS_KEY)));
+            model.setChannels(ImmutableSet.copyOf(Iterables.transform((Iterable<Long>)
+                dbObject.get(CHANNELS_KEY), Id.fromLongValue())
+            ));
         }
         
         return model;

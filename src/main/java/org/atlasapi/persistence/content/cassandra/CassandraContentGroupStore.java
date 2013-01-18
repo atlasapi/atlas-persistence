@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Identified;
@@ -70,13 +72,13 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
         try {
-            Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
+            Map<Id, Maybe<Identified>> results = new HashMap<Id, Maybe<Identified>>();
             for (String uri : canonicalUris) {
                 ContentGroup contentGroup = findByUri(uri);
                 if (contentGroup != null) {
-                    results.put(uri, Maybe.just((Identified) contentGroup));
+                    //results.put(uri, Maybe.just((Identified) contentGroup));
                 } else {
-                    results.put(uri, Maybe.<Identified>nothing());
+                    //results.put(uri, Maybe.<Identified>nothing());
                 }
             }
             return new ResolvedContent(results);
@@ -86,23 +88,23 @@ public class CassandraContentGroupStore implements ContentGroupWriter, ContentGr
     }
 
     @Override
-    public ResolvedContent findByIds(Iterable<Long> ids) {
+    public ResolvedContent findByIds(Iterable<Id> ids) {
         CassandraIndex index = new CassandraIndex();
         try {
-            Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
-            for (Long id : ids) {
+            Map<Id, Maybe<Identified>> results = new HashMap<Id, Maybe<Identified>>();
+            for (Id id : ids) {
                 String uri = index.direct(keyspace, CONTENT_GROUP_ID_INDEX_CF, ConsistencyLevel.CL_ONE).
                         from(id.toString()).
                         lookup().execute(requestTimeout, TimeUnit.MILLISECONDS);
                 if (uri != null) {
                     ContentGroup contentGroup = findByUri(uri);
                     if (contentGroup != null) {
-                        results.put(id.toString(), Maybe.just((Identified) contentGroup));
+                        //results.put(id.toString(), Maybe.just((Identified) contentGroup));
                     } else {
-                        results.put(id.toString(), Maybe.<Identified>nothing());
+                        //results.put(id.toString(), Maybe.<Identified>nothing());
                     }
                 } else {
-                    results.put(id.toString(), Maybe.<Identified>nothing());
+//                    results.put(id.toString(), Maybe.<Identified>nothing());
                 }
             }
             return new ResolvedContent(results);

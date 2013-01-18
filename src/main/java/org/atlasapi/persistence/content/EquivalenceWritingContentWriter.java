@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.explicitTransitiveLookupWriter;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Item;
@@ -32,8 +33,8 @@ public class EquivalenceWritingContentWriter implements ContentWriter {
     private void writeEquivalences(Content content) {
         if (!content.getEquivalentTo().isEmpty()) {
             ImmutableSet<Publisher> publishers = publishers(content);
-            Iterable<String> equivalentUris = Iterables.transform(content.getEquivalentTo(), LookupRef.TO_URI);
-            equivalenceWriter.writeLookup(content.getCanonicalUri(), equivalentUris, publishers);
+            Iterable<Id> equivalentUris = Iterables.transform(content.getEquivalentTo(), LookupRef.TO_ID);
+            equivalenceWriter.writeLookup(content.getId(), equivalentUris, publishers);
         }
     }
 

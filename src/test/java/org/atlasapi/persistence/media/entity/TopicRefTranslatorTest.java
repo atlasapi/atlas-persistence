@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.TopicRef;
 import org.junit.Test;
 
@@ -22,7 +23,7 @@ public class TopicRefTranslatorTest {
  
         TopicRefTranslator translator = new TopicRefTranslator();
         
-        TopicRef topicRef = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);
+        TopicRef topicRef = new TopicRef(Id.valueOf(1), 0.01f, true, TopicRef.Relationship.ABOUT);
         DBObject dbObject = translator.toDBObject(topicRef);
         dbObject.put(MongoConstants.ID, "test");
 		collection.save(dbObject);

@@ -13,11 +13,13 @@
  permissions and limitations under the License. */
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
+
 /**
  */
 public interface ContentGroupResolver extends ContentGroupLister {
 
     ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris);
 
-    ResolvedContent findByIds(Iterable<Long> ids);
+    ResolvedContent findByIds(Iterable<Id> ids);
 }

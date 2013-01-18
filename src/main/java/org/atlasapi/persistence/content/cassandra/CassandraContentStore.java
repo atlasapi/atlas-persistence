@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.ChildRef;
@@ -104,12 +105,12 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
             Container container = null;
             ParentRef parent = item.getContainer();
             if (parent != null) {
-                Maybe<Identified> candidate = readContent(parent.getUri());
+                Maybe<Identified> candidate = readContent(parent.getId().toString());
                 if (candidate.hasValue()) {
                     if (candidate.requireValue() instanceof Container) {
                         container = (Container) candidate.requireValue();
                     } else {
-                        throw new IllegalStateException("The following content should be a container: " + parent.getUri());
+                        throw new IllegalStateException("The following content should be a container: " + parent.getId());
                     }
                 }
             }
@@ -137,9 +138,9 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
             });
             //
             results.add(writeContainer(container).executeAsync());
-            for (String child : Iterables.transform(container.getChildRefs(), ChildRef.TO_URI)) {
-                results.add(writeDenormalizedContainerData(child, container).executeAsync());
-            }
+//            for (String child : Iterables.transform(container.getChildRefs(), Ident)) {
+//                results.add(writeDenormalizedContainerData(child, container).executeAsync());
+//            }
             results.get(requestTimeout, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
@@ -149,7 +150,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
         try {
-            return new ResolvedContent(readContents(canonicalUris));
+            return null;//new ResolvedContent(readContents(canonicalUris));
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }
@@ -370,7 +371,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     @Override
-    public ResolvedContent findByIds(Iterable<Long> ids) {
+    public ResolvedContent findByIds(Iterable<Id> ids) {
         throw new UnsupportedOperationException();
     }
 }

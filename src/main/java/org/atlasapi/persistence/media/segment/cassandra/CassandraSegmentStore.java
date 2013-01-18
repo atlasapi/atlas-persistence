@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.segment.Segment;
@@ -53,7 +55,7 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
                 deleteUriIndex(old);
                 ensureId(segment, old.getId());
             } else {
-                ensureId(segment, idGenerator.generateRaw());
+                ensureId(segment, Id.valueOf(idGenerator.generateRaw()));
             }
             writeSegment(segment);
             createUriIndex(segment);
@@ -127,7 +129,7 @@ public class CassandraSegmentStore implements SegmentResolver, SegmentWriter {
                 delete().execute(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void ensureId(Identified identified, Long id) {
+    private void ensureId(Identified identified, Id id) {
         if (identified.getId() == null) {
             identified.setId(id);
         }

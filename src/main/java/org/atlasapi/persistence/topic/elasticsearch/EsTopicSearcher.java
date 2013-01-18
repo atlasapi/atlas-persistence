@@ -6,6 +6,8 @@ import com.metabroadcast.common.query.Selection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
@@ -40,7 +42,7 @@ public class EsTopicSearcher implements TopicSearcher {
         TermsFacet terms = facets.facet(TermsFacet.class, EsContent.TOPICS);
         List<Topic> result = new LinkedList<Topic>();
         for (TermsFacet.Entry term : Iterables.limit(Iterables.skip(terms.entries(), selection.getOffset()), selection.getLimit())) {
-            Maybe<Topic> topic = resolver.topicForId(Long.parseLong(term.getTerm()));
+            Maybe<Topic> topic = resolver.topicForId(Id.valueOf(term.getTerm()));
             if (topic.hasValue()) {
                 result.add(topic.requireValue());
             }

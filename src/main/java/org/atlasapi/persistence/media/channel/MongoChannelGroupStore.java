@@ -16,6 +16,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
+import org.atlasapi.media.common.Id;
 
 public class MongoChannelGroupStore implements ChannelGroupStore {
 
@@ -27,12 +28,12 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     }
     
     @Override
-    public Optional<ChannelGroup> channelGroupFor(Long id) {
+    public Optional<ChannelGroup> channelGroupFor(Id id) {
         return Optional.fromNullable(translator.fromDBObject(channelGroups.findOne(id), null));
     }
 
     @Override
-    public Iterable<ChannelGroup> channelGroupsFor(Iterable<Long> ids) {
+    public Iterable<ChannelGroup> channelGroupsFor(Iterable<Id> ids) {
         return transform(channelGroups.find(new BasicDBObject(MongoConstants.ID, new BasicDBObject(MongoConstants.IN,ids))));
     }
 
@@ -59,7 +60,8 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public Iterable<ChannelGroup> channelGroupsFor(Channel channel) {
-        return transform(channelGroups.find(MongoBuilders.where().fieldEquals(ChannelGroupTranslator.CHANNELS_KEY, channel.getId()).build()));
+        return transform(channelGroups.find(MongoBuilders.where()
+            .fieldEquals(ChannelGroupTranslator.CHANNELS_KEY, channel.getId().longValue()).build()));
     }
 
 }

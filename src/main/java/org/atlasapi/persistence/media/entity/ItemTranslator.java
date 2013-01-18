@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
@@ -104,25 +105,19 @@ public class ItemTranslator implements ModelTranslator<Item> {
             item.setVersions(versions);
         }
         
-        if(dbObject.containsField("container")) {
-            String containerUri = TranslatorUtils.toString(dbObject, "container");
-            Long containerId = TranslatorUtils.toLong(dbObject, CONTAINER_ID);
-            item.setParentRef(new ParentRef(containerUri, containerId));
+        if(dbObject.containsField(CONTAINER_ID)) {
+            Id containerId = Id.valueOf(TranslatorUtils.toLong(dbObject, CONTAINER_ID));
+            item.setParentRef(new ParentRef(containerId));
         }
 
         if (item instanceof Episode) {
             Episode episode = (Episode) item;
-            Long seriesId = TranslatorUtils.toLong(dbObject, SERIES_ID);
-            if (dbObject.containsField("series")) {
-                String seriesUri = TranslatorUtils.toString(dbObject, "series");
-                episode.setSeriesRef(new ParentRef(seriesUri, seriesId));
+            if (dbObject.containsField(SERIES_ID)) {
+                episode.setSeriesRef(new ParentRef(Id.valueOf(TranslatorUtils.toLong(dbObject, SERIES_ID))));
             }
             episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
             episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
             episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
-            if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
-                episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY),seriesId));
-            }
         }
         
         if (item instanceof Film) {
@@ -243,7 +238,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         }
 		
         if(entity.getContainer() != null) {
-            itemDbo.put("container", entity.getContainer().getUri());
             itemDbo.put(CONTAINER_ID, entity.getContainer().getId());
         }
 
@@ -252,17 +246,12 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			
 			if(episode.getSeriesRef() != null) {
 			    itemDbo.put(SERIES_ID, episode.getSeriesRef().getId());
-			    itemDbo.put("series", episode.getSeriesRef().getUri());
 			}
 			
 			TranslatorUtils.from(itemDbo, PART_NUMBER, episode.getPartNumber());
 			TranslatorUtils.from(itemDbo, EPISODE_NUMBER, episode.getEpisodeNumber());
 			TranslatorUtils.from(itemDbo, SERIES_NUMBER, episode.getSeriesNumber());
 			
-			ParentRef series = episode.getSeriesRef();
-			if (series != null) {
-				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getUri());
-			}
 		}
 		
 		if (entity instanceof Film) {

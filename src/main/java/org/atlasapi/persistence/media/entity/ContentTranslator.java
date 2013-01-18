@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.Clip;
@@ -72,9 +73,9 @@ public class ContentTranslator implements ModelTranslator<Content> {
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         
         try {
-            entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
+            entity.setId(Id.valueOf(TranslatorUtils.toLong(dbObject, ID_KEY)));
         } catch (ClassCastException e) {
-            entity.setId(TranslatorUtils.toDouble(dbObject, ID_KEY).longValue());
+            entity.setId(Id.valueOf(TranslatorUtils.toDouble(dbObject, ID_KEY).longValue()));
         }
         
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, "people");

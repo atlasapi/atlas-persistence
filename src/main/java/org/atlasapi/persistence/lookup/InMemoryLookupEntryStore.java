@@ -2,6 +2,7 @@ package org.atlasapi.persistence.lookup;
 
 import java.util.Map;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
@@ -15,7 +16,7 @@ import com.google.common.collect.Multimap;
 public class InMemoryLookupEntryStore implements LookupEntryStore {
 
     private Map<String,LookupEntry> uriStore;
-    private Map<Long,LookupEntry> idStore;
+    private Map<Id,LookupEntry> idStore;
     private Multimap<String,LookupEntry> identifierStore;
 
     public InMemoryLookupEntryStore() {
@@ -41,7 +42,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
+    public Iterable<LookupEntry> entriesForIds(Iterable<Id> ids) {
         return Iterables.filter(Iterables.transform(ids, Functions.forMap(idStore, null)), Predicates.notNull());
     }
 

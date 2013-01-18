@@ -152,13 +152,13 @@ public class MongoContentWriterTest {
         assertNotNull(children.findOne(item.getCanonicalUri()));
         
         Series retrievedSeries = retrieveSeries(series);
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getId());
         
         assertNull(containers.findOne(series.getCanonicalUri()));
         
         Brand retrievedBrand = retrieveBrand(brand);
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getChildRefs()).getUri());
-        assertEquals(series.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getSeriesRefs()).getUri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(retrievedBrand.getChildRefs()).getId());
+        assertEquals(series.getId(), Iterables.getOnlyElement(retrievedBrand.getSeriesRefs()).getId());
     }
     
     @Test
@@ -179,7 +179,7 @@ public class MongoContentWriterTest {
         assertNotNull(children.findOne(item.getCanonicalUri()));
         
         Series retrievedSeries = retrieveSeries(series);
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getId());
         
         assertNotNull(containers.findOne(series.getCanonicalUri()));
         

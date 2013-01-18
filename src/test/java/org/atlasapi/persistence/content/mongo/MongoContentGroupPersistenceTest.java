@@ -2,6 +2,8 @@ package org.atlasapi.persistence.content.mongo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -36,8 +38,8 @@ public class MongoContentGroupPersistenceTest {
     @Test
     public void testWriteContentGroupAndResolveByURI() {
         ContentGroup contentGroup = new ContentGroup("group", Publisher.BBC);
-        ChildRef child1 = new ChildRef(1L,"child1", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
-        ChildRef child2 = new ChildRef(2L,"child2", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child1 = new ChildRef(Id.valueOf(1), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child2 = new ChildRef(Id.valueOf(2), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
         contentGroup.addContents(ImmutableList.of(child1, child2));
 
         writer.createOrUpdate(contentGroup);
@@ -52,8 +54,8 @@ public class MongoContentGroupPersistenceTest {
     @Test
     public void testWriteContentGroupAndResolveByID() {
         ContentGroup contentGroup = new ContentGroup("group", Publisher.BBC);
-        ChildRef child1 = new ChildRef(1L, "child1", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
-        ChildRef child2 = new ChildRef(2L, "child2", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child1 = new ChildRef(Id.valueOf(1), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child2 = new ChildRef(Id.valueOf(2), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
         contentGroup.addContents(ImmutableList.of(child1, child2));
 
         writer.createOrUpdate(contentGroup);
@@ -68,8 +70,8 @@ public class MongoContentGroupPersistenceTest {
     @Test
     public void testContentGroupIsWrittenOnlyOnceIfUnchanged() {
         ContentGroup contentGroup = new ContentGroup("group", Publisher.BBC);
-        ChildRef child1 = new ChildRef(1L, "child1", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
-        ChildRef child2 = new ChildRef(2L, "child2", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child1 = new ChildRef(Id.valueOf(1), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child2 = new ChildRef(Id.valueOf(2), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
         contentGroup.addContents(ImmutableList.of(child1, child2));
 
         writer.createOrUpdate(contentGroup);
@@ -86,11 +88,11 @@ public class MongoContentGroupPersistenceTest {
     @Test
     public void testWriteContentGroupAndFindAll() {
         ContentGroup contentGroup1 = new ContentGroup("group1", Publisher.BBC);
-        ChildRef child1 = new ChildRef(1L, "child1", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child1 = new ChildRef(Id.valueOf(1), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
         contentGroup1.addContents(ImmutableList.of(child1));
         
         ContentGroup contentGroup2 = new ContentGroup("group2", Publisher.BBC);
-        ChildRef child2 = new ChildRef(2L, "child2", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
+        ChildRef child2 = new ChildRef(Id.valueOf(2), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
         contentGroup2.addContents(ImmutableList.of(child2));
 
         writer.createOrUpdate(contentGroup1);

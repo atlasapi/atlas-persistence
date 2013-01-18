@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -26,12 +27,12 @@ public class LookupResolvingContentResolver implements ContentResolver {
         Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesForCanonicalUris(dedupedUris), LookupEntry.TO_SELF);
         ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(lookupRefs, Predicates.notNull()));
         ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);
-        return resolvedContent.copyWithAllRequestedUris(dedupedUris);
+        return resolvedContent;//.copyWithAllRequestedUris(dedupedUris);
     }
 
     @Override
-    public ResolvedContent findByIds(Iterable<Long> ids) {
-        Set<Long> dedupedIds = Sets.newHashSet(ids);
+    public ResolvedContent findByIds(Iterable<Id> ids) {
+        Set<Id> dedupedIds = Sets.newHashSet(ids);
         Iterable<LookupRef> lookupRefs = Iterables.transform(lookupResolver.entriesForIds(dedupedIds), LookupEntry.TO_SELF);
         ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(lookupRefs, Predicates.notNull()));
         ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);

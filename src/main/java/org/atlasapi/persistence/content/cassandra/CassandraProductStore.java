@@ -21,6 +21,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.product.Product;
@@ -59,7 +61,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
                 deleteContentIndex(old);
                 ensureId(product, old.getId());
             } else {
-                ensureId(product, idGenerator.generateRaw());
+                ensureId(product, Id.valueOf(idGenerator.generateRaw()));
             }
             storeProduct(product);
             createUriIndex(product);
@@ -212,7 +214,7 @@ public class CassandraProductStore implements ProductStore, ProductResolver {
         mutation.executeAsync().get(requestTimeout, TimeUnit.MILLISECONDS);
     }
 
-    private void ensureId(Identified identified, Long id) {
+    private void ensureId(Identified identified, Id id) {
         if (identified.getId() == null) {
             identified.setId(id);
         }

@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
 
@@ -51,7 +52,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
     @Override
     public Topic fromDBObject(DBObject dbObject, Topic model) {
         if (model == null) {
-            model = new Topic(TranslatorUtils.toLong(dbObject, MongoConstants.ID));
+            model = new Topic(Id.valueOf(TranslatorUtils.toLong(dbObject, MongoConstants.ID)));
         }
         
         describedTranslator.fromDBObject(dbObject, model);

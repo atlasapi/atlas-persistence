@@ -14,6 +14,7 @@ permissions and limitations under the License. */
 
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.content.ResolvedContent;
 
 
@@ -23,10 +24,11 @@ import org.atlasapi.persistence.content.ResolvedContent;
  * @author John Ayres (john@metabroadcast.com)
  * @author Fred van den Driessche (fred@metabroadcast.com)
  */
+@Deprecated
 public interface ContentResolver {
 
 	ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris);
 
-    ResolvedContent findByIds(Iterable<Long> ids);
+    ResolvedContent findByIds(Iterable<Id> ids);
 
 }

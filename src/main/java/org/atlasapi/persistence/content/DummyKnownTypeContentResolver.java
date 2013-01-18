@@ -17,7 +17,7 @@ public class DummyKnownTypeContentResolver implements KnownTypeContentResolver {
         ResolvedContentBuilder results = new ResolvedContentBuilder();
         
         for (LookupRef ref : lookupRefs) {
-            results.put(ref.uri(), content.get(ref.uri()));
+            results.put(ref.id(), content.get(ref.id()));
         }
         
         return results.build();

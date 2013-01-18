@@ -2,6 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.EntityType;
 import org.joda.time.DateTime;
@@ -17,12 +18,11 @@ import com.mongodb.DBObject;
 public class ChildRefTranslator {
 
     public ChildRef fromDBObject(DBObject dbo) {
-        Long id = (Long) dbo.get("id");
-        String uri = (String) dbo.get("uri");
+        Id id = Id.valueOf((Long) dbo.get("id"));
         String sortKey = (String) dbo.get("sortKey");
         DateTime updated = TranslatorUtils.toDateTime(dbo, "updated");
         EntityType type = EntityType.from((String) dbo.get(DescribedTranslator.TYPE_KEY));
-        return new ChildRef(id, uri, sortKey, updated, type);
+        return new ChildRef(id, sortKey, updated, type);
     }
     
     public List<ChildRef> fromDBObjects(Iterable<DBObject> dbos) {
@@ -38,8 +38,7 @@ public class ChildRefTranslator {
 
     public DBObject toDBObject(ChildRef childRef) {
         DBObject dbObject = new BasicDBObject();
-        TranslatorUtils.from(dbObject, "id", childRef.getId());
-        TranslatorUtils.from(dbObject, "uri", childRef.getUri());
+        TranslatorUtils.from(dbObject, "id", childRef.getId().longValue());
         TranslatorUtils.from(dbObject, "sortKey", childRef.getSortKey());
         TranslatorUtils.fromDateTime(dbObject, "updated", childRef.getUpdated());
         TranslatorUtils.from(dbObject, "type", childRef.getType().toString());

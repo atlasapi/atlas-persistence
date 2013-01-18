@@ -24,6 +24,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.common.Id;
 
 public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 
@@ -34,7 +35,7 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 
 	private MongoSequentialIdGenerator idGenerator;
 	private SubstitutionTableNumberCodec codec;
-	private BackgroundComputingValue<Map<Long, Channel>> channels;
+	private BackgroundComputingValue<Map<Id, Channel>> channels;
 	
 	public MongoChannelStore(DatabasedMongo mongo) {
 		this(mongo, Duration.standardMinutes(15));
@@ -44,22 +45,22 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 		this.collection = mongo.collection(COLLECTION);
 		this.idGenerator = new MongoSequentialIdGenerator(mongo, COLLECTION);
 		this.codec = new SubstitutionTableNumberCodec();
-		this.channels = new BackgroundComputingValue<Map<Long, Channel>>(cacheExpiry, new Callable<Map<Long, Channel>>() {
+		this.channels = new BackgroundComputingValue<Map<Id, Channel>>(cacheExpiry, new Callable<Map<Id, Channel>>() {
 
 			@Override
-			public Map<Long, Channel> call() throws Exception {
+			public Map<Id, Channel> call() throws Exception {
 				return getChannels();
 			}
 		});
 		channels.start(getChannels());
 	}
 	
-	private Map<Long, Channel> getChannels() {
+	private Map<Id, Channel> getChannels() {
 		
-		return ImmutableMap.copyOf(Maps.uniqueIndex(Iterables.transform(collection.find(), DB_TO_CHANNEL_TRANSLATOR), new Function<Channel, Long>() {
+		return ImmutableMap.copyOf(Maps.uniqueIndex(Iterables.transform(collection.find(), DB_TO_CHANNEL_TRANSLATOR), new Function<Channel, Id>() {
 
 			@Override
-			public Long apply(Channel input) {
+			public Id apply(Channel input) {
 				return input.getId();
 			}
 			
@@ -67,8 +68,8 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 	}
     
 	@Override
-	public Maybe<Channel> fromId(Long id) {
-		return Maybe.fromPossibleNullValue(translator.fromDBObject(collection.findOne(where().idEquals(id).build()), null));
+	public Maybe<Channel> fromId(Id id) {
+		return Maybe.fromPossibleNullValue(translator.fromDBObject(collection.findOne(where().idEquals(id.longValue()).build()), null));
 	}
 
 	@Override
@@ -77,9 +78,9 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 	}
 
     @Override
-    public Iterable<Channel> forIds(Iterable<Long> ids) {
+    public Iterable<Channel> forIds(Iterable<Id> ids) {
     	com.google.common.collect.ImmutableList.Builder<Channel> returnedChannels = ImmutableList.builder();
-    	for(Long id: ids) {
+    	for(Id id: ids) {
     		returnedChannels.add(channels.get().get(id));
     	}
     	return returnedChannels.build();
@@ -120,7 +121,7 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 	public void write(Channel channel) {
 		if(channel.getId() == null) {
 			// TODO: skip ids of legacy channel names
-			channel.setId(codec.decode(idGenerator.generate()).longValue());
+			channel.setId(Id.valueOf(codec.decode(idGenerator.generate())));
 		}
 		collection.insert(translator.toDBObject(null, channel));
 	}

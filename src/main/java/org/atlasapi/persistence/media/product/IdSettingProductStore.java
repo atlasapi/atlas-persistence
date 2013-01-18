@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.media.product;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.base.Optional;
@@ -27,7 +28,7 @@ public class IdSettingProductStore implements ProductStore {
         if (existingProduct.isPresent()) {
             product.setId(existingProduct.get().getId());
         } else {
-            product.setId(idGenerator.generateRaw());
+            product.setId(Id.valueOf(idGenerator.generateRaw()));
         }
         return delegate.store(product);
     }

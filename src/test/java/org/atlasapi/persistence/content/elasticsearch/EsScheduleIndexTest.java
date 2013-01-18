@@ -14,6 +14,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
@@ -316,7 +317,7 @@ public class EsScheduleIndexTest {
         
         Item childItem = itemWithBroadcast(1L, "exactone", channel1.getCanonicalUri(), interval1.getStart(), interval1.getEnd());
         Brand container = new Brand("brandUri","brandCurie",METABROADCAST);
-        container.setId(4L);
+        container.setId(Id.valueOf(4L));
         childItem.setContainer(container);
         
         Item topItem = itemWithBroadcast(2L, "exacttwo", channel1.getCanonicalUri(), interval2.getStart(), interval2.getEnd());
@@ -361,7 +362,7 @@ public class EsScheduleIndexTest {
         version.addBroadcast(broadcast);
 
         Item item = new Item(itemUri, itemUri, Publisher.METABROADCAST);
-        item.setId(id);
+        item.setId(Id.valueOf(id));
         item.addVersion(version);
         
         return item;
