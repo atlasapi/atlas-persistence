@@ -130,7 +130,7 @@ public class MongoChannelStore implements ChannelResolver, ChannelWriter {
 
         Builder<String, Channel> channelMap = ImmutableMap.builder();
         for (Channel channel : channels.get().values()) {
-            for (String alias : Iterables.filter(channel.getAliases(), Predicates.contains(prefixPattern))) {
+            for (String alias : Iterables.filter(channel.getAliasUrls(), Predicates.contains(prefixPattern))) {
                 channelMap.put(alias, channel);
             }
         }

@@ -10,6 +10,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
@@ -23,6 +24,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -50,12 +52,16 @@ public class MongoLookupEntryStoreTest {
     public void testStore() {
 
         Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
-        testItemOne.addAlias("testItemOneAlias");
-        testItemOne.addAlias("sharedAlias");
+        testItemOne.addAliasUrl("testItemOneAlias");
+        testItemOne.addAlias(new Alias("testItemOneNamespace", "testItemOneValue"));
+        testItemOne.addAliasUrl("sharedAlias");
+        testItemOne.addAlias(new Alias("sharedNamespace", "sharedValue"));
         
         Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.BBC);
-        testItemTwo.addAlias("testItemTwoAlias");
-        testItemTwo.addAlias("sharedAlias");
+        testItemTwo.addAliasUrl("testItemTwoAlias");
+        testItemTwo.addAlias(new Alias("testItemTwoNamespace", "testItemTwoValue"));
+        testItemTwo.addAliasUrl("sharedAlias");
+        testItemTwo.addAlias(new Alias("sharedNamespace", "sharedValue"));
         
         LookupEntry testEntryOne = LookupEntry.lookupEntryFrom(testItemOne);
         LookupEntry testEntryTwo = LookupEntry.lookupEntryFrom(testItemTwo);
@@ -70,7 +76,13 @@ public class MongoLookupEntryStoreTest {
         assertTrue("Found entry by canonical URI using alias", Iterables.isEmpty(aliasEntry));
 
         aliasEntry = entryStore.entriesForIdentifiers(ImmutableList.of("testItemOneAlias"), true);
-        assertEquals(testEntryOne, Iterables.getOnlyElement(uriEntry));
+        assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
+        
+        aliasEntry = entryStore.entriesForAliases(Optional.of("testItemOneNamespace"), ImmutableList.of("testItemOneValue"));
+        assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
+        
+        aliasEntry = entryStore.entriesForAliases(Optional.<String>absent(), ImmutableList.of("testItemOneValue"));
+        assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
         
         uriEntry = entryStore.entriesForCanonicalUris(ImmutableList.of("testItemTwoUri"));
         assertEquals(testEntryTwo, Iterables.getOnlyElement(uriEntry));
@@ -86,13 +98,26 @@ public class MongoLookupEntryStoreTest {
         assertThat(second, isOneOf(testEntryOne, testEntryTwo));
         assertThat(first, is(not(second)));
         
+        aliasEntry = entryStore.entriesForAliases(Optional.of("sharedNamespace"), ImmutableList.of("sharedValue"));
+        first = Iterables.get(aliasEntry, 0);
+        second = Iterables.get(aliasEntry, 1);
+        assertThat(first, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(second, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(first, is(not(second)));
+        
+        aliasEntry = entryStore.entriesForAliases(Optional.<String>absent(), ImmutableList.of("sharedValue"));
+        first = Iterables.get(aliasEntry, 0);
+        second = Iterables.get(aliasEntry, 1);
+        assertThat(first, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(second, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(first, is(not(second)));
     }
 
     @Test
     public void testEnsureLookup() {
 
         Item testItem = new Item("newItemUri", "newItemCurie", Publisher.BBC);
-        testItem.addAlias("newItemAlias");
+        testItem.addAliasUrl("newItemAlias");
         
         entryStore.ensureLookup(testItem);
         
@@ -109,14 +134,14 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookupWritesEntryWhenOfDifferentType() {
         
         Item testItem = new Item("oldItemUri", "oldItemCurie", Publisher.BBC);
-        testItem.addAlias("oldItemAlias");
+        testItem.addAliasUrl("oldItemAlias");
         
         entryStore.ensureLookup(testItem);
         
         LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemUri")));
         
         Item transitiveItem = new Item("transitiveUri", "transitiveCurie", Publisher.PA);
-        transitiveItem.addAlias("transitiveAlias");
+        transitiveItem.addAliasUrl("transitiveAlias");
         
         entryStore.ensureLookup(transitiveItem);
         
@@ -131,7 +156,7 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(secondEntry);
 
         Episode testEpisode = new Episode("oldItemUri", "oldItemCurie", Publisher.BBC);
-        testEpisode.addAlias("oldItemAlias");
+        testEpisode.addAliasUrl("oldItemAlias");
         testEpisode.setParentRef(new ParentRef("aBrand"));
         
         entryStore.ensureLookup(testEpisode);
@@ -177,28 +202,88 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookupRewritesEntryWhenAliasesChange() {
         
         Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC_REDUX);
-        brand.addAlias("brandAlias");
+        brand.addAliasUrl("brandAlias");
         
         entryStore.ensureLookup(brand);
         
-        brand.addAlias("anotherBrandAlias");
+        brand.addAliasUrl("anotherBrandAlias");
         
         entryStore.ensureLookup(brand);
 
         LookupEntry entry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(brand.getCanonicalUri())));
         
-        assertThat(entry.aliases().size(), is(3));
-        assertThat(entry.aliases(), hasItems("brandUri", "brandAlias", "anotherBrandAlias"));
+        assertThat(entry.aliasUrls().size(), is(3));
+        assertThat(entry.aliasUrls(), hasItems("brandUri", "brandAlias", "anotherBrandAlias"));
 
-        brand.setAliases(ImmutableSet.of("anotherBrandAlias"));
+        brand.setAliasUrls(ImmutableSet.of("anotherBrandAlias"));
 
         entryStore.ensureLookup(brand);
         
         entry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(brand.getCanonicalUri())));
         
-        assertThat(entry.aliases().size(), is(2));
-        assertThat(entry.aliases(), hasItems("brandUri", "anotherBrandAlias"));
+        assertThat(entry.aliasUrls().size(), is(2));
+        assertThat(entry.aliasUrls(), hasItems("brandUri", "anotherBrandAlias"));
         
         
+    }
+    
+    // Ensure that for a lookup with 2 aliases :
+    // {
+    //      namespace : "a",
+    //      value : "b"
+    // },
+    // {
+    //      namespace : "c",
+    //      value : "d"
+    // },
+    // a lookup for namespace = "a" and value = "b" does not succeed, i.e. lookup both values together
+    @Test
+    public void testEnsureMatchingNamespaceValueLookup() {
+        Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.addAlias(new Alias("a", "b"));
+        testItemOne.addAlias(new Alias("c", "d"));
+        
+        LookupEntry testEntryOne = LookupEntry.lookupEntryFrom(testItemOne);
+        entryStore.store(testEntryOne);
+        
+        Iterable<LookupEntry> aliasEntry = entryStore.entriesForAliases(Optional.of("a"), ImmutableList.of("b"));
+        assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
+        
+        aliasEntry = entryStore.entriesForAliases(Optional.of("a"), ImmutableList.of("d"));
+        assertTrue(Iterables.isEmpty(aliasEntry));
+        
+        aliasEntry = entryStore.entriesForAliases(Optional.of("c"), ImmutableList.of("b"));
+        assertTrue(Iterables.isEmpty(aliasEntry));
+        
+        aliasEntry = entryStore.entriesForAliases(Optional.of("c"), ImmutableList.of("d"));
+        assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
+    }
+    
+    @Test
+    public void testMultipleValueLookup() {
+        Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.addAlias(new Alias("namespace", "valueOne"));
+        
+        Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.BBC);
+        testItemTwo.addAlias(new Alias("namespace", "valueTwo"));
+        
+        LookupEntry testEntryOne = LookupEntry.lookupEntryFrom(testItemOne);
+        LookupEntry testEntryTwo = LookupEntry.lookupEntryFrom(testItemTwo);
+        entryStore.store(testEntryOne);
+        entryStore.store(testEntryTwo);
+        
+        Iterable<LookupEntry> aliasEntry = entryStore.entriesForAliases(Optional.of("namespace"), ImmutableList.of("valueOne", "valueTwo"));
+        LookupEntry first = Iterables.get(aliasEntry, 0);
+        LookupEntry second = Iterables.get(aliasEntry, 1);
+        assertThat(first, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(second, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(first, is(not(second)));
+
+        aliasEntry = entryStore.entriesForAliases(Optional.<String>absent(), ImmutableList.of("valueOne", "valueTwo"));
+        first = Iterables.get(aliasEntry, 0);
+        second = Iterables.get(aliasEntry, 1);
+        assertThat(first, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(second, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(first, is(not(second)));        
     }
 }
