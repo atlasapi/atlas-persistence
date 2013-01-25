@@ -2,6 +2,9 @@ package org.atlasapi.persistence.content.mongo;
 
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -14,6 +17,8 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import com.mongodb.DBCursor;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 public class MongoContentGroupResolver implements ContentGroupResolver {
 
@@ -48,7 +53,7 @@ public class MongoContentGroupResolver implements ContentGroupResolver {
         for (Long id : ids) {
             DBObject found = contentGroups.findOne(where().fieldEquals(IdentifiedTranslator.ID, id).build());
             if (found != null) {
-                ContentGroup contentGroup = contentGroupTranslator.fromDBObject(found, new ContentGroup());
+                ContentGroup contentGroup = TO_CONTENT_GROUP.apply(found);
                 results.put(id.toString(), contentGroup);
             }
         }
@@ -58,14 +63,15 @@ public class MongoContentGroupResolver implements ContentGroupResolver {
 
     @Override
     public Iterable<ContentGroup> findAll() {
-        Set<ContentGroup> results = new HashSet<ContentGroup>();
-
-        DBCursor cursor = contentGroups.find();
-        for (DBObject current : cursor) {
-            ContentGroup contentGroup = contentGroupTranslator.fromDBObject(current, new ContentGroup());
-            results.add(contentGroup);
-        }
-
-        return results;
+        return Iterables.transform(contentGroups.find(), TO_CONTENT_GROUP);
     }
+    
+    private final Function<DBObject, ContentGroup> TO_CONTENT_GROUP = new Function<DBObject, ContentGroup>() {
+
+        @Override
+        public ContentGroup apply(DBObject input) {
+            return contentGroupTranslator.fromDBObject(input, null);
+        }
+        
+    };
 }
