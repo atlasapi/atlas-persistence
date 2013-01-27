@@ -46,6 +46,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
 	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
 	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
+    private static final String CONTAINER_TYPE = "containerType";
 
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator;
@@ -107,13 +108,19 @@ public class ItemTranslator implements ModelTranslator<Item> {
         
         if(dbObject.containsField(CONTAINER_ID)) {
             Id containerId = Id.valueOf(TranslatorUtils.toLong(dbObject, CONTAINER_ID));
-            item.setParentRef(new ParentRef(containerId));
+            EntityType type;
+            if (dbObject.containsField(CONTAINER_TYPE)) {
+                type = EntityType.from(TranslatorUtils.toString(dbObject, CONTAINER_TYPE));
+            } else {
+                type = EntityType.BRAND;
+            }
+            item.setParentRef(new ParentRef(containerId, type));
         }
 
         if (item instanceof Episode) {
             Episode episode = (Episode) item;
             if (dbObject.containsField(SERIES_ID)) {
-                episode.setSeriesRef(new ParentRef(Id.valueOf(TranslatorUtils.toLong(dbObject, SERIES_ID))));
+                episode.setSeriesRef(new ParentRef(Id.valueOf(TranslatorUtils.toLong(dbObject, SERIES_ID)), EntityType.SERIES));
             }
             episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
             episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
@@ -239,6 +246,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		
         if(entity.getContainer() != null) {
             itemDbo.put(CONTAINER_ID, entity.getContainer().getId());
+            itemDbo.put(CONTAINER_TYPE, entity.getContainer().getType().toString());
         }
 
         if (entity instanceof Episode) {

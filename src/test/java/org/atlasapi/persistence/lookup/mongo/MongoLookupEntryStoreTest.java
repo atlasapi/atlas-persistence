@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
@@ -51,10 +52,12 @@ public class MongoLookupEntryStoreTest {
     public void testStore() {
 
         Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.setId(Id.valueOf(1234));
         testItemOne.addAlias("testItemOneAlias");
         testItemOne.addAlias("sharedAlias");
         
         Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.BBC);
+        testItemTwo.setId(Id.valueOf(1234));
         testItemTwo.addAlias("testItemTwoAlias");
         testItemTwo.addAlias("sharedAlias");
         
@@ -93,6 +96,7 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookup() {
 
         Item testItem = new Item("newItemUri", "newItemCurie", Publisher.BBC);
+        testItem.setId(Id.valueOf(1234));
         testItem.addAlias("newItemAlias");
         
         entryStore.ensureLookup(testItem);
@@ -110,6 +114,7 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookupWritesEntryWhenOfDifferentType() {
         
         Item testItem = new Item("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testItem.setId(Id.valueOf(1234));
         testItem.addAlias("oldItemAlias");
         
         entryStore.ensureLookup(testItem);
@@ -117,6 +122,7 @@ public class MongoLookupEntryStoreTest {
         LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemUri")));
         
         Item transitiveItem = new Item("transitiveUri", "transitiveCurie", Publisher.PA);
+        transitiveItem.setId(Id.valueOf(1235));
         transitiveItem.addAlias("transitiveAlias");
         
         entryStore.ensureLookup(transitiveItem);
@@ -132,8 +138,9 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(secondEntry);
 
         Episode testEpisode = new Episode("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testEpisode.setId(Id.valueOf(1234));
         testEpisode.addAlias("oldItemAlias");
-        testEpisode.setParentRef(new ParentRef(Id.valueOf(1244L)));
+        testEpisode.setParentRef(new ParentRef(Id.valueOf(1244L), EntityType.BRAND));
         
         entryStore.ensureLookup(testEpisode);
 
@@ -157,6 +164,7 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookupChangesTypeForNonTopLevelSeries() {
         
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(Id.valueOf(1234));
         
         entryStore.ensureLookup(series);
         
@@ -165,7 +173,10 @@ public class MongoLookupEntryStoreTest {
         assertEquals(ContentCategory.CONTAINER, newEntry.lookupRef().category());
         
         series = new Series("seriesUri","seriesCurie", Publisher.BBC);
-        series.setParent(new Brand("brandUri","brandCurie",Publisher.BBC));
+        Brand parent = new Brand("brandUri","brandCurie",Publisher.BBC);
+        parent.setId(1235);
+        series.setId(Id.valueOf(1234));
+        series.setParent(parent);
 
         entryStore.ensureLookup(series);
         
@@ -179,6 +190,7 @@ public class MongoLookupEntryStoreTest {
         
         Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC_REDUX);
         brand.addAlias("brandAlias");
+        brand.setId(Id.valueOf(1234));
         
         entryStore.ensureLookup(brand);
         

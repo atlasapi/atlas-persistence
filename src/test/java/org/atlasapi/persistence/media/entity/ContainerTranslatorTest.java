@@ -8,6 +8,7 @@ import junit.framework.TestCase;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
@@ -66,7 +67,7 @@ public class ContainerTranslatorTest extends TestCase {
     public void testEncodeDecodeSeries() {
         
         Series series = new Series("testUri", "testCurie", Publisher.BBC);
-        series.setParentRef(new ParentRef(Id.valueOf(124)));
+        series.setParentRef(new ParentRef(Id.valueOf(124), EntityType.BRAND));
         series.withSeriesNumber(5);
         series.setTotalEpisodes(5);
         

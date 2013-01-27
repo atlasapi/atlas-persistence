@@ -84,7 +84,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
             series.withSeriesNumber((Integer) dbObject.get(SERIES_NUMBER_KEY));
             Id containerId = Id.valueOf(TranslatorUtils.toLong(dbObject, CONTAINER_ID));
             if(dbObject.containsField("container")) {
-                series.setParentRef(new ParentRef(containerId));
+                series.setParentRef(new ParentRef(containerId, EntityType.BRAND));
             }
             series.setTotalEpisodes(TranslatorUtils.toInteger(dbObject, TOTAL_EPISODES));
         }

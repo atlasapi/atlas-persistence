@@ -60,7 +60,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
 
     @Override
     public Iterable<LookupEntry> entriesForIds(Iterable<Id> ids) {
-        DBObject queryDbo = new BasicDBObject(OPAQUE_ID, new BasicDBObject(IN, ids));
+        DBObject queryDbo = new BasicDBObject(OPAQUE_ID, new BasicDBObject(IN, Iterables.transform(ids, Id.toLongValue())));
         DBCursor found = lookup.find(queryDbo);
         if (found == null) {
             return ImmutableList.of();

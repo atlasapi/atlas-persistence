@@ -54,7 +54,7 @@ public class LookupEntryTranslator {
         BasicDBObject dbo = new BasicDBObject();
 
         TranslatorUtils.from(dbo, ID, entry.uri());
-        TranslatorUtils.from(dbo, OPAQUE_ID, entry.id());
+        TranslatorUtils.from(dbo, OPAQUE_ID, entry.id().longValue());
         TranslatorUtils.from(dbo, SELF, equivalentToDbo.apply(entry.lookupRef()));
 
         Set<String> aliases = Sets.newHashSet(entry.uri());
@@ -84,7 +84,7 @@ public class LookupEntryTranslator {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
 
-            TranslatorUtils.from(dbo, OPAQUE_ID, input.id());
+            TranslatorUtils.from(dbo, OPAQUE_ID, input.id().longValue());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
 
