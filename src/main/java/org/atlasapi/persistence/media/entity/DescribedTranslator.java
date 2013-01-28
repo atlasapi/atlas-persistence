@@ -87,8 +87,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 	        image.setAspectRatio(ImageAspectRatio.SIXTEEN_BY_NINE);
 	        image.setMimeType(MimeType.IMAGE_JPG);
 	        image.setCanonicalUri(imageUri.replace("images.atlasapi.org/pa/", "images.atlas.metabroadcast.com/pressassociation.com/"));
-	        image.setAvailabilityStart(new DateTime(2013, 1, 1, 0, 0, 0));
-	        image.setAvailabilityStart(new DateTime(2013, 1, 31, 0, 0, 0));
+	        image.setAvailabilityStart(null);
+	        image.setAvailabilityStart(null);
 	    }
 	    
 	    return ImmutableSet.of(image);
