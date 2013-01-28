@@ -128,7 +128,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         if (namespace.isPresent()) {
             return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values)).build());        
         } else {
-            return lookup.find(where().fieldIn(IDS + "." + VALUE, values).build());
+            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, "/^.*/").fieldIn(VALUE, values)).build());
         }
     }
 }
