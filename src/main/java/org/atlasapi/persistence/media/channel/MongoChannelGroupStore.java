@@ -89,7 +89,8 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     public Optional<ChannelGroup> fromAlias(String alias) {
         for (DBObject dbo : channelGroups.find()) {
             ChannelGroup channelGroup = translator.fromDBObject(dbo, null);
-            for (String channelGroupAlias : channelGroup.getAliases()) {
+            // TODO new aliases
+            for (String channelGroupAlias : channelGroup.getAliasUrls()) {
                 if (alias.equals(channelGroupAlias)) {
                     return Optional.of(channelGroup);
                 }

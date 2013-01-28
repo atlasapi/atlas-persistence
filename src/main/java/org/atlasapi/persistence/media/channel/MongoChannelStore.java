@@ -121,7 +121,8 @@ public class MongoChannelStore implements ChannelStore {
 
         Builder<String, Channel> channelMap = ImmutableMap.builder();
         for (Channel channel : channels) {
-            for (String alias : Iterables.filter(channel.getAliases(), Predicates.contains(prefixPattern))) {
+            // TODO new aliases
+            for (String alias : Iterables.filter(channel.getAliasUrls(), Predicates.contains(prefixPattern))) {
                 channelMap.put(alias, channel);
             }
         }
@@ -140,7 +141,8 @@ public class MongoChannelStore implements ChannelStore {
     public Maybe<Channel> forAlias(String alias) {
         Iterable<Channel> channels = all();
         for (Channel channel : channels) {
-            for (String channelAlias : channel.getAliases()) {
+            // TODO new aliases
+            for (String channelAlias : channel.getAliasUrls()) {
                 if (alias.equals(channelAlias)) {
                     return Maybe.just(channel);
                 }

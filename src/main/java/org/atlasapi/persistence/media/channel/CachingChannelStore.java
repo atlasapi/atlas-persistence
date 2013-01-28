@@ -154,7 +154,8 @@ public class CachingChannelStore implements ChannelStore {
     public Maybe<Channel> forAlias(String alias) {
         for (Maybe<Channel> channel : channelIdCache.asMap().values()) {
             if (channel.hasValue()) {
-                for (String channelAlias : channel.requireValue().getAliases()) {
+                // TODO new aliases
+                for (String channelAlias : channel.requireValue().getAliasUrls()) {
                     if (alias.equals(channelAlias)) {
                         return channel;
                     }
@@ -171,7 +172,8 @@ public class CachingChannelStore implements ChannelStore {
         Builder<String, Channel> channelMap = ImmutableMap.builder();
         for (Maybe<Channel> channel : channelIdCache.asMap().values()) {
             if (channel.hasValue()) {
-                for (String alias : Iterables.filter(channel.requireValue().getAliases(), Predicates.contains(prefixPattern))) {
+                // TODO new aliases
+                for (String alias : Iterables.filter(channel.requireValue().getAliasUrls(), Predicates.contains(prefixPattern))) {
                     channelMap.put(alias, channel.requireValue());
                 }
             }

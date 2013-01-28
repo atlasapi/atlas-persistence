@@ -42,11 +42,11 @@ public class MongoChannelStoreTest {
         Thread.sleep(2000);
     }
     
-    private static Channel channel(long id, String uri, String key, String... alias) {
+    private static Channel channel(long id, String uri, String key, String... aliasUrls) {
         Channel channel = new Channel();
         channel.setId(id);
         channel.setCanonicalUri(uri);
-        channel.setAliases(ImmutableSet.copyOf(alias));
+        channel.setAliasUrls(ImmutableSet.copyOf(aliasUrls));
         channel.setSource(Publisher.BBC);
         channel.setMediaType(MediaType.VIDEO);
         channel.setKey(key);

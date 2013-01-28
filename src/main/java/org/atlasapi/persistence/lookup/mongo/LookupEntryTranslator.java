@@ -4,10 +4,12 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
 import java.util.Set;
 
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.media.entity.AliasTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -29,7 +31,10 @@ public class LookupEntryTranslator {
     private static final String LAST_UPDATED = "updated";
     private static final String FIRST_CREATED = "created";
     public static final String ALIASES = "aliases";
+    public static final String IDS = "ids";
     public static final String OPAQUE_ID = "aid";
+    
+    private final AliasTranslator aliasTranslator = new AliasTranslator();
     
     public Function<LookupEntry, DBObject> TO_DBO = new Function<LookupEntry, DBObject>() {
         @Override
@@ -53,8 +58,10 @@ public class LookupEntryTranslator {
         TranslatorUtils.from(dbo, SELF, equivalentToDbo.apply(entry.lookupRef()));
         
         Set<String> aliases = Sets.newHashSet(entry.uri());
-        aliases.addAll(entry.aliases());
+        aliases.addAll(entry.aliasUrls());
         TranslatorUtils.fromSet(dbo, aliases, ALIASES);
+        
+        TranslatorUtils.from(dbo, IDS, aliasTranslator.toDBList(entry.aliases()));
         
         BasicDBList directEquivDbos = new BasicDBList();
         directEquivDbos.addAll(ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(),equivalentToDbo)));
@@ -101,8 +108,10 @@ public class LookupEntryTranslator {
             id = TranslatorUtils.toDouble(dbo, OPAQUE_ID).longValue();
         }
 
-        Set<String> aliases = TranslatorUtils.toSet(dbo, ALIASES);
-        aliases.add(uri);
+        Set<String> aliasUris = TranslatorUtils.toSet(dbo, ALIASES);
+        aliasUris.add(uri);
+        
+        Set<Alias> aliases = aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbo, IDS));
         
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
         Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
@@ -112,7 +121,7 @@ public class LookupEntryTranslator {
         Set<LookupRef> directEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, DIRECT), equivalentFromDbo));
         Set<LookupRef> explicitEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, "explicit"), equivalentFromDbo));
         
-        return new LookupEntry(uri, id, self, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
+        return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
     }
 
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
