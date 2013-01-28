@@ -4,13 +4,16 @@ import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
+import org.atlasapi.media.entity.ImageAspectRatio;
 import org.atlasapi.media.entity.ImageType;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.media.ModelTranslator;
+import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableSet;
+import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -84,12 +87,16 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 	    }
 	    
 	    Image image = new Image(imageUri);
-	    image.setPublisher(publisher);
 	    
 	    if(Publisher.PA.equals(publisher)) {
 	        image.setHeight(360);
 	        image.setWidth(640);
-	        image.setType(ImageType.SIXTEEN_BY_NINE);
+	        image.setType(ImageType.PRIMARY);
+	        image.setAspectRatio(ImageAspectRatio.SIXTEEN_BY_NINE);
+	        image.setMimeType(MimeType.IMAGE_JPG);
+	        image.setCanonicalUri(imageUri.replace("images.atlasapi.org/pa/", "images.atlas.metabroadcast.com/pressassociation.com/"));
+	        image.setAvailabilityStart(new DateTime(2013, 1, 1, 0, 0, 0));
+	        image.setAvailabilityStart(new DateTime(2013, 1, 31, 0, 0, 0));
 	    }
 	    
 	    return ImmutableSet.of(image);
