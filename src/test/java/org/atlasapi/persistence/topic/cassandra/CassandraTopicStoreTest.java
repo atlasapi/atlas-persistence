@@ -5,7 +5,7 @@ import java.util.Arrays;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.topic.Topic;
 import org.atlasapi.persistence.cassandra.BaseCassandraTest;
 import org.junit.Test;
 import static org.junit.Assert.*;

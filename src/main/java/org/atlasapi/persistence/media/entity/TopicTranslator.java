@@ -2,7 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.topic.Topic;
 
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.ModelTranslator;

@@ -3,11 +3,12 @@ package org.atlasapi.persistence.topic;
 
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.common.Id;
-import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.topic.Topic;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.base.Maybe;
 
+@Deprecated
 public interface TopicQueryResolver {
 
     Maybe<Topic> topicForId(Id id);

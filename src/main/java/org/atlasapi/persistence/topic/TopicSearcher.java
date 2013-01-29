@@ -2,7 +2,8 @@ package org.atlasapi.persistence.topic;
 
 import com.metabroadcast.common.query.Selection;
 import java.util.List;
-import org.atlasapi.media.entity.Topic;
+
+import org.atlasapi.media.topic.Topic;
 import org.joda.time.Interval;
 
 /**

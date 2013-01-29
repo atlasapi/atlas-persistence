@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.media.common.Id;
-import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.topic.Topic;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
