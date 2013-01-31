@@ -10,7 +10,6 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.mongodb.BasicDBObject;
@@ -23,13 +22,11 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     private DBCollection channelGroups;
     private static final String COLLECTION_NAME = "channelGroups";
     private MongoSequentialIdGenerator idGenerator;
-    private SubstitutionTableNumberCodec codec;
     private ChannelGroupTranslator translator = new ChannelGroupTranslator();
 
     public MongoChannelGroupStore(DatabasedMongo mongo) {
         this.channelGroups = mongo.collection(COLLECTION_NAME);
         this.idGenerator = new MongoSequentialIdGenerator(mongo, COLLECTION_NAME);
-        this.codec = new SubstitutionTableNumberCodec();
     }
     
     @Override
@@ -61,7 +58,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
         checkNotNull(group);
         if(group.getId() == null) {
             // TODO: skip ids of legacy channel names
-            group.setId(codec.decode(idGenerator.generate()).longValue());
+            group.setId(idGenerator.generateRaw());
         }
         
         if (group instanceof Region) {

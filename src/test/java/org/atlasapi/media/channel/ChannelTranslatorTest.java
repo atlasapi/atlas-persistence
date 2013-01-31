@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.joda.time.Duration;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -37,6 +38,8 @@ public class ChannelTranslatorTest {
             .withImage("image")
             .withMediaType(MediaType.AUDIO)
             .withHighDefinition(false)
+            .withHighDefinition(true)
+            .withTimeshift(Duration.standardSeconds(3600))
             .withAvailableFrom(ImmutableSet.of(Publisher.BBC))
             .withChannelNumber(channelNumber)
             .withParent(2345L)
@@ -55,6 +58,8 @@ public class ChannelTranslatorTest {
         assertThat(decoded.source(),is(equalTo(channel.source())));
         assertThat(decoded.availableFrom(), is(equalTo(channel.availableFrom())));
         assertThat(decoded.highDefinition(), is(equalTo(channel.highDefinition())));
+        assertThat(decoded.regional(), is(equalTo(channel.regional())));
+        assertThat(decoded.timeshift(), is(equalTo(channel.timeshift())));
         assertThat(decoded.image(), is(equalTo(channel.image())));
         assertThat(decoded.parent(), is(equalTo(channel.parent())));
         assertThat(decoded.variations(), is(equalTo(channel.variations())));

@@ -13,6 +13,7 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -81,10 +82,7 @@ public class MongoChannelStore implements ChannelStore {
 		if (channel.parent() != null) {
 		    // channel is child, add reference to it to the parent channel
 		    Maybe<Channel> maybeParent = fromId(channel.parent());
-		    
-		    if (maybeParent.isNothing()) {
-	            throw new IllegalStateException(String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
-	        }
+		    Preconditions.checkState(maybeParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
 		    
 		    Channel parent = maybeParent.requireValue();
 		    parent.addVariation(channel.getId());
@@ -94,9 +92,7 @@ public class MongoChannelStore implements ChannelStore {
 		for (ChannelNumbering channelNumbering : channel.channelNumbers()) {
 		    // fetch channelgroup
 		    Optional<ChannelGroup> maybeGroup = channelGroupResolver.channelGroupFor(channelNumbering.getChannelGroup());
-		    if (!maybeGroup.isPresent()) {
-		        throw new IllegalStateException(String.format("ChannelGroup with id %s not found for channel with id %s", channelNumbering.getChannelGroup(), channel.getId()));
-		    }
+		    Preconditions.checkState(maybeGroup.isPresent(), String.format("ChannelGroup with id %s not found for channel with id %s", channelNumbering.getChannelGroup(), channel.getId()));
 		    ChannelGroup group = maybeGroup.get();
 		    // add channelNumbering
 		    group.addChannelNumbering(channelNumbering);
