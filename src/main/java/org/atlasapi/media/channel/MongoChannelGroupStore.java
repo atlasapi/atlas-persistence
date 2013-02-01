@@ -57,7 +57,6 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     public ChannelGroup store(ChannelGroup group) {
         checkNotNull(group);
         if(group.getId() == null) {
-            // TODO: skip ids of legacy channel names
             group.setId(idGenerator.generateRaw());
         }
         

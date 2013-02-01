@@ -58,8 +58,8 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             TranslatorUtils.fromSet(dbObject, Countries.toCodes(model.getAvailableCountries()), COUNTRIES_KEY);
         }
         
-        if (model.getAllChannelNumberings() != null) {
-            fromChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY, model.getAllChannelNumberings());
+        if (model.getChannelNumberings() != null) {
+            fromChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY, model.getChannelNumberings());
         }
         
         return dbObject;
