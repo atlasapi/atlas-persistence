@@ -27,7 +27,6 @@ public class ChannelGroupTranslatorTest {
         channelGroup.setAvailableCountries(ImmutableSet.of(Countries.US,Countries.GB));
         channelGroup.addTitle("Title");
         channelGroup.setPublisher(Publisher.BBC);
-        channelGroup.setChannels(Lists.newArrayList(1234L, 1235L, 1236L));
         
         ChannelNumbering numbering1 = ChannelNumbering.builder()
                 .withChannel(1234L)
@@ -54,20 +53,6 @@ public class ChannelGroupTranslatorTest {
         DBObject encoded = channelGroupTranslator.toDBObject(null, channelGroup);
         
         ChannelGroup decoded = channelGroupTranslator.fromDBObject(encoded, null);
-        
-        // add channelgroups constructed from channels
-        channelGroup.addChannelNumbering(ChannelNumbering.builder()
-                .withChannel(1234L)
-                .withChannelGroup(5678L)
-                .build());
-        channelGroup.addChannelNumbering(ChannelNumbering.builder()
-                .withChannel(1235L)
-                .withChannelGroup(5678L)
-                .build());
-        channelGroup.addChannelNumbering(ChannelNumbering.builder()
-                .withChannel(1236L)
-                .withChannelGroup(5678L)
-                .build());
         
         assertThat(decoded.getAvailableCountries(), is(equalTo(channelGroup.getAvailableCountries())));
         assertThat(decoded.getPublisher(), is(equalTo(channelGroup.getPublisher())));
