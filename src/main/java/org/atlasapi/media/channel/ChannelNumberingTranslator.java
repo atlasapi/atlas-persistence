@@ -26,7 +26,7 @@ public class ChannelNumberingTranslator {
 
     public ChannelNumbering fromDBObject(DBObject dbo) {
         return ChannelNumbering.builder()
-            .withChannelNumber(TranslatorUtils.toInteger(dbo, CHANNEL_NUMBER_KEY))
+            .withChannelNumber(TranslatorUtils.toString(dbo, CHANNEL_NUMBER_KEY))
             .withChannel(TranslatorUtils.toLong(TranslatorUtils.toDBObject(dbo, CHANNEL_KEY), MongoConstants.ID))
             .withChannelGroup(TranslatorUtils.toLong(TranslatorUtils.toDBObject(dbo, CHANNEL_GROUP_KEY), MongoConstants.ID))
             .withStartDate(TranslatorUtils.toLocalDate(dbo, START_DATE_KEY))

@@ -22,7 +22,7 @@ public class ChannelTranslatorTest {
     public void testEncodesAndDecodesChannels() {
         
         ChannelNumbering channelNumber = ChannelNumbering.builder()
-            .withChannelNumber(5)
+            .withChannelNumber("5")
             .withChannel(1234L)
             .withChannelGroup(5678L)
             .build();

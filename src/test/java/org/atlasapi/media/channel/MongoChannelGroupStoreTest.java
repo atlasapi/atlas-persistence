@@ -116,7 +116,7 @@ public class MongoChannelGroupStoreTest {
                 .withStartDate(new LocalDate(2011, 1, 1))
                 .withChannel(1234L)
                 .withChannelGroup(5678L)
-                .withChannelNumber(1)
+                .withChannelNumber("1")
                 .build();
         
         group.addChannelNumbering(numbering);

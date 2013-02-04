@@ -31,19 +31,19 @@ public class ChannelGroupTranslatorTest {
         
         ChannelNumbering numbering1 = ChannelNumbering.builder()
                 .withChannel(1234L)
-                .withChannelNumber(1)
+                .withChannelNumber("1")
                 .withChannelGroup(channelGroup)
                 .build();
         
         ChannelNumbering numbering2 = ChannelNumbering.builder()
                 .withChannel(1235L)
-                .withChannelNumber(7)
+                .withChannelNumber("7")
                 .withChannelGroup(channelGroup)
                 .build();
         
         ChannelNumbering numbering3 = ChannelNumbering.builder()
                 .withChannel(1236L)
-                .withChannelNumber(89)
+                .withChannelNumber("89")
                 .withChannelGroup(channelGroup)
                 .build();
         
