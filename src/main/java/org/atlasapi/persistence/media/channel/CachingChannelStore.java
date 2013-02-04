@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
+import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -92,8 +93,9 @@ public class CachingChannelStore implements ChannelStore {
         try {
             return channelKeyCache.get(key);
         } catch (ExecutionException e) {
-            log.error("ExecutionException thrown on Channel fetch by key " + key + " caused by " + e.getCause(), e);
-            return Maybe.nothing();
+            Throwables.propagate(e);
+            // will never reach here
+            return null;
         }
     }
 
@@ -102,8 +104,9 @@ public class CachingChannelStore implements ChannelStore {
         try {
             return channelIdCache.get(id);
         } catch (ExecutionException e) {
-            log.error("ExecutionException thrown on Channel fetch by id " + id + " caused by " + e.getCause(), e);
-            return Maybe.nothing();
+            Throwables.propagate(e);
+            // will never reach here
+            return null;
         }
     }
 
@@ -112,8 +115,9 @@ public class CachingChannelStore implements ChannelStore {
         try {
             return channelUriCache.get(uri);
         } catch (ExecutionException e) {
-            log.error("ExecutionException thrown on Channel fetch by uri " + uri + " caused by " + e.getCause(), e);
-            return Maybe.nothing();
+            Throwables.propagate(e);
+            // will never reach here
+            return null;
         }
     }
 
@@ -131,23 +135,24 @@ public class CachingChannelStore implements ChannelStore {
                     }
                 });
         } catch (ExecutionException e) {
-            log.error("ExecutionException thrown while fetching Channels by ids caused by " + e.getCause(), e);
-            return ImmutableList.of();
+            Throwables.propagate(e);
+            // will never reach here
+            return null;
         }
     }
 
     @Override
     public Iterable<Channel> all() {
-        return Iterables.transform(channelIdCache.asMap().values(), 
+        return Iterables.filter(Iterables.transform(channelIdCache.asMap().values(), 
             new Function<Maybe<Channel>, Channel>() {
                 @Override
                 public Channel apply(Maybe<Channel> input) {
                     if (input.hasValue()) {
                         return input.requireValue();
                     }
-                    throw new NullPointerException("Channel not found");
+                    return null;
                 }
-            });
+            }), Predicates.notNull());
     }
 
     @Override

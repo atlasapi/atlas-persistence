@@ -35,7 +35,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
     public static final String CHANNELS_KEY = "channels";
     
     private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
-    private final ModelTranslator<ChannelNumbering> channelNumberingTranslator = new ChannelNumberingTranslator();
+    private final ChannelNumberingTranslator channelNumberingTranslator = new ChannelNumberingTranslator();
     private final TemporalStringTranslator temporalStringTranslator = new TemporalStringTranslator();
     
     @Override
@@ -64,12 +64,8 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             TranslatorUtils.fromSet(dbObject, Countries.toCodes(model.getAvailableCountries()), COUNTRIES_KEY);
         }
         
-//        if (model.getChannels() != null && !model.getChannels().isEmpty()) {
-//            dbObject.put(CHANNELS_KEY, model.getChannels());
-//        }
-        
-        if (model.getAllChannelNumberings() != null) {
-            fromChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY, model.getAllChannelNumberings());
+        if (model.getChannelNumberings() != null) {
+            fromChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY, model.getChannelNumberings());
         }
         
         return dbObject;
@@ -145,7 +141,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         BasicDBList values = new BasicDBList();
         for (ChannelNumbering value : set) {
             if (value != null) {
-                values.add(channelNumberingTranslator.toDBObject(null, value));
+                values.add(channelNumberingTranslator.toDBObject(value));
             }
         }
         dbObject.put(key, values);
@@ -156,7 +152,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         Set<ChannelNumbering> channelNumbers = Sets.newLinkedHashSet();
         if (object.containsField(name)) {
             for (DBObject element : (List<DBObject>) object.get(name)) {
-                channelNumbers.add(channelNumberingTranslator.fromDBObject(element, null));
+                channelNumbers.add(channelNumberingTranslator.fromDBObject(element));
             }
             return channelNumbers;
         }

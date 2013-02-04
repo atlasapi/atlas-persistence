@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.media.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
@@ -30,6 +31,8 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String MEDIA_TYPE = "mediaType";
 	public static final String AVAILABLE_ON = "availableOn";
 	public static final String HIGH_DEFINITION = "highDefinition";
+	public static final String REGIONAL = "regional";
+	public static final String TIMESHIFT = "timeshift";
 	public static final String KEY = "key";
 	public static final String IMAGE = "image";
 	public static final String IMAGES = "images";
@@ -41,7 +44,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	
 
 	private ModelTranslator<Identified> identifiedTranslator;
-	private ModelTranslator<ChannelNumbering> channelNumberingTranslator;
+	private ChannelNumberingTranslator channelNumberingTranslator;
 	private TemporalStringTranslator temporalStringTranslator;
 
 	public ChannelTranslator() {
@@ -59,9 +62,11 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		fromTemporalStringSet(dbObject, TITLES, model.allTitles());
 		fromTemporalStringSet(dbObject, IMAGES, model.allImages());
 		
-//		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.mediaType().name());
+		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.mediaType().name());
 		TranslatorUtils.from(dbObject, PUBLISHER, model.source().key());
 		TranslatorUtils.from(dbObject, HIGH_DEFINITION, model.highDefinition());
+		TranslatorUtils.from(dbObject, REGIONAL, model.regional());
+		TranslatorUtils.fromDuration(dbObject, TIMESHIFT, model.timeshift());
 		TranslatorUtils.from(dbObject, BROADCASTER, model.broadcaster() != null ? model.broadcaster().key() : null);
 		if (model.availableFrom() != null) {
 		    TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableFrom(), Publisher.TO_KEY)), AVAILABLE_ON);
@@ -91,7 +96,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		}
 
         model.setSource(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER)).requireValue());
-//		model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
+		model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
         if (dbObject.containsField(TITLES)) {
             model.setTitles(toTemporalStringSet(dbObject, TITLES));
         }
@@ -105,7 +110,9 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
             model.addImage(TranslatorUtils.toString(dbObject, IMAGE));
         }
 		model.setKey((String) dbObject.get(KEY));
-		model.setHighDefinition((Boolean) dbObject.get(HIGH_DEFINITION));
+		model.setHighDefinition(TranslatorUtils.toBoolean(dbObject, HIGH_DEFINITION));
+		model.setRegional(TranslatorUtils.toBoolean(dbObject, REGIONAL));
+		model.setTimeshift(TranslatorUtils.toDuration(dbObject, TIMESHIFT));
 		model.setAvailableFrom(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
@@ -123,7 +130,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	    BasicDBList values = new BasicDBList();
         for (ChannelNumbering value : set) {
             if (value != null) {
-                values.add(channelNumberingTranslator.toDBObject(null, value));
+                values.add(channelNumberingTranslator.toDBObject(value));
             }
         }
         dbObject.put(key, values);
@@ -134,7 +141,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         Set<ChannelNumbering> channelNumbers = Sets.newLinkedHashSet();
         if (object.containsField(name)) {
             for (DBObject element : (List<DBObject>) object.get(name)) {
-                channelNumbers.add(channelNumberingTranslator.fromDBObject(element, null));
+                channelNumbers.add(channelNumberingTranslator.fromDBObject(element));
             }
             return channelNumbers;
         }
