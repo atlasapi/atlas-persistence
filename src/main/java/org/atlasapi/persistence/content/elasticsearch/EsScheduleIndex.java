@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
-import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.atlasapi.persistence.content.elasticsearch.support.FutureSettingActionListener;
 import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.content.schedule.ScheduleIndex;

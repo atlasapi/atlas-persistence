@@ -1,0 +1,37 @@
+{
+    "topic": {
+        "_all": {
+            "enabled": false
+        },
+        "properties": {
+            "aid": {
+                "type": "long"
+            },
+            "source": {
+                "type": "string",
+                "index": "not_analyzed"
+            },
+            "title": {
+                "type": "string",
+                "index": "analyzed"
+            },
+            "description": {
+                "type": "string",
+                "index": "analyzed"
+            },
+            "alias": {
+                "type":"nested",
+                "properties": {
+                    "namespace": {
+                        "type": "string",
+                        "index": "not_analyzed"
+                    },
+                    "value": {
+                        "type": "string",
+                        "index": "not_analyzed"
+                    }
+                }
+            }
+        }
+    }
+}

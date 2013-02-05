@@ -32,6 +32,7 @@ import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.DateTimeAttributeQuery;
 import org.atlasapi.content.criteria.EnumAttributeQuery;
+import org.atlasapi.content.criteria.IdAttributeQuery;
 import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
 import org.atlasapi.content.criteria.QueryVisitor;
@@ -147,7 +148,6 @@ class MongoDBQueryBuilder {
 		return query.accept(new QueryVisitor<ConstrainedAttribute>() {
 
 			@Override
-			@SuppressWarnings("unchecked")
 			public ConstrainedAttribute visit(IntegerAttributeQuery query) {
 				final List<Integer> values = (List<Integer>) query.getValue();
 				
@@ -235,7 +235,6 @@ class MongoDBQueryBuilder {
 				});
 			}
 
-			@SuppressWarnings("unchecked")
             @Override
 			public ConstrainedAttribute visit(DateTimeAttributeQuery query) {
 				final List<Date> values = toDate((List<DateTime>) query.getValue());
@@ -273,6 +272,12 @@ class MongoDBQueryBuilder {
 			public ConstrainedAttribute visit(MatchesNothing noOp) {
 				throw new IllegalArgumentException();
 			}
+
+            @Override
+            public ConstrainedAttribute visit(IdAttributeQuery query) {
+                query.getValue();
+                return null;
+            }
 		});
 	}
 	

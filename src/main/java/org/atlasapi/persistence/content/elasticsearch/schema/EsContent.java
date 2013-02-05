@@ -75,7 +75,7 @@ public class EsContent extends EsObject {
         return this;
     }
 
-    public EsContent topics(Collection<EsTopic> topics) {
+    public EsContent topics(Collection<EsTopicMapping> topics) {
         properties.put(TOPICS, Iterables.transform(topics, TO_MAP));
         return this;
     }

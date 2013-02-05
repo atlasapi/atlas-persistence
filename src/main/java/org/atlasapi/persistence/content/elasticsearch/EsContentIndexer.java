@@ -26,7 +26,7 @@ import org.atlasapi.persistence.content.IndexException;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsLocation;
-import org.atlasapi.persistence.content.elasticsearch.schema.EsTopic;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsTopicMapping;
 import org.atlasapi.persistence.content.elasticsearch.support.Strings;
 import org.atlasapi.persistence.elasticsearch.ESPersistenceException;
 import org.elasticsearch.ElasticSearchException;
@@ -406,10 +406,10 @@ public class EsContentIndexer extends AbstractIdleService implements ContentInde
             .availabilityEndTime(toUtc(policy.getAvailabilityEnd()).toDate());
     }
 
-    private Collection<EsTopic> makeESTopics(Item item) {
-        Collection<EsTopic> esTopics = new LinkedList<EsTopic>();
+    private Collection<EsTopicMapping> makeESTopics(Item item) {
+        Collection<EsTopicMapping> esTopics = new LinkedList<EsTopicMapping>();
         for (TopicRef topic : item.getTopicRefs()) {
-            esTopics.add(new EsTopic().id(topic.getTopic().longValue()));
+            esTopics.add(new EsTopicMapping().id(topic.getTopic().longValue()));
         }
         return esTopics;
     }

@@ -12,7 +12,7 @@ import org.atlasapi.media.topic.Topic;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsSchema;
-import org.atlasapi.persistence.content.elasticsearch.schema.EsTopic;
+import org.atlasapi.persistence.content.elasticsearch.schema.EsTopicMapping;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicSearcher;
 import org.elasticsearch.action.ListenableActionFuture;
@@ -53,7 +53,7 @@ public class EsTopicSearcher implements TopicSearcher {
     private ListenableActionFuture<SearchResponse> buildQuery(Interval interval, Selection selection) {
         ListenableActionFuture<SearchResponse> result = index.client().prepareSearch(EsSchema.INDEX_NAME).setQuery(
                 QueryBuilders.nestedQuery(EsContent.BROADCASTS, QueryBuilders.rangeQuery(EsBroadcast.TRANSMISSION_TIME).from(interval.getStart()).to(interval.getEnd()))).
-                addFacet(FacetBuilders.termsFacet(EsContent.TOPICS).field(EsContent.TOPICS + "." + EsTopic.ID).size(selection.getOffset() + selection.getLimit())).
+                addFacet(FacetBuilders.termsFacet(EsContent.TOPICS).field(EsContent.TOPICS + "." + EsTopicMapping.ID).size(selection.getOffset() + selection.getLimit())).
                 execute();
         return result;
     }
