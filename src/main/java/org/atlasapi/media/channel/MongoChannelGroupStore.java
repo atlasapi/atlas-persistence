@@ -5,11 +5,16 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 
+import java.util.Set;
+
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.mongodb.BasicDBObject;
@@ -54,18 +59,53 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     }
 
     @Override
-    public ChannelGroup store(ChannelGroup group) {
+    public ChannelGroup createOrUpdate(ChannelGroup group) {
         checkNotNull(group);
-        if(group.getId() == null) {
+        if (group.getId() == null) {
             group.setId(idGenerator.generateRaw());
+        } else {
+            Optional<ChannelGroup> resolved = channelGroupFor(group.getId());
+
+            if (resolved.isPresent()) {
+                ChannelGroup existing = resolved.get();
+
+                if (group instanceof Region) {
+                    Region existingRegion = (Region)existing;
+                    Region newRegion = (Region)group;
+
+                    if (existingRegion.getPlatform() != null) {
+                        if (newRegion.getPlatform() == null || !existingRegion.getPlatform().equals(newRegion.getPlatform())) {
+                            Optional<ChannelGroup> maybeOldPlatform = channelGroupFor(existingRegion.getPlatform());
+                            Preconditions.checkState(maybeOldPlatform.isPresent(), String.format("Platform with id %s not found for region with id %s", existingRegion.getPlatform(), existingRegion.getId()));
+
+                            Platform oldPlatform = (Platform)maybeOldPlatform.get();
+                            Set<Long> regions = Sets.newHashSet(oldPlatform.getRegions());
+                            regions.remove(existingRegion.getId());
+                            oldPlatform.setRegionIds(regions);
+                            channelGroups.update(new BasicDBObject(MongoConstants.ID, oldPlatform.getId()), translator.toDBObject(null, oldPlatform), UPSERT, SINGLE);
+                        }
+                    }
+                }
+
+                if (group instanceof Platform) {
+                    ((Platform)group).setRegionIds(((Platform)existing).getRegions());
+                }
+
+            } else {
+                // if no existing group, set id
+                group.setId(idGenerator.generateRaw());
+            }
         }
         
         if (group instanceof Region) {
             Region region = (Region) group;
-            DBCursor cursor = channelGroups.find(where().idEquals(region.getPlatform()).build());
-            Platform platform = (Platform) translator.fromDBObject(Iterables.getOnlyElement(cursor), null);
-            platform.addRegion(region);
-            store(platform);
+            if (region.getPlatform() != null) {
+                Optional<ChannelGroup> possiblePlatform = channelGroupFor(region.getPlatform());
+                Preconditions.checkState(possiblePlatform.isPresent(), "Could not resolve platform with id " + region.getPlatform());
+                Platform platform = (Platform) possiblePlatform.get();
+                platform.addRegion(region);
+                channelGroups.update(new BasicDBObject(MongoConstants.ID, platform.getId()), translator.toDBObject(null, platform), UPSERT, SINGLE);
+            }
         }
         
         channelGroups.update(new BasicDBObject(MongoConstants.ID, group.getId()), translator.toDBObject(null, group), UPSERT, SINGLE);

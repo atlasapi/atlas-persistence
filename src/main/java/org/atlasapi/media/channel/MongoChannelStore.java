@@ -1,5 +1,6 @@
 package org.atlasapi.media.channel;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
@@ -7,6 +8,7 @@ import static org.atlasapi.media.channel.ChannelTranslator.KEY;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
@@ -15,9 +17,13 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -73,36 +79,79 @@ public class MongoChannelStore implements ChannelStore {
 	}
 
 	@Override
-	public Channel write(Channel channel) {
-		if(channel.getId() == null) {
-			// TODO: skip ids of legacy channel names
-			channel.setId(codec.decode(idGenerator.generate()).longValue());
-		}
+	public Channel createOrUpdate(Channel channel) {
+	    checkNotNull(channel);
+	    if (channel.getId() == null) {
+	        channel.setId(codec.decode(idGenerator.generate()).longValue());
+	    } else {
+	        Maybe<Channel> existing = fromId(channel.getId());
+	        if (existing.hasValue()) {
+	            Channel existingChannel = existing.requireValue();
 
-		if (channel.parent() != null) {
-		    // channel is child, add reference to it to the parent channel
-		    Maybe<Channel> maybeParent = fromId(channel.parent());
-		    Preconditions.checkState(maybeParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
-		    
-		    Channel parent = maybeParent.requireValue();
-		    parent.addVariation(channel.getId());
-		    write(parent);
-		}
-		
-		for (ChannelNumbering channelNumbering : channel.channelNumbers()) {
-		    // fetch channelgroup
-		    Optional<ChannelGroup> maybeGroup = channelGroupResolver.channelGroupFor(channelNumbering.getChannelGroup());
-		    Preconditions.checkState(maybeGroup.isPresent(), String.format("ChannelGroup with id %s not found for channel with id %s", channelNumbering.getChannelGroup(), channel.getId()));
-		    ChannelGroup group = maybeGroup.get();
-		    // add channelNumbering
-		    group.addChannelNumbering(channelNumbering);
-		    // write channel numbering
-		    channelGroupWriter.store(group);
-		}
-		
-		collection.update(new BasicDBObject(MongoConstants.ID, channel.getId()), translator.toDBObject(null, channel), UPSERT, SINGLE);
-		
-		return channel;
+	            if (existingChannel.parent() != null) {
+	                if (channel.parent() == null || !existingChannel.parent().equals(channel.parent())) {
+	                    Maybe<Channel> maybeOldParent = fromId(existingChannel.parent());
+	                    Preconditions.checkState(maybeOldParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
+
+	                    Channel oldParent = maybeOldParent.requireValue();
+	                    Set<Long> variations = Sets.newHashSet(oldParent.variations()); 
+	                    variations.remove(existingChannel.getId());
+	                    oldParent.setVariationIds(variations);
+	                    collection.update(new BasicDBObject(MongoConstants.ID, oldParent.getId()), translator.toDBObject(null, oldParent), UPSERT, SINGLE);
+	                }
+	            }
+
+	            channel.setVariationIds(existingChannel.variations());
+
+	            SetView<ChannelNumbering> difference = Sets.difference(existingChannel.channelNumbers(), channel.channelNumbers());
+	            if (!difference.isEmpty()) {
+	                for (ChannelNumbering oldNumbering : difference) {
+	                    Optional<ChannelGroup> maybeGroup = channelGroupResolver.channelGroupFor(oldNumbering.getChannelGroup());
+	                    Preconditions.checkState(maybeGroup.isPresent(), String.format("ChannelGroup with id %s not found for channel with id %s", oldNumbering.getChannelGroup(), channel.getId()));
+	                    ChannelGroup group = maybeGroup.get();
+	                    
+	                    Set<ChannelNumbering> numberings = Sets.newHashSet(group.getChannelNumberings());
+	                    numberings.remove(oldNumbering);
+	                    group.setChannelNumberings(numberings);
+	                    
+	                    channelGroupWriter.createOrUpdate(group);
+	                }
+	            }
+	        } else {
+	            // TODO: skip ids of legacy channel names
+	            // set id if not existing channel
+	            channel.setId(codec.decode(idGenerator.generate()).longValue());
+	        }
+	    }
+
+        if (channel.parent() != null) {
+            Maybe<Channel> maybeParent = fromId(channel.parent());
+            Preconditions.checkState(maybeParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
+
+            Channel parent = maybeParent.requireValue();
+            parent.addVariation(channel.getId());
+            collection.update(new BasicDBObject(MongoConstants.ID, parent.getId()), translator.toDBObject(null, parent), UPSERT, SINGLE);
+        }
+
+        Multimap<Long, ChannelNumbering> channelGroupMapping = ArrayListMultimap.create();
+        for (ChannelNumbering numbering : channel.channelNumbers()) {
+            numbering.setChannel(channel.getId());
+            channelGroupMapping.put(numbering.getChannelGroup(), numbering);
+        }
+        
+        for (Long channelGroupId : channelGroupMapping.keySet()){
+            Optional<ChannelGroup> maybeGroup = channelGroupResolver.channelGroupFor(channelGroupId);
+            Preconditions.checkState(maybeGroup.isPresent(), String.format("ChannelGroup with id %s not found for channel with id %s", channelGroupId, channel.getId()));
+            ChannelGroup group = maybeGroup.get();
+            for (ChannelNumbering numbering : channelGroupMapping.get(channelGroupId)) {
+                group.addChannelNumbering(numbering);
+            }
+            channelGroupWriter.createOrUpdate(group);
+        }
+
+        collection.update(new BasicDBObject(MongoConstants.ID, channel.getId()), translator.toDBObject(null, channel), UPSERT, SINGLE);
+        
+        return channel;
 	}
 
 

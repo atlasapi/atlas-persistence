@@ -4,6 +4,6 @@ import org.atlasapi.media.channel.Channel;
 
 public interface ChannelWriter {
 
-	Channel write(Channel channel);
+	Channel createOrUpdate(Channel channel);
 	
 }
