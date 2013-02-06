@@ -16,7 +16,6 @@ import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
@@ -76,8 +75,8 @@ public class CachingChannelStore implements ChannelStore {
     }
 
     @Override
-    public Channel write(Channel channel) {
-        Channel written = delegate.write(channel);
+    public Channel createOrUpdate(Channel channel) {
+        Channel written = delegate.createOrUpdate(channel);
         checkNotNull(written.getId(), "id null for channel " + channel.title());
         checkNotNull(written.key(), "key null for channel " + channel.title());
         checkNotNull(written.uri(), "uri null for channel " + channel.title());

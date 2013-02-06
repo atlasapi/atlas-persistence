@@ -1,4 +1,4 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import org.atlasapi.persistence.media.channel.ChannelGroupTranslator;
 import static org.hamcrest.Matchers.equalTo;
@@ -8,6 +8,9 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 
+import org.atlasapi.media.channel.ChannelGroup;
+import org.atlasapi.media.channel.ChannelNumbering;
+import org.atlasapi.media.channel.Platform;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.Test;
 

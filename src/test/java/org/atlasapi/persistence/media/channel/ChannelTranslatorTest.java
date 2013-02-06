@@ -1,4 +1,4 @@
-package org.atlasapi.media.channel;
+package org.atlasapi.persistence.media.channel;
 
 import org.atlasapi.persistence.media.channel.ChannelTranslator;
 import static org.hamcrest.Matchers.equalTo;
@@ -7,6 +7,8 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelNumbering;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.Duration;
