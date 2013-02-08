@@ -4,10 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
@@ -21,8 +19,11 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 
 public class CachingChannelStore implements ChannelStore {
+
+    private final ChannelStore delegate;
     
     private final LoadingCache<Long, Maybe<Channel>> channelIdCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(5, TimeUnit.MINUTES)
         .build(new CacheLoader<Long, Maybe<Channel>>() {
             @Override
             public Maybe<Channel> load(Long id) throws Exception {
@@ -36,6 +37,7 @@ public class CachingChannelStore implements ChannelStore {
         });
     
     private final LoadingCache<String, Maybe<Channel>> channelKeyCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(5, TimeUnit.MINUTES)
         .build(new CacheLoader<String, Maybe<Channel>>() {
             @Override
             public Maybe<Channel> load(String key) throws Exception {
@@ -49,6 +51,7 @@ public class CachingChannelStore implements ChannelStore {
         });
     
     private final LoadingCache<String, Maybe<Channel>> channelUriCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(5, TimeUnit.MINUTES)
         .build(new CacheLoader<String, Maybe<Channel>>() {
             @Override
             public Maybe<Channel> load(String uri) throws Exception {
@@ -60,9 +63,6 @@ public class CachingChannelStore implements ChannelStore {
                 return result;
             }
         });
-    
-    private final ChannelStore delegate;
-    private final Logger log = LoggerFactory.getLogger(CachingChannelStore.class);
     
     public CachingChannelStore(ChannelStore delegate) {
         this.delegate = delegate;
