@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 
 import org.atlasapi.media.channel.Channel;
 import org.joda.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -21,6 +23,7 @@ public class CachingChannelStore implements ChannelStore {
 
     private final ChannelStore delegate;
     private final BackgroundComputingValue<List<Channel>> channels;
+    private final Logger log = LoggerFactory.getLogger(CachingChannelStore.class);
     
     public CachingChannelStore(ChannelStore delegate) {
         this.delegate = delegate;
@@ -95,7 +98,10 @@ public class CachingChannelStore implements ChannelStore {
         Map<String, Channel> channelMap = Maps.newHashMap();
         for (Channel channel : channels.get()) {
             for (String alias : Iterables.filter(channel.getAliasUrls(), Predicates.contains(prefixPattern))) {
-                channelMap.put(alias, channel);
+                if (channelMap.get(alias) == null) {
+                    channelMap.put(alias, channel);    
+                }
+                log.error("Duplicate alias " + alias + " on channels " + channel.getId() + " & " + channelMap.get(alias).getId());
             }
         }
         return ImmutableMap.copyOf(channelMap);
