@@ -17,8 +17,7 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.logging.SystemOutAdapterLog;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
-import org.atlasapi.persistence.media.channel.CachingChannelStore;
-import org.atlasapi.persistence.media.channel.ChannelResolver;
+import org.atlasapi.persistence.media.channel.ChannelStore;
 import org.atlasapi.persistence.media.channel.MongoChannelGroupStore;
 import org.atlasapi.persistence.media.channel.MongoChannelStore;
 import org.atlasapi.persistence.media.product.ProductResolver;
@@ -51,7 +50,7 @@ public class MongoContentPersistenceModule {
     private final QueuingItemsPeopleWriter itemsPeopleWriter;
     private final MongoPersonStore personStore;
     private final MongoShortUrlSaver shortUrlSaver;
-    private final CachingChannelStore channelStore;
+    private final ChannelStore channelStore;
     private final MongoContentLister contentLister;
     private final TopicCreatingTopicResolver topicCreatingTopicResolver;
     private final MongoTopicStore topicStore;
@@ -74,7 +73,7 @@ public class MongoContentPersistenceModule {
         this.knownTypeContentResolver = new MongoContentResolver(db);
         this.contentResolver = new LookupResolvingContentResolver(knownTypeContentResolver, lookupStore);
         this.channelGroupStore = new MongoChannelGroupStore(db);
-        this.channelStore = new CachingChannelStore(new MongoChannelStore(db, channelGroupStore, channelGroupStore));
+        this.channelStore = new MongoChannelStore(db, channelGroupStore, channelGroupStore);
         this.scheduleStore = new MongoScheduleStore(db, contentResolver, channelStore, new DefaultEquivalentContentResolver(knownTypeContentResolver, lookupStore));
         this.personStore = new MongoPersonStore(db);
         this.itemsPeopleWriter = new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore, log), log);
@@ -136,10 +135,6 @@ public class MongoContentPersistenceModule {
         return topicCreatingTopicResolver;
     }
         
-    public @Primary @Bean ChannelResolver channelResolver() {
-    	return channelStore;
-    }
-
     public MongoSegmentWriter segmentWriter() {
         return segmentWriter;
     }
@@ -148,7 +143,7 @@ public class MongoContentPersistenceModule {
         return segmentResolver;
     }
     
-    public CachingChannelStore channelStore() {
+    public ChannelStore channelStore() {
         return channelStore;
     }
 

@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -19,8 +21,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
@@ -47,6 +49,7 @@ public class MongoChannelStore implements ChannelStore {
 	
 	private final ChannelGroupResolver channelGroupResolver;
 	private final ChannelGroupWriter channelGroupWriter;
+	private final Logger log = LoggerFactory.getLogger(MongoChannelStore.class);
 	
 	public MongoChannelStore(DatabasedMongo mongo, ChannelGroupResolver channelGroupResolver, ChannelGroupWriter channelGroupWriter) {
 		this.channelGroupResolver = channelGroupResolver;
@@ -164,14 +167,18 @@ public class MongoChannelStore implements ChannelStore {
 
         Iterable<Channel> channels = all();
 
-        Builder<String, Channel> channelMap = ImmutableMap.builder();
+        Map<String, Channel> channelMap = Maps.newHashMap();
         for (Channel channel : channels) {
             // TODO new aliases
             for (String alias : Iterables.filter(channel.getAliasUrls(), Predicates.contains(prefixPattern))) {
-                channelMap.put(alias, channel);
+                if (channelMap.get(alias) == null) {
+                    channelMap.put(alias, channel);
+                } else {
+                    log.error("duplicate alias " + alias + " on channels " + channelMap.get(alias).getId() + " & " + channel.getId());
+                }
             }
         }
-        return channelMap.build();
+        return ImmutableMap.copyOf(channelMap);
     }
     
 	private final Function<DBObject, Channel> DB_TO_CHANNEL_TRANSLATOR = new Function<DBObject, Channel>() {
