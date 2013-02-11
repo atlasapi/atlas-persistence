@@ -6,6 +6,9 @@ import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
 import org.atlasapi.media.channel.Channel;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,16 @@ public class CachingChannelStore implements ChannelStore {
     public CachingChannelStore(ChannelStore delegate) {
         this.delegate = delegate;
         channels = new BackgroundComputingValue<List<Channel>>(Duration.standardMinutes(5), new ChannelsUpdater(delegate));
+    }
+    
+    @PostConstruct
+    public void start() {
+        channels.start();
+    }
+    
+    @PreDestroy
+    public void shutdown() {
+        channels.shutdown();
     }
 
     @Override
@@ -100,8 +113,9 @@ public class CachingChannelStore implements ChannelStore {
             for (String alias : Iterables.filter(channel.getAliasUrls(), Predicates.contains(prefixPattern))) {
                 if (channelMap.get(alias) == null) {
                     channelMap.put(alias, channel);    
+                } else {
+                    log.error("Duplicate alias " + alias + " on channels " + channel.getId() + " & " + channelMap.get(alias).getId());
                 }
-                log.error("Duplicate alias " + alias + " on channels " + channel.getId() + " & " + channelMap.get(alias).getId());
             }
         }
         return ImmutableMap.copyOf(channelMap);
