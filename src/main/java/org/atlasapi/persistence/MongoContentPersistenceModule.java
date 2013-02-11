@@ -1,8 +1,8 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.media.channel.CachingChannelStore;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
+import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.media.product.IdSettingProductStore;
@@ -143,8 +143,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
     }
         
-    public @Primary @Bean ChannelResolver channelResolver() {
-    	return new CachingChannelStore(new MongoChannelStore(db, channelGroupStore(), channelGroupStore()));
+    public @Primary @Bean ChannelStore channelStore() {
+    	return new MongoChannelStore(db, channelGroupStore(), channelGroupStore());
     }
     
     public @Primary @Bean ChannelGroupStore channelGroupStore() {
