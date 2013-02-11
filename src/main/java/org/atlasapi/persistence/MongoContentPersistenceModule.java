@@ -1,5 +1,6 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.media.channel.CachingChannelStore;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
@@ -50,6 +51,8 @@ import org.springframework.context.annotation.Primary;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
+import com.metabroadcast.common.properties.Configurer;
+import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
 import com.mongodb.WriteConcern;
@@ -60,6 +63,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired Mongo mongo;
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
+	
+	private final Parameter processingConfig = Configurer.get("processing.config");
 	
 	private @Value("${ids.generate}") String generateIds;
 	
@@ -144,7 +149,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
         
     public @Primary @Bean ChannelStore channelStore() {
-    	return new MongoChannelStore(db, channelGroupStore(), channelGroupStore());
+        if (processingConfig == null || !processingConfig.toBoolean()) {
+            return new CachingChannelStore(new MongoChannelStore(db, channelGroupStore(), channelGroupStore()));
+        }
+        return new MongoChannelStore(db, channelGroupStore(), channelGroupStore());
     }
     
     public @Primary @Bean ChannelGroupStore channelGroupStore() {
