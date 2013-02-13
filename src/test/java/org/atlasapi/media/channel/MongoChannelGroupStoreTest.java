@@ -3,11 +3,14 @@ package org.atlasapi.media.channel;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.atlasapi.media.channel.ChannelGroup.ChannelGroupType;
+import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.joda.time.LocalDate;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Optional;
@@ -25,42 +28,46 @@ public class MongoChannelGroupStoreTest {
     
     private static final MongoChannelGroupStore store = new MongoChannelGroupStore(mongo);
 
-    private static final ImmutableList<Long> ids = ImmutableList.of(1234L, 1235L, 1236L);
     private static final long channelId = 9L;
+    private static Long platformId;
+    private static Long newPlatformId;
+    private static Long region1Id;
+    private static Long region2Id;
+    private static Long region3Id;
     
     @BeforeClass
     public static void setup() {
-        for (Long id : ids) {
-            store.store(channelGroupWithId(id));
-        }
-        ChannelGroup group = channelGroupWithId(1235L);
-        group.addChannel(channelId);
-        store.store(group);
+        platformId = store.createOrUpdate(createPlatform()).getId();
+        newPlatformId = store.createOrUpdate(createPlatform()).getId();
+        region1Id = store.createOrUpdate(createRegion("region1")).getId();
+        region2Id = store.createOrUpdate(createRegion("region2")).getId();
+        region3Id = store.createOrUpdate(createRegion("region3")).getId();
     }
 
-    private static ChannelGroup channelGroupWithId(long id) {
-        ChannelGroup channelGroup = new ChannelGroup();
-        channelGroup.setId(id);
-        channelGroup.setAvailableCountries(ImmutableSet.of(Countries.GB));
-        channelGroup.setType(ChannelGroupType.REGION);
-        channelGroup.setTitle("ChannelGroup" + id);
-        channelGroup.setPublisher(Publisher.METABROADCAST);
-        return channelGroup;
+    private static Platform createPlatform() {
+        Platform platform = new Platform();
+        return platform;
+    }
+
+    private static Region createRegion(String title) {
+        Region region = new Region();
+        region.setAvailableCountries(ImmutableSet.of(Countries.GB));
+        region.addTitle(title);
+        region.setPublisher(Publisher.METABROADCAST);
+        return region;
     }
     
     @Test
     public void testStoresAndRetrievesChannelGroup() {
-        long id = 1234L;
-        Optional<ChannelGroup> group = store.channelGroupFor(id);
+        Optional<ChannelGroup> group = store.channelGroupFor(platformId);
         
         assertTrue(group.isPresent());
-        assertThat(group.get().getId(), is(id));
-        
+        assertThat(group.get().getId(), is(platformId));
     }
     
     @Test
     public void testRetrievesGroupsForIds() {
-        ImmutableList<Long> requestedIds = ImmutableList.of(1234L, 1235L);
+        ImmutableList<Long> requestedIds = ImmutableList.of(region1Id, platformId);
         Iterable<ChannelGroup> groups = store.channelGroupsFor(requestedIds);
         
         assertThat(Iterables.size(groups), is(2));
@@ -72,20 +79,70 @@ public class MongoChannelGroupStoreTest {
     @Test
     public void testRetrievesAllGroups() {
         Iterable<ChannelGroup> groups = store.channelGroups();
-        
-        assertThat(Iterables.size(groups), is(3));
+        ImmutableList<Long> ids = ImmutableList.of(platformId, newPlatformId, region1Id, region2Id, region3Id);
+        assertThat(Iterables.size(groups), is(5));
         assertThat(Iterables.get(groups, 0).getId(), isIn(ids));
         assertThat(Iterables.get(groups, 1).getId(), isIn(ids));
         assertThat(Iterables.get(groups, 2).getId(), isIn(ids));
+        assertThat(Iterables.get(groups, 3).getId(), isIn(ids));
     }
     
     @Test
-    public void testRetrieveGroupForChannel() {
-        Channel channel = new Channel();
-        channel.setId(channelId);
-        Iterable<ChannelGroup> groups = store.channelGroupsFor(channel);
+    public void testAddMultipleNumberings() {
         
-        assertThat(Iterables.size(groups), is(1));
-        assertThat(Iterables.get(groups, 0).getId(), is(1235L));
+        ChannelGroup platform = store.channelGroupFor(platformId).get();
+        
+        ChannelNumbering numbering = ChannelNumbering.builder()
+                .withStartDate(new LocalDate(2011, 1, 1))
+                .withChannel(1234L)
+                .withChannelGroup(platform)
+                .withChannelNumber("1")
+                .build();
+        
+        platform.addChannelNumbering(numbering);
+        platform = store.createOrUpdate(platform);
+        
+        assertThat(platform.getChannelNumberings().size(), is(1));
+        
+        platform.addChannelNumbering(numbering);
+        platform = store.createOrUpdate(platform);
+        
+        assertThat(platform.getChannelNumberings().size(), is(1));
+        
+        numbering = ChannelNumbering.builder()
+                .withStartDate(new LocalDate(2011, 1, 1))
+                .withChannel(1234L)
+                .withChannelGroup(platform)
+                .withChannelNumber("2")
+                .build();
+        
+        platform.addChannelNumbering(numbering);
+        platform = store.createOrUpdate(platform);
+        
+        assertThat(platform.getChannelNumberings().size(), is(2));
+    }
+    
+    @Test
+    public void testChangeOfPlatform() {
+        Region region = (Region)store.channelGroupFor(region1Id).get();
+        region.setPlatform(platformId);
+        region = (Region)store.createOrUpdate(region);
+        
+        Platform platform = (Platform)store.channelGroupFor(platformId).get();
+        Platform newPlatform = (Platform)store.channelGroupFor(newPlatformId).get();
+        
+        assertEquals(platformId, region.getPlatform());
+        assertEquals(ImmutableSet.of(region.getId()), platform.getRegions());
+        assertEquals(ImmutableSet.of(), newPlatform.getRegions());
+        
+        region.setPlatform(newPlatformId);
+        region = (Region)store.createOrUpdate(region);
+        
+        platform = (Platform)store.channelGroupFor(platformId).get();
+        newPlatform = (Platform)store.channelGroupFor(newPlatformId).get();
+        
+        assertEquals(newPlatformId, region.getPlatform());
+        assertEquals(ImmutableSet.of(), platform.getRegions());
+        assertEquals(ImmutableSet.of(region.getId()), newPlatform.getRegions());
     }
 }
