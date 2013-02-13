@@ -1,4 +1,4 @@
-package org.atlasapi.media.channel;
+    package org.atlasapi.media.channel;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -88,54 +88,21 @@ public class MongoChannelStore implements ChannelStore {
 	        channel.setId(codec.decode(idGenerator.generate()).longValue());
 	    } else {
 	        Maybe<Channel> existing = fromId(channel.getId());
-	        if (existing.hasValue()) {
-	            Channel existingChannel = existing.requireValue();
-
-	            if (existingChannel.parent() != null) {
-	                if (channel.parent() == null || !existingChannel.parent().equals(channel.parent())) {
-	                    Maybe<Channel> maybeOldParent = fromId(existingChannel.parent());
-	                    Preconditions.checkState(maybeOldParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
-
-	                    Channel oldParent = maybeOldParent.requireValue();
-	                    Set<Long> variations = Sets.newHashSet(oldParent.variations()); 
-	                    variations.remove(existingChannel.getId());
-	                    oldParent.setVariationIds(variations);
-	                    collection.update(new BasicDBObject(MongoConstants.ID, oldParent.getId()), translator.toDBObject(null, oldParent), UPSERT, SINGLE);
-	                }
-	            }
-
-	            channel.setVariationIds(existingChannel.variations());
-
-	            SetView<ChannelNumbering> difference = Sets.difference(existingChannel.channelNumbers(), channel.channelNumbers());
-	            if (!difference.isEmpty()) {
-	                for (ChannelNumbering oldNumbering : difference) {
-	                    Optional<ChannelGroup> maybeGroup = channelGroupResolver.channelGroupFor(oldNumbering.getChannelGroup());
-	                    Preconditions.checkState(maybeGroup.isPresent(), String.format("ChannelGroup with id %s not found for channel with id %s", oldNumbering.getChannelGroup(), channel.getId()));
-	                    ChannelGroup group = maybeGroup.get();
-	                    
-	                    Set<ChannelNumbering> numberings = Sets.newHashSet(group.getChannelNumberings());
-	                    numberings.remove(oldNumbering);
-	                    group.setChannelNumberings(numberings);
-	                    
-	                    channelGroupWriter.createOrUpdate(group);
-	                }
-	            }
-	        } else {
-	            // TODO: skip ids of legacy channel names
-	            // set id if not existing channel
-	            channel.setId(codec.decode(idGenerator.generate()).longValue());
-	        }
+	        Preconditions.checkState(existing.hasValue(), "Channel not found to update");
+	        
+	        maintainParentLinks(channel, existing.requireValue());
 	    }
 
-        if (channel.parent() != null) {
-            Maybe<Channel> maybeParent = fromId(channel.parent());
-            Preconditions.checkState(maybeParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
+        ensureParentReference(channel);
 
-            Channel parent = maybeParent.requireValue();
-            parent.addVariation(channel.getId());
-            collection.update(new BasicDBObject(MongoConstants.ID, parent.getId()), translator.toDBObject(null, parent), UPSERT, SINGLE);
-        }
+        addNumberingsToChannelGroups(channel);
 
+        collection.update(new BasicDBObject(MongoConstants.ID, channel.getId()), translator.toDBObject(null, channel), UPSERT, SINGLE);
+        
+        return channel;
+	}
+
+    private void addNumberingsToChannelGroups(Channel channel) {
         Multimap<Long, ChannelNumbering> channelGroupMapping = ArrayListMultimap.create();
         for (ChannelNumbering numbering : channel.channelNumbers()) {
             numbering.setChannel(channel.getId());
@@ -151,11 +118,50 @@ public class MongoChannelStore implements ChannelStore {
             }
             channelGroupWriter.createOrUpdate(group);
         }
+    }
 
-        collection.update(new BasicDBObject(MongoConstants.ID, channel.getId()), translator.toDBObject(null, channel), UPSERT, SINGLE);
-        
-        return channel;
-	}
+    private void ensureParentReference(Channel channel) {
+        if (channel.parent() != null) {
+            Maybe<Channel> maybeParent = fromId(channel.parent());
+            Preconditions.checkState(maybeParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", channel.parent(), channel.getId()));
+
+            Channel parent = maybeParent.requireValue();
+            parent.addVariation(channel.getId());
+            collection.update(new BasicDBObject(MongoConstants.ID, parent.getId()), translator.toDBObject(null, parent), UPSERT, SINGLE);
+        }
+    }
+
+    private void maintainParentLinks(Channel newChannel, Channel existingChannel) {
+        if (existingChannel.parent() != null) {
+            if (newChannel.parent() == null || !existingChannel.parent().equals(newChannel.parent())) {
+                Maybe<Channel> maybeOldParent = fromId(existingChannel.parent());
+                Preconditions.checkState(maybeOldParent.hasValue(), String.format("Parent channel with id %s not found for channel with id %s", newChannel.parent(), newChannel.getId()));
+
+                Channel oldParent = maybeOldParent.requireValue();
+                Set<Long> variations = Sets.newHashSet(oldParent.variations()); 
+                variations.remove(existingChannel.getId());
+                oldParent.setVariationIds(variations);
+                collection.update(new BasicDBObject(MongoConstants.ID, oldParent.getId()), translator.toDBObject(null, oldParent), UPSERT, SINGLE);
+            }
+        }
+
+        newChannel.setVariationIds(existingChannel.variations());
+
+        SetView<ChannelNumbering> difference = Sets.difference(existingChannel.channelNumbers(), newChannel.channelNumbers());
+        if (!difference.isEmpty()) {
+            for (ChannelNumbering oldNumbering : difference) {
+                Optional<ChannelGroup> maybeGroup = channelGroupResolver.channelGroupFor(oldNumbering.getChannelGroup());
+                Preconditions.checkState(maybeGroup.isPresent(), String.format("ChannelGroup with id %s not found for channel with id %s", oldNumbering.getChannelGroup(), newChannel.getId()));
+                ChannelGroup group = maybeGroup.get();
+                
+                Set<ChannelNumbering> numberings = Sets.newHashSet(group.getChannelNumberings());
+                numberings.remove(oldNumbering);
+                group.setChannelNumberings(numberings);
+                
+                channelGroupWriter.createOrUpdate(group);
+            }
+        }
+    }
 
 
     @Override
