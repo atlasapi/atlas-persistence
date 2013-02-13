@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
@@ -39,7 +40,7 @@ public class LookupStoreBackedIdSettingContentWriterTest {
         final long newId = 1234l;
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(item.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(item.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
             oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(itemWithId(newId)));
         }});
@@ -57,7 +58,7 @@ public class LookupStoreBackedIdSettingContentWriterTest {
         item.setId(Id.valueOf(oldId));
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(item.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(item))));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(item.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(item))));
             never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(itemWithId(oldId)));
         }});
@@ -93,7 +94,7 @@ public class LookupStoreBackedIdSettingContentWriterTest {
         final long newId = 1234;
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(brand.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(brand.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
             oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(containerWithId(newId)));
         }});
@@ -111,7 +112,7 @@ public class LookupStoreBackedIdSettingContentWriterTest {
         brand.setId(Id.valueOf(oldId));
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(brand.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(brand))));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(brand.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(brand))));
             never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(containerWithId(oldId)));
         }});
