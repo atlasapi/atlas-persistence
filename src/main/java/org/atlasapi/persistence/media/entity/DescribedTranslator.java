@@ -3,11 +3,17 @@ package org.atlasapi.persistence.media.entity;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.Image;
+import org.atlasapi.media.entity.ImageAspectRatio;
+import org.atlasapi.media.entity.ImageType;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.ModelTranslator;
+import org.joda.time.DateTime;
 
+import com.google.common.collect.ImmutableSet;
+import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -54,6 +60,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		if (publisherKey != null) {
 			entity.setPublisher(Publisher.fromKey(publisherKey).valueOrDefault(null));
 		}
+		entity.setImages(toImages(entity.getImage(), entity.getPublisher()));
 
 		entity.setTags(TranslatorUtils.toSet(dbObject, "tags"));
 		entity.setThumbnail((String) dbObject.get("thumbnail"));
@@ -74,7 +81,28 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		return entity;
 	}
 
-	@Override
+	private Iterable<Image> toImages(String imageUri, Publisher publisher) {
+	    if(imageUri == null) {
+	        return ImmutableSet.of();
+	    }
+	    
+	    Image image = new Image(imageUri);
+	    
+	    if(Publisher.PA.equals(publisher)) {
+	        image.setHeight(360);
+	        image.setWidth(640);
+	        image.setType(ImageType.PRIMARY);
+	        image.setAspectRatio(ImageAspectRatio.SIXTEEN_BY_NINE);
+	        image.setMimeType(MimeType.IMAGE_JPG);
+	        image.setCanonicalUri(imageUri.replace("images.atlasapi.org/pa/", "images.atlas.metabroadcast.com/pressassociation.com/"));
+	        image.setAvailabilityStart(null);
+	        image.setAvailabilityStart(null);
+	    }
+	    
+	    return ImmutableSet.of(image);
+    }
+
+    @Override
 	public DBObject toDBObject(DBObject dbObject, Described entity) {
 		 if (dbObject == null) {
             dbObject = new BasicDBObject();
