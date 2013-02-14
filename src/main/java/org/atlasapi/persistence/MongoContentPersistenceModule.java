@@ -1,7 +1,9 @@
 package org.atlasapi.persistence;
 
+import org.atlasapi.media.channel.CachingChannelStore;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
+import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.media.product.IdSettingProductStore;
@@ -12,6 +14,8 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.persistence.content.ContentGroupResolver;
+import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.DefaultEquivalentContentResolver;
@@ -20,6 +24,8 @@ import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
@@ -48,13 +54,11 @@ import org.springframework.context.annotation.Primary;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
+import com.metabroadcast.common.properties.Configurer;
+import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
 import com.mongodb.WriteConcern;
-import org.atlasapi.persistence.content.ContentGroupResolver;
-import org.atlasapi.persistence.content.ContentGroupWriter;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 
 @Configuration
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
@@ -62,6 +66,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired Mongo mongo;
 	private @Autowired DatabasedMongo db;
 	private @Autowired AdapterLog log;
+	
+	private final Parameter processingConfig = Configurer.get("processing.config");
 	
 	private @Value("${ids.generate}") String generateIds;
 	
@@ -149,14 +155,17 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
     }
         
-    public @Primary @Bean ChannelResolver channelResolver() {
-    	return new MongoChannelStore(db);
+    public @Primary @Bean ChannelStore channelStore() {
+        if (processingConfig == null || !processingConfig.toBoolean()) {
+            return new CachingChannelStore(new MongoChannelStore(db, channelGroupStore(), channelGroupStore()));
+        }
+        return new MongoChannelStore(db, channelGroupStore(), channelGroupStore());
     }
     
     public @Primary @Bean ChannelGroupStore channelGroupStore() {
         return new MongoChannelGroupStore(db);
     }
-
+    
     public @Primary @Bean ProductStore productStore() {
         return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
     }

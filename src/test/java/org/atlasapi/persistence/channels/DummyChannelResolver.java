@@ -74,5 +74,10 @@ public class DummyChannelResolver implements ChannelResolver {
     public Iterable<Channel> forIds(Iterable<Long> ids) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public Maybe<Channel> forAlias(String alias) {
+        throw new UnsupportedOperationException();
+    }
 	
 }
