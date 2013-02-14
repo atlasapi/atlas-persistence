@@ -13,7 +13,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -121,7 +120,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     public Optional<ChannelGroup> fromAlias(String alias) {
         for (DBObject dbo : channelGroups.find()) {
             ChannelGroup channelGroup = translator.fromDBObject(dbo, null);
-            for (String channelGroupAlias : channelGroup.getAliases()) {
+            for (String channelGroupAlias : channelGroup.getAliasUrls()) {
                 if (alias.equals(channelGroupAlias)) {
                     return Optional.of(channelGroup);
                 }

@@ -25,7 +25,7 @@ public class DescriptionTranslatorTest extends TestCase {
         Set<String> aliases = Sets.newHashSet();
         aliases.add("alias1");
         aliases.add("alias2");
-        desc.setAliases(aliases);
+        desc.setAliasUrls(aliases);
         
         IdentifiedTranslator translator = new IdentifiedTranslator();
         DBObject dbObj = translator.toDBObject(null, desc);
@@ -49,7 +49,7 @@ public class DescriptionTranslatorTest extends TestCase {
         Set<String> aliases = Sets.newHashSet();
         aliases.add("alias1");
         aliases.add("alias2");
-        desc.setAliases(aliases);
+        desc.setAliasUrls(aliases);
         
         IdentifiedTranslator translator = new IdentifiedTranslator();
         DBObject dbObj = translator.toDBObject(null, desc);
@@ -68,7 +68,7 @@ public class DescriptionTranslatorTest extends TestCase {
         Set<String> aliases = Sets.newHashSet();
         aliases.add("alias1");
         aliases.add("alias2");
-        desc.setAliases(aliases);
+        desc.setAliasUrls(aliases);
         
         desc.setLastUpdated(lastUpdated);
         
@@ -80,7 +80,7 @@ public class DescriptionTranslatorTest extends TestCase {
         
         assertEquals(desc.getCanonicalUri(), description.getCanonicalUri());
         assertEquals(desc.getCurie(), description.getCurie());
-        assertEquals(desc.getAliases(), description.getAliases());
+        assertEquals(desc.getAliasUrls(), description.getAliasUrls());
         assertEquals(desc.getLastUpdated(), description.getLastUpdated());
     }
 }

@@ -109,7 +109,7 @@ public class CachingChannelStore implements ChannelStore {
 
         Map<String, Channel> channelMap = Maps.newHashMap();
         for (Channel channel : channels.get()) {
-            for (String alias : Iterables.filter(channel.getAliases(), Predicates.contains(prefixPattern))) {
+            for (String alias : Iterables.filter(channel.getAliasUrls(), Predicates.contains(prefixPattern))) {
                 if (channelMap.get(alias) == null) {
                     channelMap.put(alias, channel);    
                 } else {

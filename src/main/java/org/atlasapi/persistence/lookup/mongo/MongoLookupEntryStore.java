@@ -11,7 +11,10 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.media.entity.LookupRef.TO_ID;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.IDS;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
+import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
+import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 
 import java.util.Set;
 
@@ -21,6 +24,7 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -75,9 +79,11 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             store(newEntry);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
             updateEntry(content, newEntry, existing);
+        } else if (!newEntry.aliasUrls().equals(existing.aliasUrls())) {
+            store(merge(content, newEntry, existing));
         } else if (!newEntry.aliases().equals(existing.aliases())) {
             store(merge(content, newEntry, existing));
-        }
+        } 
     }
 
     private void updateEntry(Content content, LookupEntry newEntry, LookupEntry existing) {
@@ -100,7 +106,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
         Set<LookupRef> explicit = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.explicitEquivalents()).build();
         Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
-        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated());
+        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliasUrls(), newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated());
         return merged;
     }
 
@@ -113,4 +119,16 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         return lookup.find(where().fieldIn(ALIASES, identifiers).build());
     }
 
+    @Override
+    public Iterable<LookupEntry> entriesForAliases(Optional<String> namespace, Iterable<String> values) {
+        return Iterables.transform(find(namespace, values), translator.FROM_DBO);
+    }
+
+    private Iterable<DBObject> find(Optional<String> namespace, Iterable<String> values) {
+        if (namespace.isPresent()) {
+            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values)).build());        
+        } else {
+            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, "/^.*/").fieldIn(VALUE, values)).build());
+        }
+    }
 }

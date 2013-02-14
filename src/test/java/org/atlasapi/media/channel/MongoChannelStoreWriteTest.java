@@ -39,7 +39,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         assertEquals("uri1", channel.uri());
         assertEquals("key1", channel.key());
         assertEquals(MediaType.VIDEO, channel.mediaType());
-        assertEquals(ImmutableSet.of("test/1", "test/2"), channel.getAliases());
+        assertEquals(ImmutableSet.of("test/1", "test/2"), channel.getAliasUrls());
     }
     
     @Test
@@ -51,13 +51,13 @@ public class MongoChannelStoreWriteTest extends TestCase {
         channel.setCanonicalUri("uri2");
         channel.setKey("key2");
         channel.setMediaType(MediaType.AUDIO);
-        channel.setAliases(ImmutableList.of("newAlias"));
+        channel.setAliasUrls(ImmutableList.of("newAlias"));
         channel = store.createOrUpdate(channel);
         
         assertEquals("uri2", channel.uri());
         assertEquals("key2", channel.key());
         assertEquals(MediaType.AUDIO, channel.mediaType());
-        assertEquals(ImmutableSet.of("newAlias"), channel.getAliases());
+        assertEquals(ImmutableSet.of("newAlias"), channel.getAliasUrls());
     }
     
     @Test
@@ -152,7 +152,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
             .withMediaType(mediaType)
             .withParent(parent)
             .build();
-        channel.setAliases(ImmutableSet.copyOf(alias));
+        channel.setAliasUrls(ImmutableSet.copyOf(alias));
         return channel;
     }
 }
