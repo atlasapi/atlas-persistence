@@ -23,6 +23,7 @@ public class BroadcastTranslator  {
 	private static final String SURROUND_KEY = "surround";
 	private static final String LIVE_KEY = "live";
 	
+	private final AliasTranslator aliasTranslator = new AliasTranslator();
     
     public Broadcast fromDBObject(DBObject dbObject) {
         
@@ -36,7 +37,8 @@ public class BroadcastTranslator  {
         Broadcast broadcast = new Broadcast(broadcastOn, transmissionTime, Duration.standardSeconds(duration), activelyPublished).withId(id);
         
         broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
-        broadcast.setAliases(TranslatorUtils.toSet(dbObject, IdentifiedTranslator.ALIASES));
+        broadcast.setAliasUrls(TranslatorUtils.toSet(dbObject, IdentifiedTranslator.ALIASES));
+        broadcast.setAliases(aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, IdentifiedTranslator.IDS)));
         broadcast.setLastUpdated(TranslatorUtils.toDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED));
         broadcast.setRepeat(TranslatorUtils.toBoolean(dbObject, REPEAT_KEY));
         broadcast.setSubtitled(TranslatorUtils.toBoolean(dbObject, SUBTITLED_KEY));
@@ -59,7 +61,8 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromLocalDate(dbObject, "scheduleDate", entity.getScheduleDate());
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_TIME_KEY, entity.getTransmissionTime());
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_END_TIME_KEY, entity.getTransmissionEndTime());
-        TranslatorUtils.fromSet(dbObject, entity.getAliases(), IdentifiedTranslator.ALIASES);
+        TranslatorUtils.fromSet(dbObject, entity.getAliasUrls(), IdentifiedTranslator.ALIASES);
+        TranslatorUtils.from(dbObject, IdentifiedTranslator.IDS, aliasTranslator.toDBList(entity.getAliases()));
         TranslatorUtils.fromDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED, entity.getLastUpdated());
         TranslatorUtils.from(dbObject, "activelyPublished", entity.isActivelyPublished());
         TranslatorUtils.from(dbObject, "id", entity.getSourceId());

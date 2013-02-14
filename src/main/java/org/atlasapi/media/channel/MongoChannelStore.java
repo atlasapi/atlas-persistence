@@ -172,7 +172,7 @@ public class MongoChannelStore implements ChannelStore {
 
         Map<String, Channel> channelMap = Maps.newHashMap();
         for (Channel channel : channels) {
-            for (String alias : Iterables.filter(channel.getAliases(), Predicates.contains(prefixPattern))) {
+            for (String alias : Iterables.filter(channel.getAliasUrls(), Predicates.contains(prefixPattern))) {
                 if (channelMap.get(alias) == null) {
                     channelMap.put(alias, channel);
                 } else {
@@ -195,7 +195,7 @@ public class MongoChannelStore implements ChannelStore {
     public Maybe<Channel> forAlias(String alias) {
         Iterable<Channel> channels = all();
         for (Channel channel : channels) {
-            for (String channelAlias : channel.getAliases()) {
+            for (String channelAlias : channel.getAliasUrls()) {
                 if (alias.equals(channelAlias)) {
                     return Maybe.just(channel);
                 }

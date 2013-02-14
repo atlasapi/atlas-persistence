@@ -22,13 +22,15 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 	public static final String CURIE = "curie";
 	
 	public static final String ALIASES = "aliases";
+	public static final String IDS = "ids";
 	public static final String LAST_UPDATED = "lastUpdated";
 	public static final String EQUIVALENT_TO = "equivalent";
 	public static final String ID = MongoConstants.ID;
 	public static final String CANONICAL_URL = "uri";
 	public static final String TYPE = "type";
     public static final String PUBLISHER = "publisher";
-
+    
+    private final AliasTranslator aliasTranslator = new AliasTranslator();
 
 	private boolean useAtlasIdAsId;
     
@@ -55,7 +57,10 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         }
         
         description.setCurie((String) dbObject.get(CURIE));
-        description.setAliases(TranslatorUtils.toSet(dbObject, ALIASES));
+        description.setAliasUrls(TranslatorUtils.toSet(dbObject, ALIASES));
+
+        description.setAliases(aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, IDS)));
+        
         description.setEquivalentTo(equivalentsFrom(dbObject));
         description.setLastUpdated(TranslatorUtils.toDateTime(dbObject, LAST_UPDATED));
         return description;
@@ -90,7 +95,10 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         }
         
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
-        TranslatorUtils.fromSet(dbObject, entity.getAliases(), ALIASES);
+        TranslatorUtils.fromSet(dbObject, entity.getAliasUrls(), ALIASES);
+        
+        TranslatorUtils.from(dbObject, IDS, aliasTranslator.toDBList(entity.getAliases()));
+        
         TranslatorUtils.from(dbObject, EQUIVALENT_TO, toDBObject(entity.getEquivalentTo()));
         TranslatorUtils.fromDateTime(dbObject, LAST_UPDATED, entity.getLastUpdated());
         
