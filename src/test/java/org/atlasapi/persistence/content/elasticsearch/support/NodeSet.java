@@ -70,7 +70,7 @@ public final class NodeSet {
             this.pathSegments = pathSegments;
         }
         
-        public List<String> getPathSegments() {
+        public List<String> pathSegments() {
             return pathSegments;
         }
 
@@ -104,13 +104,17 @@ public final class NodeSet {
 
         public static final class TerminalNode extends QueryNode {
             
+            private final AttributeQuery<?> query;
+            
             public TerminalNode(List<String> pathSegments, AttributeQuery<?> query) {
                 super(pathSegments);
                 this.query = query;
             }
 
-            AttributeQuery<?> query;
-            
+            public AttributeQuery<?> getQuery() {
+                return query;
+            }
+
             @Override
             public String toString() {
                 return prettyPrint(0).toString();
@@ -120,23 +124,23 @@ public final class NodeSet {
             public QueryNode add(AttributeQuery<?> query, List<String> path, int pathPos) {
                 int commonLen = commonPathLen(path, pathPos);
                 int commonEnd = pathPos+commonLen;
-                return new IntermediateNode(take(getPathSegments(), commonLen),
+                return new IntermediateNode(take(pathSegments(), commonLen),
                     this.removeCommonPrefix(commonLen),
                     new TerminalNode(drop(path, commonEnd), query)
                 );
             }
             
             private QueryNode removeCommonPrefix(int commonLen) {
-                this.setPathSegments(drop(getPathSegments(), commonLen));
+                this.setPathSegments(drop(pathSegments(), commonLen));
                 return this;
             }
 
             @Override
             public StringBuilder prettyPrint(int depth) {
                 return Joiner.on("").appendTo(new StringBuilder(), Collections.nCopies(depth, "\t"))
-                   .append(getPathSegments())
+                   .append(pathSegments())
                    .append("==>")
-                   .append(query);
+                   .append(getQuery());
             }
             
             @Override
@@ -156,8 +160,8 @@ public final class NodeSet {
             public IntermediateNode(List<String> pathSegments, QueryNode left, QueryNode right) {
                 super(pathSegments);
                 this.descendants = Maps.newHashMap();
-                descendants.put(left.getPathSegments().get(0), left);
-                descendants.put(right.getPathSegments().get(0), right);
+                descendants.put(left.pathSegments().get(0), left);
+                descendants.put(right.pathSegments().get(0), right);
             }
 
             public IntermediateNode(List<String> pathSegments, Map<String, QueryNode> descendants) {
@@ -172,15 +176,15 @@ public final class NodeSet {
             public QueryNode add(AttributeQuery<?> query, List<String> path, int pathPos) {
                 int commonLen = commonPathLen(path, pathPos);
                 int commonEnd = pathPos + commonLen;
-                if (commonLen == getPathSegments().size()) {
+                if (commonLen == pathSegments().size()) {
                     String key = path.get(commonEnd);
                     QueryNode commonChild = descendants.get(key);
                     descendants.put(key, commonChild != null ? commonChild.add(query, path, commonEnd)
                                       : new TerminalNode(drop(path, commonEnd), query));
                     return this;
                 } else {
-                    return new IntermediateNode(take(getPathSegments(), commonLen),
-                        new IntermediateNode(drop(getPathSegments(), commonLen), this.descendants),
+                    return new IntermediateNode(take(pathSegments(), commonLen),
+                        new IntermediateNode(drop(pathSegments(), commonLen), this.descendants),
                         new TerminalNode(drop(path, commonEnd), query)
                     );
                 }
@@ -190,7 +194,7 @@ public final class NodeSet {
             public StringBuilder prettyPrint(int depth) {
                 StringBuilder sb = Joiner.on("")
                     .appendTo(new StringBuilder(), Collections.nCopies(depth, "\t"))
-                    .append(getPathSegments())
+                    .append(pathSegments())
                     .append("==>");
                 for (QueryNode descendant : descendants.values()) {
                     sb.append("\n").append(descendant.prettyPrint(depth+1));

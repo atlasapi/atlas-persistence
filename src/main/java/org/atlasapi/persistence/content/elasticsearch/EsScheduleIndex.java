@@ -27,13 +27,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.content.schedule.ScheduleBroadcastFilter;
+import org.atlasapi.media.content.schedule.ScheduleIndex;
+import org.atlasapi.media.content.schedule.ScheduleRef;
+import org.atlasapi.media.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsBroadcast;
 import org.atlasapi.persistence.content.elasticsearch.support.FutureSettingActionListener;
-import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
-import org.atlasapi.persistence.content.schedule.ScheduleIndex;
-import org.atlasapi.persistence.content.schedule.ScheduleRef;
-import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.FilterBuilder;

@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content.schedule;
 
 import static org.junit.Assert.*;
 
+import org.atlasapi.media.content.schedule.ScheduleBroadcastFilter;
 import org.joda.time.Interval;
 import org.junit.Test;
 

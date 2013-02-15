@@ -398,7 +398,7 @@ public class NodeSetTest {
                 @Override
                 @SuppressWarnings("unchecked")
                 protected Attribute<T> featureValueOf(TerminalNode actual) {
-                    return (Attribute<T>)actual.query.getAttribute();
+                    return (Attribute<T>)actual.getQuery().getAttribute();
                 }
         };
     }
@@ -421,7 +421,7 @@ public class NodeSetTest {
 
             @Override
             protected List<String> featureValueOf(QueryNode actual) {
-                return actual.getPathSegments();
+                return actual.pathSegments();
             }
         };
     }

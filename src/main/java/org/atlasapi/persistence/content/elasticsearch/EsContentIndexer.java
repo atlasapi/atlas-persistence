@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
+import org.atlasapi.media.content.ESPersistenceException;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Encoding;
@@ -28,7 +29,6 @@ import org.atlasapi.persistence.content.elasticsearch.schema.EsContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsLocation;
 import org.atlasapi.persistence.content.elasticsearch.schema.EsTopicMapping;
 import org.atlasapi.persistence.content.elasticsearch.support.Strings;
-import org.atlasapi.persistence.elasticsearch.ESPersistenceException;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ActionRequest;

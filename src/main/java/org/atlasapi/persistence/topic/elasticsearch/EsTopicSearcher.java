@@ -24,8 +24,6 @@ import org.elasticsearch.search.facet.Facets;
 import org.elasticsearch.search.facet.terms.TermsFacet;
 import org.joda.time.Interval;
 
-/**
- */
 public class EsTopicSearcher implements TopicSearcher {
 
     private final Node index;

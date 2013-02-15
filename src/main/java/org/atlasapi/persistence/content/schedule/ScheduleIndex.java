@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content.schedule;
 
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.content.schedule.ScheduleRef;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.Interval;
 

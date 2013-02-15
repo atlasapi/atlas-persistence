@@ -2,9 +2,8 @@ package org.atlasapi.persistence.content.elasticsearch.support;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
+import java.util.Stack;
 
-import org.atlasapi.content.criteria.AtomicQuerySet;
 import org.atlasapi.content.criteria.AttributeQuery;
 import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.DateTimeAttributeQuery;
@@ -26,6 +25,10 @@ import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
 import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.media.common.Id;
+import org.atlasapi.persistence.content.elasticsearch.support.NodeSet.QueryNode;
+import org.atlasapi.persistence.content.elasticsearch.support.NodeSet.QueryNode.IntermediateNode;
+import org.atlasapi.persistence.content.elasticsearch.support.NodeSet.QueryNode.TerminalNode;
+import org.atlasapi.persistence.content.elasticsearch.support.NodeSet.QueryNodeVisitor;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -34,30 +37,59 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 public class EsQueryBuilder {
 
     private static final Joiner PATH_JOINER = Joiner.on(".");
 
-    public Map<String,Object> buildQuery(AtomicQuerySet operands) {
-        List<Object> conjuncts = Lists.newLinkedList();
-        for (Object atomBuilder : builders(operands).values()) {
-            conjuncts.add(atomBuilder);
-        }
-        return ImmutableMap.<String,Object>of("bool", 
-            ImmutableMap.<String,Object>of("must", conjuncts)
-        );
+    public QueryBuilder buildQuery(NodeSet operands) {
+        return operands.accept(new QueryNodeVisitor<QueryBuilder>() {
+
+            Stack<String> traversed = new Stack<String>();
+            
+            @Override
+            public QueryBuilder visit(IntermediateNode node) {
+                BoolQueryBuilder conjuncts = QueryBuilders.boolQuery();
+                traversed.addAll(node.pathSegments());
+                for (QueryNode desc : node.getDescendants()) {
+                    conjuncts.must(desc.accept(this));
+                }
+                for(int i = 0; i < node.pathSegments().size(); i++) traversed.pop();
+                return node.pathSegments().isEmpty() ? conjuncts 
+                                                     : nest(node, conjuncts);
+            }
+
+            private NestedQueryBuilder nest(IntermediateNode node, BoolQueryBuilder conjuncts) {
+                return QueryBuilders.nestedQuery(
+                    nestPath(node), conjuncts
+                );
+            }
+
+            private String nestPath(IntermediateNode node) {
+                if (traversed.isEmpty()) {
+                    return PATH_JOINER.join(node.pathSegments());
+                }
+                StringBuilder builder = new StringBuilder();
+                builder = PATH_JOINER.appendTo(builder, traversed).append('.');
+                return PATH_JOINER.appendTo(builder, node.pathSegments()).toString();
+            }
+
+            @Override
+            public QueryBuilder visit(TerminalNode node) {
+                AttributeQuery<?> query = node.getQuery();
+                QueryBuilder builder = queryForTerminal(node);
+                if (node.pathSegments().size() > 1) {
+                    builder = QueryBuilders.nestedQuery(query.getAttribute().getPathPrefix(), builder);
+                }
+                return builder;
+            }
+        });
     }
 
-    private Map<String,Object> builders(AtomicQuerySet operands) {
-        final Map<String,Object> queryBuilders = Maps.newHashMap();
-        List<QueryBuilder> qbs = operands.accept(new QueryVisitor<QueryBuilder>() {
+    private QueryBuilder queryForTerminal(TerminalNode node) {
+        return node.getQuery().accept(new QueryVisitor<QueryBuilder>() {
 
             @Override
             public QueryBuilder visit(final IntegerAttributeQuery query) {
@@ -88,9 +120,8 @@ public class EsQueryBuilder {
             @Override
             public QueryBuilder visit(StringAttributeQuery query) {
                 final List<String> values = query.getValue();
-
                 final String name = query.getAttributeName();
-                QueryBuilder qb = query.accept(new StringOperatorVisitor<QueryBuilder>() {
+                return query.accept(new StringOperatorVisitor<QueryBuilder>() {
 
                     @Override
                     public QueryBuilder visit(Equals equals) {
@@ -104,45 +135,6 @@ public class EsQueryBuilder {
                     }
                     
                 });
-                
-                List<String> path = query.getAttribute().getPath();
-                addQuery(path, 0, queryBuilders, query);
-                
-//                for(int i = 0; i < path.size(); i++) {
-//                    Object existing = queryBuilders.get(path.get(i));
-//                    if (existing == null) {
-//                        if (i == path.size()-1) {//end
-//                            queryBuilders.put(PATH_JOINER.join(path), );
-//                        }
-//                        queryBuilders.put("nested", value);
-//                    } else {
-//                        NestedQueryBuilder nqb = (NestedQueryBuilder) existing;
-//                        nqb.
-//                    }
-//                }
-//
-//                for(int i = path.size()-2; i >= 0; i--) {
-//                    String subPath = PATH_JOINER.join(path.subList(0, i+1));
-//                    qb = QueryBuilders.nestedQuery(subPath, qb);
-//                }
-                return qb;
-            }
-
-            private Map<String, Object> addQuery(List<String> path, int i, Map<String, Object> queryBuilders,
-                                  AttributeQuery<?> query) {
-              Object existing = queryBuilders.get(path.get(i));
-              if (existing == null) {
-                  String name = query.getAttributeName();
-                  if (i == path.size()-1) {
-                      queryBuilders.put("terms",ImmutableMap.of(name, query.getValue()));
-                  } else {
-                      queryBuilders.put("nested", ImmutableMap.of(
-                          "path", PATH_JOINER.join(path.subList(0, i+1)),
-                          "query", addQuery(path, i+1, Maps.<String,Object>newHashMap(), query)
-                      ));
-                  }
-              }
-              return queryBuilders;
             }
 
             @Override
@@ -214,10 +206,6 @@ public class EsQueryBuilder {
             public QueryBuilder visit(IdAttributeQuery query) {
                 final String name = query.getAttributeName();
                 final List<Long> value = Lists.transform(query.getValue(), Id.toLongValue());
-                
-                List<String> path = query.getAttribute().getPath();
-                addQuery(path, 0, queryBuilders, query);
-                
                 return query.accept(new IntegerOperatorVisitor<QueryBuilder>() {
 
                     @Override
@@ -240,10 +228,6 @@ public class EsQueryBuilder {
                 });
             }
         });
-        System.out.println("++Map");
-        System.out.println(queryBuilders);
-        System.out.println("--Map");
-        return queryBuilders;
     }
     
 }

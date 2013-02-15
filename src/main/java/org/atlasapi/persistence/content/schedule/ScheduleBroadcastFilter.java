@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.schedule;
 
+import org.atlasapi.media.content.schedule.ScheduleBroadcastFilter;
 import org.joda.time.Interval;
 
 import com.google.common.base.Predicate;

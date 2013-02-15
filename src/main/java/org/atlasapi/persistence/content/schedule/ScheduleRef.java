@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import javax.annotation.Nullable;
 
 import org.atlasapi.media.common.Id;
+import org.atlasapi.media.content.schedule.ScheduleRef;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Objects;
