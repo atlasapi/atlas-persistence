@@ -3,30 +3,28 @@ package org.atlasapi.persistence.bootstrap.elasticsearch;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.atlasapi.media.content.Container;
+import org.atlasapi.media.content.ContentIndexer;
+import org.atlasapi.media.content.IndexException;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.bootstrap.AbstractMultiThreadedChangeListener;
-import org.atlasapi.persistence.content.IndexException;
-import org.atlasapi.persistence.content.elasticsearch.EsContentIndexer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- */
-public class ESChangeListener extends AbstractMultiThreadedChangeListener {
+public class IndexingChangeListener extends AbstractMultiThreadedChangeListener {
 
-    private final Logger log = LoggerFactory.getLogger(ESChangeListener.class);
+    private final Logger log = LoggerFactory.getLogger(IndexingChangeListener.class);
     
-    private EsContentIndexer esContentIndexer;
+    private ContentIndexer esContentIndexer;
 
-    public ESChangeListener(int concurrencyLevel) {
+    public IndexingChangeListener(int concurrencyLevel) {
         super(concurrencyLevel);
     }
 
-    public ESChangeListener(ThreadPoolExecutor executor) {
+    public IndexingChangeListener(ThreadPoolExecutor executor) {
         super(executor);
     }
 
-    public void setESContentIndexer(EsContentIndexer esContentIndexer) {
+    public void setESContentIndexer(ContentIndexer esContentIndexer) {
         this.esContentIndexer = esContentIndexer;
     }
 
