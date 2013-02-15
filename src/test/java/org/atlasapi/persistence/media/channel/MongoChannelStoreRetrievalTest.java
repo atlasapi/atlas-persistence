@@ -41,16 +41,16 @@ public class MongoChannelStoreRetrievalTest {
     
     @BeforeClass
     public static void setUp() throws InterruptedException {
-        channelId1 = store.createOrUpdate(channel("uri1", "key1", "test/1","test/2")).getId();
-        channelId2 = store.createOrUpdate(channel("uri2", "key2", "asdf/1")).getId();
-        channelId3 = store.createOrUpdate(channel("uri3", "key3", "test/3","asdf/2")).getId();
+        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "test/1","test/2")).getId();
+        channelId2 = store.createOrUpdate(channel(2, "uri2", "key2", "asdf/1")).getId();
+        channelId3 = store.createOrUpdate(channel(3, "uri3", "key3", "test/3","asdf/2")).getId();
         Thread.sleep(2000);
     }
     
-    private static Channel channel(String uri, String key, String... aliases) {
+    private static Channel channel(long id, String uri, String key, String... aliasUrls) {
         Channel channel = Channel.builder().build();
         channel.setCanonicalUri(uri);
-        channel.setAliasUrls(ImmutableSet.copyOf(aliases));
+        channel.setAliasUrls(ImmutableSet.copyOf(aliasUrls));
         channel.setSource(Publisher.BBC);
         channel.setMediaType(MediaType.VIDEO);
         channel.setKey(key);

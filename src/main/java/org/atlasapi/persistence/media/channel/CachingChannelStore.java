@@ -97,7 +97,7 @@ public class CachingChannelStore implements ChannelStore {
     @Override
     public Maybe<Channel> forAlias(String alias) {
         for (Channel channel : channels.get()) {
-            if (channel.getAliases().contains(alias)) { 
+            if (channel.getAliasUrls().contains(alias)) { 
                 return Maybe.just(channel);
             }
         }
