@@ -65,35 +65,8 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
         } else {
             Optional<ChannelGroup> resolved = channelGroupFor(group.getId());
 
-            if (resolved.isPresent()) {
-                ChannelGroup existing = resolved.get();
-
-                if (group instanceof Region) {
-                    Region existingRegion = (Region)existing;
-                    Region newRegion = (Region)group;
-
-                    if (existingRegion.getPlatform() != null) {
-                        if (newRegion.getPlatform() == null || !existingRegion.getPlatform().equals(newRegion.getPlatform())) {
-                            Optional<ChannelGroup> maybeOldPlatform = channelGroupFor(existingRegion.getPlatform());
-                            Preconditions.checkState(maybeOldPlatform.isPresent(), String.format("Platform with id %s not found for region with id %s", existingRegion.getPlatform(), existingRegion.getId()));
-
-                            Platform oldPlatform = (Platform)maybeOldPlatform.get();
-                            Set<Long> regions = Sets.newHashSet(oldPlatform.getRegions());
-                            regions.remove(existingRegion.getId());
-                            oldPlatform.setRegionIds(regions);
-                            channelGroups.update(new BasicDBObject(MongoConstants.ID, oldPlatform.getId()), translator.toDBObject(null, oldPlatform), UPSERT, SINGLE);
-                        }
-                    }
-                }
-
-                if (group instanceof Platform) {
-                    ((Platform)group).setRegionIds(((Platform)existing).getRegions());
-                }
-
-            } else {
-                // if no existing group, set id
-                group.setId(idGenerator.generateRaw());
-            }
+            Preconditions.checkState(resolved.isPresent(), "Channel Group not found to update");
+            removeOldReferences(group, resolved.get());
         }
         
         if (group instanceof Region) {
@@ -109,6 +82,30 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
         
         channelGroups.update(new BasicDBObject(MongoConstants.ID, group.getId()), translator.toDBObject(null, group), UPSERT, SINGLE);
         return group;
+    }
+
+    private void removeOldReferences(ChannelGroup newGroup, ChannelGroup existingGroup) {
+        if (newGroup instanceof Region) {
+            Region existingRegion = (Region)existingGroup;
+            Region newRegion = (Region)newGroup;
+
+            if (existingRegion.getPlatform() != null) {
+                if (newRegion.getPlatform() == null || !existingRegion.getPlatform().equals(newRegion.getPlatform())) {
+                    Optional<ChannelGroup> maybeOldPlatform = channelGroupFor(existingRegion.getPlatform());
+                    Preconditions.checkState(maybeOldPlatform.isPresent(), String.format("Platform with id %s not found for region with id %s", existingRegion.getPlatform(), existingRegion.getId()));
+
+                    Platform oldPlatform = (Platform)maybeOldPlatform.get();
+                    Set<Long> regions = Sets.newHashSet(oldPlatform.getRegions());
+                    regions.remove(existingRegion.getId());
+                    oldPlatform.setRegionIds(regions);
+                    channelGroups.update(new BasicDBObject(MongoConstants.ID, oldPlatform.getId()), translator.toDBObject(null, oldPlatform), UPSERT, SINGLE);
+                }
+            }
+        }
+
+        if (newGroup instanceof Platform) {
+            ((Platform)newGroup).setRegionIds(((Platform)existingGroup).getRegions());
+        }
     }
 
     @Override
