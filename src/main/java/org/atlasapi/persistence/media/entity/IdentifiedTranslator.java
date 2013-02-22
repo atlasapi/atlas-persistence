@@ -89,7 +89,9 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         }
         else {
             TranslatorUtils.from(dbObject, ID, entity.getCanonicalUri());
-            TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId().longValue());
+            if (entity.getId() != null) {
+                TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId().longValue());
+            }
         }
         
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
