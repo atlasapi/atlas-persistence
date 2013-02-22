@@ -28,6 +28,7 @@ import com.netflix.astyanax.query.AllRowsQuery;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.serialization.json.JsonFactory;
