@@ -12,6 +12,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.IdGenerator;
 
 
@@ -44,7 +45,7 @@ public class IdSettingPersonStoreTest {
         Person person = new Person("uri", "curie", Publisher.BBC);
         
         when(delegate.person(person.getCanonicalUri()))
-            .thenReturn(new Person("uri", "curie", Publisher.BBC));
+            .thenReturn(Optional.of(new Person("uri", "curie", Publisher.BBC)));
         when(idGenerator.generateRaw())
             .thenReturn(1L);
         
@@ -65,7 +66,7 @@ public class IdSettingPersonStoreTest {
         existing.setId(5L);
         
         when(delegate.person(person.getCanonicalUri()))
-            .thenReturn(existing);
+            .thenReturn(Optional.of(existing));
         
         store.createOrUpdatePerson(person);
         

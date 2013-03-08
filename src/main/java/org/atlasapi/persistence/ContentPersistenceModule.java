@@ -8,6 +8,7 @@ import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
@@ -39,4 +40,5 @@ public interface ContentPersistenceModule {
 	
 	ProductResolver productResolver();
 	
+	PeopleQueryResolver peopleQueryResolver();
 }

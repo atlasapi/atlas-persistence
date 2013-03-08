@@ -24,6 +24,7 @@ import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
+import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -33,6 +34,7 @@ import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
 import org.atlasapi.persistence.content.people.IdSettingPersonStore;
+import org.atlasapi.persistence.content.people.EquivalatingPeopleResolver;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.PersonStore;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
@@ -40,6 +42,7 @@ import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
+import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -109,7 +112,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Primary @Bean MongoLookupEntryStore lookupStore() {
-	    return new MongoLookupEntryStore(db);
+	    return new MongoLookupEntryStore(db.collection("lookup"));
 	}
 	
 	public @Primary @Bean MongoScheduleStore scheduleStore() {
@@ -129,7 +132,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Primary @Bean PersonStore personStore() {
-	    PersonStore personStore = new MongoPersonStore(db);
+	    PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(new MongoLookupEntryStore(db.collection("peopleLookup"))));
 	    if (Boolean.valueOf(generateIds)) {
 	        //For now people occupy the same id space as content.
 	        personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));
@@ -183,5 +186,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     MongoIOProbe mongoIoSetProbe() {
         return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
+    }
+    
+    public @Bean PeopleQueryResolver peopleQueryResolver() {
+        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup")));
     }
 }
