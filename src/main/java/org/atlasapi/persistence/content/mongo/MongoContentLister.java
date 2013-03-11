@@ -203,7 +203,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     currentCategory = tablesIt.next();
                     currentTranslator = cursorBuilder.translatorForCategory(currentCategory);
                     if (currentTranslator == null) {
-                       log.error("No translator found for content category " + table.toString()); 
+                       log.error("No translator found for content category " + currentCategory.toString()); 
                     }
                     currentResults = cursorBuilder.cursorFor(currentCategory);
                     hasNext = currentResults.hasNext();
