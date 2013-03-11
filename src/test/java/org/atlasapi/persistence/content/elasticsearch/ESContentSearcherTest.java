@@ -11,6 +11,7 @@ import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.search.model.SearchQuery;
@@ -88,12 +89,12 @@ public class ESContentSearcherTest {
         contentIndexer.index(item4);
 
         Thread.sleep(1000);
-
+                       
         ListenableFuture<SearchResults> future = contentSearcher.search(new SearchQuery("title",
                 Selection.offsetBy(0),
                 Collections.EMPTY_SET,
                 Collections.EMPTY_SET,
-                1, 0f, 0f));
+                1, 0f, 0f, null, true, true, 1f));
         SearchResults results = future.get();
         assertEquals(2, results.toUris().size());
         assertEquals("buri1", results.toUris().get(0));
