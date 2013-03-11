@@ -44,7 +44,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final CrewMemberTranslator crewMemberTranslator;
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
-        this(new DescribedTranslator(new IdentifiedTranslator()), new ClipTranslator(idCodec));
+        this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec));
     }
 
     //TODO: why not use collaborators interface here? ModelTranslator<Described> etc...

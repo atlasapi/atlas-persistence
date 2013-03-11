@@ -23,6 +23,8 @@ import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.topic.TopicContentUriLister;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
@@ -42,6 +44,8 @@ import com.mongodb.MongoException.CursorNotFound;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentUriLister {
 
+    private static final Logger log = LoggerFactory.getLogger(MongoContentLister.class);
+    
     private final ContainerTranslator containerTranslator;
     private final ItemTranslator itemTranslator;
 
@@ -198,6 +202,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     }
                     currentCategory = tablesIt.next();
                     currentTranslator = cursorBuilder.translatorForCategory(currentCategory);
+                    if (currentTranslator == null) {
+                       log.error("No translator found for content category " + table.toString()); 
+                    }
                     currentResults = cursorBuilder.cursorFor(currentCategory);
                     hasNext = currentResults.hasNext();
                 }           
