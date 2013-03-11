@@ -11,7 +11,7 @@ public class ClipTranslator implements ModelTranslator<Clip> {
 	private final ItemTranslator itemTranslator;
 	
 	public ClipTranslator(NumberToShortStringCodec idCodec) {
-		itemTranslator = new ItemTranslator(new ContentTranslator(new DescribedTranslator(new IdentifiedTranslator()), this), idCodec);
+		itemTranslator = new ItemTranslator(new ContentTranslator(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), this), idCodec);
 	}
     
     @Override
