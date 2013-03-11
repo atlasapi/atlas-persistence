@@ -5,7 +5,7 @@ import org.atlasapi.media.entity.ImageAspectRatio;
 import org.atlasapi.media.entity.ImageBackground;
 import org.atlasapi.media.entity.ImageColor;
 import org.atlasapi.media.entity.ImageType;
-import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
