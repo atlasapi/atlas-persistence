@@ -32,7 +32,8 @@ public class MongoPersonStoreTest {
     @Before
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
-        store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(new MongoLookupEntryStore(db.collection("peopleLookup"))));
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
+        store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), entryStore);
     }
     
     @Test 
