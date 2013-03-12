@@ -45,7 +45,7 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
             return Optional.<Person>absent();
         }
         
-        return Optional.of(Iterables.getOnlyElement(outputContentMerger.merge(configuration, resolvePeople(configuration, entriesForIdentifiers))));
+        return Optional.fromNullable(Iterables.getFirst(outputContentMerger.merge(configuration, resolvePeople(configuration, entriesForIdentifiers)), null));
     }
 
     @Override
