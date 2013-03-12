@@ -35,7 +35,7 @@ public class ProductTranslator implements ModelTranslator<Product> {
     private DescribedTranslator describedTranslator;
 
     public ProductTranslator() {
-        describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true));
+        describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true), new ImageTranslator());
     }
 
     @Override
