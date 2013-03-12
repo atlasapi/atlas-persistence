@@ -2,6 +2,7 @@ package org.atlasapi.persistence.lookup.entry;
 
 import org.atlasapi.media.common.Id;
 
+@Deprecated
 public interface LookupEntryStore {
 
     /**
