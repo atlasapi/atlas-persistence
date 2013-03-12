@@ -40,7 +40,7 @@ public class MongoLookupEntryStoreTest {
     @BeforeClass
     public static void setUp() {
         mongo = MongoTestHelper.anEmptyTestDatabase();
-        entryStore = new MongoLookupEntryStore(mongo);
+        entryStore = new MongoLookupEntryStore(mongo.collection("lookup"));
     }
     
     @After 

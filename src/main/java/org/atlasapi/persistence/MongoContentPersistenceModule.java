@@ -43,6 +43,7 @@ import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -132,7 +133,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Primary @Bean PersonStore personStore() {
-	    PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(new MongoLookupEntryStore(db.collection("peopleLookup"))));
+        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
+	    PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), personLookupEntryStore);
 	    if (Boolean.valueOf(generateIds)) {
 	        //For now people occupy the same id space as content.
 	        personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));

@@ -48,10 +48,12 @@ public class MongoPersonStore implements PersonStore {
     private final DBCollection collection;
     private final PersonTranslator translator = new PersonTranslator();
     private final TransitiveLookupWriter equivalenceWriter;
+    private final LookupEntryStore lookupEntryStore;
 
-    public MongoPersonStore(DatabasedMongo db, TransitiveLookupWriter equivalenceWriter) {
+    public MongoPersonStore(DatabasedMongo db, TransitiveLookupWriter equivalenceWriter, LookupEntryStore lookupEntryStore) {
         collection = db.collection("people");
         this.equivalenceWriter = equivalenceWriter;
+        this.lookupEntryStore = lookupEntryStore;
     }
 
     @Override
@@ -90,6 +92,7 @@ public class MongoPersonStore implements PersonStore {
         
         DBObject idQuery = translator.idQuery(person.getCanonicalUri()).build();
         collection.update(idQuery, translator.toDBObject(null, person), true, false);
+        lookupEntryStore.store(LookupEntry.lookupEntryFrom(person));
         writeEquivalences(person);
     }
     
@@ -136,7 +139,7 @@ public class MongoPersonStore implements PersonStore {
 		}
 	};
 	
-	private void createEquivalences(LookupEntryStore lookupEntryStore) {
+	private void createEquivalences() {
 	    DBCursor cursor = collection.find();
 	    for(DBObject dbo : cursor) {
 	        try {
@@ -154,9 +157,9 @@ public class MongoPersonStore implements PersonStore {
 	    Mongo mongo = new Mongo(System.getProperty("mongo.host", "127.0.0.1"));
         String dbName = System.getProperty("mongo.dbName", "atlas");
         DatabasedMongo dbMongo = new DatabasedMongo(mongo, dbName);
-	    MongoPersonStore store = new MongoPersonStore(dbMongo, TransitiveLookupWriter.explicitTransitiveLookupWriter(new MongoLookupEntryStore(dbMongo.collection("peopleLookup"))));
-	    LookupEntryStore entryStore = new MongoLookupEntryStore(dbMongo.collection("peopleLookup"));
-	    store.createEquivalences(entryStore);
+        LookupEntryStore entryStore = new MongoLookupEntryStore(dbMongo.collection("peopleLookup"));
+	    MongoPersonStore store = new MongoPersonStore(dbMongo, TransitiveLookupWriter.explicitTransitiveLookupWriter(new MongoLookupEntryStore(dbMongo.collection("peopleLookup"))), entryStore);
+	    store.createEquivalences();
 	    
 	}
 }
