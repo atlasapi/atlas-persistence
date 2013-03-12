@@ -1,5 +1,10 @@
 package org.atlasapi.persistence.media.entity;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
@@ -13,8 +18,10 @@ import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
@@ -30,10 +37,11 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String LONG_DESC_KEY = "longDescription";
 	
 	private final IdentifiedTranslator descriptionTranslator;
-    
+    private final ImageTranslator imageTranslator;
 
-	public DescribedTranslator(IdentifiedTranslator descriptionTranslator) {
+	public DescribedTranslator(IdentifiedTranslator descriptionTranslator, ImageTranslator imageTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
+		this.imageTranslator = imageTranslator;
 	}
 	
 	@Override
@@ -60,7 +68,16 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		if (publisherKey != null) {
 			entity.setPublisher(Publisher.fromKey(publisherKey).valueOrDefault(null));
 		}
-		entity.setImages(toImages(entity.getImage(), entity.getPublisher()));
+		
+		List<DBObject> imagesDboList = TranslatorUtils.toDBObjectList(dbObject, "images");
+		
+		Set<Image> images = Sets.newHashSet();
+		if (imagesDboList != null) {
+		    for (DBObject imagesDbo : imagesDboList ) {
+		        images.add(imageTranslator.fromDBObject(imagesDbo, null));
+		    }
+		}
+		entity.setImages(images);
 
 		entity.setTags(TranslatorUtils.toSet(dbObject, "tags"));
 		entity.setThumbnail((String) dbObject.get("thumbnail"));
@@ -80,27 +97,6 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
 		return entity;
 	}
-
-	private Iterable<Image> toImages(String imageUri, Publisher publisher) {
-	    if(imageUri == null) {
-	        return ImmutableSet.of();
-	    }
-	    
-	    Image image = new Image(imageUri);
-	    
-	    if(Publisher.PA.equals(publisher)) {
-	        image.setHeight(360);
-	        image.setWidth(640);
-	        image.setType(ImageType.PRIMARY);
-	        image.setAspectRatio(ImageAspectRatio.SIXTEEN_BY_NINE);
-	        image.setMimeType(MimeType.IMAGE_JPG);
-	        image.setCanonicalUri(imageUri.replace("images.atlasapi.org/pa/", "images.atlas.metabroadcast.com/pressassociation.com/"));
-	        image.setAvailabilityStart(null);
-	        image.setAvailabilityStart(null);
-	    }
-	    
-	    return ImmutableSet.of(image);
-    }
 
     @Override
 	public DBObject toDBObject(DBObject dbObject, Described entity) {
@@ -139,6 +135,14 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         if (entity.getSpecialization() != null) {
             TranslatorUtils.from(dbObject, "specialization", entity.getSpecialization().toString().toLowerCase());
         }
+        
+        BasicDBList images = new BasicDBList();
+        if (entity.getImages() != null) {
+            for (Image image : entity.getImages()) {
+                images.add(imageTranslator.toDBObject(null, image));
+            }
+        }
+        dbObject.put("images", images);
         
         TranslatorUtils.from(dbObject, "presentationChannel", entity.getPresentationChannel());
         

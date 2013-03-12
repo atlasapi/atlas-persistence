@@ -19,7 +19,7 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
     }
     
     protected ContentGroupTranslator(boolean useAtlasIdAsId) {
-        this.contentTranslator = new DescribedTranslator(new IdentifiedTranslator(useAtlasIdAsId));
+        this.contentTranslator = new DescribedTranslator(new IdentifiedTranslator(useAtlasIdAsId), new ImageTranslator());
         this.childTranslator = new ChildRefTranslator();
     }
 
