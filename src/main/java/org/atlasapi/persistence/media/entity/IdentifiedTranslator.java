@@ -2,11 +2,10 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.Set;
 
+import org.atlasapi.equiv.EquivalenceRef;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -63,17 +62,16 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         return description;
     }
 
-    private Set<LookupRef> equivalentsFrom(DBObject dbObject) {
+    private Set<EquivalenceRef> equivalentsFrom(DBObject dbObject) {
         return Sets.newHashSet(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, EQUIVALENT_TO), equivalentFromDbo));
     }
 	
-    private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
+    private static final Function<DBObject, EquivalenceRef> equivalentFromDbo = new Function<DBObject, EquivalenceRef>() {
         @Override
-        public LookupRef apply(DBObject input) {
+        public EquivalenceRef apply(DBObject input) {
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
-            String type = TranslatorUtils.toString(input, TYPE);
             Long aid = TranslatorUtils.toLong(input, OPAQUE_ID);
-            return new LookupRef(Id.valueOf(aid), publisher, ContentCategory.valueOf(type));
+            return new EquivalenceRef(Id.valueOf(aid), publisher);
         }
     };
 
@@ -102,20 +100,19 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         return dbObject;
     }
 
-    private BasicDBList toDBObject(Set<LookupRef> equivalentTo) {
+    private BasicDBList toDBObject(Set<EquivalenceRef> equivalentTo) {
         BasicDBList list = new BasicDBList();
         Iterables.addAll(list, Iterables.transform(equivalentTo, equivalentToDbo));
         return list;
     }
     
-    private static Function<LookupRef, DBObject> equivalentToDbo = new Function<LookupRef, DBObject>() {
+    private static Function<EquivalenceRef, DBObject> equivalentToDbo = new Function<EquivalenceRef, DBObject>() {
         @Override
-        public DBObject apply(LookupRef input) {
+        public DBObject apply(EquivalenceRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, OPAQUE_ID, input.id());
-            TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
-            TranslatorUtils.from(dbo, TYPE, input.category().toString());
+            TranslatorUtils.from(dbo, OPAQUE_ID, input.getId());
+            TranslatorUtils.from(dbo, PUBLISHER, input.getPublisher().key());
             
             return dbo;
         }
