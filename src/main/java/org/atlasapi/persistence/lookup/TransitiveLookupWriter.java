@@ -123,13 +123,15 @@ public class TransitiveLookupWriter implements LookupWriter {
     private boolean noChangeInNeighbours(LookupEntry subjectEntry, Set<String> newNeighbours,
             final Set<Publisher> publishers) {
         final Set<String> newNeighbourUris = ImmutableSet.<String>builder()
-            .add(subjectEntry.uri())
-            .addAll(newNeighbours)
-            .build();
-        Set<LookupRef> relevantEquivalents = Sets.filter(relevantNeighbours(subjectEntry), MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(publishers)));
-        ImmutableSet<String> currentNeighbourUris = ImmutableSet.copyOf(transform(relevantEquivalents,TO_ID));
+            .add(subjectEntry.uri()).addAll(newNeighbours).build();
+        Set<LookupRef> currentNeighbours = 
+            Sets.filter(relevantNeighbours(subjectEntry), 
+                MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(publishers)));
+        Set<String> currentNeighbourUris = ImmutableSet.copyOf(transform(currentNeighbours,TO_ID));
         boolean noChange = currentNeighbourUris.equals(newNeighbourUris);
-        log.trace("Equivalence change: {} -> {}", currentNeighbourUris, newNeighbourUris);
+        if (!noChange) {
+            log.trace("Equivalence change: {} -> {}", currentNeighbourUris, newNeighbourUris);
+        }
         return noChange;
     }
 
