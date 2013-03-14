@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 import static org.atlasapi.media.entity.LookupRef.TO_ID;
 
@@ -32,7 +31,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 import com.metabroadcast.common.base.MorePredicates;
 
 public class TransitiveLookupWriter implements LookupWriter {
@@ -65,95 +63,97 @@ public class TransitiveLookupWriter implements LookupWriter {
 
     @Override
     public void writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> publishers) {
-        writeLookup(subject.getCanonicalUri(), Iterables.transform(filterContentPublishers(equivalents, publishers), TO_URI), publishers);
+        writeLookup(subject.getCanonicalUri(), ImmutableSet.copyOf(Iterables.transform(filterContentPublishers(equivalents, publishers), TO_URI)), publishers);
     }
     
     public void writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> publishers) {
-        Preconditions.checkArgument(emptyToNull(subjectUri) != null, "Invalid subject URI");
+        Preconditions.checkNotNull(emptyToNull(subjectUri), "null subject");
+        Set<String> newNeighbourUris = ImmutableSet.copyOf(equivalentUris);
         
-        //canonical URIs of subject and directEquivalents
-        final Set<String> canonUris = ImmutableSet.<String>builder().add(subjectUri).addAll(equivalentUris).build();
+        LookupEntry subject = entryFor(subjectUri);
 
-        //entry for the subject.
-        LookupEntry subjectEntry = get(subjectUri);
-        
-        Set<LookupRef> relevantEquivalents = Sets.filter(relevantEquivalents(subjectEntry), MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(publishers)));
-        ImmutableSet<String> currentEquivalents = ImmutableSet.copyOf(transform(relevantEquivalents,TO_ID));
-        if(currentEquivalents.equals(canonUris)) {
-            return;
-        }
-        log.trace("Equivalence change: {} -> {}", currentEquivalents, canonUris);
-        
-        Set<LookupEntry> equivEntries = entriesFor(equivalentUris);
-
-        //Pull the current transitive closures for the directly equivalent parameters.
-        Map<LookupRef, LookupEntry> lookups = transitiveClosure(ImmutableSet.copyOf(Iterables.concat(ImmutableSet.of(subjectEntry), equivEntries)));
-        
-        if(lookups.size() > maxSetSize) {
-            log.info("Transitive set too large: {} {}", subjectUri, lookups.size());
+        if(noChangeInNeighbours(subject, newNeighbourUris, publishers)) {
             return;
         }
         
-        final ImmutableSet<LookupRef> subjectRef = ImmutableSet.of(subjectEntry.lookupRef());
-        //Update the direct equivalents for all the lookups.
-        lookups = Maps.newHashMap(Maps.transformValues(lookups, new Function<LookupEntry, LookupEntry>() {
-                @Override
-                public LookupEntry apply(LookupEntry entry) {
-                    // Only modify direct equivalents of entries in the
-                    // transitive closure of publishers that are argued
-                    if (!publishers.contains(entry.lookupRef().publisher())) {
-                        return entry;
-                    }
-                    SetView<LookupRef> updatedNeighbours;
-                    if (canonUris.contains(entry.uri())) {
-                        updatedNeighbours = Sets.union(relevantEquivalents(entry), subjectRef);
-                    } else {
-                        updatedNeighbours = Sets.difference(relevantEquivalents(entry), subjectRef);
-                    }
-                    return explicit ? entry.copyWithExplicitEquivalents(updatedNeighbours) 
-                                    : entry.copyWithDirectEquivalents(updatedNeighbours);
-                }
-        }));
-        
-        /* Update the subject content entry. Included:
-         *  refs of publishers not argued.
-         *  refs for all content argued as equivalent.
-         */
-        Iterable<LookupRef> neighbours = neighbours(publishers, subjectEntry, equivEntries);
-        lookups.put(subjectEntry.lookupRef(), explicit ? subjectEntry.copyWithExplicitEquivalents(neighbours)
-                                                       : subjectEntry.copyWithDirectEquivalents(neighbours));
-        
-        //For each lookup, recompute its transitive closure. 
-        Set<LookupEntry> newLookups = recomputeTransitiveClosures(lookups.values());
+        Set<LookupEntry> neighbours = entriesFor(newNeighbourUris);
 
-        //Write to store
+        Map<LookupRef, LookupEntry> transitiveSet;
+        try {
+            transitiveSet = transitiveClosure(subject, neighbours);
+        } catch (IllegalArgumentException iae) {
+            log.info("Transitive set too large: " + subjectUri, iae);
+            return;
+        }
+        
+        final ImmutableSet<LookupRef> subjectRef = ImmutableSet.of(subject.lookupRef());
+        for (LookupEntry equivalent : transitiveSet.values()) {
+            Iterable<LookupRef> updatedNeighbours = null;
+            if (equivalent.equals(subject)) {
+                updatedNeighbours
+                    = updateSubjectNeighbours(subject, neighbours, publishers);
+            } else if (publishers.contains(equivalent.lookupRef().publisher())) {
+                updatedNeighbours
+                    = updateEquivalentsNeighbours(equivalent, neighbours, subjectRef);
+            } else {
+                updatedNeighbours = relevantNeighbours(equivalent);
+            }
+            transitiveSet.put(equivalent.lookupRef(), updateRelevantNeighbours(equivalent, updatedNeighbours));
+        }
+
+        Set<LookupEntry> newLookups = recomputeTransitiveClosures(transitiveSet);
+
         for (LookupEntry entry : newLookups) {
             entryStore.store(entry);
         }
 
     }
 
-    private Iterable<LookupRef> neighbours(final Set<Publisher> publishers,
-            LookupEntry subjectEntry, Set<LookupEntry> equivEntries) {
+    private Iterable<LookupRef> updateEquivalentsNeighbours(LookupEntry entry,
+            Set<LookupEntry> neighbours, ImmutableSet<LookupRef> subjectRef) {
+        Iterable<LookupRef> updatedNeighbours;
+        if (neighbours.contains(entry)) {
+            updatedNeighbours = Sets.union(relevantNeighbours(entry), subjectRef);
+        } else {
+            updatedNeighbours = Sets.difference(relevantNeighbours(entry), subjectRef);
+        }
+        return updatedNeighbours;
+    }
+
+    private boolean noChangeInNeighbours(LookupEntry subjectEntry, Set<String> newNeighbours,
+            final Set<Publisher> publishers) {
+        final Set<String> newNeighbourUris = ImmutableSet.<String>builder()
+            .add(subjectEntry.uri()).addAll(newNeighbours).build();
+        Set<LookupRef> currentNeighbours = 
+            Sets.filter(relevantNeighbours(subjectEntry), 
+                MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(publishers)));
+        Set<String> currentNeighbourUris = ImmutableSet.copyOf(transform(currentNeighbours,TO_ID));
+        boolean noChange = currentNeighbourUris.equals(newNeighbourUris);
+        if (!noChange) {
+            log.trace("Equivalence change: {} -> {}", currentNeighbourUris, newNeighbourUris);
+        }
+        return noChange;
+    }
+
+    private LookupEntry updateRelevantNeighbours(LookupEntry entry,
+            Iterable<LookupRef> neighbours) {
+        return explicit ? entry.copyWithExplicitEquivalents(neighbours)
+                        : entry.copyWithDirectEquivalents(neighbours);
+    }
+
+    private Iterable<LookupRef> updateSubjectNeighbours(LookupEntry subject,
+            Set<LookupEntry> neighbours, final Set<Publisher> publishers) {
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, not(in(publishers)));
         return Iterables.concat(
-                retainRefsNotInPublishers(relevantEquivalents(subjectEntry), publishers), 
-                Iterables.transform(equivEntries, LookupEntry.TO_SELF)
+            Sets.filter(relevantNeighbours(subject), sourceFilter), 
+            Iterables.transform(neighbours, LookupEntry.TO_SELF)
         );
     }
 
-    private Set<LookupRef> relevantEquivalents(LookupEntry subjectEntry) {
+    private Set<LookupRef> relevantNeighbours(LookupEntry subjectEntry) {
         return explicit ? subjectEntry.explicitEquivalents() : subjectEntry.directEquivalents();
     }
 
-    private Iterable<LookupRef> retainRefsNotInPublishers(Set<LookupRef> directEquivalents, final Set<Publisher> publishers) {
-        return Iterables.filter(directEquivalents, new Predicate<LookupRef>() {
-            @Override
-            public boolean apply(LookupRef input) {
-                return !publishers.contains(input.publisher());
-            }
-        });
-    }
-    
     private Iterable<ContentRef> filterContentPublishers(Iterable<ContentRef> content, final Set<Publisher> publishers) {
         return Iterables.filter(content, new Predicate<ContentRef>() {
             @Override
@@ -163,64 +163,72 @@ public class TransitiveLookupWriter implements LookupWriter {
         });
     }
 
-    private Set<LookupEntry> recomputeTransitiveClosures(Iterable<LookupEntry> lookups) {
-        
-        Map<String,LookupEntry> lookupMap = Maps.uniqueIndex(lookups, LookupEntry.TO_ID);
+    private Set<LookupEntry> recomputeTransitiveClosures(Map<LookupRef, LookupEntry> lookups) {
         
         Set<LookupEntry> newLookups = Sets.newHashSet();
-        for (LookupEntry entry : lookups) {
-            
-            Set<LookupRef> transitiveSet = Sets.newHashSet();
-            
-            Set<LookupRef> seen = Sets.newHashSet();
-            Queue<LookupRef> direct = Lists.newLinkedList(neighbours(entry));
-            //Traverse equivalence graph breadth-first
-            while(!direct.isEmpty()) {
-                LookupRef current = direct.poll();
-                if(seen.contains(current)) {
-                    continue;
-                } else {
-                    seen.add(current);
+        for (LookupEntry entry : lookups.values()) {
+            if (!newLookups.contains(entry)) {
+                Set<LookupRef> transitiveSet = Sets.newHashSet();
+                
+                Queue<LookupRef> direct = Lists.newLinkedList(neighbours(entry));
+                //Traverse equivalence graph breadth-first
+                while(!direct.isEmpty()) {
+                    LookupRef current = direct.poll();
+                    transitiveSet.add(current);
+                    LookupEntry currentEntry = checkNotNull(lookups.get(current), "No lookup entry for " + current);
+                    Iterables.addAll(direct, Iterables.filter(neighbours(currentEntry), not(in(transitiveSet))));
                 }
-                transitiveSet.add(current);
-                String id = current.id();
-                LookupEntry currentEntry = checkNotNull(lookupMap.get(id), "No lookup entry for " + id);
-                direct.addAll(neighbours(currentEntry));
+                
+                for (LookupRef lookupRef : transitiveSet) {
+                    newLookups.add(lookups.get(lookupRef).copyWithEquivalents(transitiveSet));
+                }
             }
-            
-            newLookups.add(entry.copyWithEquivalents(transitiveSet));
         }
         return newLookups;
+    }
+
+    private Iterable<LookupRef> neighbours(LookupEntry current) {
+        return Iterables.concat(current.directEquivalents(), current.explicitEquivalents());
     }
     
     private Set<LookupEntry> entriesFor(Iterable<String> equivalents) {
         return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(equivalents));
     }
 
-    private LookupEntry get(String subject) {
+    private LookupEntry entryFor(String subject) {
         return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(subject)), null);
     }
 
     // Uses a work queue to pull out and map the transitive closures rooted at each entry in entries.
-    private Map<LookupRef, LookupEntry> transitiveClosure(Set<LookupEntry> entries) {
+    private Map<LookupRef, LookupEntry> transitiveClosure(LookupEntry subjectEntry, Set<LookupEntry> entries) {
         
         Map<LookupRef, LookupEntry> transitiveClosure = Maps.newHashMap();
+        Set<LookupRef> refs = Sets.newHashSet();
+        
+        transitiveClosure.put(subjectEntry.lookupRef(), subjectEntry);
+        refs.addAll(subjectEntry.equivalents());
         
         for (LookupEntry entry : entries) {
             transitiveClosure.put(entry.lookupRef(), entry);
-            for (LookupEntry equivEntry : entriesForRefs(filter(entry.equivalents(), not(in(transitiveClosure.keySet()))))) {
-                transitiveClosure.put(equivEntry.lookupRef(), equivEntry);
+            if (refs.size() + entry.equivalents().size() > maxSetSize) {
+                throw new IllegalArgumentException(size(subjectEntry, entries));
             }
+            refs.addAll(entry.equivalents());
+        }
+        
+        for (LookupEntry entry : entryStore.entriesForCanonicalUris(Iterables.transform(refs, LookupRef.TO_ID))) {
+            transitiveClosure.put(entry.lookupRef(), entry);
         }
         
         return transitiveClosure;
     }
 
-    private Set<LookupRef> neighbours(LookupEntry current) {
-        return ImmutableSet.copyOf(Iterables.concat(current.directEquivalents(), current.explicitEquivalents()));
+    private String size(LookupEntry subjectEntry, Set<LookupEntry> entries) {
+        int size = subjectEntry.equivalents().size();
+        for (LookupEntry lookupEntry : entries) {
+            size += lookupEntry.equivalents().size();
+        }
+        return String.valueOf(size);
     }
 
-    private Set<LookupEntry> entriesForRefs(Iterable<LookupRef> refs) {
-        return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(Iterables.transform(refs, LookupRef.TO_ID)));
-    }
 }
