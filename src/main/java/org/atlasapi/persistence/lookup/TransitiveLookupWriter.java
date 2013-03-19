@@ -205,10 +205,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         Map<LookupRef, LookupEntry> transitiveClosure = Maps.newHashMap();
         Set<LookupRef> refs = Sets.newHashSet();
         
-        transitiveClosure.put(subjectEntry.lookupRef(), subjectEntry);
-        refs.addAll(subjectEntry.equivalents());
-        
-        for (LookupEntry entry : entries) {
+        for (LookupEntry entry : Iterables.concat(ImmutableList.of(subjectEntry), entries)) {
             transitiveClosure.put(entry.lookupRef(), entry);
             if (refs.size() + entry.equivalents().size() > maxSetSize) {
                 throw new IllegalArgumentException(size(subjectEntry, entries));
