@@ -1,5 +1,7 @@
 package org.atlasapi.persistence.lookup.entry;
 
+import com.google.common.base.Optional;
+
 public interface LookupEntryStore {
 
     /**
@@ -15,9 +17,19 @@ public interface LookupEntryStore {
      * requested.
      * 
      * @param identifiers
+     * @param useAliases TODO
      * @return
      */
-    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers);
+    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean useAliases);
+    
+    /**
+     * Get entries for specified namespace and values.
+     * 
+     * @param namespace - not always present
+     * @param values - one or more corresponding alias values
+     * @return
+     */
+    Iterable<LookupEntry> entriesForAliases(Optional<String> namespace, Iterable<String> values);
 
     /**
      * Get entries for specified <b>canonical</b> URIs.

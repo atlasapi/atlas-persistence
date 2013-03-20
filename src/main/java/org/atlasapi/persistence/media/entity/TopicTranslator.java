@@ -19,7 +19,7 @@ public class TopicTranslator implements ModelTranslator<Topic> {
     private DescribedTranslator describedTranslator;
 
     public TopicTranslator() {
-        this.describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true));
+        this.describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true), new ImageTranslator());
     }
     
     public DBObject toDBObject(Topic model) {
