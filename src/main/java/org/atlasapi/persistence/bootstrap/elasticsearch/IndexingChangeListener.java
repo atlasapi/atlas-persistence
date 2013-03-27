@@ -2,10 +2,9 @@ package org.atlasapi.persistence.bootstrap.elasticsearch;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
-import org.atlasapi.media.content.Container;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.content.ContentIndexer;
 import org.atlasapi.media.content.IndexException;
-import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.bootstrap.AbstractMultiThreadedChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +29,12 @@ public class IndexingChangeListener extends AbstractMultiThreadedChangeListener 
 
     @Override
     protected void onChange(Object change) {
-        if (change instanceof Item) {
+        if (change instanceof Content) {
             try {
-                esContentIndexer.index((Item) change);
+                esContentIndexer.index((Content) change);
             } catch (IndexException e) {
                 log.error("Failed to index " + change, e);
             }
-        } else if (change instanceof Container) {
-            esContentIndexer.index((Container) change);
         } else {
             throw new IllegalStateException("Unknown type: " + change.getClass().getName());
         }
