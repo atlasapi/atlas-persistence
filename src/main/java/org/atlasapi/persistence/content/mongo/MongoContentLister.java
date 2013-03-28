@@ -153,7 +153,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public DBCursor cursorForGreaterThan(ContentCategory category, Content greaterThan) {
             	return cursorFor(category, queryCriteria()
             					.fieldGreaterThanOrEqualTo("publisher", greaterThan.getPublisher().key())
-            					.fieldGreaterThan("thisOrChildLastUpdated", greaterThan.getThisOrChildLastUpdated()));
+            					.fieldAfter("thisOrChildLastUpdated", greaterThan.getThisOrChildLastUpdated()));
             				
             }
             
