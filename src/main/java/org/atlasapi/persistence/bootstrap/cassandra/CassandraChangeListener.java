@@ -103,6 +103,8 @@ public class CassandraChangeListener extends AbstractMultiThreadedChangeListener
         } else if (change instanceof Segment) {
             cassandraSegmentStore.write((Segment) change);
         } else if (change instanceof Topic) {
+            Topic topic = (Topic) change;
+            topic.addAlias(topic.getNamespace() + ":" + topic.getValue());
             cassandraTopicStore.writeTopic((Topic) change);
         } else if (change instanceof ContentGroup) {
             cassandraContentGroupStore.createOrUpdate((ContentGroup) change);
