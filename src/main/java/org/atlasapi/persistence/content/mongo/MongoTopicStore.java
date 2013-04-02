@@ -22,6 +22,7 @@ import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.mongodb.BasicDBObject;
+import com.mongodb.Bytes;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
@@ -94,6 +95,6 @@ public class MongoTopicStore implements TopicStore {
     
     @Override
     public Iterable<Topic> topics() {
-        return transform(collection.find());
+        return transform(collection.find().addOption(Bytes.QUERYOPTION_NOTIMEOUT));
     }
 }
