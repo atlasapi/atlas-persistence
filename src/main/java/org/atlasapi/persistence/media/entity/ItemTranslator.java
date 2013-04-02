@@ -30,6 +30,8 @@ import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
     
+    public static final String SERIES_ID = "seriesId";
+    public static final String CONTAINER_ID = "containerId";
     private static final String FILM_RELEASES_KEY = "releases";
     private static final String FILM_SUBTITLES_KEY = "subtitles";
     private static final String PART_NUMBER = "partNumber";
@@ -79,8 +81,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
     @Override
     public Item fromDBObject(DBObject dbObject, Item item) {
 
-    	if (item == null) {
-        	item = (Item) DescribedTranslator.newModel(dbObject);
+        if (item == null) {
+            item = (Item) DescribedTranslator.newModel(dbObject);
         }
         
         contentTranslator.fromDBObject(dbObject, item);
@@ -103,20 +105,24 @@ public class ItemTranslator implements ModelTranslator<Item> {
         }
         
         if(dbObject.containsField("container")) {
-            item.setParentRef(new ParentRef((String)dbObject.get("container")));
+            String containerUri = TranslatorUtils.toString(dbObject, "container");
+            Long containerId = TranslatorUtils.toLong(dbObject, CONTAINER_ID);
+            item.setParentRef(new ParentRef(containerUri, containerId));
         }
 
         if (item instanceof Episode) {
-        	Episode episode = (Episode) item;
-        	if(dbObject.containsField("series")) {
-        	    episode.setSeriesRef(new ParentRef((String)dbObject.get("series")));
-        	}
-        	episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
-        	episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
-        	episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
-        	if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
-        		episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY)));
-        	}
+            Episode episode = (Episode) item;
+            Long seriesId = TranslatorUtils.toLong(dbObject, SERIES_ID);
+            if (dbObject.containsField("series")) {
+                String seriesUri = TranslatorUtils.toString(dbObject, "series");
+                episode.setSeriesRef(new ParentRef(seriesUri, seriesId));
+            }
+            episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
+            episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
+            episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
+            if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
+                episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY),seriesId));
+            }
         }
         
         if (item instanceof Film) {
@@ -238,12 +244,14 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		
         if(entity.getContainer() != null) {
             itemDbo.put("container", entity.getContainer().getUri());
+            itemDbo.put(CONTAINER_ID, entity.getContainer().getId());
         }
 
         if (entity instanceof Episode) {
 			Episode episode = (Episode) entity;
 			
 			if(episode.getSeriesRef() != null) {
+			    itemDbo.put(SERIES_ID, episode.getSeriesRef().getId());
 			    itemDbo.put("series", episode.getSeriesRef().getUri());
 			}
 			
