@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.util.Annotations;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -204,7 +205,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
 		
     @Override
-    public Schedule schedule(DateTime from, DateTime to, Iterable<Channel> channels, Iterable<Publisher> publishers, ApplicationConfiguration mergeConfig) {
+    public Schedule schedule(DateTime from, DateTime to, Iterable<Channel> channels, Iterable<Publisher> publishers, Optional<ApplicationConfiguration> mergeConfig) {
         Map<Channel, List<Item>> channelMap = createChannelMap(channels);
         Interval interval = new Interval(from, to);
         if (interval.toDuration().isLongerThan(MAX_DURATION)) {
@@ -218,8 +219,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             // unless explicitly requested
             for (ItemRefAndBroadcast itemRefAndBroadcast : entry.getItemRefsAndBroadcasts()) {
                 Maybe<Identified> possibleItem;
-                if (mergeConfig != null && mergeConfig.precedenceEnabled()) {
-                    possibleItem = findAndMerge(mergeConfig, itemRefAndBroadcast);
+                if (mergeConfig.isPresent() && mergeConfig.get().precedenceEnabled()) {
+                    possibleItem = findAndMerge(mergeConfig.get(), itemRefAndBroadcast);
                 } else {
                     possibleItem = resolver.findByCanonicalUris(ImmutableList.of(itemRefAndBroadcast.getItemUri())).getFirstValue();
                 }
