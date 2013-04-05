@@ -2,6 +2,7 @@ package org.atlasapi.persistence.lookup.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
+import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.common.Id;
@@ -12,6 +13,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -105,22 +107,28 @@ public class LookupEntryTranslator {
         aliases.add(uri);
 
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
-        Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
+        Set<LookupRef> equivs = toLookupRefs(TranslatorUtils.toDBObjectList(dbo, EQUIVS));
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
 
-        Set<LookupRef> directEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, DIRECT), equivalentFromDbo));
-        Set<LookupRef> explicitEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, "explicit"), equivalentFromDbo));
+        Set<LookupRef> directEquivalents = toLookupRefs(TranslatorUtils.toDBObjectList(dbo, DIRECT));
+        Set<LookupRef> explicitEquivalents = toLookupRefs(TranslatorUtils.toDBObjectList(dbo, "explicit"));
 
         return new LookupEntry(uri, id, self, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
+    }
+    private ImmutableSet<LookupRef> toLookupRefs(List<DBObject> refList) {
+        return ImmutableSet.copyOf(Iterables.filter(Iterables.transform(refList, equivalentFromDbo), Predicates.notNull()));
     }
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
 
         @Override
         public LookupRef apply(DBObject input) {
-            String uri = TranslatorUtils.toString(input, ID);
             Long aid = TranslatorUtils.toLong(input, OPAQUE_ID);
-            Id id = aid != null ? Id.valueOf(aid) : null;
+            if (aid == null) {
+                return null;
+            }
+            Id id = Id.valueOf(aid);
+            String uri = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
             return new LookupRef(id, publisher, ContentCategory.valueOf(type));
