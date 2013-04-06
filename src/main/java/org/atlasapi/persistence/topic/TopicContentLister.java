@@ -3,7 +3,7 @@ package org.atlasapi.persistence.topic;
 import java.util.Iterator;
 
 import org.atlasapi.content.criteria.ContentQuery;
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 
 public interface TopicContentLister {
 

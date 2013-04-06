@@ -2,7 +2,7 @@ package org.atlasapi.persistence.content.listing;
 
 import static org.atlasapi.persistence.content.ContentCategory.categoryFor;
 
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 

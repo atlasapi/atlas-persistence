@@ -6,7 +6,7 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Brand;
-import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;

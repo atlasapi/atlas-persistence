@@ -5,7 +5,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 import javax.annotation.Nullable;
 
-import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.content.Container;
 import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Function;
