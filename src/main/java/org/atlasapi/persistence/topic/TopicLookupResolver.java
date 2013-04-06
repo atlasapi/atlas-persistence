@@ -1,7 +1,7 @@
 package org.atlasapi.persistence.topic;
 
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.topic.Topic;
 
 import com.metabroadcast.common.base.Maybe;
 

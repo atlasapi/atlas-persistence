@@ -2,8 +2,8 @@ package org.atlasapi.persistence.topic;
 
 import org.atlasapi.media.topic.Topic;
 
-public interface TopicWriter {
+@Deprecated
+public interface TopicLister {
 
-    void write(Topic topic);
-
+    public Iterable<Topic> topics();
 }
