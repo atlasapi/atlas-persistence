@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.topic;
 
-public interface TopicStore extends TopicLookupResolver, TopicWriter {
+@Deprecated
+public interface TopicStore extends TopicLookupResolver, TopicQueryResolver, TopicWriter, TopicLister {
 
 }
