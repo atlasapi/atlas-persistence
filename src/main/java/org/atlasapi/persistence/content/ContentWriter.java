@@ -17,6 +17,7 @@ package org.atlasapi.persistence.content;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Item;
 
+@Deprecated
 public interface ContentWriter {
 
 	void createOrUpdate(Item item);
