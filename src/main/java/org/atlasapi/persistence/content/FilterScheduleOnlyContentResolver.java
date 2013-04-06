@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Identified;
 
@@ -30,4 +31,10 @@ public class FilterScheduleOnlyContentResolver implements ContentResolver {
             return true;
         }
     };
+
+    @Override
+    public ResolvedContent findByIds(Iterable<Id> ids) {
+        ResolvedContent resolvedContent = contentResovler.findByIds(ids);
+        return resolvedContent.filterContent(NOT_SCHEDULE_ONLY);
+    }
 }
