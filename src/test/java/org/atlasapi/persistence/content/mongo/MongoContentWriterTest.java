@@ -324,23 +324,23 @@ public class MongoContentWriterTest {
         Brand retrievedBrand = retrieveBrand(brand);
 
         SeriesRef seriesRef = Iterables.getOnlyElement(retrievedBrand.getSeriesRefs());
-        assertThat(seriesRef.getId(), is(2L));
+        assertThat(seriesRef.getId().longValue(), is(2L));
         assertThat(seriesRef.getSeriesNumber(), is(2));
         
         ChildRef episodeRef = Iterables.getOnlyElement(retrievedBrand.getChildRefs());
-        assertThat(episodeRef.getId(), is(3L));
+        assertThat(episodeRef.getId().longValue(), is(3L));
         
         Series retrievedSeries = retrieveSeries(series);
         
         ChildRef seriesEpisodeRef = Iterables.getOnlyElement(retrievedSeries.getChildRefs());
-        assertThat(seriesEpisodeRef.getId(), is(3L));
+        assertThat(seriesEpisodeRef.getId().longValue(), is(3L));
         
         ParentRef seriesBrandRef = retrievedSeries.getParent();
-        assertThat(seriesBrandRef.getId(), is(1L));
+        assertThat(seriesBrandRef.getId().longValue(), is(1L));
         
         Episode retrievedEpisode = retrieveEpisode(episode);
-        assertThat(retrievedEpisode.getContainer().getId(), is(1L));
-        assertThat(retrievedEpisode.getSeriesRef().getId(), is(2L));
+        assertThat(retrievedEpisode.getContainer().getId().longValue(), is(1L));
+        assertThat(retrievedEpisode.getSeriesRef().getId().longValue(), is(2L));
         
     }
     

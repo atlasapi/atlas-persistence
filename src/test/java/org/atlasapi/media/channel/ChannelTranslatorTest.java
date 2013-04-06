@@ -6,12 +6,15 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.Duration;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.mongodb.DBObject;
 
 public class ChannelTranslatorTest {
@@ -23,11 +26,11 @@ public class ChannelTranslatorTest {
         
         ChannelNumbering channelNumber = ChannelNumbering.builder()
             .withChannelNumber("5")
-            .withChannel(1234L)
-            .withChannelGroup(5678L)
+            .withChannel(Id.valueOf(1234L))
+            .withChannelGroup(Id.valueOf(5678L))
             .build();
         
-        Set<Long> variations = ImmutableSet.of(2345L, 2346L, 2347L);
+        Iterable<Id> variations = Lists.transform(ImmutableList.of(2345L, 2346L, 2347L), Id.fromLongValue());
         
         Channel channel = Channel.builder()
             .withSource(Publisher.BBC)
@@ -42,7 +45,7 @@ public class ChannelTranslatorTest {
             .withTimeshift(Duration.standardSeconds(3600))
             .withAvailableFrom(ImmutableSet.of(Publisher.BBC))
             .withChannelNumber(channelNumber)
-            .withParent(2345L)
+            .withParent(Id.valueOf(2345L))
             .withVariationIds(variations)
             .build();
         

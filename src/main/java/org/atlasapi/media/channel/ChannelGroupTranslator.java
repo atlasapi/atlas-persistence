@@ -3,10 +3,13 @@ package org.atlasapi.media.channel;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -46,7 +49,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         
         if (model instanceof Platform) {
             TranslatorUtils.from(dbObject, TYPE_KEY, PLATFORM_VALUE);
-            TranslatorUtils.fromLongSet(dbObject, REGIONS_KEY, ((Platform)model).getRegions());
+            TranslatorUtils.fromLongSet(dbObject, REGIONS_KEY, ImmutableSet.copyOf(Iterables.transform(((Platform)model).getRegions(), Id.toLongValue())));
         } else if (model instanceof Region) {
             TranslatorUtils.from(dbObject, TYPE_KEY, REGION_VALUE);
             TranslatorUtils.from(dbObject, PLATFORM_KEY, ((Region)model).getPlatform());
@@ -83,13 +86,13 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             if (model == null) {
                 model = new Platform();
             }
-            ((Platform)model).setRegionIds(TranslatorUtils.toLongSet(dbObject, REGIONS_KEY));
+            ((Platform)model).setRegionIds(Iterables.transform(TranslatorUtils.toLongSet(dbObject, REGIONS_KEY), Id.fromLongValue()));
             break;
         case REGION:
             if (model == null) {
                 model = new Region();
             }
-            ((Region)model).setPlatform(TranslatorUtils.toLong(dbObject, PLATFORM_KEY));
+            ((Region)model).setPlatform(Id.valueOf(TranslatorUtils.toLong(dbObject, PLATFORM_KEY)));
             break;
         default:
             throw new IllegalArgumentException("Unknown type: " + type);                    
@@ -118,7 +121,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             // convert existing channel ids to channelnumberings with null channel numbers
             for (Long channelId :(Iterable<Long>)dbObject.get(CHANNELS_KEY)) {
                 model.addChannelNumbering(ChannelNumbering.builder()
-                        .withChannel(channelId)
+                        .withChannel(Id.valueOf(channelId))
                         .withChannelGroup(model)
                         .build());
             }

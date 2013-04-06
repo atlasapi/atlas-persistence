@@ -2,6 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.SeriesRef;
 import org.joda.time.DateTime;
 
@@ -28,7 +29,7 @@ public class SeriesRefTranslator {
         DateTime updated = TranslatorUtils.toDateTime(dbo, UPDATED_KEY);
         String sortKey = (String) dbo.get(SORT_KEY);
         Integer seriesNumber = TranslatorUtils.toInteger(dbo, SERIES_NUMBER_KEY);
-        return new SeriesRef(id, uri, sortKey, seriesNumber, updated);
+        return new SeriesRef(Id.valueOf(id), sortKey, seriesNumber, updated);
     }
     
     public List<SeriesRef> fromDBObjects(Iterable<DBObject> dbos) {
@@ -45,7 +46,6 @@ public class SeriesRefTranslator {
     public DBObject toDBObject(SeriesRef seriesRef) {
         DBObject dbObject = new BasicDBObject();
         TranslatorUtils.from(dbObject, ID_KEY, seriesRef.getId());
-        TranslatorUtils.from(dbObject, URI_KEY, seriesRef.getUri());
         TranslatorUtils.from(dbObject, SORT_KEY, seriesRef.getTitle());
         TranslatorUtils.fromDateTime(dbObject, UPDATED_KEY, seriesRef.getUpdated());
         TranslatorUtils.from(dbObject, SERIES_NUMBER_KEY, seriesRef.getSeriesNumber());

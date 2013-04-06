@@ -7,6 +7,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 
 import com.google.common.base.Function;
@@ -34,13 +35,14 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     }
     
     @Override
-    public Optional<ChannelGroup> channelGroupFor(Long id) {
-        return Optional.fromNullable(translator.fromDBObject(channelGroups.findOne(id), null));
+    public Optional<ChannelGroup> channelGroupFor(Id id) {
+        return Optional.fromNullable(translator.fromDBObject(channelGroups.findOne(id.longValue()), null));
     }
 
     @Override
-    public Iterable<ChannelGroup> channelGroupsFor(Iterable<Long> ids) {
-        return transform(channelGroups.find(new BasicDBObject(MongoConstants.ID, new BasicDBObject(MongoConstants.IN,ids))));
+    public Iterable<ChannelGroup> channelGroupsFor(Iterable<Id> ids) {
+        return transform(channelGroups.find(new BasicDBObject(MongoConstants.ID, 
+                new BasicDBObject(MongoConstants.IN,Iterables.transform(ids, Id.toLongValue())))));
     }
 
     public Iterable<ChannelGroup> transform(DBCursor dbos) {
@@ -95,7 +97,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
                     Preconditions.checkState(maybeOldPlatform.isPresent(), String.format("Platform with id %s not found for region with id %s", existingRegion.getPlatform(), existingRegion.getId()));
 
                     Platform oldPlatform = (Platform)maybeOldPlatform.get();
-                    Set<Long> regions = Sets.newHashSet(oldPlatform.getRegions());
+                    Set<Id> regions = Sets.newHashSet(oldPlatform.getRegions());
                     regions.remove(existingRegion.getId());
                     oldPlatform.setRegionIds(regions);
                     channelGroups.update(new BasicDBObject(MongoConstants.ID, oldPlatform.getId()), translator.toDBObject(null, oldPlatform), UPSERT, SINGLE);
@@ -110,7 +112,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public Iterable<ChannelGroup> channelGroupsFor(Channel channel) {
-        return transform(channelGroups.find(where().fieldEquals(ChannelGroupTranslator.CHANNELS_KEY, channel.getId()).build()));
+        return transform(channelGroups.find(where().fieldEquals(ChannelGroupTranslator.CHANNELS_KEY, channel.getId().longValue()).build()));
     }
 
     @Override

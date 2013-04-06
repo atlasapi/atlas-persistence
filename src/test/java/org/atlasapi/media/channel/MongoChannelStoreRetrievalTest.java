@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
@@ -31,9 +32,9 @@ public class MongoChannelStoreRetrievalTest {
     
     private static final MongoChannelStore store = new MongoChannelStore(mongo, channelGroupStore, channelGroupStore);
     
-    private static Long channelId1;
-    private static Long channelId2;
-    private static Long channelId3;
+    private static Id channelId1;
+    private static Id channelId2;
+    private static Id channelId3;
     
     @BeforeClass
     public static void setUp() throws InterruptedException {
@@ -67,7 +68,7 @@ public class MongoChannelStoreRetrievalTest {
     @Test
     public void testRetrievesSomeChannels() {
         
-        List<Long> ids = Lists.newArrayList(channelId1, channelId3);
+        List<Id> ids = Lists.newArrayList(channelId1, channelId3);
         Iterable<Channel> channels = store.forIds(ids);
         
         assertThat(Iterables.size(channels), is(2));
