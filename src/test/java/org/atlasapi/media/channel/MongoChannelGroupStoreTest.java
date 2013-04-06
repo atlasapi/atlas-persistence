@@ -6,11 +6,10 @@ import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.atlasapi.media.entity.MediaType;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.LocalDate;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Optional;
@@ -29,11 +28,11 @@ public class MongoChannelGroupStoreTest {
     private static final MongoChannelGroupStore store = new MongoChannelGroupStore(mongo);
 
     private static final long channelId = 9L;
-    private static Long platformId;
-    private static Long newPlatformId;
-    private static Long region1Id;
-    private static Long region2Id;
-    private static Long region3Id;
+    private static Id platformId;
+    private static Id newPlatformId;
+    private static Id region1Id;
+    private static Id region2Id;
+    private static Id region3Id;
     
     @BeforeClass
     public static void setup() {
@@ -67,7 +66,7 @@ public class MongoChannelGroupStoreTest {
     
     @Test
     public void testRetrievesGroupsForIds() {
-        ImmutableList<Long> requestedIds = ImmutableList.of(region1Id, platformId);
+        ImmutableList<Id> requestedIds = ImmutableList.of(region1Id, platformId);
         Iterable<ChannelGroup> groups = store.channelGroupsFor(requestedIds);
         
         assertThat(Iterables.size(groups), is(2));
@@ -79,7 +78,7 @@ public class MongoChannelGroupStoreTest {
     @Test
     public void testRetrievesAllGroups() {
         Iterable<ChannelGroup> groups = store.channelGroups();
-        ImmutableList<Long> ids = ImmutableList.of(platformId, newPlatformId, region1Id, region2Id, region3Id);
+        ImmutableList<Id> ids = ImmutableList.of(platformId, newPlatformId, region1Id, region2Id, region3Id);
         assertThat(Iterables.size(groups), is(5));
         assertThat(Iterables.get(groups, 0).getId(), isIn(ids));
         assertThat(Iterables.get(groups, 1).getId(), isIn(ids));
@@ -94,7 +93,7 @@ public class MongoChannelGroupStoreTest {
         
         ChannelNumbering numbering = ChannelNumbering.builder()
                 .withStartDate(new LocalDate(2011, 1, 1))
-                .withChannel(1234L)
+                .withChannel(Id.valueOf(1234L))
                 .withChannelGroup(platform)
                 .withChannelNumber("1")
                 .build();
@@ -111,7 +110,7 @@ public class MongoChannelGroupStoreTest {
         
         numbering = ChannelNumbering.builder()
                 .withStartDate(new LocalDate(2011, 1, 1))
-                .withChannel(1234L)
+                .withChannel(Id.valueOf(1234L))
                 .withChannelGroup(platform)
                 .withChannelNumber("2")
                 .build();

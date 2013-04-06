@@ -7,6 +7,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.Test;
 
@@ -29,19 +30,19 @@ public class ChannelGroupTranslatorTest {
         channelGroup.setPublisher(Publisher.BBC);
         
         ChannelNumbering numbering1 = ChannelNumbering.builder()
-                .withChannel(1234L)
+                .withChannel(Id.valueOf(1234L))
                 .withChannelNumber("1")
                 .withChannelGroup(channelGroup)
                 .build();
         
         ChannelNumbering numbering2 = ChannelNumbering.builder()
-                .withChannel(1235L)
+                .withChannel(Id.valueOf(1235L))
                 .withChannelNumber("7")
                 .withChannelGroup(channelGroup)
                 .build();
         
         ChannelNumbering numbering3 = ChannelNumbering.builder()
-                .withChannel(1236L)
+                .withChannel(Id.valueOf(1236L))
                 .withChannelNumber("89")
                 .withChannelGroup(channelGroup)
                 .build();

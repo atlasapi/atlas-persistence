@@ -5,6 +5,7 @@ import static com.google.common.collect.Iterables.transform;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
@@ -71,7 +72,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		TranslatorUtils.from(dbObject, KEY, model.key());
 		TranslatorUtils.from(dbObject, PARENT, model.parent());
 		if (model.variations() != null) {
-		    TranslatorUtils.fromLongSet(dbObject, VARIATIONS, model.variations());
+		    TranslatorUtils.fromLongSet(dbObject, VARIATIONS, ImmutableSet.copyOf(Iterables.transform(model.variations(), Id.toLongValue())));
 		}
 		if (model.channelNumbers() != null) {
 		    fromChannelNumberingSet(dbObject, NUMBERINGS, model.channelNumbers());
@@ -114,8 +115,8 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
 		model.setBroadcaster(broadcaster != null ? Publisher.fromKey(broadcaster).valueOrNull() : null);
-		model.setParent(TranslatorUtils.toLong(dbObject, PARENT));
-		model.setVariationIds(TranslatorUtils.toLongSet(dbObject, VARIATIONS));
+		model.setParent(Id.valueOf(TranslatorUtils.toLong(dbObject, PARENT)));
+		model.setVariationIds(Iterables.transform(TranslatorUtils.toLongSet(dbObject, VARIATIONS), Id.fromLongValue()));
 		model.setChannelNumbers(toChannelNumberingSet(dbObject, NUMBERINGS));
 		model.setStartDate(TranslatorUtils.toLocalDate(dbObject, START_DATE));
 		model.setEndDate(TranslatorUtils.toLocalDate(dbObject, END_DATE));

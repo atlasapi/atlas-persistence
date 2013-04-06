@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import junit.framework.TestCase;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.BeforeClass;
@@ -63,10 +64,10 @@ public class MongoChannelStoreWriteTest extends TestCase {
     @Test
     public void testChangeOfParent() {
         Channel oldParent = store.createOrUpdate(channel("parent1", "key1", MediaType.VIDEO, null, "test/1"));
-        Long oldParentId = oldParent.getId();
+        Id oldParentId = oldParent.getId();
         
         Channel newParent = store.createOrUpdate(channel("parent2", "key2", MediaType.VIDEO, null, "test/2"));
-        Long newParentId = newParent.getId();
+        Id newParentId = newParent.getId();
         
         Channel child = store.createOrUpdate(channel("child", "key3", MediaType.VIDEO, oldParentId, ""));
         oldParent = store.fromId(oldParentId).requireValue();
@@ -92,9 +93,9 @@ public class MongoChannelStoreWriteTest extends TestCase {
         ChannelGroup oldAndNewGroup = new Platform();
         ChannelGroup newGroup = new Platform();
         
-        Long oldGroupId = channelGroupStore.createOrUpdate(oldGroup).getId();
-        Long oldAndNewGroupId = channelGroupStore.createOrUpdate(oldAndNewGroup).getId();
-        Long newGroupId = channelGroupStore.createOrUpdate(newGroup).getId();
+        Id oldGroupId = channelGroupStore.createOrUpdate(oldGroup).getId();
+        Id oldAndNewGroupId = channelGroupStore.createOrUpdate(oldAndNewGroup).getId();
+        Id newGroupId = channelGroupStore.createOrUpdate(newGroup).getId();
         
         Channel channel = store.createOrUpdate(channel("channel", "key1", MediaType.VIDEO, null, "test/1"));
         
@@ -144,7 +145,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         assertThat(newGroup.getChannelNumberings().size(), is(1));
     }
 
-    private Channel channel(String uri, String key, MediaType mediaType, Long parent, String... alias) {
+    private Channel channel(String uri, String key, MediaType mediaType, Id parent, String... alias) {
         Channel channel = Channel.builder()
             .withUri(uri)
             .withKey(key)
