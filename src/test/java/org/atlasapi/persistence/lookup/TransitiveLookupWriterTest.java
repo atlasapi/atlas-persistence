@@ -15,7 +15,7 @@ import junit.framework.TestCase;
 
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.Brand;
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;

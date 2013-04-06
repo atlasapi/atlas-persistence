@@ -2,7 +2,7 @@ package org.atlasapi.persistence.content.mongo;
 
 import java.util.Iterator;
 
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.DateTime;
 

@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.PreDestroy;
 
-import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.content.ContentListener;
 import org.atlasapi.persistence.logging.AdapterLog;

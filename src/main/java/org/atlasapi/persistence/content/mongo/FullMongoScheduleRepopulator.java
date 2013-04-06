@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.atlasapi.media.channel.ChannelResolver;
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;

@@ -19,7 +19,7 @@ import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
