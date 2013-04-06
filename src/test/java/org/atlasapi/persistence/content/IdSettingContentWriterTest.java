@@ -3,6 +3,7 @@ package org.atlasapi.persistence.content;
 import static org.hamcrest.Matchers.hasItem;
 
 import org.atlasapi.media.content.Container;
+import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -86,7 +87,7 @@ public class IdSettingContentWriterTest {
     @Test
     public void testCreatingContainerGeneratesNewId() {
         
-        final Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
+        final Container container = new Brand("containerUri", "containerCurie", Publisher.BBC);
             
         final long newId = 1234;
         
@@ -104,7 +105,7 @@ public class IdSettingContentWriterTest {
     @Test
     public void testUpdatingContainerDoesntGenerateNewId() {
         
-        final Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
+        final Container container = new Brand("containerUri", "containerCurie", Publisher.BBC);
         final long oldId = 1234l;
         container.setId(oldId);
         
