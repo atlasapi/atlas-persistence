@@ -5,14 +5,17 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.Set;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.collect.OptionalMap;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
@@ -23,8 +26,9 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import org.junit.Ignore;
 
-@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
+@Ignore(value = "Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraEquivalenceSummaryStoreTest {
 
     private CassandraEquivalenceSummaryStore store;
@@ -63,30 +67,37 @@ public class CassandraEquivalenceSummaryStoreTest {
     @Test
     public void testStoresAndResolvesSummaries() {
         
-        EquivalenceSummary summaryOne = summaryWithKey("one", null);
-        EquivalenceSummary summaryTwo = summaryWithKey("two", "parent");
+        Id one = Id.valueOf(1);
+        Id two = Id.valueOf(2);
+        Id three = Id.valueOf(3);
+
+        EquivalenceSummary summaryOne = summaryWithKey(one, null);
+        EquivalenceSummary summaryTwo = summaryWithKey(two, three);
         
         store.store(summaryOne);
         
-        OptionalMap<String, EquivalenceSummary> resolved = store.summariesForUris(ImmutableSet.of("one","two"));
+        OptionalMap<Id, EquivalenceSummary> resolved = store.summariesForIds(ImmutableSet.of(one,two));
         
         assertThat(resolved.get("one").get(), is(equalTo(summaryOne)));
         assertThat(resolved.get("two").isPresent(), is(false));
         
         store.store(summaryTwo);
         
-        resolved = store.summariesForUris(ImmutableSet.of("one","two"));
+        resolved = store.summariesForIds(ImmutableSet.of(one,two));
 
         assertThat(resolved.get("two").get(), is(equalTo(summaryTwo)));
         assertThat(resolved.get("one").get(), is(equalTo(summaryOne)));
         
+        Set<EquivalenceSummary> childSummaries = store.summariesForChildren(three);
+        assertThat(childSummaries.size(), is(1));
+        assertThat(Iterables.getOnlyElement(childSummaries).getSubject(), is(summaryTwo.getSubject()));
+        
     }
 
-    private EquivalenceSummary summaryWithKey(String key, String parent) {
-        String subject = key;
-        Iterable<String> candidates = ImmutableSet.of(key);
+    private EquivalenceSummary summaryWithKey(Id key, Id parent) {
+        Iterable<Id> candidates = ImmutableSet.of(key);
         ImmutableMap<Publisher, ContentRef> equivalents = ImmutableMap.of();
-        return new EquivalenceSummary(subject, parent, candidates, equivalents);
+        return new EquivalenceSummary(key, parent, candidates, equivalents);
     }
 
 }
