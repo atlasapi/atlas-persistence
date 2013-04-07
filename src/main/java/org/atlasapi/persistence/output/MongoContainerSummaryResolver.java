@@ -40,7 +40,7 @@ public class MongoContainerSummaryResolver implements ContainerSummaryResolver {
 
     @Override
     public Optional<BrandSummary> summarizeTopLevelContainer(ParentRef container) {
-        DBObject containerDbo = containers.findOne(container.getUri(), fields);
+        DBObject containerDbo = containers.findOne(container.getId(), fields);
 
         if (containerDbo == null) {
             return Optional.absent();
@@ -60,7 +60,7 @@ public class MongoContainerSummaryResolver implements ContainerSummaryResolver {
     
     @Override
     public Optional<SeriesSummary> summarizeSeries(ParentRef series) {
-        DBObject containerDbo = programmeGroups.findOne(series.getUri(), fields);
+        DBObject containerDbo = programmeGroups.findOne(series.getId(), fields);
 
         if (containerDbo == null) {
             return Optional.absent();

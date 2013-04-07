@@ -56,11 +56,17 @@ public class MongoContentListerTest {
             }
         };
         
+        bbcItem1.setId(1);
         bbcItem1.setLastUpdated(tenthOfTheTenth);
+        bbcItem2.setId(2);
         bbcItem2.setLastUpdated(ELEVENTH_OF_THE_TENTH);
+        c4Item1.setId(3);
         c4Item1.setLastUpdated(ELEVENTH_OF_THE_TENTH);
+        c4Item2.setId(4);
         c4Item2.setLastUpdated(tenthOfTheTenth);
+        bbcBrand.setId(5);
         bbcBrand.setLastUpdated(tenthOfTheTenth);
+        c4Brand.setId(6);
         c4Brand.setLastUpdated(ELEVENTH_OF_THE_TENTH);
         
         TopicRef topic1 = new TopicRef(1l, 0.01f, true, TopicRef.Relationship.ABOUT);

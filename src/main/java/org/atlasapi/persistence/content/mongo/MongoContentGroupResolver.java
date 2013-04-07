@@ -5,6 +5,8 @@ import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentGroupResolver;
@@ -34,7 +36,7 @@ public class MongoContentGroupResolver implements ContentGroupResolver {
             DBObject found = contentGroups.findOne(where().fieldEquals(IdentifiedTranslator.CANONICAL_URL, uri).build());
             if (found != null) {
                 ContentGroup contentGroup = contentGroupTranslator.fromDBObject(found, new ContentGroup());
-                results.put(uri, contentGroup);
+                results.put(contentGroup.getId(), contentGroup);
             }
         }
 
@@ -42,14 +44,14 @@ public class MongoContentGroupResolver implements ContentGroupResolver {
     }
 
     @Override
-    public ResolvedContent findByIds(Iterable<Long> ids) {
+    public ResolvedContent findByIds(Iterable<Id> ids) {
         ResolvedContentBuilder results = ResolvedContent.builder();
 
-        for (Long id : ids) {
-            DBObject found = contentGroups.findOne(where().fieldEquals(IdentifiedTranslator.ID, id).build());
+        for (Id id : ids) {
+            DBObject found = contentGroups.findOne(where().fieldEquals(IdentifiedTranslator.ID, id.longValue()).build());
             if (found != null) {
                 ContentGroup contentGroup = contentGroupTranslator.fromDBObject(found, new ContentGroup());
-                results.put(id.toString(), contentGroup);
+                results.put(id, contentGroup);
             }
         }
 

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.ParentRef;
@@ -21,7 +22,7 @@ import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container> {
 
-	public static final String CONTAINER_ID = "containerId";
+    public static final String CONTAINER_ID = "containerId";
     public static final String CHILDREN_KEY = "childRefs";
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
     private static final String TOTAL_EPISODES = "totalEpisodes";
@@ -84,9 +85,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         if (entity instanceof Series) {
             Series series = (Series) entity;
             series.withSeriesNumber((Integer) dbObject.get(SERIES_NUMBER_KEY));
-            Long containerId = TranslatorUtils.toLong(dbObject, CONTAINER_ID);
-            if(dbObject.containsField("container")) {
-                series.setParentRef(new ParentRef((String)dbObject.get("container"), containerId));
+            if(dbObject.containsField(CONTAINER_ID)) {
+                Id containerId = Id.valueOf(TranslatorUtils.toLong(dbObject, CONTAINER_ID));
+                series.setParentRef(new ParentRef(containerId, EntityType.BRAND));
             }
             series.setTotalEpisodes(TranslatorUtils.toInteger(dbObject, TOTAL_EPISODES));
         }
@@ -155,8 +156,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
                 dbObject.put(SERIES_NUMBER_KEY, series.getSeriesNumber());
             }
             if (series.getParent() != null) {
-                dbObject.put("container", series.getParent().getUri());
-                dbObject.put(CONTAINER_ID, series.getParent().getId());
+                dbObject.put(CONTAINER_ID, series.getParent().getId().longValue());
             }
             if(series.getTotalEpisodes() != null) {
                 TranslatorUtils.from(dbObject, TOTAL_EPISODES, series.getTotalEpisodes());

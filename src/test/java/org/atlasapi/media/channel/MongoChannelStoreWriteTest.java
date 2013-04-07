@@ -2,7 +2,6 @@ package org.atlasapi.media.channel;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import junit.framework.TestCase;
 
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.MediaType;
@@ -16,7 +15,7 @@ import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
-public class MongoChannelStoreWriteTest extends TestCase {
+public class MongoChannelStoreWriteTest {
     
     private ChannelGroupStore channelGroupStore;
     private MongoChannelStore channelStore;

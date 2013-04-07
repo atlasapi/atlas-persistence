@@ -6,9 +6,9 @@ import java.util.List;
 
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Person;
-import org.atlasapi.persistence.content.PeopleLister;
+import org.atlasapi.persistence.content.people.PeopleLister;
 import org.atlasapi.persistence.content.PeopleListerListener;
-import org.atlasapi.persistence.content.PeopleResolver;
+import org.atlasapi.persistence.content.people.PeopleResolver;
 import org.atlasapi.persistence.content.people.PersonWriter;
 import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.joda.time.DateTime;

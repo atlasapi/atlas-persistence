@@ -14,14 +14,17 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.atlasapi.equiv.ContentRef;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.util.Identifiables;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -54,35 +57,35 @@ public class TransitiveLookupWriter implements LookupWriter {
         this.explicit = explicit;
     }
     
-    private static final Function<ContentRef, String> TO_URI = new Function<ContentRef, String>() {
+    private static final Function<ContentRef, Id> TO_URI = new Function<ContentRef, Id>() {
         @Override
-        public String apply(@Nullable ContentRef input) {
-            return input.getCanonicalUri();
+        public Id apply(@Nullable ContentRef input) {
+            return input.getId();
         }
     };
 
     @Override
     public void writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> publishers) {
-        writeLookup(subject.getCanonicalUri(), ImmutableSet.copyOf(Iterables.transform(filterContentPublishers(equivalents, publishers), TO_URI)), publishers);
+        writeLookup(subject.getId(), ImmutableSet.copyOf(Iterables.transform(filterContentPublishers(equivalents, publishers), TO_URI)), publishers);
     }
     
-    public void writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> publishers) {
-        Preconditions.checkNotNull(emptyToNull(subjectUri), "null subject");
-        Set<String> newNeighbourUris = ImmutableSet.copyOf(equivalentUris);
+    public void writeLookup(final Id subjectId, Iterable<Id> equivalentId, final Set<Publisher> publishers) {
+        Preconditions.checkNotNull(subjectId, "null subject");
+        Set<Id> newNeighbourIds = ImmutableSet.copyOf(equivalentId);
         
-        LookupEntry subject = entryFor(subjectUri);
+        LookupEntry subject = entryFor(subjectId);
 
-        if(noChangeInNeighbours(subject, newNeighbourUris, publishers)) {
+        if(noChangeInNeighbours(subject, newNeighbourIds, publishers)) {
             return;
         }
         
-        Set<LookupEntry> neighbours = entriesFor(newNeighbourUris);
+        Set<LookupEntry> neighbours = entriesFor(newNeighbourIds);
 
         Map<LookupRef, LookupEntry> transitiveSet;
         try {
             transitiveSet = transitiveClosure(subject, neighbours);
         } catch (IllegalArgumentException iae) {
-            log.info("Transitive set too large: " + subjectUri, iae);
+            log.info("Transitive set too large: " + subjectId, iae);
             return;
         }
         
@@ -120,14 +123,14 @@ public class TransitiveLookupWriter implements LookupWriter {
         return updatedNeighbours;
     }
 
-    private boolean noChangeInNeighbours(LookupEntry subjectEntry, Set<String> newNeighbours,
+    private boolean noChangeInNeighbours(LookupEntry subjectEntry, Set<Id> newNeighbours,
             final Set<Publisher> publishers) {
-        final Set<String> newNeighbourUris = ImmutableSet.<String>builder()
-            .add(subjectEntry.uri()).addAll(newNeighbours).build();
+        final Set<Id> newNeighbourUris = ImmutableSet.<Id>builder()
+            .add(subjectEntry.id()).addAll(newNeighbours).build();
         Set<LookupRef> currentNeighbours = 
             Sets.filter(relevantNeighbours(subjectEntry), 
                 MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(publishers)));
-        Set<String> currentNeighbourUris = ImmutableSet.copyOf(transform(currentNeighbours,TO_ID));
+        Set<Id> currentNeighbourUris = ImmutableSet.copyOf(transform(currentNeighbours,TO_ID));
         boolean noChange = currentNeighbourUris.equals(newNeighbourUris);
         if (!noChange) {
             log.trace("Equivalence change: {} -> {}", currentNeighbourUris, newNeighbourUris);
@@ -191,12 +194,12 @@ public class TransitiveLookupWriter implements LookupWriter {
         return Iterables.concat(current.directEquivalents(), current.explicitEquivalents());
     }
     
-    private Set<LookupEntry> entriesFor(Iterable<String> equivalents) {
-        return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(equivalents));
+    private Set<LookupEntry> entriesFor(Iterable<Id> equivalents) {
+        return ImmutableSet.copyOf(entryStore.entriesForIds(equivalents));
     }
 
-    private LookupEntry entryFor(String subject) {
-        return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(subject)), null);
+    private LookupEntry entryFor(Id subject) {
+        return Iterables.getOnlyElement(entryStore.entriesForIds(ImmutableList.of(subject)), null);
     }
 
     // Uses a work queue to pull out and map the transitive closures rooted at each entry in entries.
@@ -213,7 +216,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             refs.addAll(entry.equivalents());
         }
         
-        for (LookupEntry entry : entryStore.entriesForCanonicalUris(Iterables.transform(refs, LookupRef.TO_ID))) {
+        for (LookupEntry entry : entryStore.entriesForIds(Iterables.transform(refs, LookupRef.TO_ID))) {
             transitiveClosure.put(entry.lookupRef(), entry);
         }
         

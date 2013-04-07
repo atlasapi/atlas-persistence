@@ -78,11 +78,11 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
                 Preconditions.checkState(possiblePlatform.isPresent(), "Could not resolve platform with id " + region.getPlatform());
                 Platform platform = (Platform) possiblePlatform.get();
                 platform.addRegion(region);
-                channelGroups.update(new BasicDBObject(MongoConstants.ID, platform.getId()), translator.toDBObject(null, platform), UPSERT, SINGLE);
+                channelGroups.update(new BasicDBObject(MongoConstants.ID, platform.getId().longValue()), translator.toDBObject(null, platform), UPSERT, SINGLE);
             }
         }
         
-        channelGroups.update(new BasicDBObject(MongoConstants.ID, group.getId()), translator.toDBObject(null, group), UPSERT, SINGLE);
+        channelGroups.update(new BasicDBObject(MongoConstants.ID, group.getId().longValue()), translator.toDBObject(null, group), UPSERT, SINGLE);
         return group;
     }
 
@@ -100,7 +100,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
                     Set<Id> regions = Sets.newHashSet(oldPlatform.getRegions());
                     regions.remove(existingRegion.getId());
                     oldPlatform.setRegionIds(regions);
-                    channelGroups.update(new BasicDBObject(MongoConstants.ID, oldPlatform.getId()), translator.toDBObject(null, oldPlatform), UPSERT, SINGLE);
+                    channelGroups.update(new BasicDBObject(MongoConstants.ID, oldPlatform.getId().longValue()), translator.toDBObject(null, oldPlatform), UPSERT, SINGLE);
                 }
             }
         }

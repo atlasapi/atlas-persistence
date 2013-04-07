@@ -36,7 +36,7 @@ public class MongoProductStore implements ProductResolver, ProductStore {
     
     @Override
     public Product store(Product product) {
-        collection.update(where().idEquals(checkNotNull(product.getId(),"Product requires id")).build(), translator.toDBObject(null, product), UPSERT, SINGLE);
+        collection.update(where().idEquals(checkNotNull(product.getId().longValue(),"Product requires id")).build(), translator.toDBObject(null, product), UPSERT, SINGLE);
         return product;
     }
 

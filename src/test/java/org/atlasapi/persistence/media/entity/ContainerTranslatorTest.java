@@ -7,6 +7,7 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.content.Container;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
@@ -41,6 +42,7 @@ public class ContainerTranslatorTest extends TestCase {
     
     public void testToBrand() throws Exception {
         Brand brand = new Brand("canonicalUri", "curie", Publisher.BBC);
+        brand.setId(1);
         brand.setFirstSeen(new SystemClock().now());
         brand.setLastFetched(new SystemClock().now());
         
@@ -65,7 +67,8 @@ public class ContainerTranslatorTest extends TestCase {
     public void testEncodeDecodeSeries() {
         
         Series series = new Series("testUri", "testCurie", Publisher.BBC);
-        series.setParentRef(new ParentRef("testParent"));
+        series.setId(1);
+        series.setParentRef(new ParentRef(2L, EntityType.BRAND));
         series.withSeriesNumber(5);
         series.setTotalEpisodes(5);
         

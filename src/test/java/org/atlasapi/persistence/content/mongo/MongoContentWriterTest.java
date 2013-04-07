@@ -73,8 +73,11 @@ public class MongoContentWriterTest {
     public void testCreatingItemWithoutWrittenContainerFails() {
 
         Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
+        item.setId(1);
+        item.setLastUpdated(new DateTime(DateTimeZones.UTC));
 
         Container container = new Brand("containerUri", "containerCurie", Publisher.BBC);
+        container.setId(2);
 
         item.setContainer(container);
 
@@ -92,8 +95,15 @@ public class MongoContentWriterTest {
     public void testCreatingEpisodeWithoutWrittenBrandFails() {
         
         Episode item = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        item.setId(1);
+        item.setLastUpdated(new DateTime(DateTimeZones.UTC));
+
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(2);
+        series.setLastUpdated(new DateTime(DateTimeZones.UTC));
+
         Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC);
+        brand.setId(3);
         
         item.setSeries(series);
         item.setContainer(brand);
@@ -110,10 +120,16 @@ public class MongoContentWriterTest {
     public void testCreatingEpisodeWithoutWrittenSeriesFailsAndDoesntChangeBrand() {
         
         Episode item = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        item.setId(1);
+        item.setLastUpdated(new DateTime(DateTimeZones.UTC));
         item.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(2);
+        series.setLastUpdated(new DateTime(DateTimeZones.UTC));
         Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC);
+        brand.setId(3);
+        brand.setLastUpdated(new DateTime(DateTimeZones.UTC));
         
         item.setSeries(series);
         item.setContainer(brand);
@@ -137,11 +153,15 @@ public class MongoContentWriterTest {
     public void testWritingEpisodeInSeriesInBrand() {
         
         Episode item = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        item.setId(1);
+        item.setLastUpdated(new DateTime(DateTimeZones.UTC));
         item.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(2);
         series.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC);
+        brand.setId(3);
         
         series.setParent(brand);
         
@@ -155,22 +175,25 @@ public class MongoContentWriterTest {
         assertNotNull(children.findOne(item.getCanonicalUri()));
         
         Series retrievedSeries = retrieveSeries(series);
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getId());
         
         assertNull(containers.findOne(series.getCanonicalUri()));
         
         Brand retrievedBrand = retrieveBrand(brand);
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getChildRefs()).getUri());
-        assertEquals(series.getCanonicalUri(), Iterables.getOnlyElement(retrievedBrand.getSeriesRefs()).getUri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(retrievedBrand.getChildRefs()).getId());
+        assertEquals(series.getId(), Iterables.getOnlyElement(retrievedBrand.getSeriesRefs()).getId());
     }
     
     @Test
     public void testWritingEpisodeInTopLevelSeries() {
        
         Episode item = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        item.setId(1);
+        item.setLastUpdated(new DateTime(DateTimeZones.UTC));
         item.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(2);
         series.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         
         item.setContainer(series);
@@ -182,7 +205,7 @@ public class MongoContentWriterTest {
         assertNotNull(children.findOne(item.getCanonicalUri()));
         
         Series retrievedSeries = retrieveSeries(series);
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getUri());
+        assertEquals(item.getId(), Iterables.getOnlyElement(retrievedSeries.getChildRefs()).getId());
         
         assertNotNull(containers.findOne(series.getCanonicalUri()));
         
@@ -193,6 +216,7 @@ public class MongoContentWriterTest {
     public void testWritingContainer() {
         
         Container container = new Brand("containerUri", "containerCurie", Publisher.BBC);
+        container.setId(1);
         
         contentWriter.createOrUpdate(container);
         
@@ -203,13 +227,18 @@ public class MongoContentWriterTest {
     public void testConvertingBetweenEpisodeAndTopLevelItem() {
         
         Item item = new Item("itemUri", "itemCurie", Publisher.BBC);
+        item.setId(1);
+        item.setLastUpdated(new DateTime(DateTimeZones.UTC));
         
         contentWriter.createOrUpdate(item);
         
         assertNotNull(topLevelItems.findOne(item.getCanonicalUri()));
         
         Episode episode = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        episode.setId(2);
+        episode.setLastUpdated(new DateTime(DateTimeZones.UTC));
         Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
+        brand.setId(3);
         
         episode.setContainer(brand);
         
@@ -225,6 +254,7 @@ public class MongoContentWriterTest {
     public void testConvertingTopLevelSeriesToBrandedSeries() {
 
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(2);
         series.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
         
         contentWriter.createOrUpdate(series);
@@ -236,6 +266,7 @@ public class MongoContentWriterTest {
         assertNotNull(retrievedSeries);
         
         Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC);
+        brand.setId(3);
         
         series.setParent(brand);
         
@@ -258,6 +289,7 @@ public class MongoContentWriterTest {
         DateTime episodeLastUpdated = new DateTime(300, DateTimeZones.UTC);
 
         Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
+        brand.setId(1);
         brand.setLastUpdated(brandLastUpdated);
         
         contentWriter.createOrUpdate(brand);
@@ -265,6 +297,7 @@ public class MongoContentWriterTest {
         assertThat(retrieveBrand(brand).getThisOrChildLastUpdated(), is(equalTo(brandLastUpdated)));
         
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(2);
         series.setLastUpdated(seriesLastUpdated );
         series.setParent(brand);
         
@@ -274,6 +307,7 @@ public class MongoContentWriterTest {
         assertThat(retrieveBrand(brand).getThisOrChildLastUpdated(), is(equalTo(seriesLastUpdated)));
         
         Episode episode = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        episode.setId(3);
         episode.setLastUpdated(episodeLastUpdated);
         episode.setSeries(series);
         episode.setContainer(brand);
@@ -286,6 +320,7 @@ public class MongoContentWriterTest {
         
         Episode episode2 = new Episode("itemUri2", "itemCurie2", Publisher.BBC);
         DateTime episodeLastUpdated2 = new DateTime(250, DateTimeZones.UTC);
+        episode2.setId(4);
         episode2.setLastUpdated(episodeLastUpdated2);
         episode2.setSeries(series);
         episode2.setContainer(brand);

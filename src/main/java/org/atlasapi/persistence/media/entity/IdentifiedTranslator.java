@@ -2,6 +2,8 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.Set;
 
+import org.atlasapi.equiv.EquivalenceRef;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
@@ -9,6 +11,7 @@ import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -67,17 +70,18 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         return description;
     }
 
-    private Set<LookupRef> equivalentsFrom(DBObject dbObject) {
-        return Sets.newHashSet(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, EQUIVALENT_TO), equivalentFromDbo));
+    private Set<EquivalenceRef> equivalentsFrom(DBObject dbObject) {
+        return Sets.newHashSet(Iterables.filter(
+                Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, EQUIVALENT_TO), equivalentFromDbo), Predicates.notNull()));
     }
 	
-    private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
+    private static final Function<DBObject, EquivalenceRef> equivalentFromDbo = new Function<DBObject, EquivalenceRef>() {
         @Override
-        public LookupRef apply(DBObject input) {
-            String id = TranslatorUtils.toString(input, ID);
+        public EquivalenceRef apply(DBObject input) {
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
-            String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, publisher, ContentCategory.valueOf(type));
+            Long aid = TranslatorUtils.toLong(input, OPAQUE_ID);
+            return aid == null ? null 
+                               : new EquivalenceRef(Id.valueOf(aid), publisher);
         }
     };
 
@@ -90,8 +94,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         if (useAtlasIdAsId) {
             TranslatorUtils.from(dbObject, CANONICAL_URL, entity.getCanonicalUri());
             TranslatorUtils.from(dbObject, ID, entity.getId());
-        }
-        else {
+        } else {
             TranslatorUtils.from(dbObject, ID, entity.getCanonicalUri());
             TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId());
         }
@@ -107,20 +110,19 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         return dbObject;
     }
 
-    private BasicDBList toDBObject(Set<LookupRef> equivalentTo) {
+    private BasicDBList toDBObject(Set<EquivalenceRef> equivalentTo) {
         BasicDBList list = new BasicDBList();
         Iterables.addAll(list, Iterables.transform(equivalentTo, equivalentToDbo));
         return list;
     }
     
-    private static Function<LookupRef, DBObject> equivalentToDbo = new Function<LookupRef, DBObject>() {
+    private static Function<EquivalenceRef, DBObject> equivalentToDbo = new Function<EquivalenceRef, DBObject>() {
         @Override
-        public DBObject apply(LookupRef input) {
+        public DBObject apply(EquivalenceRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, ID, input.id());
-            TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
-            TranslatorUtils.from(dbo, TYPE, input.category().toString());
+            TranslatorUtils.from(dbo, OPAQUE_ID, input.getId().longValue());
+            TranslatorUtils.from(dbo, PUBLISHER, input.getPublisher().key());
             
             return dbo;
         }

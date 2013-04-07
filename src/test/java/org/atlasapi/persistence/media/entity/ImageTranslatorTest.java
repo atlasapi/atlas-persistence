@@ -38,6 +38,7 @@ public class ImageTranslatorTest {
     private Image createImage() {
 
         Image image = new Image("http://example.com");
+        image.setId(1);
         image.setAvailabilityStart(new DateTime(2013, DateTimeConstants.FEBRUARY, 1, 0, 0, 0, 0).withZone(DateTimeZone.UTC));
         image.setAvailabilityEnd(new DateTime(2013, DateTimeConstants.FEBRUARY, 2, 0, 0, 0, 0).withZone(DateTimeZone.UTC));
         image.setBackground(ImageBackground.BLACK);

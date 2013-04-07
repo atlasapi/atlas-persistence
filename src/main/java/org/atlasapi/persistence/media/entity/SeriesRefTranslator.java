@@ -15,7 +15,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 import static org.atlasapi.persistence.media.entity.ChildRefTranslator.ID_KEY;
-import static org.atlasapi.persistence.media.entity.ChildRefTranslator.URI_KEY;
 import static org.atlasapi.persistence.media.entity.ChildRefTranslator.SORT_KEY;
 import static org.atlasapi.persistence.media.entity.ChildRefTranslator.UPDATED_KEY;
 
@@ -25,7 +24,6 @@ public class SeriesRefTranslator {
     
     public SeriesRef fromDBObject(DBObject dbo) {
         Long id = (Long) dbo.get(ID_KEY);
-        String uri = (String) dbo.get(URI_KEY);
         DateTime updated = TranslatorUtils.toDateTime(dbo, UPDATED_KEY);
         String sortKey = (String) dbo.get(SORT_KEY);
         Integer seriesNumber = TranslatorUtils.toInteger(dbo, SERIES_NUMBER_KEY);

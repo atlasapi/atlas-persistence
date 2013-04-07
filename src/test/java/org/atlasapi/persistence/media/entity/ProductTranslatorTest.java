@@ -29,6 +29,7 @@ public class ProductTranslatorTest {
                 .build();
 
         Product product = new Product();
+        product.setId(1);
         product.setGtin("gtin");
         product.setType(Product.Type.BLU_RAY);
         product.setYear(3000);
