@@ -29,11 +29,12 @@ public class ContentGroupTranslatorTest extends TestCase {
 
     public void testToGroup() throws Exception {
         ContentGroup group = new ContentGroup();
+        group.setId(1);
         group.setCanonicalUri("uri");
         group.setDescription("description");
         group.setTitle("title");
         group.setPublisher(Publisher.BBC);
-        group.addContent(new ChildRef("child", SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM));
+        group.addContent(new ChildRef(2L, SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM));
 
         DBObject obj = translator.toDBObject(null, group);
 

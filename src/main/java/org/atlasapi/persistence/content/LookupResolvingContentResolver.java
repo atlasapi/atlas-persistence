@@ -35,7 +35,7 @@ public class LookupResolvingContentResolver implements ContentResolver {
     @Override
     public ResolvedContent findByIds(Iterable<Id> ids) {
         Set<Id> dedupedIds = Sets.newHashSet(ids);
-        Iterable<LookupEntry> lookupEntries = lookupResolver.entriesForIds(Iterables.transform(dedupedIds,Id.toLongValue()));
+        Iterable<LookupEntry> lookupEntries = lookupResolver.entriesForIds(dedupedIds);
         Iterable<LookupRef> lookupRefs = Iterables.transform(lookupEntries, LookupEntry.TO_SELF);
         ImmutableSet<LookupRef> resolvedLookups = ImmutableSet.copyOf(Iterables.filter(lookupRefs, Predicates.notNull()));
         ResolvedContent resolvedContent = knownTypeResolver.findByLookupRefs(resolvedLookups);

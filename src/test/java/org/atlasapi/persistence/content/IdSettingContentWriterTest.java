@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Brand;
@@ -13,6 +14,8 @@ import org.hamcrest.Matcher;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
+import org.jmock.integration.junit4.JUnitRuleMockery;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
 import org.junit.runner.RunWith;
@@ -20,10 +23,9 @@ import org.junit.runner.RunWith;
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.ids.IdGenerator;
 
-@RunWith(JMock.class)
 public class IdSettingContentWriterTest {
 
-    private final Mockery context = new Mockery();
+    @Rule public final JUnitRuleMockery context = new JUnitRuleMockery();
     private final LookupEntryStore lookupStore = context.mock(LookupEntryStore.class);
     private final ContentWriter delegate = context.mock(ContentWriter.class);
     private final IdGenerator idGenerator = context.mock(IdGenerator.class);
@@ -38,7 +40,7 @@ public class IdSettingContentWriterTest {
         final long newId = 1234l;
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(item.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(item.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
             oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(itemWithId(newId)));
         }});
@@ -56,7 +58,7 @@ public class IdSettingContentWriterTest {
         item.setId(oldId);
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(item.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(item))));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(item.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(item))));
             never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(itemWithId(oldId)));
         }});
@@ -79,7 +81,7 @@ public class IdSettingContentWriterTest {
 
             @Override
             public boolean matchesSafely(Item item) {
-                return item.getId().equals(id);
+                return item.getId().longValue() == id;
             }
         };
     }
@@ -92,7 +94,7 @@ public class IdSettingContentWriterTest {
         final long newId = 1234;
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(container.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
             oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(containerWithId(newId)));
         }});
@@ -110,7 +112,7 @@ public class IdSettingContentWriterTest {
         container.setId(oldId);
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(container))));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(container.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(container))));
             never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(containerWithId(oldId)));
         }});
@@ -131,7 +133,7 @@ public class IdSettingContentWriterTest {
 
             @Override
             public boolean matchesSafely(Container item) {
-                return item.getId().equals(id);
+                return item.getId().longValue() == id;
             }
         };
     }

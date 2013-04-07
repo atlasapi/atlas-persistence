@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
@@ -30,6 +31,8 @@ import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
     
+    public static final String SERIES_ID = "seriesId";
+    public static final String CONTAINER_ID = "containerId";
     private static final String FILM_RELEASES_KEY = "releases";
     private static final String FILM_SUBTITLES_KEY = "subtitles";
     private static final String PART_NUMBER = "partNumber";
@@ -37,12 +40,13 @@ public class ItemTranslator implements ModelTranslator<Item> {
     private static final String SERIES_NUMBER = "seriesNumber";
 
     private static final String VERSIONS_KEY = "versions";
-	private static final String TYPE_KEY = "type";
-	private static final String IS_LONG_FORM_KEY = "isLongForm";
-	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
-	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
-	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
-	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
+    private static final String TYPE_KEY = "type";
+    private static final String IS_LONG_FORM_KEY = "isLongForm";
+    private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
+    private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
+    private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
+    private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
+    private static final String CONTAINER_TYPE = "containerType";
 
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator;
@@ -102,21 +106,25 @@ public class ItemTranslator implements ModelTranslator<Item> {
             item.setVersions(versions);
         }
         
-        if(dbObject.containsField("container")) {
-            item.setParentRef(new ParentRef((String)dbObject.get("container")));
+        if(dbObject.containsField(CONTAINER_ID)) {
+            Id containerId = Id.valueOf(TranslatorUtils.toLong(dbObject, CONTAINER_ID));
+            EntityType type;
+            if (dbObject.containsField(CONTAINER_TYPE)) {
+                type = EntityType.from(TranslatorUtils.toString(dbObject, CONTAINER_TYPE));
+            } else {
+                type = EntityType.BRAND;
+            }
+            item.setParentRef(new ParentRef(containerId, type));
         }
 
         if (item instanceof Episode) {
         	Episode episode = (Episode) item;
-        	if(dbObject.containsField("series")) {
-        	    episode.setSeriesRef(new ParentRef((String)dbObject.get("series")));
-        	}
+        	if (dbObject.containsField(SERIES_ID)) {
+                episode.setSeriesRef(new ParentRef(Id.valueOf(TranslatorUtils.toLong(dbObject, SERIES_ID)), EntityType.SERIES));
+            }
         	episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
         	episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
         	episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
-        	if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
-        		episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY)));
-        	}
         }
         
         if (item instanceof Film) {
@@ -246,37 +254,33 @@ public class ItemTranslator implements ModelTranslator<Item> {
         if (! entity.getCountriesOfOrigin().isEmpty()) {
             TranslatorUtils.fromIterable(itemDbo, Countries.toCodes(entity.getCountriesOfOrigin()), COUNTRIES_OF_ORIGIN_KEY);
         }
-		
+        
         if(entity.getContainer() != null) {
-            itemDbo.put("container", entity.getContainer().getUri());
+            itemDbo.put(CONTAINER_ID, entity.getContainer().getId().longValue());
+            itemDbo.put(CONTAINER_TYPE, entity.getContainer().getType().toString());
+        }
+        
+        if (entity instanceof Episode) {
+            Episode episode = (Episode) entity;
+
+            if(episode.getSeriesRef() != null) {
+                itemDbo.put(SERIES_ID, episode.getSeriesRef().getId().longValue());
+            }
+
+            TranslatorUtils.from(itemDbo, PART_NUMBER, episode.getPartNumber());
+            TranslatorUtils.from(itemDbo, EPISODE_NUMBER, episode.getEpisodeNumber());
+            TranslatorUtils.from(itemDbo, SERIES_NUMBER, episode.getSeriesNumber());
         }
 
-        if (entity instanceof Episode) {
-			Episode episode = (Episode) entity;
-			
-			if(episode.getSeriesRef() != null) {
-			    itemDbo.put("series", episode.getSeriesRef().getUri());
-			}
-			
-			TranslatorUtils.from(itemDbo, PART_NUMBER, episode.getPartNumber());
-			TranslatorUtils.from(itemDbo, EPISODE_NUMBER, episode.getEpisodeNumber());
-			TranslatorUtils.from(itemDbo, SERIES_NUMBER, episode.getSeriesNumber());
-			
-			ParentRef series = episode.getSeriesRef();
-			if (series != null) {
-				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getUri());
-			}
-		}
-		
-		if (entity instanceof Film) {
-		    Film film = (Film) entity;
-		    TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
-		    
-		    encodeSubtitles(itemDbo, film.getSubtitles());
-		    encodeReleases(itemDbo, film.getReleaseDates());
-		    
-		}
-		
+        if(entity instanceof Film) {
+            Film film = (Film) entity;
+            TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
+
+            encodeSubtitles(itemDbo, film.getSubtitles());
+            encodeReleases(itemDbo, film.getReleaseDates());
+
+        }
+
         if (entity instanceof Song) {
             Song song = (Song) entity;
             TranslatorUtils.from(itemDbo, "isrc", song.getIsrc());

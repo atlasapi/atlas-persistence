@@ -5,11 +5,14 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.util.Identifiables;
 import org.atlasapi.persistence.content.PeopleListerListener;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.text.NumberPadder;
+import com.metabroadcast.common.time.DateTimeZones;
 
 public class MongoPersonStoreTest {
 
@@ -59,18 +63,23 @@ public class MongoPersonStoreTest {
     @Test
     public void shouldSetPersonAndAddItems() {
         Person person = new Person(uri, uri, Publisher.BBC);
+        person.setId(1);
         store.createOrUpdatePerson(person);
         
-        List<String> items = Lists.newArrayList();
+        List<Id> items = Lists.newArrayList();
         for (int i=0; i<10; i++) {
             Item item = new Item("item"+i, "item"+i, Publisher.BBC);
-            items.add(item.getCanonicalUri());
+            item.setId(i+1);
+            item.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+            items.add(item.getId());
             person.addContent(item.childRef());
             store.updatePersonItems(person);
         }
         
         for (int i=0; i<10; i++) {
             Item item = new Item("item"+i, "item"+i, Publisher.BBC);
+            item.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+            item.setId(i+1);
             person.addContent(item.childRef());
             store.updatePersonItems(person);
         }
@@ -81,6 +90,6 @@ public class MongoPersonStoreTest {
         assertEquals(person.getPublisher(), found.getPublisher());
         
         assertEquals(10, found.getContents().size());
-        assertEquals(items, ImmutableList.copyOf(Iterables.transform(found.getContents(), ChildRef.TO_URI)));
+        assertEquals(items, ImmutableList.copyOf(Iterables.transform(found.getContents(), Identifiables.toId())));
     }
 }

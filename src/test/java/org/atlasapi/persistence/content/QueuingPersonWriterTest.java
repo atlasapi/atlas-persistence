@@ -12,14 +12,19 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.DeterministicScheduler;
+import org.joda.time.DateTime;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(JMock.class)
+import com.metabroadcast.common.time.DateTimeZones;
+
 public class QueuingPersonWriterTest {
-    private Mockery context = new JUnit4Mockery();
+    
+    @Rule public final JUnitRuleMockery context = new JUnitRuleMockery();
     
     private final PersonWriter personWriter = context.mock(PersonWriter.class);
     
@@ -34,6 +39,12 @@ public class QueuingPersonWriterTest {
     
     @Before
     public void setUp() {
+        item1.setId(1);
+        item1.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+        item2.setId(2);
+        item2.setThisOrChildLastUpdated(new DateTime(DateTimeZones.UTC));
+        person1.setId(3);
+        person2.setId(4);
         writer = new QueuingPersonWriter(personWriter, new SystemOutAdapterLog(), scheduler);
     }
     

@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
@@ -52,12 +53,14 @@ public class MongoLookupEntryStoreTest {
     public void testStore() {
 
         Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.setId(1);
         testItemOne.addAliasUrl("testItemOneAlias");
         testItemOne.addAlias(new Alias("testItemOneNamespace", "testItemOneValue"));
         testItemOne.addAliasUrl("sharedAlias");
         testItemOne.addAlias(new Alias("sharedNamespace", "sharedValue"));
         
         Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.BBC);
+        testItemTwo.setId(2);
         testItemTwo.addAliasUrl("testItemTwoAlias");
         testItemTwo.addAlias(new Alias("testItemTwoNamespace", "testItemTwoValue"));
         testItemTwo.addAliasUrl("sharedAlias");
@@ -117,6 +120,7 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookup() {
 
         Item testItem = new Item("newItemUri", "newItemCurie", Publisher.BBC);
+        testItem.setId(1);
         testItem.addAliasUrl("newItemAlias");
         
         entryStore.ensureLookup(testItem);
@@ -134,6 +138,7 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookupWritesEntryWhenOfDifferentType() {
         
         Item testItem = new Item("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testItem.setId(1);
         testItem.addAliasUrl("oldItemAlias");
         
         entryStore.ensureLookup(testItem);
@@ -141,6 +146,7 @@ public class MongoLookupEntryStoreTest {
         LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemUri")));
         
         Item transitiveItem = new Item("transitiveUri", "transitiveCurie", Publisher.PA);
+        transitiveItem.setId(2);
         transitiveItem.addAliasUrl("transitiveAlias");
         
         entryStore.ensureLookup(transitiveItem);
@@ -156,8 +162,9 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(secondEntry);
 
         Episode testEpisode = new Episode("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testEpisode.setId(1);
         testEpisode.addAliasUrl("oldItemAlias");
-        testEpisode.setParentRef(new ParentRef("aBrand"));
+        testEpisode.setParentRef(new ParentRef(2L, EntityType.BRAND));
         
         entryStore.ensureLookup(testEpisode);
 
@@ -181,6 +188,7 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookupChangesTypeForNonTopLevelSeries() {
         
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(1);
         
         entryStore.ensureLookup(series);
         
@@ -189,7 +197,10 @@ public class MongoLookupEntryStoreTest {
         assertEquals(ContentCategory.CONTAINER, newEntry.lookupRef().category());
         
         series = new Series("seriesUri","seriesCurie", Publisher.BBC);
-        series.setParent(new Brand("brandUri","brandCurie",Publisher.BBC));
+        series.setId(2);
+        Brand brand = new Brand("brandUri","brandCurie",Publisher.BBC);
+        brand.setId(3);
+        series.setParent(brand);
 
         entryStore.ensureLookup(series);
         
@@ -202,6 +213,7 @@ public class MongoLookupEntryStoreTest {
     public void testEnsureLookupRewritesEntryWhenAliasesChange() {
         
         Brand brand = new Brand("brandUri", "brandCurie", Publisher.BBC_REDUX);
+        brand.setId(1);
         brand.addAliasUrl("brandAlias");
         
         entryStore.ensureLookup(brand);
@@ -240,6 +252,7 @@ public class MongoLookupEntryStoreTest {
     @Test
     public void testEnsureMatchingNamespaceValueLookup() {
         Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.setId(1);
         testItemOne.addAlias(new Alias("a", "b"));
         testItemOne.addAlias(new Alias("c", "d"));
         
@@ -262,9 +275,11 @@ public class MongoLookupEntryStoreTest {
     @Test
     public void testMultipleValueLookup() {
         Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.setId(1);
         testItemOne.addAlias(new Alias("namespace", "valueOne"));
         
         Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.BBC);
+        testItemTwo.setId(2);
         testItemTwo.addAlias(new Alias("namespace", "valueTwo"));
         
         LookupEntry testEntryOne = LookupEntry.lookupEntryFrom(testItemOne);

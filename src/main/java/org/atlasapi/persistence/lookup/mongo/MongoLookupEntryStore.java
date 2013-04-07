@@ -17,7 +17,9 @@ import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -38,6 +40,7 @@ import com.mongodb.DBObject;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
+    private static final Pattern ANY_NAMESPACE = Pattern.compile("^.*");
     private DBCollection lookup;
     private LookupEntryTranslator translator;
 
@@ -61,8 +64,8 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
-        DBObject queryDbo = new BasicDBObject(OPAQUE_ID, new BasicDBObject(IN, ids));
+    public Iterable<LookupEntry> entriesForIds(Iterable<Id> ids) {
+        DBObject queryDbo = new BasicDBObject(OPAQUE_ID, new BasicDBObject(IN, Iterables.transform(ids, Id.toLongValue())));
         DBCursor found = lookup.find(queryDbo);
         if (found == null) {
             return ImmutableList.of();
@@ -92,7 +95,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
         store(merged);
         
-        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_ID))) {
+        for (LookupEntry entry : entriesForIds(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_ID))) {
             if(entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }
@@ -128,7 +131,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         if (namespace.isPresent()) {
             return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values)).build());        
         } else {
-            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, "/^.*/").fieldIn(VALUE, values)).build());
+            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANY_NAMESPACE).fieldIn(VALUE, values)).build());
         }
     }
 }

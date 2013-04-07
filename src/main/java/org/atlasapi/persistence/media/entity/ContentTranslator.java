@@ -190,7 +190,9 @@ public class ContentTranslator implements ModelTranslator<Content> {
             dbObject.put("people", list);
         }
 
-        TranslatorUtils.from(dbObject, ID_KEY, entity.getId());
+        if (entity.getId() != null) {
+            TranslatorUtils.from(dbObject, ID_KEY, entity.getId().longValue());
+        }
 
         return dbObject;
     }

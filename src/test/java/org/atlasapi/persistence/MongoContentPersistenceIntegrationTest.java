@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -41,21 +42,21 @@ public class MongoContentPersistenceIntegrationTest {
         
         String uri = "itemUri";
         Item item = new Item(uri, "itemCurie", Publisher.BBC);
+        item.setId(1);
         item.setTitle("I am a title");
         
         contentWriter.createOrUpdate(item);
         
         Iterable<LookupEntry> entries = lookupStore.entriesForCanonicalUris(ImmutableSet.of(item.getCanonicalUri()));
         LookupEntry entry = Iterables.getOnlyElement(entries);
-        Long id = entry.id();
-        assertThat(id, is(nullValue()));
+        Id id = entry.id();
 
-        Maybe<Identified> maybeContent = knownTypeContentResolver.findByLookupRefs(ImmutableSet.of(entry.lookupRef())).get(uri);
+        Maybe<Identified> maybeContent = knownTypeContentResolver.findByLookupRefs(ImmutableSet.of(entry.lookupRef())).get(id);
         assertThat((Item) maybeContent.requireValue(), is(equalTo(item)));
         assertThat(((Item) maybeContent.requireValue()).getId(), is(equalTo(id)));
         assertThat(((Item) maybeContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
 
-        Maybe<Identified> moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(uri);
+        Maybe<Identified> moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(id);
         assertThat((Item) moreContent.requireValue(), is(equalTo(item)));
         assertThat(((Item) moreContent.requireValue()).getId(), is(equalTo(id)));
         assertThat(((Item) moreContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
@@ -66,7 +67,7 @@ public class MongoContentPersistenceIntegrationTest {
         
         contentWriter.createOrUpdate(item);
         
-        moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(uri);
+        moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(Id.valueOf(1234L));
         assertThat((Item) moreContent.requireValue(), is(equalTo(item)));
         //ID setting is currently disabled, so this check is not valid
         //assertThat(((Item) moreContent.requireValue()).getStringId(), is(equalTo(id)));

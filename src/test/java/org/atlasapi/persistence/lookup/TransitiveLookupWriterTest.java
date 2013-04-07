@@ -40,6 +40,7 @@ public class TransitiveLookupWriterTest extends TestCase {
     public void testWriteNewLookup() {
 
         Item item = createItem("test", Publisher.BBC);
+        item.setId(1);
         
         store.store(LookupEntry.lookupEntryFrom(item));
 
@@ -47,13 +48,13 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of("testUri")));
         assertEquals(item.getCanonicalUri(), uriEntry.uri());
-        assertEquals(item.getAllUris(), uriEntry.aliasUrls());
-        assertEquals("testUri", Iterables.getOnlyElement(uriEntry.directEquivalents()).id());
+        assertEquals(item.getAliasUrls(), uriEntry.aliasUrls());
+        assertEquals(item.getId(), Iterables.getOnlyElement(uriEntry.directEquivalents()).id());
 
         assertNotNull(uriEntry.created());
         assertNotNull(uriEntry.updated());
 
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
+        assertEquals(item.getId(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
         assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).category());
 
@@ -64,6 +65,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
     private Item createItem(String itemName, Publisher publisher) {
         Item item = new Item(itemName + "Uri", itemName + "Curie", Publisher.BBC);
+        item.setId(itemName.hashCode());
         item.addAliasUrl(itemName + "Alias");
         item.setPublisher(publisher);
         return item;
@@ -179,19 +181,22 @@ public class TransitiveLookupWriterTest extends TestCase {
 
     private void hasEquivs(Content id, Content... transitiveEquivs) {
         LookupEntry entry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of(id.getCanonicalUri())));
-        assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(transitiveEquivs),Identified.TO_URI)), ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), LookupRef.TO_ID)));
+        assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(transitiveEquivs),Identified.TO_ID)), ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), LookupRef.TO_ID)));
     }
 
     private void hasDirectEquivs(Content id, Content... directEquivs) {
         LookupEntry entry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of(id.getCanonicalUri())));
-        assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(directEquivs),Identified.TO_URI)), ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(), LookupRef.TO_ID)));
+        assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(directEquivs),Identified.TO_ID)), ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(), LookupRef.TO_ID)));
     }
 
     public void testBreakingEquivs() {
         
         Brand pivot = new Brand("pivot", "cpivot", Publisher.PA);
+        pivot.setId(1);
         Brand left = new Brand("left", "cleft", Publisher.PA);
+        left.setId(2);
         Brand right = new Brand("right", "cright", Publisher.PA);
+        right.setId(3);
         
         store.store(LookupEntry.lookupEntryFrom(pivot));
         store.store(LookupEntry.lookupEntryFrom(left));
@@ -326,10 +331,13 @@ public class TransitiveLookupWriterTest extends TestCase {
         TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
         
         Item paItem = createItem("paItem2",Publisher.PA);
+        paItem.setId(1);
         Item pnItem = createItem("pnItem2",Publisher.PREVIEW_NETWORKS);
+        pnItem.setId(3);
         
         LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(ImmutableList.of(LookupRef.from(pnItem)));
-        when(store.entriesForCanonicalUris(ImmutableList.of(paItem.getCanonicalUri()))).thenReturn(ImmutableList.of(paLookupEntry));
+        when(store.entriesForIds(ImmutableList.of(paItem.getId())))
+            .thenReturn(ImmutableList.of(paLookupEntry));
         
         writer.writeLookup(ContentRef.valueOf(paItem), ImmutableSet.of(ContentRef.valueOf(pnItem)), ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS));
         

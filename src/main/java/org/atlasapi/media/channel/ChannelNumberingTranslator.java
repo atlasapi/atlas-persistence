@@ -18,8 +18,8 @@ public class ChannelNumberingTranslator {
         DBObject dbo = new BasicDBObject();
         
         TranslatorUtils.from(dbo, CHANNEL_NUMBER_KEY, model.getChannelNumber());
-        TranslatorUtils.from(dbo, CHANNEL_KEY, new BasicDBObject(MongoConstants.ID, model.getChannel()));
-        TranslatorUtils.from(dbo, CHANNEL_GROUP_KEY, new BasicDBObject(MongoConstants.ID, model.getChannelGroup()));
+        TranslatorUtils.from(dbo, CHANNEL_KEY, new BasicDBObject(MongoConstants.ID, model.getChannel().longValue()));
+        TranslatorUtils.from(dbo, CHANNEL_GROUP_KEY, new BasicDBObject(MongoConstants.ID, model.getChannelGroup().longValue()));
         TranslatorUtils.fromLocalDate(dbo, START_DATE_KEY, model.getStartDate());
         TranslatorUtils.fromLocalDate(dbo, END_DATE_KEY, model.getEndDate());
         

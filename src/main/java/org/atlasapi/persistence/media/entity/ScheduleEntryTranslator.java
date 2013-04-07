@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
@@ -43,7 +44,7 @@ public class ScheduleEntryTranslator {
         dbObject.put(ITEM_REFS_AND_BROADCAST_KEY, Iterables.transform(entry.getItemRefsAndBroadcasts(), new Function<ItemRefAndBroadcast, DBObject>() {
             @Override
             public DBObject apply(ItemRefAndBroadcast input) {
-                BasicDBObject dbo = new BasicDBObject(ITEM_URI_KEY, input.getItemUri());
+                BasicDBObject dbo = new BasicDBObject(ITEM_URI_KEY, input.getItemId().longValue());
                 dbo.put(BROADCAST_KEY, broadcastTranslator.toDBObject(input.getBroadcast()));
                 return dbo;
             }
@@ -78,7 +79,7 @@ public class ScheduleEntryTranslator {
             @Override
             public ItemRefAndBroadcast apply(DBObject dbo) {
                Broadcast broadcast = broadcastTranslator.fromDBObject((DBObject) dbo.get(BROADCAST_KEY));
-               return new ItemRefAndBroadcast((String) dbo.get(ITEM_URI_KEY), broadcast);
+               return new ItemRefAndBroadcast(Id.valueOf((Long) dbo.get(ITEM_URI_KEY)), broadcast);
             }
         }));
     }

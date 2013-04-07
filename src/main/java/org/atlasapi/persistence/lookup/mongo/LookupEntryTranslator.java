@@ -2,17 +2,21 @@ package org.atlasapi.persistence.lookup.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
+import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.media.entity.AliasTranslator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -54,7 +58,7 @@ public class LookupEntryTranslator {
         BasicDBObject dbo = new BasicDBObject();
         
         TranslatorUtils.from(dbo, ID, entry.uri());
-        TranslatorUtils.from(dbo, OPAQUE_ID, entry.id());
+        TranslatorUtils.from(dbo, OPAQUE_ID, entry.id().longValue());
         TranslatorUtils.from(dbo, SELF, equivalentToDbo.apply(entry.lookupRef()));
         
         Set<String> aliases = Sets.newHashSet(entry.uri());
@@ -86,7 +90,7 @@ public class LookupEntryTranslator {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, ID, input.id());
+            TranslatorUtils.from(dbo, ID, input.id().longValue());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
             
@@ -108,20 +112,28 @@ public class LookupEntryTranslator {
         Set<Alias> aliases = aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbo, IDS));
         
         LookupRef self = equivalentFromDbo.apply(TranslatorUtils.toDBObject(dbo, SELF));
-        Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
+        Set<LookupRef> equivs = fromDbos(TranslatorUtils.toDBObjectList(dbo, EQUIVS));
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
         
-        Set<LookupRef> directEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, DIRECT), equivalentFromDbo));
-        Set<LookupRef> explicitEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, "explicit"), equivalentFromDbo));
+        Set<LookupRef> directEquivalents = fromDbos(TranslatorUtils.toDBObjectList(dbo, DIRECT));
+        Set<LookupRef> explicitEquivalents = fromDbos(TranslatorUtils.toDBObjectList(dbo, "explicit"));
         
         return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
+    }
+
+    private ImmutableSet<LookupRef> fromDbos(List<DBObject> equivRefs) {
+        return ImmutableSet.copyOf(Iterables.filter(Iterables.transform(equivRefs, equivalentFromDbo), Predicates.notNull()));
     }
 
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
         @Override
         public LookupRef apply(DBObject input) {
-            String id = TranslatorUtils.toString(input, ID);
+            Long aid = TranslatorUtils.toLong(input, ID);
+            if (aid == null) {
+                return null;
+            }
+            Id id = Id.valueOf(aid);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
             return new LookupRef(id, publisher, ContentCategory.valueOf(type));

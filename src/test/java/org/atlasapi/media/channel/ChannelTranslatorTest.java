@@ -49,6 +49,8 @@ public class ChannelTranslatorTest {
             .withVariationIds(variations)
             .build();
         
+        channel.setId(1);
+        
         DBObject encoded = channelTranslator.toDBObject(null, channel);
         
         Channel decoded = channelTranslator.fromDBObject(encoded, null);

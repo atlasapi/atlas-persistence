@@ -10,12 +10,14 @@ import java.util.List;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
@@ -44,17 +46,17 @@ public class ChildRefWriter {
         ChildRef childRef = episode.childRef();
 
         if (episode.getSeriesRef() == null) { // just ensure item in container.
-            includeChildRefInContainer(episode.getContainer().getUri(), childRef, containers, CHILDREN_KEY);
+            includeChildRefInContainer(episode.getContainer().getId(), childRef, containers, CHILDREN_KEY);
             return;
         }
 
         // otherwise retrieve the child references for both series and brand, if
         // either are missing, change nothing and error out.
-        String brandUri = episode.getContainer().getUri();
-        String seriesUri = episode.getSeriesRef().getUri();
+        Id brandId = episode.getContainer().getId();
+        Id seriesId = episode.getSeriesRef().getId();
 
-        Maybe<Container> maybeBrand = getContainer(brandUri, containers);
-        Maybe<Container> maybeSeries = getContainer(seriesUri, programmeGroups);
+        Maybe<Container> maybeBrand = getContainer(brandId, containers);
+        Maybe<Container> maybeSeries = getContainer(seriesId, programmeGroups);
 
         if (maybeBrand.isNothing() || maybeSeries.isNothing()) {
             throw new IllegalStateException(String.format("Container or series not found for episode %s", episode.getCanonicalUri()));
@@ -66,9 +68,9 @@ public class ChildRefWriter {
     }
 
     public void includeSeriesInTopLevelContainer(Series series) {
-        String containerUri = series.getParent().getUri();
+        Id containerId = series.getParent().getId();
         
-        Maybe<Container> maybeContainer = getContainer(containerUri, containers);
+        Maybe<Container> maybeContainer = getContainer(containerId, containers);
 
         if (maybeContainer.hasValue()) {
             Container container = maybeContainer.requireValue();
@@ -79,10 +81,10 @@ public class ChildRefWriter {
                 brand.setThisOrChildLastUpdated(laterOf(brand.getThisOrChildLastUpdated(), series.getThisOrChildLastUpdated()));
                 containers.save(containerTranslator.toDBO(container, true));
             } else {
-                throw new IllegalStateException(String.format("Container %s for series child ref %s is not brand", containerUri, series.getCanonicalUri()));
+                throw new IllegalStateException(String.format("Container %s for series child ref %s is not brand", containerId, series.getCanonicalUri()));
             }
         } else {
-            throw new IllegalStateException(String.format("Container %s not found in %s for series child ref %s", containerUri, containers.getName(), series.getCanonicalUri()));
+            throw new IllegalStateException(String.format("Container %s not found in %s for series child ref %s", containerId, containers.getName(), series.getCanonicalUri()));
         }
     }
 
@@ -97,17 +99,17 @@ public class ChildRefWriter {
     }
 
     public void includeItemInTopLevelContainer(Item item) {
-        includeChildRefInContainer(item.getContainer().getUri(), item.childRef(), containers, CHILDREN_KEY);
+        includeChildRefInContainer(item.getContainer().getId(), item.childRef(), containers, CHILDREN_KEY);
     }
 
-    private void includeChildRefInContainer(String containerUri, ChildRef ref, DBCollection collection, String key) {
+    private void includeChildRefInContainer(Id containerId, ChildRef ref, DBCollection collection, String key) {
 
-        Maybe<Container> maybeContainer = getContainer(containerUri, collection);
+        Maybe<Container> maybeContainer = getContainer(containerId, collection);
 
         if (maybeContainer.hasValue()) {
             addChildRef(ref, collection, maybeContainer.requireValue());
         } else {
-            throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s", containerUri, collection.getName(), ref.getUri()));
+            throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s", containerId, collection.getName(), ref.getId()));
         }
     }
 
@@ -124,8 +126,8 @@ public class ChildRefWriter {
         return ChildRef.dedupeAndSort(ImmutableList.<ChildRef> builder().addAll(currentChildRefs).add(newChildRef).build());
     }
 
-    private Maybe<Container> getContainer(String canonicalUri, DBCollection collection) {
-        DBObject dbo = collection.findOne(where().idEquals(canonicalUri).build());
+    private Maybe<Container> getContainer(Id containerId, DBCollection collection) {
+        DBObject dbo = collection.findOne(where().fieldEquals(IdentifiedTranslator.OPAQUE_ID, containerId.longValue()).build());
         if (dbo == null) {
             return Maybe.nothing();
         }

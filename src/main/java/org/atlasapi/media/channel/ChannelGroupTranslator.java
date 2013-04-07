@@ -52,7 +52,10 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             TranslatorUtils.fromLongSet(dbObject, REGIONS_KEY, ImmutableSet.copyOf(Iterables.transform(((Platform)model).getRegions(), Id.toLongValue())));
         } else if (model instanceof Region) {
             TranslatorUtils.from(dbObject, TYPE_KEY, REGION_VALUE);
-            TranslatorUtils.from(dbObject, PLATFORM_KEY, ((Region)model).getPlatform());
+            Region region = (Region) model;
+            if (region.getPlatform() != null) {
+                TranslatorUtils.from(dbObject, PLATFORM_KEY, region.getPlatform().longValue());
+            }
         }
         
         fromTemporalStringSet(dbObject, TITLES_KEY, model.getAllTitles());
@@ -92,7 +95,9 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
             if (model == null) {
                 model = new Region();
             }
-            ((Region)model).setPlatform(Id.valueOf(TranslatorUtils.toLong(dbObject, PLATFORM_KEY)));
+            if (dbObject.containsField(PLATFORM_KEY)) {
+                ((Region)model).setPlatform(Id.valueOf(TranslatorUtils.toLong(dbObject, PLATFORM_KEY)));
+            }
             break;
         default:
             throw new IllegalArgumentException("Unknown type: " + type);                    

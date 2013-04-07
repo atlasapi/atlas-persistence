@@ -70,7 +70,9 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		    TranslatorUtils.fromSet(dbObject, ImmutableSet.copyOf(transform(model.availableFrom(), Publisher.TO_KEY)), AVAILABLE_ON);
 		}
 		TranslatorUtils.from(dbObject, KEY, model.key());
-		TranslatorUtils.from(dbObject, PARENT, model.parent());
+		if (model.parent() != null) {
+		    TranslatorUtils.from(dbObject, PARENT, model.parent().longValue());
+		}
 		if (model.variations() != null) {
 		    TranslatorUtils.fromLongSet(dbObject, VARIATIONS, ImmutableSet.copyOf(Iterables.transform(model.variations(), Id.toLongValue())));
 		}
@@ -115,7 +117,9 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		
 		String broadcaster = TranslatorUtils.toString(dbObject, BROADCASTER);
 		model.setBroadcaster(broadcaster != null ? Publisher.fromKey(broadcaster).valueOrNull() : null);
-		model.setParent(Id.valueOf(TranslatorUtils.toLong(dbObject, PARENT)));
+		if (dbObject.containsField(PARENT)) {
+		    model.setParent(Id.valueOf(TranslatorUtils.toLong(dbObject, PARENT)));
+		}
 		model.setVariationIds(Iterables.transform(TranslatorUtils.toLongSet(dbObject, VARIATIONS), Id.fromLongValue()));
 		model.setChannelNumbers(toChannelNumberingSet(dbObject, NUMBERINGS));
 		model.setStartDate(TranslatorUtils.toLocalDate(dbObject, START_DATE));

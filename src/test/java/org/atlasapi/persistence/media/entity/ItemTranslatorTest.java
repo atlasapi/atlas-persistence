@@ -5,6 +5,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Clip;
@@ -40,6 +41,7 @@ public class ItemTranslatorTest extends TestCase {
     @SuppressWarnings("unchecked")
     public void testConvertFromItem() throws Exception {
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
+        item.setId(1);
         item.setTitle("title");
         
         Location loc = new Location();
@@ -101,7 +103,7 @@ public class ItemTranslatorTest extends TestCase {
         List<DBObject> ts = (List<DBObject>) dbObject.get("topics");
 		assertEquals(2, ts.size());
         DBObject t1 = (DBObject) ts.iterator().next();
-        assertEquals(topic1.getTopic(), t1.get("topic"));
+        assertEquals(topic1.getTopic().longValue(), t1.get("topic"));
         assertEquals(topic1.getWeighting(), t1.get("weighting"));
         assertEquals(topic1.isSupervised(), t1.get("supervised"));
         assertEquals(topic1.getRelationship().name(), t1.get("relationship"));
@@ -112,6 +114,7 @@ public class ItemTranslatorTest extends TestCase {
         DBCollection collection = MongoTestHelper.anEmptyTestDatabase().collection("test");
         
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
+        item.setId(1);
         item.setTitle("title");
         
         Location loc = new Location();
@@ -143,7 +146,7 @@ public class ItemTranslatorTest extends TestCase {
         TopicRef topic2 = new TopicRef(2l, 0.02f, false, TopicRef.Relationship.ABOUT);
         item.setTopicRefs(ImmutableList.of(topic1, topic2));
         
-        ContentGroupRef contentGroup1 = new ContentGroupRef(1L, "uri");
+        ContentGroupRef contentGroup1 = new ContentGroupRef(Id.valueOf(1L), "uri");
         item.addContentGroup(contentGroup1);
         
         DBObject dbObject = itemTranslator.toDBObject(null, item);
@@ -191,6 +194,7 @@ public class ItemTranslatorTest extends TestCase {
     public void testRemovesLastUpdatedFromClipsForHashcode() {
         
         Item item = new Item("testUri", "testCurie", Publisher.BBC);
+        item.setId(1);
         createModel(item);
         
         Clip clip = new Clip();

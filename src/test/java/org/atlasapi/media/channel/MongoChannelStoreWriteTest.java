@@ -7,6 +7,8 @@ import junit.framework.TestCase;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -16,7 +18,7 @@ import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
-public class MongoChannelStoreWriteTest extends TestCase {
+public class MongoChannelStoreWriteTest {
     
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     
@@ -24,10 +26,14 @@ public class MongoChannelStoreWriteTest extends TestCase {
     
     private static final MongoChannelStore store = new MongoChannelStore(mongo, channelGroupStore, channelGroupStore);
     
-    @BeforeClass
+    @Before
     public void setUp() throws InterruptedException {
         store.createOrUpdate(channel("uri1", "key1", MediaType.VIDEO, null, "test/1", "test/2"));
-        Thread.sleep(2000);
+    }
+    
+    @After
+    public void tearDown() {
+        mongo.collection("channelGroups").drop();
     }
     
     @Test

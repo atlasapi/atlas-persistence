@@ -32,6 +32,7 @@ import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.DateTimeAttributeQuery;
 import org.atlasapi.content.criteria.EnumAttributeQuery;
+import org.atlasapi.content.criteria.IdAttributeQuery;
 import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
 import org.atlasapi.content.criteria.QueryVisitor;
@@ -49,6 +50,7 @@ import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
 import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
 import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.Encoding;
@@ -56,7 +58,7 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
-import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.topic.Topic;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.DateTime;
 
@@ -272,6 +274,38 @@ class MongoDBQueryBuilder {
 			@Override
 			public ConstrainedAttribute visit(MatchesNothing noOp) {
 				throw new IllegalArgumentException();
+			}
+			
+			@Override
+			public ConstrainedAttribute visit(final IdAttributeQuery query) {
+			    final List<Long> values = Lists.transform(query.getValue(), Id.toLongValue());
+			    return query.accept(new IntegerOperatorVisitor<ConstrainedAttribute>() {
+
+                    @Override
+                    public ConstrainedAttribute visit(Equals equals) {
+                        return new ConstrainedAttribute(query.getAttribute(), new BasicDBObject(IN, list(values)));
+                    }
+
+                    private Collection<?> toLowercaseStrings(Collection<Enum<?>> values) {
+                        List<String> strings = Lists.newArrayList();
+                        for (Enum<?> value : values) {
+                            strings.add(value.toString().toLowerCase());
+                        }
+                        return strings;
+                    }
+
+                    @Override
+                    public ConstrainedAttribute visit(LessThan lessThan) {
+                        // TODO Auto-generated method stub
+                        return null;
+                    }
+
+                    @Override
+                    public ConstrainedAttribute visit(GreaterThan greaterThan) {
+                        // TODO Auto-generated method stub
+                        return null;
+                    }
+                });
 			}
 		});
 	}

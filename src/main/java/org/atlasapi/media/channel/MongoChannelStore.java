@@ -92,7 +92,7 @@ public class MongoChannelStore implements ChannelStore {
 	public Channel createOrUpdate(Channel channel) {
 	    checkNotNull(channel);
 	    if (channel.getId() == null) {
-	        channel.setId(codec.decode(idGenerator.generate()).longValue());
+	        channel.setId(Id.valueOf(idGenerator.generateRaw()));
 	    } else {
 	        Maybe<Channel> existing = fromId(channel.getId());
 	        Preconditions.checkState(existing.hasValue(), "Channel not found to update");
@@ -104,7 +104,7 @@ public class MongoChannelStore implements ChannelStore {
 
         addNumberingsToChannelGroups(channel);
 
-        collection.update(new BasicDBObject(MongoConstants.ID, channel.getId()), translator.toDBObject(null, channel), UPSERT, SINGLE);
+        collection.update(new BasicDBObject(MongoConstants.ID, channel.getId().longValue()), translator.toDBObject(null, channel), UPSERT, SINGLE);
         
         return channel;
 	}
@@ -134,7 +134,7 @@ public class MongoChannelStore implements ChannelStore {
 
             Channel parent = maybeParent.requireValue();
             parent.addVariation(channel.getId());
-            collection.update(new BasicDBObject(MongoConstants.ID, parent.getId()), translator.toDBObject(null, parent), UPSERT, SINGLE);
+            collection.update(new BasicDBObject(MongoConstants.ID, parent.getId().longValue()), translator.toDBObject(null, parent), UPSERT, SINGLE);
         }
     }
 
@@ -148,7 +148,7 @@ public class MongoChannelStore implements ChannelStore {
                 Set<Id> variations = Sets.newHashSet(oldParent.variations()); 
                 variations.remove(existingChannel.getId());
                 oldParent.setVariationIds(variations);
-                collection.update(new BasicDBObject(MongoConstants.ID, oldParent.getId()), translator.toDBObject(null, oldParent), UPSERT, SINGLE);
+                collection.update(new BasicDBObject(MongoConstants.ID, oldParent.getId().longValue()), translator.toDBObject(null, oldParent), UPSERT, SINGLE);
             }
         }
 

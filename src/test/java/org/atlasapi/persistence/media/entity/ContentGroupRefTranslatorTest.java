@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.TopicRef;
 import org.junit.Test;
 
@@ -23,7 +24,7 @@ public class ContentGroupRefTranslatorTest {
  
         ContentGroupRefTranslator translator = new ContentGroupRefTranslator();
         
-        ContentGroupRef contentGroupRef = new ContentGroupRef(1L, "uri");
+        ContentGroupRef contentGroupRef = new ContentGroupRef(Id.valueOf(1L), "uri");
         DBObject dbObject = translator.toDBObject(contentGroupRef);
         dbObject.put(MongoConstants.ID, "test");
 		collection.save(dbObject);

@@ -44,7 +44,7 @@ public class MongoContentGroupWriter implements ContentGroupWriter {
     
     private void ensureId(ContentGroup contentGroup) {
         boolean noId = contentGroup.getId() == null;
-        boolean noStoredId = contentGroup.getId() != null && contentGroups.count(where().fieldEquals(IdentifiedTranslator.ID, contentGroup.getId()).build()) == 0;
+        boolean noStoredId = contentGroup.getId() != null && contentGroups.count(where().fieldEquals(IdentifiedTranslator.ID, contentGroup.getId().longValue()).build()) == 0;
         if (noId || noStoredId) {
             contentGroup.setId(idGenerator.generateRaw());
         }
