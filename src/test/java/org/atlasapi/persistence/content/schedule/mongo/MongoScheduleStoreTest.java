@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 
 import java.util.List;
 
+import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Brand;
@@ -31,6 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -115,7 +117,7 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), null);
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
         assertSchedule(schedule);
     }
 
@@ -144,7 +146,7 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV), null);
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV), Optional.<ApplicationConfiguration>absent());
         assertSchedule(schedule);
     }
     
@@ -178,7 +180,7 @@ public class MongoScheduleStoreTest {
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item3, b3));
     												  
     	store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, itemsAndBroadcasts);
-    	Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC), null);
+    	Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
     	
     	assertEquals(1, schedule.scheduleChannels().size());
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
@@ -236,7 +238,7 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), null);
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
         assertSchedule(schedule);
     }
     
@@ -248,10 +250,10 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), null);
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
         assertSchedule(schedule);
         
-        schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), null);
+        schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
         
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
         Item item1 = Iterables.getOnlyElement(channel.items());
@@ -267,7 +269,7 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(copy);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), null);
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
         Item item1 = Iterables.getOnlyElement(channel.items());
         Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
