@@ -5,8 +5,10 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDBObjectList;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDateTime;
 
+import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -14,7 +16,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
@@ -45,16 +46,16 @@ public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
     }
     
     @Override
-    public Iterable<String> availableChildrenFor(Container container) {
+    public Iterable<Id> availableChildrenFor(Container container) {
         final DateTime now = clock.now();
-        return Iterables.filter(Iterables.transform(availablityWindowsForChildrenOf(container, now), new Function<DBObject, String>() {
+        return Iterables.filter(Iterables.transform(availablityWindowsForChildrenOf(container, now), new Function<DBObject, Id>() {
 
             @Override
-            public String apply(DBObject input) {
+            public Id apply(DBObject input) {
                 for (DBObject version : toDBObjectList(input, versions)) {
                     for (DBObject broadcast : toDBObjectList(version, broadcasts)) {
                             if (after(toDateTime(broadcast, transmissionEndTime), now)) {
-                                return TranslatorUtils.toString(input, MongoConstants.ID);
+                                return Id.valueOf(TranslatorUtils.toLong(input, IdentifiedTranslator.OPAQUE_ID));
                             }
                         }
                     }
