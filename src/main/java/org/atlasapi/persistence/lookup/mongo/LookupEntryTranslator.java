@@ -90,7 +90,7 @@ public class LookupEntryTranslator {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, ID, input.id().longValue());
+            TranslatorUtils.from(dbo, OPAQUE_ID, input.id().longValue());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
             
@@ -129,7 +129,7 @@ public class LookupEntryTranslator {
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
         @Override
         public LookupRef apply(DBObject input) {
-            Long aid = TranslatorUtils.toLong(input, ID);
+            Long aid = TranslatorUtils.toLong(input, IdentifiedTranslator.OPAQUE_ID);
             if (aid == null) {
                 return null;
             }

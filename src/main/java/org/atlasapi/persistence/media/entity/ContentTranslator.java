@@ -80,7 +80,9 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
         }
         
-        entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
+        if (!(entity instanceof Clip)) {
+            entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
+        }
 
         return entity;
     }

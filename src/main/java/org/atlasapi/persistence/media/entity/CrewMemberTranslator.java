@@ -40,7 +40,9 @@ public class CrewMemberTranslator implements ModelTranslator<CrewMember> {
         TranslatorUtils.fromSet(dbObject, model.profileLinks(), "profileLinks");
         TranslatorUtils.from(dbObject, "uri", model.getCanonicalUri());
         TranslatorUtils.from(dbObject, "curie", model.getCurie());
-        TranslatorUtils.from(dbObject, "publisher", model.publisher().key());
+        if (model.publisher() != null) {
+            TranslatorUtils.from(dbObject, "publisher", model.publisher().key());
+        }
         if (model.role() != null) {
             TranslatorUtils.from(dbObject, "role", model.role().key());
         }
