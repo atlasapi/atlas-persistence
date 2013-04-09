@@ -15,7 +15,13 @@ public class KeyPhraseTranslator {
 
     public DBObject toDBObject(KeyPhrase entity) {
         
-        DBObject dbo = BasicDBObjectBuilder.start().add(PHRASE_KEY, entity.getPhrase()).add(PUBLISHER_KEY, entity.getPublisher().key()).get();
+        DBObject dbo = BasicDBObjectBuilder.start()
+                .add(PHRASE_KEY, entity.getPhrase())
+                .get();
+        
+        if (entity.getPublisher() != null) {
+            dbo.put(PUBLISHER_KEY, entity.getPublisher().key());
+        }
         
         TranslatorUtils.from(dbo, WEIGHTING_KEY, entity.getWeighting());
         
