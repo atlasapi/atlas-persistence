@@ -32,6 +32,7 @@ import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.DateTimeAttributeQuery;
 import org.atlasapi.content.criteria.EnumAttributeQuery;
+import org.atlasapi.content.criteria.FloatAttributeQuery;
 import org.atlasapi.content.criteria.IdAttributeQuery;
 import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
@@ -306,6 +307,11 @@ class MongoDBQueryBuilder {
                         return null;
                     }
                 });
+			}
+			
+			@Override
+			public ConstrainedAttribute visit(FloatAttributeQuery query) {
+			    throw new UnsupportedOperationException();
 			}
 		});
 	}

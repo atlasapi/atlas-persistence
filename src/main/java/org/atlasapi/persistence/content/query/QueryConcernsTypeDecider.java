@@ -21,6 +21,7 @@ import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.DateTimeAttributeQuery;
 import org.atlasapi.content.criteria.EnumAttributeQuery;
+import org.atlasapi.content.criteria.FloatAttributeQuery;
 import org.atlasapi.content.criteria.IdAttributeQuery;
 import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
@@ -98,6 +99,12 @@ public class QueryConcernsTypeDecider {
 			public Boolean visit(IdAttributeQuery query) {
 			    return typeLookup.contains(query.getAttribute().target());
 			}
+			
+			@Override
+			public Boolean visit(FloatAttributeQuery query) {
+			    return typeLookup.contains(query.getAttribute().target());
+			}
+			
 		});
 
 	    return found.contains(Boolean.TRUE);

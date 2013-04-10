@@ -23,6 +23,7 @@ import org.atlasapi.content.criteria.BooleanAttributeQuery;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.content.criteria.DateTimeAttributeQuery;
 import org.atlasapi.content.criteria.EnumAttributeQuery;
+import org.atlasapi.content.criteria.FloatAttributeQuery;
 import org.atlasapi.content.criteria.IdAttributeQuery;
 import org.atlasapi.content.criteria.IntegerAttributeQuery;
 import org.atlasapi.content.criteria.MatchesNothing;
@@ -89,6 +90,12 @@ public class QuerySplitter {
 			public Maybe<AtomicQuery> visit(IdAttributeQuery query) {
 			    return allowed(query);
 			}
+			
+			@Override
+			public Maybe<AtomicQuery> visit(FloatAttributeQuery query) {
+			    return allowed(query);
+			}
+			
 		});
 		
 		Iterable<AtomicQuery> operands = Maybe.filterValues(extracted);
