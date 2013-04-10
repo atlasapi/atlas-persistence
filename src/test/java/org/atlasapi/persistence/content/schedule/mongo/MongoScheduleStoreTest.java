@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 
 import java.util.List;
 
+import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Brand;
@@ -31,6 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -115,7 +117,7 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), null);
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
         assertSchedule(schedule);
     }
 
