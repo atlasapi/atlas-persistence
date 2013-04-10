@@ -106,7 +106,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
             item.setVersions(versions);
         }
         
-        if(dbObject.containsField(CONTAINER_ID)) {
+        if(dbObject.containsField(CONTAINER_ID) && dbObject.get(CONTAINER_ID) != null) {
             Id containerId = Id.valueOf(TranslatorUtils.toLong(dbObject, CONTAINER_ID));
             EntityType type;
             if (dbObject.containsField(CONTAINER_TYPE)) {
