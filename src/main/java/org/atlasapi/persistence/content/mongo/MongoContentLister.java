@@ -154,7 +154,12 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     }
                     currentResults = cursorBuilder.cursorFor(table);
                 }
-                return currentTranslator.apply(currentResults.next());
+                Content next;
+                do {
+                    next = currentTranslator.apply(currentResults.next());
+                }
+                while (next == null);
+                return next;
             }
         };
     }
@@ -162,14 +167,24 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     private final Function<DBObject, Container> TO_CONTAINER = new Function<DBObject, Container>() {
         @Override
         public Container apply(DBObject input) {
-            return containerTranslator.fromDBObject(input, null);
+            try {
+                return containerTranslator.fromDBObject(input, null);
+            } catch (Exception e) { //make sure bootstrap continues
+                log.error("DESERIALISE FAILED: " + (String)input.get(ID), e);
+                return null;
+            }
         }
     };
     
     private final Function<DBObject, Item> TO_ITEM = new Function<DBObject, Item>() {
         @Override
         public Item apply(DBObject input) {
-            return itemTranslator.fromDBObject(input, null);
+            try {
+                return itemTranslator.fromDBObject(input, null);
+            } catch (Exception e) { //make sure bootstrap continues
+                log.error("DESERIALISE FAILED: " + (String)input.get(ID), e);
+                return null;
+            }
         }
     };
 
