@@ -158,7 +158,10 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                 do {
                     next = currentTranslator.apply(currentResults.next());
                 }
-                while (next == null);
+                while (next == null && currentResults.hasNext());
+                if (next == null) {
+                    return endOfData();
+                }
                 return next;
             }
         };
