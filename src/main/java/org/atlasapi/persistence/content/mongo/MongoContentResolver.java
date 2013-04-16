@@ -42,15 +42,15 @@ public class MongoContentResolver implements KnownTypeContentResolver {
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
         ResolvedContentBuilder results = ResolvedContent.builder();
 
-        Multimap<DBCollection, Id> idsGroupedByTable = HashMultimap.create();
+        Multimap<DBCollection, String> idsGroupedByTable = HashMultimap.create();
         for (LookupRef lookupRef : lookupRefs) {
             idsGroupedByTable.put(contentTables.collectionFor(lookupRef.category()), lookupRef.id());
         }
         
-        for (Entry<DBCollection, Collection<Id>> lookupInOneTable : idsGroupedByTable.asMap().entrySet()) {
+        for (Entry<DBCollection, Collection<String>> lookupInOneTable : idsGroupedByTable.asMap().entrySet()) {
             
-            Collection<Long> ids = Collections2.transform(lookupInOneTable.getValue(), Id.toLongValue());
-            DBCursor found = lookupInOneTable.getKey().find(where().longFieldIn(IdentifiedTranslator.OPAQUE_ID, ids).build());
+            Collection<String> ids = lookupInOneTable.getValue();
+            DBCursor found = lookupInOneTable.getKey().find(where().idIn(ids).build());
             if (found != null) {
                 for (DBObject dbo : found) {
                     Identified model = toModel(dbo);

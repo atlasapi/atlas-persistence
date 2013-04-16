@@ -130,7 +130,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         Set<LookupRef> currentNeighbours = 
             Sets.filter(relevantNeighbours(subjectEntry), 
                 MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(publishers)));
-        Set<Id> currentNeighbourUris = ImmutableSet.copyOf(transform(currentNeighbours,TO_ID));
+        Set<String> currentNeighbourUris = ImmutableSet.copyOf(transform(currentNeighbours,TO_ID));
         boolean noChange = currentNeighbourUris.equals(newNeighbourUris);
         if (!noChange) {
             log.trace("Equivalence change: {} -> {}", currentNeighbourUris, newNeighbourUris);
@@ -216,7 +216,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             refs.addAll(entry.equivalents());
         }
         
-        for (LookupEntry entry : entryStore.entriesForIds(Iterables.transform(refs, LookupRef.TO_ID))) {
+        for (LookupEntry entry : entryStore.entriesForCanonicalUris(Iterables.transform(refs, LookupRef.TO_ID))) {
             transitiveClosure.put(entry.lookupRef(), entry);
         }
         

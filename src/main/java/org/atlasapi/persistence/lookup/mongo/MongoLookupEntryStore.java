@@ -95,7 +95,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
         store(merged);
         
-        for (LookupEntry entry : entriesForIds(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_ID))) {
+        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_ID))) {
             if(entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }

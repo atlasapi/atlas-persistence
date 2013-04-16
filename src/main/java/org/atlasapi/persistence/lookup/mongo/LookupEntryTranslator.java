@@ -5,14 +5,12 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.media.entity.AliasTranslator;
-import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -90,7 +88,7 @@ public class LookupEntryTranslator {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, OPAQUE_ID, input.id().longValue());
+            TranslatorUtils.from(dbo, ID, input.id());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
             
@@ -121,7 +119,7 @@ public class LookupEntryTranslator {
         
         return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
     }
-
+    
     private ImmutableSet<LookupRef> fromDbos(List<DBObject> equivRefs) {
         return ImmutableSet.copyOf(Iterables.filter(Iterables.transform(equivRefs, equivalentFromDbo), Predicates.notNull()));
     }
@@ -129,11 +127,7 @@ public class LookupEntryTranslator {
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
         @Override
         public LookupRef apply(DBObject input) {
-            Long aid = TranslatorUtils.toLong(input, IdentifiedTranslator.OPAQUE_ID);
-            if (aid == null) {
-                return null;
-            }
-            Id id = Id.valueOf(aid);
+            String id = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
             return new LookupRef(id, publisher, ContentCategory.valueOf(type));
