@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.atlasapi.media.common.Id;
+import org.atlasapi.media.common.ResourceLister;
 import org.atlasapi.media.content.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -27,6 +28,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -34,11 +36,12 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.mongodb.BasicDBObject;
+import com.mongodb.Bytes;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
+public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter, ResourceLister<LookupEntry> {
 
     private static final Pattern ANYTHING = Pattern.compile("^.*");
     private DBCollection lookup;
@@ -134,4 +137,11 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values)).build());
         }
     }
+    
+    @Override
+    public Iterable<LookupEntry> list() {
+        return Iterables.filter(Iterables.transform(lookup.find().batchSize(100)
+                .addOption(Bytes.QUERYOPTION_NOTIMEOUT), translator.FROM_DBO), Predicates.notNull());
+    }
+    
 }
