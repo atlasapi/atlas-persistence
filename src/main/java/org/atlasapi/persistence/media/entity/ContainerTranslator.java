@@ -77,7 +77,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         Iterable<ChildRef> childRefs;
         if (dbObject.containsField(CHILDREN_KEY)) {
             //Disable deserializing childrefs for bootstrap
-            childRefs = ImmutableList.of();//childRefTranslator.fromDBObjects((Iterable<DBObject>) dbObject.get(CHILDREN_KEY));
+            childRefs = childRefTranslator.fromDBObjects((Iterable<DBObject>) dbObject.get(CHILDREN_KEY));
         } else {
             childRefs = ImmutableList.of();
         }
