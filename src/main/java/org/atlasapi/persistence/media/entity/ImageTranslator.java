@@ -1,5 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
+import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
+
 import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.ImageAspectRatio;
 import org.atlasapi.media.entity.ImageBackground;
@@ -25,15 +27,16 @@ public class ImageTranslator implements ModelTranslator<Image> {
     private static final String ASPECT_RATIO = "aspectRatio";
     private static final String MIME_TYPE = "mimeType";
 
-    private IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
+    private IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(false);
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Image model) {
         if (dbObject == null) {
             dbObject = new BasicDBObject();
         }
-
+        
         identifiedTranslator.toDBObject(dbObject, model);
+        TranslatorUtils.from(dbObject, CANONICAL_URL, model.getCanonicalUri());
 
         TranslatorUtils.fromDateTime(dbObject, AVAILABILITY_START, model.getAvailabilityStart());
         TranslatorUtils.fromDateTime(dbObject, AVAILABILITY_END, model.getAvailabilityEnd());
@@ -74,6 +77,7 @@ public class ImageTranslator implements ModelTranslator<Image> {
         }
         
         identifiedTranslator.fromDBObject(dbObject, model);
+        model.setCanonicalUri((String) dbObject.get(CANONICAL_URL));
 
         model.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, AVAILABILITY_START));
         model.setAvailabilityEnd(TranslatorUtils.toDateTime(dbObject, AVAILABILITY_END));
