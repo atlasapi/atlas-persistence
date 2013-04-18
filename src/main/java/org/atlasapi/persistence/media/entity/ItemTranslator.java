@@ -118,13 +118,16 @@ public class ItemTranslator implements ModelTranslator<Item> {
         }
 
         if (item instanceof Episode) {
-            Episode episode = (Episode) item;
-            if (dbObject.containsField(SERIES_ID)) {
-                episode.setSeriesRef(new ParentRef(Id.valueOf(TranslatorUtils.toLong(dbObject, SERIES_ID)), EntityType.SERIES));
+            	Episode episode = (Episode) item;
+            	if (dbObject.containsField(SERIES_ID) && dbObject.get(SERIES_ID) != null) {
+                Long longId = TranslatorUtils.toLong(dbObject, SERIES_ID);
+                if (longId != null) {
+                    episode.setSeriesRef(new ParentRef(Id.valueOf(longId), EntityType.SERIES));
+                }
             }
-            episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
-            episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
-            episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
+            	episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
+            	episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
+            	episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
         }
         
         if (item instanceof Film) {
