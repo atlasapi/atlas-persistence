@@ -39,8 +39,8 @@ public class ESTopicSearcher implements TopicSearcher {
         Facets facets = buildQuery(interval, selection).actionGet(timeout, TimeUnit.MILLISECONDS).getFacets();
         TermsFacet terms = facets.facet(TermsFacet.class, ESContent.TOPICS);
         List<Topic> result = new LinkedList<Topic>();
-        for (TermsFacet.Entry term : Iterables.limit(Iterables.skip(terms.entries(), selection.getOffset()), selection.getLimit())) {
-            Maybe<Topic> topic = resolver.topicForId(Long.parseLong(term.getTerm()));
+        for (TermsFacet.Entry term : Iterables.limit(Iterables.skip(terms.getEntries(), selection.getOffset()), selection.getLimit())) {
+            Maybe<Topic> topic = resolver.topicForId(Long.parseLong(term.getTerm().string()));
             if (topic.hasValue()) {
                 result.add(topic.requireValue());
             }

@@ -116,7 +116,7 @@ public class ESContentIndexerTest {
                 addFacet(FacetBuilders.termsFacet("topics").field("topics.id")).
                 execute();
         Facets facets = result.actionGet(60, TimeUnit.SECONDS).getFacets();
-        List<? extends Entry> terms = facets.facet(TermsFacet.class, "topics").entries();
+        List<? extends Entry> terms = facets.facet(TermsFacet.class, "topics").getEntries();
         assertEquals(2, terms.size());
         assertEquals("1", terms.get(0).getTerm());
         assertEquals(2, terms.get(0).getCount());

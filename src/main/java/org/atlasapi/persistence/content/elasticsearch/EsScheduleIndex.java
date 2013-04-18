@@ -28,8 +28,6 @@ import javax.annotation.Nullable;
 
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESSchema;
 import org.atlasapi.persistence.content.schedule.ScheduleIndex;
 import org.atlasapi.persistence.content.schedule.ScheduleRef;
 import org.atlasapi.persistence.content.schedule.ScheduleRef.ScheduleRefEntry;
@@ -71,17 +69,17 @@ public class EsScheduleIndex implements ScheduleIndex {
         private long millis = 0;
         
         private HitAccumulator(SearchResponse scanResult) {
-            this.scrollId = scanResult.scrollId();
-            this.total = scanResult.hits().totalHits();
+            this.scrollId = scanResult.getScrollId();
+            this.total = scanResult.getHits().totalHits();
             this.hits = Lists.newArrayListWithCapacity(Ints.saturatedCast(total));
-            this.millis = scanResult.tookInMillis();
+            this.millis = scanResult.getTookInMillis();
         }
 
         public void foldIn(SearchResponse scrollResponse) {
-            this.seen += scrollResponse.hits().hits().length;
-            this.millis += scrollResponse.tookInMillis(); 
+            this.seen += scrollResponse.getHits().hits().length;
+            this.millis += scrollResponse.getTookInMillis(); 
             this.queries++;
-            Iterables.addAll(this.hits, scrollResponse.hits());
+            Iterables.addAll(this.hits, scrollResponse.getHits());
         }
         
         public String scrollId() {
@@ -125,11 +123,11 @@ public class EsScheduleIndex implements ScheduleIndex {
         
         @Override
         public ListenableFuture<HitAccumulator> apply(SearchResponse input) throws Exception {
-            log.info("{}: scan   {} hits ({}ms)", new Object[]{input.scrollId().hashCode(), input.hits().totalHits(), input.tookInMillis()});
+            log.info("{}: scan   {} hits ({}ms)", new Object[]{input.getScrollId().hashCode(), input.getHits().totalHits(), input.getTookInMillis()});
             SettableFuture<HitAccumulator> searchResult = SettableFuture.create();
             HitAccumulator accumulator = new HitAccumulator(input);
             if (accumulator.canScrollMore()) {
-                scrollSearch(input.scrollId(), scrollingListener(searchResult, accumulator));
+                scrollSearch(input.getScrollId(), scrollingListener(searchResult, accumulator));
             } else {
                 searchResult.set(accumulator);
             }
@@ -148,12 +146,12 @@ public class EsScheduleIndex implements ScheduleIndex {
 
                 @Override
                 public void onResponse(SearchResponse response) {
-                    log.info("{}: scroll {} hits ({}ms)", new Object[]{accumulator.scrollId().hashCode(), response.hits().hits().length, response.tookInMillis()});
+                    log.info("{}: scroll {} hits ({}ms)", new Object[]{accumulator.scrollId().hashCode(), response.getHits().hits().length, response.getTookInMillis()});
                                         
                     accumulator.foldIn(response);
 
                     if (accumulator.canScrollMore()) {
-                        scrollSearch(response.scrollId(), this);
+                        scrollSearch(response.getScrollId(), this);
                     } else {
                         searchResult.set(accumulator);
                     }

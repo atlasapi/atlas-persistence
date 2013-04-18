@@ -1,11 +1,14 @@
 package org.atlasapi.persistence.content.elasticsearch;
 
-import com.metabroadcast.common.time.DateTimeZones;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.CLUSTER_NAME;
+import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.INDEX_NAME;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
@@ -16,26 +19,25 @@ import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentIndexer;
-import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
-import org.elasticsearch.client.Requests;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESBroadcast;
+import org.atlasapi.persistence.content.elasticsearch.schema.ESContent;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESLocation;
 import org.atlasapi.persistence.content.elasticsearch.schema.ESTopic;
 import org.atlasapi.persistence.content.elasticsearch.support.Strings;
 import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.NoShardAvailableActionException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
-import static org.atlasapi.persistence.content.elasticsearch.schema.ESSchema.*;
 
 import com.metabroadcast.common.time.DateTimeZones;
 
@@ -319,8 +321,8 @@ public class ESContentIndexer implements ContentIndexer {
     private Map<String, Object> trySearchParent(ParentRef parent) {
         ActionFuture<GetResponse> future = esClient.client().get(Requests.getRequest(INDEX_NAME).id(parent.getUri()));
         GetResponse response = future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-        if (response.exists()) {
-            return response.sourceAsMap();
+        if (response.isExists()) {
+            return response.getSourceAsMap();
         } else {
             return null;
         }
@@ -330,8 +332,8 @@ public class ESContentIndexer implements ContentIndexer {
         try {
             ActionFuture<GetResponse> future = esClient.client().get(Requests.getRequest(INDEX_NAME).parent(parent.getCanonicalUri()).id(child.getUri()));
             GetResponse response = future.actionGet(requestTimeout, TimeUnit.MILLISECONDS);
-            if (response.exists()) {
-                return response.sourceAsMap();
+            if (response.isExists()) {
+                return response.getSourceAsMap();
             } else {
                 return null;
             }
