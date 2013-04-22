@@ -104,6 +104,10 @@ public class LookupEntryTranslator {
         String uri = TranslatorUtils.toString(dbo, ID);
         Long id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
         
+        if (id == null) {
+            return null;
+        }
+                
         Set<String> aliasUris = TranslatorUtils.toSet(dbo, ALIASES);
         aliasUris.add(uri);
         
