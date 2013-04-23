@@ -21,6 +21,7 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.mongodb.BasicDBObject;
 import com.mongodb.Bytes;
 import com.mongodb.DBCollection;
@@ -95,6 +96,8 @@ public class MongoTopicStore implements TopicStore {
     
     @Override
     public Iterable<Topic> topics() {
-        return transform(collection.find().addOption(Bytes.QUERYOPTION_NOTIMEOUT));
+        return transform(collection.find()
+                .sort(new MongoSortBuilder().ascending(ID).build())
+                .batchSize(100).addOption(Bytes.QUERYOPTION_NOTIMEOUT));
     }
 }
