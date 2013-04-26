@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content.mongo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
@@ -20,6 +21,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.mongodb.BasicDBObject;
@@ -96,8 +98,8 @@ public class MongoTopicStore implements TopicStore {
     
     @Override
     public Iterable<Topic> topics() {
-        return transform(collection.find()
-                .sort(new MongoSortBuilder().ascending(ID).build())
+        return transform(collection.find(where().fieldGreaterThanOrEqualTo(ID, 0).build())
+                .sort(sort().ascending(ID).build())
                 .batchSize(100).addOption(Bytes.QUERYOPTION_NOTIMEOUT));
     }
 }
