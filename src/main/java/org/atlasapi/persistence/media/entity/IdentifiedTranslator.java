@@ -64,9 +64,13 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 
         description.setAliases(aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, IDS)));
         
-        description.addAlias(new Alias(Alias.URI_NAMESPACE, description.getCanonicalUri()));
+        if (description.getCanonicalUri() != null) {
+            description.addAlias(new Alias(Alias.URI_NAMESPACE, description.getCanonicalUri()));
+        }
         for (String aliasUrl : description.getAliasUrls()) {
-            description.addAlias(new Alias(Alias.URI_NAMESPACE, aliasUrl));
+            if (aliasUrl != null) {
+                description.addAlias(new Alias(Alias.URI_NAMESPACE, aliasUrl));
+            }
         }
         
         description.setEquivalentTo(equivalentsFrom(dbObject));

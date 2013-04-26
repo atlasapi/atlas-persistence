@@ -5,9 +5,12 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Identified;
 import org.joda.time.DateTime;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBObject;
@@ -57,7 +60,11 @@ public class DescriptionTranslatorTest extends TestCase {
         
         assertEquals(desc.getCanonicalUri(), description.getCanonicalUri());
         assertEquals(desc.getCurie(), description.getCurie());
-        assertEquals(desc.getAliases(), description.getAliases());
+        Iterable<Alias> expectedAliases = Iterables.concat(
+            desc.getAliases(), 
+            ImmutableSet.of(new Alias("uri", "canonicalUri"), new Alias("uri", "alias1"), new Alias("uri", "alias2"))
+            );
+        assertEquals(expectedAliases, description.getAliases());
     }
     
     public void testShouldConvertToDescriptionByRef() throws Exception {

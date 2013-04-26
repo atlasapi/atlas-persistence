@@ -13,6 +13,8 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBCollection;
+
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.EntityType;
@@ -76,6 +78,7 @@ public class MongoContentGroupPersistenceTest {
         ChildRef child1 = new ChildRef(Id.valueOf(1), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
         ChildRef child2 = new ChildRef(Id.valueOf(2), SortKey.DEFAULT.toString(), new DateTime(), EntityType.ITEM);
         contentGroup.addContents(ImmutableList.of(child1, child2));
+        contentGroup.addAlias(new Alias(Alias.URI_NAMESPACE, "group"));
 
         writer.createOrUpdate(contentGroup);
 
