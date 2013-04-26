@@ -60,10 +60,10 @@ public class DescriptionTranslatorTest extends TestCase {
         
         assertEquals(desc.getCanonicalUri(), description.getCanonicalUri());
         assertEquals(desc.getCurie(), description.getCurie());
-        Iterable<Alias> expectedAliases = Iterables.concat(
+        Set<Alias> expectedAliases = ImmutableSet.copyOf(Iterables.concat(
             desc.getAliases(), 
-            ImmutableSet.of(new Alias("uri", "canonicalUri"), new Alias("uri", "alias1"), new Alias("uri", "alias2"))
-            );
+            ImmutableSet.of(new Alias(Alias.URI_NAMESPACE, "canonicalUri"), new Alias(Alias.URI_NAMESPACE, "alias1"), new Alias(Alias.URI_NAMESPACE, "alias2"))
+            ));
         assertEquals(expectedAliases, description.getAliases());
     }
     
