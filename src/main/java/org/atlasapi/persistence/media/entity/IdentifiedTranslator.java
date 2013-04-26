@@ -4,11 +4,10 @@ import java.util.Set;
 
 import org.atlasapi.equiv.EquivalenceRef;
 import org.atlasapi.media.common.Id;
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
-import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
@@ -64,6 +63,11 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         description.setAliasUrls(TranslatorUtils.toSet(dbObject, ALIASES));
 
         description.setAliases(aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, IDS)));
+        
+        description.addAlias(new Alias(Alias.URI_NAMESPACE, description.getCanonicalUri()));
+        for (String aliasUrl : description.getAliasUrls()) {
+            description.addAlias(new Alias(Alias.URI_NAMESPACE, aliasUrl));
+        }
         
         description.setEquivalentTo(equivalentsFrom(dbObject));
         description.setLastUpdated(TranslatorUtils.toDateTime(dbObject, LAST_UPDATED));
