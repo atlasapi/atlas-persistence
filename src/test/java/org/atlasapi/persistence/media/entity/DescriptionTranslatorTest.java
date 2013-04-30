@@ -46,12 +46,12 @@ public class DescriptionTranslatorTest extends TestCase {
     
     public void testShouldConvertToDescription() throws Exception {
         Identified desc = new Identified();
-        desc.setCanonicalUri("canonicalUri");
+        desc.setCanonicalUri("http://canonicalUri");
         desc.setCurie("curie");
         
         Set<String> aliases = Sets.newHashSet();
-        aliases.add("alias1");
-        aliases.add("alias2");
+        aliases.add("http://alias1");
+        aliases.add("http://alias2");
         desc.setAliasUrls(aliases);
         
         IdentifiedTranslator translator = new IdentifiedTranslator();
@@ -62,7 +62,7 @@ public class DescriptionTranslatorTest extends TestCase {
         assertEquals(desc.getCurie(), description.getCurie());
         Set<Alias> expectedAliases = ImmutableSet.copyOf(Iterables.concat(
             desc.getAliases(), 
-            ImmutableSet.of(new Alias(Alias.URI_NAMESPACE, "canonicalUri"), new Alias(Alias.URI_NAMESPACE, "alias1"), new Alias(Alias.URI_NAMESPACE, "alias2"))
+            ImmutableSet.of(new Alias(Alias.URI_NAMESPACE, "http://canonicalUri"), new Alias(Alias.URI_NAMESPACE, "http://alias1"), new Alias(Alias.URI_NAMESPACE, "http://alias2"))
             ));
         assertEquals(expectedAliases, description.getAliases());
     }

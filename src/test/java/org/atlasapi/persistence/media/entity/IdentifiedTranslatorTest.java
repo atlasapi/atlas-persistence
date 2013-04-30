@@ -25,9 +25,9 @@ public class IdentifiedTranslatorTest {
         assertThat(decodedIdentified.getAliases().size(), is(4));
         
         Alias existing = new Alias("namespace", "value");
-        Alias canonicalAlias = new Alias("uri", "canonicalUri");
-        Alias aliasUrl1 = new Alias("uri", "aliasUrl1");
-        Alias aliasUrl2 = new Alias("uri", "aliasUrl2");
+        Alias canonicalAlias = new Alias("uri", "http://canonicalUri");
+        Alias aliasUrl1 = new Alias("uri", "http://aliasUrl1");
+        Alias aliasUrl2 = new Alias("uri", "http://aliasUrl2");
         
         assertThat(Iterables.get(decodedIdentified.getAliases(), 0), isOneOf(existing, canonicalAlias, aliasUrl1, aliasUrl2));
         assertThat(Iterables.get(decodedIdentified.getAliases(), 1), isOneOf(existing, canonicalAlias, aliasUrl1, aliasUrl2));
@@ -46,9 +46,9 @@ public class IdentifiedTranslatorTest {
         assertThat(decodedIdentified.getAliases().size(), is(4));
         
         Alias existing = new Alias("namespace", "value");
-        Alias canonicalAlias = new Alias("uri", "canonicalUri");
-        Alias aliasUrl1 = new Alias("uri", "aliasUrl1");
-        Alias aliasUrl2 = new Alias("uri", "aliasUrl2");
+        Alias canonicalAlias = new Alias("uri", "http://canonicalUri");
+        Alias aliasUrl1 = new Alias("uri", "http://aliasUrl1");
+        Alias aliasUrl2 = new Alias("uri", "http://aliasUrl2");
         
         assertThat(Iterables.get(decodedIdentified.getAliases(), 0), isOneOf(existing, canonicalAlias, aliasUrl1, aliasUrl2));
         assertThat(Iterables.get(decodedIdentified.getAliases(), 1), isOneOf(existing, canonicalAlias, aliasUrl1, aliasUrl2));
@@ -59,9 +59,9 @@ public class IdentifiedTranslatorTest {
     private Identified createIdentified() {
         Identified identified = new Identified();
         
-        identified.setCanonicalUri("canonicalUri");
-        identified.addAliasUrl("aliasUrl1");
-        identified.addAliasUrl("aliasUrl2");
+        identified.setCanonicalUri("http://canonicalUri");
+        identified.addAliasUrl("http://aliasUrl1");
+        identified.addAliasUrl("http://aliasUrl2");
         
         identified.addAlias(new Alias("namespace", "value"));
         
