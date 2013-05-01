@@ -39,10 +39,9 @@ import org.atlasapi.content.criteria.MatchesNothing;
 import org.atlasapi.content.criteria.QueryVisitor;
 import org.atlasapi.content.criteria.StringAttributeQuery;
 import org.atlasapi.content.criteria.attribute.Attribute;
-import org.atlasapi.content.criteria.operator.BooleanOperatorVisitor;
+import org.atlasapi.content.criteria.operator.ComparableOperatorVisitor;
 import org.atlasapi.content.criteria.operator.DateTimeOperatorVisitor;
-import org.atlasapi.content.criteria.operator.EnumOperatorVisitor;
-import org.atlasapi.content.criteria.operator.IntegerOperatorVisitor;
+import org.atlasapi.content.criteria.operator.EqualsOperatorVisitor;
 import org.atlasapi.content.criteria.operator.Operators.After;
 import org.atlasapi.content.criteria.operator.Operators.Before;
 import org.atlasapi.content.criteria.operator.Operators.Beginning;
@@ -50,17 +49,17 @@ import org.atlasapi.content.criteria.operator.Operators.Equals;
 import org.atlasapi.content.criteria.operator.Operators.GreaterThan;
 import org.atlasapi.content.criteria.operator.Operators.LessThan;
 import org.atlasapi.content.criteria.operator.StringOperatorVisitor;
-import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.content.Container;
 import org.atlasapi.media.content.Content;
+import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
-import org.atlasapi.media.topic.Topic;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.media.topic.Topic;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -154,7 +153,7 @@ class MongoDBQueryBuilder {
 			public ConstrainedAttribute visit(IntegerAttributeQuery query) {
 				final List<Integer> values = (List<Integer>) query.getValue();
 				
-				BasicDBObject rhs = query.accept(new IntegerOperatorVisitor<BasicDBObject>() {
+				BasicDBObject rhs = query.accept(new ComparableOperatorVisitor<BasicDBObject>() {
 
 					@Override
 					public BasicDBObject visit(Equals equals) {
@@ -205,7 +204,7 @@ class MongoDBQueryBuilder {
 				
 				final Boolean value = (Boolean) query.getValue().get(0);
 				
-				return query.accept(new BooleanOperatorVisitor<ConstrainedAttribute>() {
+				return query.accept(new EqualsOperatorVisitor<ConstrainedAttribute>() {
 
 					@Override
 					public ConstrainedAttribute visit(Equals equals) {
@@ -221,7 +220,7 @@ class MongoDBQueryBuilder {
 				
 				final List<Enum<?>> values = (List<Enum<?>>) query.getValue();
 				
-				return query.accept(new EnumOperatorVisitor<ConstrainedAttribute>() {
+				return query.accept(new EqualsOperatorVisitor<ConstrainedAttribute>() {
 
 					@Override
 					public ConstrainedAttribute visit(Equals equals) {
@@ -280,7 +279,7 @@ class MongoDBQueryBuilder {
 			@Override
 			public ConstrainedAttribute visit(final IdAttributeQuery query) {
 			    final List<Long> values = Lists.transform(query.getValue(), Id.toLongValue());
-			    return query.accept(new IntegerOperatorVisitor<ConstrainedAttribute>() {
+			    return query.accept(new ComparableOperatorVisitor<ConstrainedAttribute>() {
 
                     @Override
                     public ConstrainedAttribute visit(Equals equals) {
