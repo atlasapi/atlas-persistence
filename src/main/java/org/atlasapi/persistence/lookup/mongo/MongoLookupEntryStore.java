@@ -24,7 +24,6 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.hamcrest.text.pattern.Patterns;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
