@@ -11,6 +11,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -25,6 +26,7 @@ public class ChildRefTranslator {
         Id id = Id.valueOf((Long) dbo.get(ID_KEY));
         String sortKey = (String) dbo.get(SORT_KEY);
         DateTime updated = TranslatorUtils.toDateTime(dbo, UPDATED_KEY);
+        updated = updated == null ? new DateTime(DateTimeZones.UTC) : updated;
         EntityType type = EntityType.from((String) dbo.get(DescribedTranslator.TYPE_KEY));
         return new ChildRef(id, sortKey, updated, type);
     }
