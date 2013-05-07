@@ -26,6 +26,7 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.output.MongoAvailableChildrenResolver;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -140,7 +141,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter,
     
     @Override
     public Iterable<LookupEntry> list() {
-        return Iterables.filter(Iterables.transform(lookup.find().batchSize(100)
+        return Iterables.filter(Iterables.transform(lookup.find(MongoBuilders.where().fieldGreaterThan("aid", 0).build())
+                .sort(MongoBuilders.sort().ascending("aid").build())
+                .batchSize(100)
                 .addOption(Bytes.QUERYOPTION_NOTIMEOUT), translator.FROM_DBO), Predicates.notNull());
     }
     
