@@ -14,6 +14,7 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.messaging.AtlasMessagingModule;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
@@ -25,6 +26,7 @@ import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
+import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -54,6 +56,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -62,17 +65,18 @@ import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 
 @Configuration
+@Import(AtlasMessagingModule.class)
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     private @Autowired Mongo mongo;
     private @Autowired DatabasedMongo db;
     private @Autowired AdapterLog log;
+    private @Autowired AtlasMessagingModule messagingModule;
     
     private final Parameter processingConfig = Configurer.get("processing.config");
     
@@ -80,10 +84,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     public MongoContentPersistenceModule() {}
     
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AdapterLog log) {
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AtlasMessagingModule messagingModule, AdapterLog log) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
+        this.messagingModule = messagingModule;
     }
     
     private @Autowired ChannelResolver channelResolver;
@@ -102,6 +107,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         contentWriter = new EquivalenceWritingContentWriter(contentWriter,
             new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary())
         );
+        contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
         if (Boolean.valueOf(generateIds)) {
             contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
         }
