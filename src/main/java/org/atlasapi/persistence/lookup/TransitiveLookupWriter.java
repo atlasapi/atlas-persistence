@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -62,18 +63,18 @@ public class TransitiveLookupWriter implements LookupWriter {
     };
 
     @Override
-    public void writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> publishers) {
-        writeLookup(subject.getCanonicalUri(), ImmutableSet.copyOf(Iterables.transform(filterContentPublishers(equivalents, publishers), TO_URI)), publishers);
+    public Optional<Set<LookupEntry>> writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> publishers) {
+        return writeLookup(subject.getCanonicalUri(), ImmutableSet.copyOf(Iterables.transform(filterContentPublishers(equivalents, publishers), TO_URI)), publishers);
     }
     
-    public void writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> publishers) {
+    public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> publishers) {
         Preconditions.checkNotNull(emptyToNull(subjectUri), "null subject");
         Set<String> newNeighbourUris = ImmutableSet.copyOf(equivalentUris);
         
         LookupEntry subject = entryFor(subjectUri);
 
         if(noChangeInNeighbours(subject, newNeighbourUris, publishers)) {
-            return;
+            return Optional.absent();
         }
         
         Set<LookupEntry> neighbours = entriesFor(newNeighbourUris);
@@ -83,7 +84,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             transitiveSet = transitiveClosure(subject, neighbours);
         } catch (IllegalArgumentException iae) {
             log.info("Transitive set too large: " + subjectUri, iae);
-            return;
+            return Optional.absent();
         }
         
         final ImmutableSet<LookupRef> subjectRef = ImmutableSet.of(subject.lookupRef());
@@ -106,7 +107,8 @@ public class TransitiveLookupWriter implements LookupWriter {
         for (LookupEntry entry : newLookups) {
             entryStore.store(entry);
         }
-
+        
+        return Optional.of(newLookups);
     }
 
     private Iterable<LookupRef> updateEquivalentsNeighbours(LookupEntry entry,

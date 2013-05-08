@@ -40,6 +40,8 @@ import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
+import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -98,14 +100,22 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	public @Primary @Bean ContentWriter contentWriter() {
 		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
 		contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
-		contentWriter = new EquivalenceWritingContentWriter(contentWriter, lookupStore());
+		contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
 		if (Boolean.valueOf(generateIds)) {
 		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
 		}
         return contentWriter;
 	}
 
-	public @Primary @Bean ContentResolver contentResolver() {
+	private LookupWriter explicitLookupWriter() {
+        return TransitiveLookupWriter.explicitTransitiveLookupWriter(lookupStore());
+    }
+	
+	public @Bean LookupWriter generatedLookupWriter() {
+	    return TransitiveLookupWriter.generatedTransitiveLookupWriter(lookupStore());
+	}
+
+    public @Primary @Bean ContentResolver contentResolver() {
 	    return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
 	}
 	
