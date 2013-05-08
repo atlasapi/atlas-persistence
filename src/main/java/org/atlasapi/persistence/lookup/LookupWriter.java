@@ -4,6 +4,9 @@ import java.util.Set;
 
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+
+import com.google.common.base.Optional;
 
 /**
  * <p>
@@ -57,6 +60,6 @@ public interface LookupWriter {
      * @param equivalents - references to which edges are being created.
      * @param publishers - sources of references which will have edges affected. 
      */
-    void writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> publishers);
+    Optional<Set<LookupEntry>> writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> publishers);
 
 }

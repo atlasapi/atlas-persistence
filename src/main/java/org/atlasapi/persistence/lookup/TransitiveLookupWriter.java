@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -65,9 +66,9 @@ public class TransitiveLookupWriter implements LookupWriter {
     };
 
     @Override
-    public void writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> sources) {
+    public Optional<Set<LookupEntry>> writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> sources) {
         Iterable<String> neighbourUris = Iterables.transform(filterContentsources(equivalents, sources), TO_URI);
-        writeLookup(subject.getCanonicalUri(), ImmutableSet.copyOf(neighbourUris), sources);
+        return writeLookup(subject.getCanonicalUri(), ImmutableSet.copyOf(neighbourUris), sources);
     }
     
     private Iterable<ContentRef> filterContentsources(Iterable<ContentRef> content, final Set<Publisher> sources) {
@@ -79,7 +80,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         });
     }
     
-    public void writeLookup(String subjectUri, Iterable<String> equivalentUris, Set<Publisher> sources) {
+    public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> sources) {
         Preconditions.checkNotNull(emptyToNull(subjectUri), "null subject");
         
         ImmutableSet<String> newNeighboursUris = ImmutableSet.copyOf(equivalentUris);
@@ -93,13 +94,15 @@ public class TransitiveLookupWriter implements LookupWriter {
                 }
             }
             
-            updateEntries(subjectUri, newNeighboursUris, transitiveSetsUris, sources);
+            return updateEntries(subjectUri, newNeighboursUris, transitiveSetsUris, sources);
             
         } catch(OversizeTransitiveSetException otse) {
             log.info(String.format("Oversize set: %s + %s: %s", 
                     subjectUri, newNeighboursUris, otse.getMessage()));
+            return Optional.absent();
         } catch(InterruptedException e) {
             log.error(String.format("%s: %s", subjectUri, newNeighboursUris), e);
+            return Optional.absent();
         } finally {
             synchronized (lock) {
                 lock.unlock(subjectAndNeighbours);
@@ -111,14 +114,14 @@ public class TransitiveLookupWriter implements LookupWriter {
         }
     }
 
-    private void updateEntries(String subjectUri, ImmutableSet<String> newNeighboursUris,
+    private Optional<Set<LookupEntry>> updateEntries(String subjectUri, ImmutableSet<String> newNeighboursUris,
             Set<String> transitiveSetsUris, Set<Publisher> sources) {
         
         LookupEntry subject = entryFor(subjectUri);
         checkNotNull(subject, "No entry for %s", subjectUri);
         if(noChangeInNeighbours(subject, newNeighboursUris, sources)) {
             log.debug("{}: no change in neighbours: {}", subjectUri, newNeighboursUris);
-            return;
+            return Optional.absent();
         }
         
         // entries for all members in all transitive sets involved
@@ -132,9 +135,12 @@ public class TransitiveLookupWriter implements LookupWriter {
             );
         }
    
-        for (LookupEntry entry : recomputeTransitiveClosures(entryIndex)) {
+        Set<LookupEntry> newLookups = recomputeTransitiveClosures(entryIndex);
+        for (LookupEntry entry : newLookups) {
             entryStore.store(entry);
         }
+        
+        return Optional.of(newLookups);
     }
 
     private ImmutableSet<LookupEntry> newSubjectNeighbours(Set<String> neighboursUris,

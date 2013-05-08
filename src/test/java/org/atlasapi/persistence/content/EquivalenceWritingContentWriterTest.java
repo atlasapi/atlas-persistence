@@ -7,6 +7,8 @@ import static org.mockito.Mockito.verify;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.InMemoryLookupEntryStore;
+import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.junit.Test;
@@ -19,8 +21,9 @@ public class EquivalenceWritingContentWriterTest {
 
     private final LookupEntryStore lookupEntryStore = new InMemoryLookupEntryStore();
     private final ContentWriter delegate = mock(ContentWriter.class);
+    private final LookupWriter lookupWriter = TransitiveLookupWriter.explicitTransitiveLookupWriter(lookupEntryStore);
     
-    private final EquivalenceWritingContentWriter contentWriter = new EquivalenceWritingContentWriter(delegate, lookupEntryStore);
+    private final EquivalenceWritingContentWriter contentWriter = new EquivalenceWritingContentWriter(delegate, lookupWriter);
 
     @Test
     public void testWritingContentWithEquivalencesWritesEquivalences() {

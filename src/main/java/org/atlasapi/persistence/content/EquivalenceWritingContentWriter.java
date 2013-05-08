@@ -1,26 +1,25 @@
 package org.atlasapi.persistence.content;
 
-import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.explicitTransitiveLookupWriter;
-
+import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
-import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.lookup.LookupWriter;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 public class EquivalenceWritingContentWriter implements ContentWriter {
 
     private final ContentWriter delegate;
-    private final TransitiveLookupWriter equivalenceWriter;
+    private final LookupWriter equivalenceWriter;
 
-    public EquivalenceWritingContentWriter(ContentWriter delegate, LookupEntryStore lookupEntryStore) {
+    public EquivalenceWritingContentWriter(ContentWriter delegate, LookupWriter lookupWriter) {
         this.delegate = delegate;
-        this.equivalenceWriter = explicitTransitiveLookupWriter(lookupEntryStore);
+        this.equivalenceWriter = lookupWriter;
     }
 
     @Override
@@ -32,8 +31,14 @@ public class EquivalenceWritingContentWriter implements ContentWriter {
     private void writeEquivalences(Content content) {
         if (!content.getEquivalentTo().isEmpty()) {
             ImmutableSet<Publisher> publishers = publishers(content);
-            Iterable<String> equivalentUris = Iterables.transform(content.getEquivalentTo(), LookupRef.TO_URI);
-            equivalenceWriter.writeLookup(content.getCanonicalUri(), equivalentUris, publishers);
+            Iterable<ContentRef> equivalentUris = Iterables.transform(content.getEquivalentTo(),
+                new Function<LookupRef, ContentRef>() {
+                    @Override
+                    public ContentRef apply(LookupRef input) {
+                        return new ContentRef(input.uri(), input.publisher(), null);
+                    }
+                });
+            equivalenceWriter.writeLookup(ContentRef.valueOf(content), equivalentUris, publishers);
         }
     }
 

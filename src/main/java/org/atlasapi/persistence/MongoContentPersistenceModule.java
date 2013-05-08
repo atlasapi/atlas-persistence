@@ -46,6 +46,8 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.MessageQueueingLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -105,9 +107,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     public @Primary @Bean ContentWriter contentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
-        contentWriter = new EquivalenceWritingContentWriter(contentWriter,
-            new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary())
-        );
+        contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
         if (Boolean.valueOf(generateIds)) {
             contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
@@ -127,7 +127,26 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoLookupEntryStore(db.collection("lookup"));
     }
     
-    public @Primary @Bean MongoScheduleStore scheduleStore() {
+    private LookupWriter explicitLookupWriter() {
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
+        LookupWriter lookupWriter = TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
+        return messagingLookupWriter(lookupWriter);
+    }
+
+    public @Bean
+    LookupWriter generatedLookupWriter() {
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"));
+        LookupWriter lookupWriter = TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
+        return messagingLookupWriter(lookupWriter);
+    }
+
+    private MessageQueueingLookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
+        return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
+    }
+
+    public @Primary
+    @Bean
+    MongoScheduleStore scheduleStore() {
         try {
             return new MongoScheduleStore(db, contentResolver(), channelResolver, equivContentResolver());
         } catch (Exception e) {
