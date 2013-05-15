@@ -9,6 +9,7 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.SortKey;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -29,6 +30,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
 
     private final ContentTranslator contentTranslator;
     private final ChildRefTranslator childRefTranslator;
+    private final SeriesRefTranslator seriesRefTranslator;
     
     private static final Ordering<ChildRef> CHILD_REF_OUTPUT_SORT = Ordering.from(new Comparator<ChildRef>() {
         
@@ -44,6 +46,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
     public ContainerTranslator(NumberToShortStringCodec idCodec) {
         this.contentTranslator = new ContentTranslator(idCodec);
         this.childRefTranslator = new ChildRefTranslator();
+        this.seriesRefTranslator = new SeriesRefTranslator();
     }
 
     public List<Container> fromDBObjects(Iterable<DBObject> dbObjects) {
@@ -110,9 +113,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         return generateHashByRemovingFieldsFromTheDbo(toDB(container));
     }
 
-    private List<ChildRef> series(Iterable<DBObject> seriesDbos) {
+    private List<SeriesRef> series(Iterable<DBObject> seriesDbos) {
         if (seriesDbos != null) {
-            return ImmutableList.copyOf(childRefTranslator.fromDBObjects(seriesDbos));
+            return ImmutableList.copyOf(seriesRefTranslator.fromDBObjects(seriesDbos));
         }
         return ImmutableList.of();
     }
@@ -128,7 +131,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
           if (entity instanceof Brand) {
               Brand brand = (Brand) entity;
               if (!brand.getSeriesRefs().isEmpty()) {
-                  dbObject.put(FULL_SERIES_KEY, childRefTranslator.toDBList(brand.getSeriesRefs()));
+                  dbObject.put(FULL_SERIES_KEY, seriesRefTranslator.toDBList(brand.getSeriesRefs()));
               }
           }
         }

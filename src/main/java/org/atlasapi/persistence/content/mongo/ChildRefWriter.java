@@ -14,6 +14,7 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.joda.time.DateTime;
@@ -77,7 +78,7 @@ public class ChildRefWriter {
             Container container = maybeContainer.requireValue();
             if(container instanceof Brand) {
                 Brand brand = (Brand) container;
-                List<ChildRef> merged = mergeChildRefs(series.childRef(), brand.getSeriesRefs());
+                List<SeriesRef> merged = mergeChildRefs(series.childRef(), brand.getSeriesRefs());
                 brand.setSeriesRefs(merged);
                 brand.setThisOrChildLastUpdated(laterOf(brand.getThisOrChildLastUpdated(), series.getThisOrChildLastUpdated()));
                 containers.save(containerTranslator.toDBO(container, true));
@@ -125,10 +126,10 @@ public class ChildRefWriter {
         collection.save(containerTranslator.toDBO(container, true));
     }
 
-    private List<ChildRef> mergeChildRefs(ChildRef newChildRef, Iterable<ChildRef> currentChildRefs) {
+    private <T extends ChildRef> List<T> mergeChildRefs(T newChildRef, Iterable<T> currentChildRefs) {
         // filter out new refs so they can  be overwritten.
         currentChildRefs = filter(currentChildRefs, not(equalTo(newChildRef)));
-        return ChildRef.dedupeAndSort(ImmutableList.<ChildRef> builder().addAll(currentChildRefs).add(newChildRef).build());
+        return ChildRef.dedupeAndSort(ImmutableList.<T> builder().addAll(currentChildRefs).add(newChildRef).build());
     }
 
     private Maybe<Container> getContainer(String canonicalUri, DBCollection collection) {
