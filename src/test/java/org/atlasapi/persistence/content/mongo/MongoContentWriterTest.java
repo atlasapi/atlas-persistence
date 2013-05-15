@@ -18,6 +18,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
@@ -308,6 +309,7 @@ public class MongoContentWriterTest {
         
         Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
         series.setId(2L);
+        series.withSeriesNumber(2);
         series.setParent(brand);
         
         contentWriter.createOrUpdate(series);
@@ -321,8 +323,9 @@ public class MongoContentWriterTest {
         
         Brand retrievedBrand = retrieveBrand(brand);
 
-        ChildRef seriesRef = Iterables.getOnlyElement(retrievedBrand.getSeriesRefs());
+        SeriesRef seriesRef = Iterables.getOnlyElement(retrievedBrand.getSeriesRefs());
         assertThat(seriesRef.getId(), is(2L));
+        assertThat(seriesRef.getSeriesNumber(), is(2));
         
         ChildRef episodeRef = Iterables.getOnlyElement(retrievedBrand.getChildRefs());
         assertThat(episodeRef.getId(), is(3L));

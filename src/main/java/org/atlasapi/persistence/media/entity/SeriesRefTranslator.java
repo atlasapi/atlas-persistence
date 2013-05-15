@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 import static org.atlasapi.persistence.media.entity.ChildRefTranslator.ID_KEY;
@@ -20,8 +21,6 @@ import static org.atlasapi.persistence.media.entity.ChildRefTranslator.UPDATED_K
 public class SeriesRefTranslator {
 
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
-    
-    private final ChildRefTranslator childRefTranslator = new ChildRefTranslator();
     
     public SeriesRef fromDBObject(DBObject dbo) {
         Long id = (Long) dbo.get(ID_KEY);
@@ -44,7 +43,11 @@ public class SeriesRefTranslator {
     };
     
     public DBObject toDBObject(SeriesRef seriesRef) {
-        DBObject dbObject = childRefTranslator.toDBObject(seriesRef);
+        DBObject dbObject = new BasicDBObject();
+        TranslatorUtils.from(dbObject, ID_KEY, seriesRef.getId());
+        TranslatorUtils.from(dbObject, URI_KEY, seriesRef.getUri());
+        TranslatorUtils.from(dbObject, SORT_KEY, seriesRef.getSortKey());
+        TranslatorUtils.fromDateTime(dbObject, UPDATED_KEY, seriesRef.getUpdated());
         TranslatorUtils.from(dbObject, SERIES_NUMBER_KEY, seriesRef.getSeriesNumber());
         return dbObject;
     }
