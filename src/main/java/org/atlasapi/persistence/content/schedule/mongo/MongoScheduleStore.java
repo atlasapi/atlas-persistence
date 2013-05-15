@@ -248,7 +248,23 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         if (equivalents == null || equivalents.isEmpty()) {
             return Maybe.nothing();
         }
-        return Maybe.<Identified>just(merger.merge(mergeConfig, ImmutableList.copyOf(equivalents)).get(0));
+        //ensure the relevant schedule item is at the head of the Content
+        // list so it's selected as The Chosen One when merging equivalents
+        // and will bring balance to The Force.
+        ImmutableList<Content> equivList = ImmutableSet.<Content>builder()
+            .add(find(uri, equivalents))
+            .addAll(equivalents).build()
+            .asList();
+        return Maybe.<Identified>just(merger.merge(mergeConfig, equivList).get(0));
+    }
+
+    private Content find(String uri, Set<Content> equivalents) {
+        for (Content content : equivalents) {
+            if (uri.equals(content.getCanonicalUri())) {
+                return content;
+            }
+        }
+        throw new IllegalStateException(uri + " not found in its own equivalent content set");
     }
 
     private boolean selectAndTrimBroadcast(Item item, Broadcast scheduleBroadcast) {
