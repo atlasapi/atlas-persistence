@@ -199,7 +199,9 @@ public class MongoScheduleStoreTest {
         replacementItemAndBcast.add(new ItemRefAndBroadcast(item4, b2));
         
     	store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, replacementItemAndBcast);
-        Schedule updatedSchedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC), null);
+        Schedule updatedSchedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), 
+                ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC), 
+                Optional.<ApplicationConfiguration>absent());
     	assertEquals(1, updatedSchedule.scheduleChannels().size());
         ScheduleChannel replacementChannel = Iterables.getOnlyElement(updatedSchedule.scheduleChannels());
         
