@@ -18,6 +18,7 @@ import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
+import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
@@ -163,7 +164,7 @@ public class MongoContentWriter implements ContentWriter {
         if (container instanceof Brand) {
             Brand brand = (Brand) container;
             
-            Set<String> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeriesRefs(), ChildRef.TO_URI));
+            Set<String> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeriesRefs(), SeriesRef.TO_URI));
             if (!urisToRemove.isEmpty()) {
                 containers.remove(where().idIn(urisToRemove).build());
             }

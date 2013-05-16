@@ -16,11 +16,16 @@ import com.mongodb.DBObject;
 
 public class ChildRefTranslator {
 
+    public static final String UPDATED_KEY = "updated";
+    public static final String SORT_KEY = "sortKey";
+    public static final String URI_KEY = "uri";
+    public static final String ID_KEY = "id";
+
     public ChildRef fromDBObject(DBObject dbo) {
-        Long id = (Long) dbo.get("id");
-        String uri = (String) dbo.get("uri");
-        String sortKey = (String) dbo.get("sortKey");
-        DateTime updated = TranslatorUtils.toDateTime(dbo, "updated");
+        Long id = (Long) dbo.get(ID_KEY);
+        String uri = (String) dbo.get(URI_KEY);
+        String sortKey = (String) dbo.get(SORT_KEY);
+        DateTime updated = TranslatorUtils.toDateTime(dbo, UPDATED_KEY);
         EntityType type = EntityType.from((String) dbo.get(DescribedTranslator.TYPE_KEY));
         return new ChildRef(id, uri, sortKey, updated, type);
     }
@@ -38,10 +43,10 @@ public class ChildRefTranslator {
 
     public DBObject toDBObject(ChildRef childRef) {
         DBObject dbObject = new BasicDBObject();
-        TranslatorUtils.from(dbObject, "id", childRef.getId());
-        TranslatorUtils.from(dbObject, "uri", childRef.getUri());
-        TranslatorUtils.from(dbObject, "sortKey", childRef.getSortKey());
-        TranslatorUtils.fromDateTime(dbObject, "updated", childRef.getUpdated());
+        TranslatorUtils.from(dbObject, ID_KEY, childRef.getId());
+        TranslatorUtils.from(dbObject, URI_KEY, childRef.getUri());
+        TranslatorUtils.from(dbObject, SORT_KEY, childRef.getSortKey());
+        TranslatorUtils.fromDateTime(dbObject, UPDATED_KEY, childRef.getUpdated());
         TranslatorUtils.from(dbObject, "type", childRef.getType().toString());
         return dbObject;
     }
