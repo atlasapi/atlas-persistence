@@ -17,11 +17,12 @@ import com.mongodb.DBObject;
 public class ChildRefTranslator {
 
     public ChildRef fromDBObject(DBObject dbo) {
+        Long id = (Long) dbo.get("id");
         String uri = (String) dbo.get("uri");
         String sortKey = (String) dbo.get("sortKey");
         DateTime updated = TranslatorUtils.toDateTime(dbo, "updated");
         EntityType type = EntityType.from((String) dbo.get(DescribedTranslator.TYPE_KEY));
-        return new ChildRef(uri, sortKey, updated, type);
+        return new ChildRef(id, uri, sortKey, updated, type);
     }
     
     public List<ChildRef> fromDBObjects(Iterable<DBObject> dbos) {
@@ -37,6 +38,7 @@ public class ChildRefTranslator {
 
     public DBObject toDBObject(ChildRef childRef) {
         DBObject dbObject = new BasicDBObject();
+        TranslatorUtils.from(dbObject, "id", childRef.getId());
         TranslatorUtils.from(dbObject, "uri", childRef.getUri());
         TranslatorUtils.from(dbObject, "sortKey", childRef.getSortKey());
         TranslatorUtils.fromDateTime(dbObject, "updated", childRef.getUpdated());
