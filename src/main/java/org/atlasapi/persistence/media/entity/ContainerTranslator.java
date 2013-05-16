@@ -112,7 +112,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
 
     private List<SeriesRef> series(Iterable<DBObject> seriesDbos) {
         if (seriesDbos != null) {
-            return ImmutableList.copyOf(seriesRefTranslator.fromDBObjects(seriesDbos));
+            return SeriesRef.dedupeAndSort(seriesRefTranslator.fromDBObjects(seriesDbos));
         }
         return ImmutableList.of();
     }
