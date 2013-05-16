@@ -2,6 +2,9 @@ package org.atlasapi.persistence.output;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CURIE;
+import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.OPAQUE_ID;
+
+import java.math.BigInteger;
 
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.simple.BrandSummary;
@@ -9,6 +12,7 @@ import org.atlasapi.media.entity.simple.SeriesSummary;
 import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Optional;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -17,17 +21,19 @@ import com.mongodb.DBObject;
 
 public class MongoContainerSummaryResolver implements ContainerSummaryResolver {
 
-    private DBCollection containers;
-    private DBCollection programmeGroups;
-
     private final String title = "title";
     private final String description = "description";
     private final String seriesNumber = "seriesNumber";
     private final String totalEpisodes = "totalEpisodes";
     private final String type = "type";
-    private final DBObject fields = MongoBuilders.select().fields(ID, CURIE, title, description).fields(seriesNumber, totalEpisodes, type).build();
+    private final DBObject fields = MongoBuilders.select().fields(ID, CURIE, OPAQUE_ID, title).fields(seriesNumber, description, totalEpisodes, type).build();
 
-    public MongoContainerSummaryResolver(DatabasedMongo mongo) {
+    private final DBCollection containers;
+    private final DBCollection programmeGroups;
+    private final NumberToShortStringCodec idCodec;
+
+    public MongoContainerSummaryResolver(DatabasedMongo mongo, NumberToShortStringCodec idCodec) {
+        this.idCodec = idCodec;
         this.containers = mongo.collection(ContentCategory.CONTAINER.tableName());
         this.programmeGroups = mongo.collection(ContentCategory.PROGRAMME_GROUP.tableName());
     }
@@ -41,6 +47,9 @@ public class MongoContainerSummaryResolver implements ContainerSummaryResolver {
         }
         
         BrandSummary summary = new BrandSummary();
+        
+        Long id = TranslatorUtils.toLong(containerDbo, OPAQUE_ID);
+        summary.setId(id != null ? idCodec.encode(BigInteger.valueOf(id)) : null);
         summary.setUri(TranslatorUtils.toString(containerDbo, ID));
         summary.setCurie(TranslatorUtils.toString(containerDbo, CURIE));
         summary.setTitle(TranslatorUtils.toString(containerDbo, title));
@@ -58,6 +67,8 @@ public class MongoContainerSummaryResolver implements ContainerSummaryResolver {
         }
         
         SeriesSummary summary = new SeriesSummary();
+        Long id = TranslatorUtils.toLong(containerDbo, OPAQUE_ID);
+        summary.setId(id != null ? idCodec.encode(BigInteger.valueOf(id)) : null);
         summary.setUri(TranslatorUtils.toString(containerDbo, ID));
         summary.setCurie(TranslatorUtils.toString(containerDbo, CURIE));
         summary.setTitle(TranslatorUtils.toString(containerDbo, title));

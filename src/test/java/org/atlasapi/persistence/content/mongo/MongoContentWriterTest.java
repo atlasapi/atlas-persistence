@@ -10,10 +10,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -295,7 +297,50 @@ public class MongoContentWriterTest {
         assertThat(retrieveBrand(brand).getThisOrChildLastUpdated(), is(equalTo(episodeLastUpdated)));
         
     }
+    
+    @Test
+    public void testNumericIdsAreWrittenIntoParentAndChildRefs() {
+        
+        Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
+        brand.setId(1L);
+        
+        contentWriter.createOrUpdate(brand);
+        
+        Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setId(2L);
+        series.setParent(brand);
+        
+        contentWriter.createOrUpdate(series);
+        
+        Episode episode = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        episode.setId(3L);
+        episode.setSeries(series);
+        episode.setContainer(brand);
 
+        contentWriter.createOrUpdate(episode);
+        
+        Brand retrievedBrand = retrieveBrand(brand);
+
+        ChildRef seriesRef = Iterables.getOnlyElement(retrievedBrand.getSeriesRefs());
+        assertThat(seriesRef.getId(), is(2L));
+        
+        ChildRef episodeRef = Iterables.getOnlyElement(retrievedBrand.getChildRefs());
+        assertThat(episodeRef.getId(), is(3L));
+        
+        Series retrievedSeries = retrieveSeries(series);
+        
+        ChildRef seriesEpisodeRef = Iterables.getOnlyElement(retrievedSeries.getChildRefs());
+        assertThat(seriesEpisodeRef.getId(), is(3L));
+        
+        ParentRef seriesBrandRef = retrievedSeries.getParent();
+        assertThat(seriesBrandRef.getId(), is(1L));
+        
+        Episode retrievedEpisode = retrieveEpisode(episode);
+        assertThat(retrievedEpisode.getContainer().getId(), is(1L));
+        assertThat(retrievedEpisode.getSeriesRef().getId(), is(2L));
+        
+    }
+    
     public Brand retrieveBrand(Brand brand) {
         return (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
     }
