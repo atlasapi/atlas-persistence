@@ -6,7 +6,7 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -17,21 +17,20 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
 public class MongoChannelStoreWriteTest extends TestCase {
     
-    private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+    private ChannelGroupStore channelGroupStore;
+    private MongoChannelStore channelStore;
     
-    private static final ChannelGroupStore channelGroupStore = new MongoChannelGroupStore(mongo);
-    
-    private static final MongoChannelStore store = new MongoChannelStore(mongo, channelGroupStore, channelGroupStore);
-    
-    @BeforeClass
+    @Before
     public void setUp() throws InterruptedException {
-        store.createOrUpdate(channel("uri1", "key1", MediaType.VIDEO, null, "test/1", "test/2"));
-        Thread.sleep(2000);
+        DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+        channelGroupStore = new MongoChannelGroupStore(mongo);
+        channelStore = new MongoChannelStore(mongo, channelGroupStore, channelGroupStore);
+        channelStore.createOrUpdate(channel("uri1", "key1", MediaType.VIDEO, null, "test/1", "test/2"));
     }
     
     @Test
     public void testInsertNewChannel() {
-        Maybe<Channel> maybeChannel = store.fromUri("uri1");
+        Maybe<Channel> maybeChannel = channelStore.fromUri("uri1");
         assertTrue(maybeChannel.hasValue());
         
         Channel channel = maybeChannel.requireValue();
@@ -44,7 +43,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
     
     @Test
     public void testUpdateExistingChannel() {
-        Maybe<Channel> maybeChannel = store.fromUri("uri1");
+        Maybe<Channel> maybeChannel = channelStore.fromUri("uri1");
         Channel channel = maybeChannel.requireValue();
         
         // update and rewrite channel
@@ -52,7 +51,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         channel.setKey("key2");
         channel.setMediaType(MediaType.AUDIO);
         channel.setAliasUrls(ImmutableList.of("newAlias"));
-        channel = store.createOrUpdate(channel);
+        channel = channelStore.createOrUpdate(channel);
         
         assertEquals("uri2", channel.uri());
         assertEquals("key2", channel.key());
@@ -62,24 +61,24 @@ public class MongoChannelStoreWriteTest extends TestCase {
     
     @Test
     public void testChangeOfParent() {
-        Channel oldParent = store.createOrUpdate(channel("parent1", "key1", MediaType.VIDEO, null, "test/1"));
+        Channel oldParent = channelStore.createOrUpdate(channel("parent1", "key1", MediaType.VIDEO, null, "test/1"));
         Long oldParentId = oldParent.getId();
         
-        Channel newParent = store.createOrUpdate(channel("parent2", "key2", MediaType.VIDEO, null, "test/2"));
+        Channel newParent = channelStore.createOrUpdate(channel("parent2", "key2", MediaType.VIDEO, null, "test/2"));
         Long newParentId = newParent.getId();
         
-        Channel child = store.createOrUpdate(channel("child", "key3", MediaType.VIDEO, oldParentId, ""));
-        oldParent = store.fromId(oldParentId).requireValue();
-        newParent = store.fromId(newParentId).requireValue();
+        Channel child = channelStore.createOrUpdate(channel("child", "key3", MediaType.VIDEO, oldParentId, ""));
+        oldParent = channelStore.fromId(oldParentId).requireValue();
+        newParent = channelStore.fromId(newParentId).requireValue();
         
         assertEquals(oldParentId, child.parent());
         assertEquals(ImmutableSet.of(child.getId()), oldParent.variations());
         assertEquals(ImmutableSet.of(), newParent.variations());
         
         child.setParent(newParentId);
-        child = store.createOrUpdate(child);
-        oldParent = store.fromId(oldParentId).requireValue();
-        newParent = store.fromId(newParentId).requireValue();
+        child = channelStore.createOrUpdate(child);
+        oldParent = channelStore.fromId(oldParentId).requireValue();
+        newParent = channelStore.fromId(newParentId).requireValue();
         
         assertEquals(newParentId, child.parent());
         assertEquals(ImmutableSet.of(), oldParent.variations());
@@ -96,7 +95,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         Long oldAndNewGroupId = channelGroupStore.createOrUpdate(oldAndNewGroup).getId();
         Long newGroupId = channelGroupStore.createOrUpdate(newGroup).getId();
         
-        Channel channel = store.createOrUpdate(channel("channel", "key1", MediaType.VIDEO, null, "test/1"));
+        Channel channel = channelStore.createOrUpdate(channel("channel", "key1", MediaType.VIDEO, null, "test/1"));
         
         ChannelNumbering oldNumbering = ChannelNumbering.builder()
             .withChannel(channel)
@@ -119,7 +118,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         channel.addChannelNumber(oldNumbering);
         channel.addChannelNumber(oldAndNewNumbering);
         
-        channel = store.createOrUpdate(channel);
+        channel = channelStore.createOrUpdate(channel);
         oldGroup = channelGroupStore.channelGroupFor(oldGroupId).get();
         oldAndNewGroup = channelGroupStore.channelGroupFor(oldAndNewGroupId).get();
         newGroup = channelGroupStore.channelGroupFor(newGroupId).get();
@@ -133,7 +132,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         channel.addChannelNumber(oldAndNewNumbering);
         channel.addChannelNumber(newNumbering);
 
-        channel = store.createOrUpdate(channel);
+        channel = channelStore.createOrUpdate(channel);
         oldGroup = channelGroupStore.channelGroupFor(oldGroupId).get();
         oldAndNewGroup = channelGroupStore.channelGroupFor(oldAndNewGroupId).get();
         newGroup = channelGroupStore.channelGroupFor(newGroupId).get();
