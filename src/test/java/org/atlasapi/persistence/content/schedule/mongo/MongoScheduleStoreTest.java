@@ -1,11 +1,23 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.atlasapi.application.ApplicationConfiguration;
@@ -15,6 +27,7 @@ import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.MediaType;
@@ -24,15 +37,22 @@ import org.atlasapi.media.entity.Schedule.ScheduleChannel;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.channels.DummyChannelResolver;
+import org.atlasapi.persistence.content.ContentResolver;
+import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.testing.StubContentResolver;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -41,7 +61,7 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
 
-
+@RunWith(MockitoJUnitRunner.class)
 public class MongoScheduleStoreTest {
 
     private MongoScheduleStore store;
@@ -309,5 +329,96 @@ public class MongoScheduleStoreTest {
                 assertEquals(now.minusHours(1), broadcast2.getTransmissionTime());
             }
         }
+    }
+    
+    @Test
+    public void testResolvingScheduleByCount() {
+        
+        Item item1 = itemWithBroadcast(BBC_ONE, now, now.plusHours(30));
+        Item item2 = itemWithBroadcast(BBC_ONE, now.plusHours(30), now.plusHours(35));
+        Item item3 = itemWithBroadcast(BBC_TWO, now, now.plusHours(5));
+        Item item4 = itemWithBroadcast(BBC_TWO, now.plusHours(5), now.plusHours(10));
+        
+        ContentResolver contentResolver = new StubContentResolver()
+            .respondTo(item1)
+            .respondTo(item2)
+            .respondTo(item3)
+            .respondTo(item4);
+        
+        ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
+        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
+
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
+        store.writeScheduleFrom(item3);
+        store.writeScheduleFrom(item4);
+        
+        checkCount(store, 1, 1);
+        checkCount(store, 2, 2);
+        checkCount(store, 3, 2);
+
+    }
+    
+    @Test
+    public void testResolvesEquivalentItemsForApplicationConfigurationWithPrecendenceEnabled() {
+        
+        Item item1 = itemWithBroadcast(BBC_ONE, now, now.plusHours(30));
+        Item item2 = itemWithBroadcast(BBC_ONE, now.plusHours(30), now.plusHours(35));
+        Item item3 = itemWithBroadcast(BBC_TWO, now, now.plusHours(5));
+        Item item4 = itemWithBroadcast(BBC_TWO, now.plusHours(5), now.plusHours(10));
+        
+        Collection<String> uris = Collections2.transform(ImmutableList.of(item1,item2,item3,item4), Identified.TO_URI);
+        
+        ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
+        ContentResolver contentResolver = mock(ContentResolver.class);
+        EquivalentContentResolver equivalentContentResolver = mock(EquivalentContentResolver.class);
+        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, equivalentContentResolver);
+
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
+        store.writeScheduleFrom(item3);
+        store.writeScheduleFrom(item4);
+        
+        Optional<ApplicationConfiguration> appConfig = Optional.of(
+            ApplicationConfiguration.defaultConfiguration()
+                .copyWithPrecedence(ImmutableList.<Publisher>of()));
+        
+        when(equivalentContentResolver.resolveUris(
+                argThat(hasItem(isIn(uris))), 
+                argThat(is(appConfig.get().getEnabledSources())), 
+                argThat(is(Annotation.defaultAnnotations())), 
+                eq(false)))
+            .thenReturn(EquivalentContent.builder().build());
+        
+        store.schedule(now, now.plusHours(48), ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), appConfig);
+        
+        verify(contentResolver, never()).findByCanonicalUris(any(Iterable.class));
+        for (String uri : uris) {
+            verify(equivalentContentResolver).resolveUris(argThat(hasItem(uri)), 
+                    argThat(is(appConfig.get().getEnabledSources())), 
+                    argThat(is(Annotation.defaultAnnotations())), 
+                    eq(false));
+        }
+    }
+
+    private void checkCount(MongoScheduleStore store, int requestedCount, int expectedCount) {
+        Schedule schedule = store.schedule(now, requestedCount, 
+                ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+        for (ScheduleChannel sc : schedule.scheduleChannels()) {
+            assertThat(String.format("Schedule for %s should have %s items", sc.channel(), expectedCount),
+                    sc.items().size(), is(expectedCount));
+        }
+    }
+
+    private Item itemWithBroadcast(Channel channel, DateTime start, DateTime end) {
+        Item item = new Item();
+        item.setCanonicalUri(String.valueOf(item.hashCode()));
+        item.setPublisher(Publisher.BBC);
+        
+        Version version = new Version();
+        version.addBroadcast(new Broadcast(channel.getCanonicalUri(), start, end));
+        
+        item.addVersion(version);
+        return item;
     }
 }
