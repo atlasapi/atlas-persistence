@@ -57,8 +57,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     private static final Map<String, String> ALIAS_NAMESPACE_MAPPING = ImmutableMap.<String, String>builder()
         // BBC
         .put("http://www\\.bbc\\.co\\.uk/programmes/([0-9a-z]*)", "gb:bbc:pid")
-        .put("http://wsarchive\\.bbc\\.co\\.uk/brands/([0-9]*)", "gb:bbc:pid")
-        .put("http://wsarchive\\.bbc\\.co\\.uk/episodes/([0-9]*)", "gb:bbc:pid")
+      //.put("http://wsarchive\\.bbc\\.co\\.uk/brands/([0-9]*)", "gb:bbc:pid")
+      //.put("http://wsarchive\\.bbc\\.co\\.uk/episodes/([0-9]*)", "gb:bbc:pid")
         .put("http://bbc\\.co\\.uk/i/([a-z0-9]*)/", "gb:bbc:pid")
         .put("http://www\\.bbc\\.co\\.uk/iplayer/episode/([0-9a-z]*)", "gb:bbc:pid")
         .put("http://devapi\\.bbcredux\\.com/channels/([a-z0-9]*)", "gb:bbcredux:service-id")

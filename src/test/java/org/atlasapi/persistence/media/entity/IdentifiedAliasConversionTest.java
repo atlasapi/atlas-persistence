@@ -33,40 +33,6 @@ public class IdentifiedAliasConversionTest {
     }
 
     @Test
-    public void testBBCWSArchiveEpisodePidConversion() {
-        Identified identified = new Identified();
-        
-        identified.setCanonicalUri("http://wsarchive.bbc.co.uk/episodes/12345");
-        
-        Identified decodedIdentified = encodeAndDecode(identified);
-        
-        assertThat(decodedIdentified.getAliases().size(), equalTo(2));
-        
-        Alias canonicalAlias = new Alias("uri", "http://wsarchive.bbc.co.uk/episodes/12345");
-        Alias pidAlias = new Alias("gb:bbc:pid", "12345");
-        
-        assertThat(Iterables.get(decodedIdentified.getAliases(), 0), isOneOf(canonicalAlias, pidAlias));
-        assertThat(Iterables.get(decodedIdentified.getAliases(), 1), isOneOf(canonicalAlias, pidAlias));
-    }
-
-    @Test
-    public void testBBCWSArchiveBrandPidConversion() {
-        Identified identified = new Identified();
-        
-        identified.setCanonicalUri("http://wsarchive.bbc.co.uk/brands/12345");
-        
-        Identified decodedIdentified = encodeAndDecode(identified);
-        
-        assertThat(decodedIdentified.getAliases().size(), equalTo(2));
-        
-        Alias canonicalAlias = new Alias("uri", "http://wsarchive.bbc.co.uk/brands/12345");
-        Alias pidAlias = new Alias("gb:bbc:pid", "12345");
-        
-        assertThat(Iterables.get(decodedIdentified.getAliases(), 0), isOneOf(canonicalAlias, pidAlias));
-        assertThat(Iterables.get(decodedIdentified.getAliases(), 1), isOneOf(canonicalAlias, pidAlias));
-    }
-
-    @Test
     public void testBBCIPidConversion() {
         Identified identified = new Identified();
         
