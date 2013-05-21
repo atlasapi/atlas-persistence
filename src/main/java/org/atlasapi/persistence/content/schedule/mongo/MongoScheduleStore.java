@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.channel.Channel;
@@ -269,7 +271,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         while(!reachedCount && new Duration(from, end).getStandardDays() < 2*count) {
             start = end;
             end = start.plusDays(1);
-            entries = merge(count, entries, translator.fromDbObjects(where().idIn(keys(scheduleEntryBuilder.intervalsFor(start, end), channelsNeedingMore, publishers)).find(collection)));
+            entries = merge(from, count, entries, translator.fromDbObjects(where().idIn(keys(scheduleEntryBuilder.intervalsFor(start, end), channelsNeedingMore, publishers)).find(collection)));
             
             for (ScheduleEntry scheduleEntry : entries.values()) {
                 if (scheduleEntry.getItemRefsAndBroadcasts().size() >= count) {
@@ -289,16 +291,26 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         return Schedule.fromChannelMap(processedChannelMap.build(), interval);
     }
 
-    private Map<Channel, ScheduleEntry> merge(int count, Map<Channel, ScheduleEntry> existing, List<ScheduleEntry> fetched) {
+    private Map<Channel, ScheduleEntry> merge(DateTime from, int count, Map<Channel, ScheduleEntry> existing, List<ScheduleEntry> fetched) {
         for (ScheduleEntry scheduleEntry : fetched) {
             ScheduleEntry existingEntry = existing.get(scheduleEntry.channel());
-            if (existingEntry == null) {
-                existing.put(scheduleEntry.channel(), limitEntryItems(count, scheduleEntry));
-            } else {
-                existing.put(scheduleEntry.channel(), limitEntryItems(count, mergeScheduleEntries(existingEntry, scheduleEntry)));
+            if (existingEntry != null) {
+                scheduleEntry = mergeScheduleEntries(existingEntry, scheduleEntry);
             }
+            existing.put(scheduleEntry.channel(), limitEntryItems(count, after(from,  scheduleEntry)));
         }
         return existing;
+    }
+
+    private ScheduleEntry after(final DateTime from, ScheduleEntry entry) {
+        return entry.withItems(Iterables.filter(entry.getItemRefsAndBroadcasts(),
+            new Predicate<ItemRefAndBroadcast>() {
+                @Override
+                public boolean apply(@Nullable ItemRefAndBroadcast input) {
+                    return input.getBroadcast().getTransmissionEndTime().isAfter(from);
+                }
+            }
+        ));
     }
 
     private ScheduleEntry limitEntryItems(int count, ScheduleEntry scheduleEntry) {
