@@ -129,7 +129,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public DBCursor cursorFor(ContentCategory category) {
                 return contentTables.collectionFor(category)
                             .find(where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when).build())
-                            .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build());
+                            .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build())
+                            .batchSize(100)
+                            .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
             }
         });
     }
