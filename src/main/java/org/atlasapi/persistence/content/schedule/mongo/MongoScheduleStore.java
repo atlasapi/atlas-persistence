@@ -213,16 +213,10 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         if (interval.toDuration().isLongerThan(MAX_DURATION)) {
             throw new IllegalArgumentException("You cannot request more than 2 weeks of schedule");
         }
-        List<ScheduleEntry> entries = translator.fromDbObjects(where().idIn(keys(scheduleEntryBuilder.intervalsFor(from, to), channels, publishers)).find(collection));
+        List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
 
-        
         Map<Channel, List<Item>> channelMap = resolveEntries(entries, channels, mergeConfig);
-        
-        ImmutableMap.Builder<Channel, List<Item>> processedChannelMap = ImmutableMap.builder();
-        for (Entry<Channel, List<Item>> entry: channelMap.entrySet()) {
-            processedChannelMap.put(entry.getKey(), processChannelItems(entry.getValue(), interval));
-        }
-        return Schedule.fromChannelMap(processedChannelMap.build(), interval);
+        return scheduleFrom(channelMap, interval);
     }
 
     private Map<Channel, List<Item>> resolveEntries(Iterable<ScheduleEntry> entries,
@@ -257,38 +251,60 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         return refs.build();
     }
 
+    /*
+     * To resolve a schedule by count we need to guess how many hour buckets we
+     * need to fulfill the count. We start off by resolving a set window and
+     * counting how many unique item/broadcasts we got. While we don't have enough
+     * we repeatedly resolve the next window.
+     */
     @Override
-    public Schedule schedule(DateTime from, int count, Iterable<Channel> channels,
+    public Schedule schedule(final DateTime from, int count, Iterable<Channel> channels,
             Iterable<Publisher> publishers, Optional<ApplicationConfiguration> mergeConfig) {
 
         DateTime start = from;
         DateTime end = from;
+        final Duration windowDuration = Duration.standardDays(1);
+
         Map<Channel, ScheduleEntry> entries = Maps.newHashMap();
         
         boolean reachedCount = false;
+        final int maxIterations = 2*count;
+        int iterations = 0;
         Set<Channel> channelsNeedingMore = Sets.newHashSet(channels);
         
-        while(!reachedCount && new Duration(from, end).getStandardDays() < 2*count) {
+        while(!reachedCount && iterations < maxIterations) {
             start = end;
-            end = start.plusDays(1);
-            entries = merge(from, count, entries, translator.fromDbObjects(where().idIn(keys(scheduleEntryBuilder.intervalsFor(start, end), channelsNeedingMore, publishers)).find(collection)));
+            end = start.plus(windowDuration);
+            List<ScheduleEntry> windowEntries = resolveEntries(channelsNeedingMore, start, end, publishers);
+            entries = merge(from, count, entries, windowEntries);
             
             for (ScheduleEntry scheduleEntry : entries.values()) {
                 if (scheduleEntry.getItemRefsAndBroadcasts().size() >= count) {
                     channelsNeedingMore.remove(scheduleEntry.channel());
                 }
             }
+            
             reachedCount = channelsNeedingMore.isEmpty();
+            iterations++;
         }
         
         Map<Channel, List<Item>> channelMap = resolveEntries(entries.values(), channels, mergeConfig);
-        Interval interval = new Interval(from, end);
-        
+        return scheduleFrom(channelMap, new Interval(from, end));
+    }
+
+    private Schedule scheduleFrom(Map<Channel, List<Item>> channelMap, Interval interval) {
         ImmutableMap.Builder<Channel, List<Item>> processedChannelMap = ImmutableMap.builder();
         for (Entry<Channel, List<Item>> entry: channelMap.entrySet()) {
             processedChannelMap.put(entry.getKey(), processChannelItems(entry.getValue(), interval));
         }
-        return Schedule.fromChannelMap(processedChannelMap.build(), interval);
+        Schedule schedule = Schedule.fromChannelMap(processedChannelMap.build(), interval);
+        return schedule;
+    }
+
+    private List<ScheduleEntry> resolveEntries(Iterable<Channel> channels, DateTime start, DateTime end,
+            Iterable<Publisher> publishers) {
+        List<String> keys = keys(scheduleEntryBuilder.intervalsFor(start, end), channels, publishers);
+        return translator.fromDbObjects(where().idIn(keys).find(collection));
     }
 
     private Map<Channel, ScheduleEntry> merge(DateTime from, int count, Map<Channel, ScheduleEntry> existing, List<ScheduleEntry> fetched) {
@@ -296,8 +312,10 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             ScheduleEntry existingEntry = existing.get(scheduleEntry.channel());
             if (existingEntry != null) {
                 scheduleEntry = mergeScheduleEntries(existingEntry, scheduleEntry);
+            } else {
+                scheduleEntry = after(from,  scheduleEntry);
             }
-            existing.put(scheduleEntry.channel(), limitEntryItems(count, after(from,  scheduleEntry)));
+            existing.put(scheduleEntry.channel(), limitEntryItems(count, scheduleEntry));
         }
         return existing;
     }

@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.media.channel.Channel;
@@ -345,7 +346,8 @@ public class MongoScheduleStoreTest {
             .respondTo(item3)
             .respondTo(item4);
         
-        ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
+        ImmutableSet<Channel> channels = ImmutableSet.of(BBC_ONE, BBC_TWO);
+        ChannelResolver channelResolver = new DummyChannelResolver(channels);
         MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
 
         store.writeScheduleFrom(item1);
@@ -353,10 +355,51 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item3);
         store.writeScheduleFrom(item4);
         
-        checkCount(store, 1, 1);
-        checkCount(store, 2, 2);
-        checkCount(store, 3, 2);
+        checkCount(now, store, channels, 1, 1);
+        checkCount(now, store, channels, 2, 2);
 
+    }
+
+    @Test
+    public void testResolvesMaxItemsWhenCountHigherThanMax() {
+        
+        Item item1 = itemWithBroadcast(BBC_ONE, now, now.plusHours(30));
+        Item item2 = itemWithBroadcast(BBC_ONE, now.plusHours(30), now.plusHours(35));
+        
+        ContentResolver contentResolver = new StubContentResolver()
+            .respondTo(item1)
+            .respondTo(item2);
+        
+        ImmutableSet<Channel> channel = ImmutableSet.of(BBC_ONE);
+        ChannelResolver channelResolver = new DummyChannelResolver(channel);
+        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
+        
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
+        
+        checkCount(now, store, channel, 3, 2);
+        
+    }
+
+    @Test
+    public void testIgnoresRefsInEntryBeforeFromParam() {
+        
+        Item item1 = itemWithBroadcast(BBC_ONE, now, now.plusMinutes(30));
+        Item item2 = itemWithBroadcast(BBC_ONE, now.plusMinutes(30), now.plusMinutes(60));
+        
+        ContentResolver contentResolver = new StubContentResolver()
+            .respondTo(item1)
+            .respondTo(item2);
+        
+        ImmutableSet<Channel> channel = ImmutableSet.of(BBC_ONE);
+        ChannelResolver channelResolver = new DummyChannelResolver(channel);
+        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
+        
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
+        
+        checkCount(now.plusMinutes(45), store, channel, 1, 1);
+        
     }
     
     @Test
@@ -401,9 +444,9 @@ public class MongoScheduleStoreTest {
         }
     }
 
-    private void checkCount(MongoScheduleStore store, int requestedCount, int expectedCount) {
-        Schedule schedule = store.schedule(now, requestedCount, 
-                ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+    private void checkCount(DateTime from, MongoScheduleStore store, Set<Channel> channels, int requestedCount, int expectedCount) {
+        Schedule schedule = store.schedule(from, requestedCount, 
+                ImmutableSet.copyOf(channels), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
         for (ScheduleChannel sc : schedule.scheduleChannels()) {
             assertThat(String.format("Schedule for %s should have %s items", sc.channel(), expectedCount),
                     sc.items().size(), is(expectedCount));
