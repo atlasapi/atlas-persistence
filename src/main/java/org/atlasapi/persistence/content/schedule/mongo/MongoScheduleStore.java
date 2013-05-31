@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.channel.Channel;
@@ -44,6 +46,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -206,38 +209,134 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 		
     @Override
     public Schedule schedule(DateTime from, DateTime to, Iterable<Channel> channels, Iterable<Publisher> publishers, Optional<ApplicationConfiguration> mergeConfig) {
-        Map<Channel, List<Item>> channelMap = createChannelMap(channels);
         Interval interval = new Interval(from, to);
         if (interval.toDuration().isLongerThan(MAX_DURATION)) {
             throw new IllegalArgumentException("You cannot request more than 2 weeks of schedule");
         }
-        List<ScheduleEntry> entries = translator.fromDbObjects(where().idIn(keys(scheduleEntryBuilder.intervalsFor(from, to), channels, publishers)).find(collection));
+        List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
 
-        
-        for (ScheduleEntry entry: entries) {
-            // TODO this code inefficient, but in future we should avoid hydrating then items
-            // unless explicitly requested
-            for (ItemRefAndBroadcast itemRefAndBroadcast : entry.getItemRefsAndBroadcasts()) {
-                Maybe<Identified> possibleItem;
-                if (mergeConfig.isPresent() && mergeConfig.get().precedenceEnabled()) {
-                    possibleItem = findAndMerge(mergeConfig.get(), itemRefAndBroadcast);
-                } else {
-                    possibleItem = resolver.findByCanonicalUris(ImmutableList.of(itemRefAndBroadcast.getItemUri())).getFirstValue();
-                }
-                if (possibleItem.hasValue()) {
-                    Item item = ((Item) possibleItem.requireValue()).copy();
-                    if (selectAndTrimBroadcast(item, itemRefAndBroadcast.getBroadcast())) {
-                        channelMap.get(entry.channel()).add(item);
-                    }
+        Map<Channel, List<Item>> channelMap = resolveEntries(entries, channels, mergeConfig);
+        return scheduleFrom(channelMap, interval);
+    }
+
+    private Map<Channel, List<Item>> resolveEntries(Iterable<ScheduleEntry> entries,
+            Iterable<Channel> channels, Optional<ApplicationConfiguration> mergeConfig) {
+        Map<Channel, List<Item>> channelMap = createChannelMap(channels);
+        // TODO this code inefficient, but in future we should avoid hydrating then items
+        // unless explicitly requested
+        for (Entry<Channel,ItemRefAndBroadcast> entry : uniqueRefs(entries)) {
+            Maybe<Identified> possibleItem;
+            if (mergeConfig.isPresent() && mergeConfig.get().precedenceEnabled()) {
+                possibleItem = findAndMerge(mergeConfig.get(), entry.getValue());
+            } else {
+                possibleItem = resolver.findByCanonicalUris(ImmutableList.of(entry.getValue().getItemUri())).getFirstValue();
+            }
+            if (possibleItem.hasValue()) {
+                Item item = ((Item) possibleItem.requireValue()).copy();
+                if (selectAndTrimBroadcast(item, entry.getValue().getBroadcast())) {
+                    channelMap.get(entry.getKey()).add(item);
                 }
             }
         }
+        return channelMap;
+    }
+    
+    private Iterable<Entry<Channel,ItemRefAndBroadcast>> uniqueRefs(Iterable<ScheduleEntry> entries) {
+        ImmutableSet.Builder<Entry<Channel, ItemRefAndBroadcast>> refs = ImmutableSet.builder();
+        for (ScheduleEntry scheduleEntry : entries) {
+            for (ItemRefAndBroadcast entryRef : scheduleEntry.getItemRefsAndBroadcasts()) {
+                refs.add(Maps.immutableEntry(scheduleEntry.channel(), entryRef));
+            }
+        }
+        return refs.build();
+    }
+
+    /*
+     * To resolve a schedule by count we need to guess how many hour buckets we
+     * need to fulfill the count. We start off by resolving a set window and
+     * counting how many unique item/broadcasts we got. While we don't have enough
+     * we repeatedly resolve the next window.
+     */
+    @Override
+    public Schedule schedule(final DateTime from, int count, Iterable<Channel> channels,
+            Iterable<Publisher> publishers, Optional<ApplicationConfiguration> mergeConfig) {
+
+        DateTime start = from;
+        DateTime end = from;
+        final Duration windowDuration = Duration.standardDays(1);
+
+        Map<Channel, ScheduleEntry> entries = Maps.newHashMap();
         
+        boolean reachedCount = false;
+        final int maxIterations = 2*count;
+        int iterations = 0;
+        Set<Channel> channelsNeedingMore = Sets.newHashSet(channels);
+        
+        while(!reachedCount && iterations < maxIterations) {
+            start = end;
+            end = start.plus(windowDuration);
+            List<ScheduleEntry> windowEntries = resolveEntries(channelsNeedingMore, start, end, publishers);
+            entries = merge(from, count, entries, windowEntries);
+            
+            for (ScheduleEntry scheduleEntry : entries.values()) {
+                if (scheduleEntry.getItemRefsAndBroadcasts().size() >= count) {
+                    channelsNeedingMore.remove(scheduleEntry.channel());
+                }
+            }
+            
+            reachedCount = channelsNeedingMore.isEmpty();
+            iterations++;
+        }
+        
+        Map<Channel, List<Item>> channelMap = resolveEntries(entries.values(), channels, mergeConfig);
+        return scheduleFrom(channelMap, new Interval(from, end));
+    }
+
+    private Schedule scheduleFrom(Map<Channel, List<Item>> channelMap, Interval interval) {
         ImmutableMap.Builder<Channel, List<Item>> processedChannelMap = ImmutableMap.builder();
         for (Entry<Channel, List<Item>> entry: channelMap.entrySet()) {
             processedChannelMap.put(entry.getKey(), processChannelItems(entry.getValue(), interval));
         }
-        return Schedule.fromChannelMap(processedChannelMap.build(), interval);
+        Schedule schedule = Schedule.fromChannelMap(processedChannelMap.build(), interval);
+        return schedule;
+    }
+
+    private List<ScheduleEntry> resolveEntries(Iterable<Channel> channels, DateTime start, DateTime end,
+            Iterable<Publisher> publishers) {
+        List<String> keys = keys(scheduleEntryBuilder.intervalsFor(start, end), channels, publishers);
+        return translator.fromDbObjects(where().idIn(keys).find(collection));
+    }
+
+    private Map<Channel, ScheduleEntry> merge(DateTime from, int count, Map<Channel, ScheduleEntry> existing, List<ScheduleEntry> fetched) {
+        for (ScheduleEntry scheduleEntry : fetched) {
+            ScheduleEntry existingEntry = existing.get(scheduleEntry.channel());
+            if (existingEntry != null) {
+                scheduleEntry = mergeScheduleEntries(existingEntry, scheduleEntry);
+            } else {
+                scheduleEntry = after(from,  scheduleEntry);
+            }
+            existing.put(scheduleEntry.channel(), limitEntryItems(count, scheduleEntry));
+        }
+        return existing;
+    }
+
+    private ScheduleEntry after(final DateTime from, ScheduleEntry entry) {
+        return entry.withItems(Iterables.filter(entry.getItemRefsAndBroadcasts(),
+            new Predicate<ItemRefAndBroadcast>() {
+                @Override
+                public boolean apply(@Nullable ItemRefAndBroadcast input) {
+                    return input.getBroadcast().getTransmissionEndTime().isAfter(from);
+                }
+            }
+        ));
+    }
+
+    private ScheduleEntry limitEntryItems(int count, ScheduleEntry scheduleEntry) {
+        return scheduleEntry.withItems(Iterables.limit(scheduleEntry.getItemRefsAndBroadcasts(), count));
+    }
+
+    private ScheduleEntry mergeScheduleEntries(ScheduleEntry existing, ScheduleEntry fetched) {
+        return existing.withItems(Iterables.concat(existing.getItemRefsAndBroadcasts(), fetched.getItemRefsAndBroadcasts()));
     }
 
     private Maybe<Identified> findAndMerge(ApplicationConfiguration mergeConfig,
