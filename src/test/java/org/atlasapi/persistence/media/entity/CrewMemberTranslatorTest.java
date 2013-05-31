@@ -2,6 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -67,9 +68,8 @@ public class CrewMemberTranslatorTest {
         
         DBObject encoded = translator.toDBObject(null, member);
         
-        CrewMember decoded = translator.fromDBObject(encoded, null);
+        Actor decoded = (Actor) translator.fromDBObject(encoded, null);
         
-        assertThat(decoded, is(Actor.class));
         assertThat(decoded.getCanonicalUri(), is(member.getCanonicalUri()));
         assertThat(decoded.getCurie(), is(member.getCurie()));
         assertThat(decoded.publisher(), is(member.publisher()));

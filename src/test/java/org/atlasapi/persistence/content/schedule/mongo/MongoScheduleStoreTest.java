@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertEquals;
@@ -13,7 +13,6 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +48,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.base.Optional;
@@ -427,7 +425,7 @@ public class MongoScheduleStoreTest {
                 .copyWithPrecedence(ImmutableList.<Publisher>of()));
         
         when(equivalentContentResolver.resolveUris(
-                argThat(hasItem(isIn(uris))), 
+                argThat(hasItems(isIn(uris))), 
                 argThat(is(appConfig.get().getEnabledSources())), 
                 argThat(is(Annotation.defaultAnnotations())), 
                 eq(false)))
@@ -437,7 +435,7 @@ public class MongoScheduleStoreTest {
         
         verify(contentResolver, never()).findByCanonicalUris(any(Iterable.class));
         for (String uri : uris) {
-            verify(equivalentContentResolver).resolveUris(argThat(hasItem(uri)), 
+            verify(equivalentContentResolver).resolveUris(argThat(hasItems(uri)), 
                     argThat(is(appConfig.get().getEnabledSources())), 
                     argThat(is(Annotation.defaultAnnotations())), 
                     eq(false));
