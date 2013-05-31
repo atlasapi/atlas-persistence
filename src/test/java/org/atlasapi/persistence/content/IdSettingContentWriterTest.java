@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.content;
 
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 
 import org.atlasapi.media.entity.Container;
@@ -92,7 +91,7 @@ public class IdSettingContentWriterTest {
         final long newId = 1234;
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(container.getCanonicalUri()))); will(returnValue(ImmutableList.of()));
             oneOf(idGenerator).generateRaw();will(returnValue(newId));
             oneOf(delegate).createOrUpdate(with(containerWithId(newId)));
         }});
@@ -110,7 +109,7 @@ public class IdSettingContentWriterTest {
         container.setId(oldId);
         
         context.checking(new Expectations(){{
-            oneOf(lookupStore).entriesForCanonicalUris(with(hasItem(container.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(container))));
+            oneOf(lookupStore).entriesForCanonicalUris(with(hasItems(container.getCanonicalUri()))); will(returnValue(ImmutableList.of(LookupEntry.lookupEntryFrom(container))));
             never(idGenerator).generateRaw();
             oneOf(delegate).createOrUpdate(with(containerWithId(oldId)));
         }});
