@@ -427,7 +427,7 @@ public class MongoScheduleStoreTest {
                 .copyWithPrecedence(ImmutableList.<Publisher>of()));
         
         when(equivalentContentResolver.resolveUris(
-                (Iterable<String>) argThat(hasItem(isIn(uris))), 
+                (Iterable) argThat(hasItem(isIn(uris))), 
                 argThat(is(appConfig.get().getEnabledSources())), 
                 argThat(is(Annotation.defaultAnnotations())), 
                 eq(false)))
