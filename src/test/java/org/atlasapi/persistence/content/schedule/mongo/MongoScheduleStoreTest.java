@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
@@ -400,6 +401,7 @@ public class MongoScheduleStoreTest {
         
     }
     
+    @SuppressWarnings("unchecked")
     @Test
     public void testResolvesEquivalentItemsForApplicationConfigurationWithPrecendenceEnabled() {
         
@@ -425,7 +427,8 @@ public class MongoScheduleStoreTest {
                 .copyWithPrecedence(ImmutableList.<Publisher>of()));
         
         when(equivalentContentResolver.resolveUris(
-                argThat(hasItems(isIn(uris))), 
+                (Iterable<String>) argThat(containsInAnyOrder(item1.getCanonicalUri(), item2.getCanonicalUri(), 
+                        item3.getCanonicalUri(), item4.getCanonicalUri())), 
                 argThat(is(appConfig.get().getEnabledSources())), 
                 argThat(is(Annotation.defaultAnnotations())), 
                 eq(false)))
