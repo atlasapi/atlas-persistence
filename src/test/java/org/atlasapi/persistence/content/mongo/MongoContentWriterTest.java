@@ -356,6 +356,7 @@ public class MongoContentWriterTest {
         episode.setId(3L);
         episode.setSeries(series);
         episode.setContainer(brand);
+        episode.setLastUpdated(new DateTime(DateTimeZones.UTC));
 
         contentWriter.createOrUpdate(episode);
         

@@ -37,29 +37,30 @@ public class MongoPersonStoreTest {
         store = new MongoPersonStore(db);
     }
     
-    @Test 
+    @Test
     public void testListingPeople() {
-    	int dummyPeopleToCreate = MongoPersonStore.MONGO_SCAN_BATCH_SIZE * 2;
-    	
-    	final List<Person> dummyPeople = Lists.newArrayList();
-		for (int i = 0; i < dummyPeopleToCreate; i++) {
-	        Person person = new Person(NumberPadder.pad(i), "", Publisher.BBC);
-	        store.createOrUpdatePerson(person);
-	        dummyPeople.add(person);
-    	}
-		
-		final List<Person> peopleReturned = Lists.newArrayList();
-		store.list(new PeopleListerListener() {
-			
-			@Override
-			public void personListed(Person person) {
-				peopleReturned.add(person);
-			}
-		});
-		assertEquals(dummyPeopleToCreate, peopleReturned.size());
-		assertEquals(dummyPeople, peopleReturned);
+        int dummyPeopleToCreate = MongoPersonStore.MONGO_SCAN_BATCH_SIZE * 2;
+
+        final List<Person> dummyPeople = Lists.newArrayList();
+        for (int i = 0; i < dummyPeopleToCreate; i++) {
+            Person person = new Person(NumberPadder.pad(i), "", Publisher.BBC);
+            person.setId(i);
+            store.createOrUpdatePerson(person);
+            dummyPeople.add(person);
+        }
+
+        final List<Person> peopleReturned = Lists.newArrayList();
+        store.list(new PeopleListerListener() {
+
+            @Override
+            public void personListed(Person person) {
+                peopleReturned.add(person);
+            }
+        });
+        assertEquals(dummyPeopleToCreate, peopleReturned.size());
+        assertEquals(dummyPeople, peopleReturned);
     }
-    
+
     @Test
     public void shouldSetPersonAndAddItems() {
         Person person = new Person(uri, uri, Publisher.BBC);

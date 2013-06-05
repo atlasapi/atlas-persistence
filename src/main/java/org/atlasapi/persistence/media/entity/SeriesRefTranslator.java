@@ -43,7 +43,7 @@ public class SeriesRefTranslator {
     
     public DBObject toDBObject(SeriesRef seriesRef) {
         DBObject dbObject = new BasicDBObject();
-        TranslatorUtils.from(dbObject, ID_KEY, seriesRef.getId());
+        TranslatorUtils.from(dbObject, ID_KEY, seriesRef.getId().longValue());
         TranslatorUtils.from(dbObject, SORT_KEY, seriesRef.getTitle());
         TranslatorUtils.fromDateTime(dbObject, UPDATED_KEY, seriesRef.getUpdated());
         TranslatorUtils.from(dbObject, SERIES_NUMBER_KEY, seriesRef.getSeriesNumber());

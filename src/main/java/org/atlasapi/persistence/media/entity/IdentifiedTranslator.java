@@ -107,12 +107,15 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
             description = new Identified();
         }
         
-        if(useAtlasIdAsId) {
-        	description.setCanonicalUri((String) dbObject.get(CANONICAL_URL));
-        	description.setId((Long) dbObject.get(ID));
-        }
-        else {
-        	description.setCanonicalUri((String) dbObject.get(ID));
+        if (useAtlasIdAsId) {
+            description.setCanonicalUri((String) dbObject.get(CANONICAL_URL));
+            description.setId((Long) dbObject.get(ID));
+        } else {
+            description.setCanonicalUri((String) dbObject.get(ID));
+            if (dbObject.containsField(OPAQUE_ID) && dbObject.get(OPAQUE_ID) != null) {
+                description.setId(TranslatorUtils.toLong(dbObject, OPAQUE_ID));
+            }
+                
         }
         
         description.setCurie((String) dbObject.get(CURIE));
@@ -195,10 +198,12 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         
         if (useAtlasIdAsId) {
             TranslatorUtils.from(dbObject, CANONICAL_URL, entity.getCanonicalUri());
-            TranslatorUtils.from(dbObject, ID, entity.getId());
+            TranslatorUtils.from(dbObject, ID, entity.getId().longValue());
         } else {
             TranslatorUtils.from(dbObject, ID, entity.getCanonicalUri());
-            TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId());
+            if (entity.getId() != null) {
+                TranslatorUtils.from(dbObject, OPAQUE_ID, entity.getId().longValue());
+            }
         }
         
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
