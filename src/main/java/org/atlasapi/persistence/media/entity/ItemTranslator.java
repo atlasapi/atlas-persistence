@@ -37,6 +37,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     private static final String PART_NUMBER = "partNumber";
     private static final String EPISODE_NUMBER = "episodeNumber";
     private static final String SERIES_NUMBER = "seriesNumber";
+    private static final String SPECIAL = "special";
 
     private static final String VERSIONS_KEY = "versions";
 	private static final String TYPE_KEY = "type";
@@ -120,6 +121,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
             episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
             episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
             episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
+            episode.setSpecial(TranslatorUtils.toBoolean(dbObject, SPECIAL));
             if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
                 episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY),seriesId));
             }
@@ -269,6 +271,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			TranslatorUtils.from(itemDbo, PART_NUMBER, episode.getPartNumber());
 			TranslatorUtils.from(itemDbo, EPISODE_NUMBER, episode.getEpisodeNumber());
 			TranslatorUtils.from(itemDbo, SERIES_NUMBER, episode.getSeriesNumber());
+			TranslatorUtils.from(itemDbo, SPECIAL, episode.getSpecial());
 			
 			ParentRef series = episode.getSeriesRef();
 			if (series != null) {
