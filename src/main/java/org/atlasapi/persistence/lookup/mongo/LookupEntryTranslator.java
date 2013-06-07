@@ -124,7 +124,7 @@ public class LookupEntryTranslator {
             String id = TranslatorUtils.toString(input, ID);
             Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
             String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, publisher, ContentCategory.valueOf(type));
+            return new LookupRef(id, null, publisher, ContentCategory.valueOf(type));
         }
     };
 }
