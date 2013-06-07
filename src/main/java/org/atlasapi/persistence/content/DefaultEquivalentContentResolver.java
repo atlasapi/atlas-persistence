@@ -72,7 +72,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         if (equivUris == null) {
             return ImmutableSet.of();
         }
-        List<Identified> resolvedEquivs = resolved.getResolvedResults(Iterables.transform(equivUris,LookupRef.TO_ID));
+        List<Identified> resolvedEquivs = resolved.getResolvedResults(Iterables.transform(equivUris,LookupRef.TO_URI));
         return Iterables.filter(resolvedEquivs, Content.class);
     }
     
