@@ -27,15 +27,12 @@ public class ImageTranslator implements ModelTranslator<Image> {
     private static final String ASPECT_RATIO = "aspectRatio";
     private static final String MIME_TYPE = "mimeType";
 
-    private IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(false);
-
     @Override
     public DBObject toDBObject(DBObject dbObject, Image model) {
         if (dbObject == null) {
             dbObject = new BasicDBObject();
         }
         
-        identifiedTranslator.toDBObject(dbObject, model);
         TranslatorUtils.from(dbObject, CANONICAL_URL, model.getCanonicalUri());
 
         TranslatorUtils.fromDateTime(dbObject, AVAILABILITY_START, model.getAvailabilityStart());
@@ -76,7 +73,6 @@ public class ImageTranslator implements ModelTranslator<Image> {
             model = new Image(TranslatorUtils.toString(MongoConstants.ID));
         }
         
-        identifiedTranslator.fromDBObject(dbObject, model);
         model.setCanonicalUri((String) dbObject.get(CANONICAL_URL));
 
         model.setAvailabilityStart(TranslatorUtils.toDateTime(dbObject, AVAILABILITY_START));
