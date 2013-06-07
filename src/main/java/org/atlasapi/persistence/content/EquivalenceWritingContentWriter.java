@@ -35,7 +35,7 @@ public class EquivalenceWritingContentWriter implements ContentWriter {
                     new Function<LookupRef, ContentRef>() {
                         @Override
                         public ContentRef apply(LookupRef input) {
-                            return new ContentRef(input.id(), input.publisher(), null);
+                            return new ContentRef(input.uri(), input.publisher(), null);
                         }
                     });
             equivalenceWriter.writeLookup(ContentRef.valueOf(content), equivalentUris, publishers);
