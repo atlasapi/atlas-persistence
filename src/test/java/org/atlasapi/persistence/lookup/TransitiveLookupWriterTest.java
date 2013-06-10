@@ -48,12 +48,12 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of("testUri")));
         assertEquals(item.getCanonicalUri(), uriEntry.uri());
         assertEquals(item.getAllUris(), uriEntry.aliasUrls());
-        assertEquals("testUri", Iterables.getOnlyElement(uriEntry.directEquivalents()).id());
+        assertEquals("testUri", Iterables.getOnlyElement(uriEntry.directEquivalents()).uri());
 
         assertNotNull(uriEntry.created());
         assertNotNull(uriEntry.updated());
 
-        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).id());
+        assertEquals(item.getCanonicalUri(), Iterables.getOnlyElement(uriEntry.equivalents()).uri());
         assertEquals(item.getPublisher(), Iterables.getOnlyElement(uriEntry.equivalents()).publisher());
         assertEquals(ContentCategory.TOP_LEVEL_ITEM, Iterables.getOnlyElement(uriEntry.equivalents()).category());
 
