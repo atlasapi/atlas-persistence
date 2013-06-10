@@ -118,7 +118,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         public DBObject apply(LookupRef input) {
             BasicDBObject dbo = new BasicDBObject();
             
-            TranslatorUtils.from(dbo, ID, input.id());
+            TranslatorUtils.from(dbo, ID, input.uri());
             TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
             TranslatorUtils.from(dbo, TYPE, input.category().toString());
             
