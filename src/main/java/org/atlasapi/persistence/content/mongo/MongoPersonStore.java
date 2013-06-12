@@ -6,10 +6,9 @@ import java.util.List;
 
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Person;
-import org.atlasapi.persistence.content.PeopleLister;
 import org.atlasapi.persistence.content.PeopleListerListener;
-import org.atlasapi.persistence.content.PeopleResolver;
-import org.atlasapi.persistence.content.people.PersonWriter;
+import org.atlasapi.persistence.content.people.PersonStore;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.joda.time.DateTime;
 
@@ -24,7 +23,7 @@ import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-public class MongoPersonStore implements PersonWriter, PeopleResolver, PeopleLister {
+public class MongoPersonStore implements PersonStore {
     
     static final int MONGO_SCAN_BATCH_SIZE = 100;
 
@@ -48,6 +47,16 @@ public class MongoPersonStore implements PersonWriter, PeopleResolver, PeopleLis
     public Person person(String uri) {
         List<Person> people = translator.fromDBObjects(translator.idQuery(uri).find(collection));
         return Iterables.getFirst(people, null);
+    }
+    
+    @Override
+    public Person person(Long id) {
+        DBObject q = where().fieldEquals(IdentifiedTranslator.OPAQUE_ID, id).build();
+        DBObject personDbo = collection.findOne(q);
+        if (personDbo == null) {
+            return null;
+        }
+        return translator.fromDBObject(personDbo, null);
     }
 
     @Override
