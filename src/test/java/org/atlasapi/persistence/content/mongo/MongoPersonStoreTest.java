@@ -59,6 +59,7 @@ public class MongoPersonStoreTest {
     @Test
     public void shouldSetPersonAndAddItems() {
         Person person = new Person(uri, uri, Publisher.BBC);
+        person.setId(1L);
         store.createOrUpdatePerson(person);
         
         List<String> items = Lists.newArrayList();
@@ -78,9 +79,14 @@ public class MongoPersonStoreTest {
         Person found = store.person(uri);
         assertNotNull(found);
         assertEquals(uri, found.getCanonicalUri());
+        assertEquals(person.getId(), found.getId());
         assertEquals(person.getPublisher(), found.getPublisher());
         
         assertEquals(10, found.getContents().size());
         assertEquals(items, ImmutableList.copyOf(Iterables.transform(found.getContents(), ChildRef.TO_URI)));
+        
+        found = store.person(1L);
+        
+        assertEquals(uri, found.getCanonicalUri());
     }
 }
