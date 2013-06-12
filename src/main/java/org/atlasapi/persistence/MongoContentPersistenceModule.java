@@ -128,7 +128,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	}
 	
 	public @Primary @Bean MongoPersonStore personStore() {
-	    return new MongoPersonStore(db);
+	    MongoPersonStore rawPersonStore = new MongoPersonStore(db);
+        return rawPersonStore;
 	}
 
 	public @Primary @Bean ShortUrlSaver shortUrlSaver() {
