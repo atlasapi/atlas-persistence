@@ -34,7 +34,9 @@ import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
+import org.atlasapi.persistence.content.people.IdSettingPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
+import org.atlasapi.persistence.content.people.PersonStore;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
@@ -143,8 +145,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	    return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
 	}
 	
-	public @Primary @Bean MongoPersonStore personStore() {
-	    return new MongoPersonStore(db);
+	public @Primary @Bean PersonStore personStore() {
+	    PersonStore personStore = new MongoPersonStore(db);
+	    if (Boolean.valueOf(generateIds)) {
+	        //For now people occupy the same id space as content.
+	        personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));
+        }
+        return personStore;
 	}
 
 	public @Primary @Bean ShortUrlSaver shortUrlSaver() {

@@ -50,11 +50,12 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         }
         
         if(useAtlasIdAsId) {
-        	description.setCanonicalUri((String) dbObject.get(CANONICAL_URL));
-        	description.setId((Long) dbObject.get(ID));
+            description.setCanonicalUri((String) dbObject.get(CANONICAL_URL));
+            description.setId((Long) dbObject.get(ID));
         }
         else {
-        	description.setCanonicalUri((String) dbObject.get(ID));
+            description.setCanonicalUri((String) dbObject.get(ID));
+        	    description.setId((Long) dbObject.get(OPAQUE_ID));
         }
         
         description.setCurie((String) dbObject.get(CURIE));
