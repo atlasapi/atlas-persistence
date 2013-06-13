@@ -4,9 +4,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ModelTranslator;
-import org.atlasapi.persistence.content.ContentCategory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -32,6 +30,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     public static final String OPAQUE_ID = "aid";
     
     private final AliasTranslator aliasTranslator = new AliasTranslator();
+    private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
 
 	private boolean useAtlasIdAsId;
     
@@ -75,10 +74,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
         @Override
         public LookupRef apply(DBObject input) {
-            String id = TranslatorUtils.toString(input, ID);
-            Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(input, PUBLISHER)).requireValue();
-            String type = TranslatorUtils.toString(input, TYPE);
-            return new LookupRef(id, null, publisher, ContentCategory.valueOf(type));
+            return lookupRefTranslator.fromDBObject(input, null);
         }
     };
 
@@ -117,13 +113,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     private static Function<LookupRef, DBObject> equivalentToDbo = new Function<LookupRef, DBObject>() {
         @Override
         public DBObject apply(LookupRef input) {
-            BasicDBObject dbo = new BasicDBObject();
-            
-            TranslatorUtils.from(dbo, ID, input.uri());
-            TranslatorUtils.from(dbo, PUBLISHER, input.publisher().key());
-            TranslatorUtils.from(dbo, TYPE, input.category().toString());
-            
-            return dbo;
+            return lookupRefTranslator.toDBObject(null, input);
         }
     };
 }
