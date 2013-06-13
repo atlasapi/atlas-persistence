@@ -27,7 +27,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     public static String CLIPS_KEY = "clips";
     public static String TOPICS_KEY = "topics";
-    private static String ID_KEY = "aid";
     private static final String LINKS_KEY = "links";
     private static final String PHRASES_KEY = "phrases";
     private static String CONTENT_GROUP_KEY = "contentGroups";
@@ -79,8 +78,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
                 }
             }
         }
-        
-        entity.setId(TranslatorUtils.toLong(dbObject, ID_KEY));
 
         return entity;
     }
@@ -189,8 +186,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
             dbObject.put("people", list);
         }
-
-        TranslatorUtils.from(dbObject, ID_KEY, entity.getId());
 
         return dbObject;
     }
