@@ -102,6 +102,13 @@ public class MongoChannelStoreRetrievalTest {
         assertThat(aliases.get(prefix+2).getId(),is(channelId1));
         assertThat(aliases.get(prefix+3).getId(),is(channelId3));
     }
+
+    @Test
+    public void testRetrievesChannelsByAlias() {
+        Maybe<Channel> channel = store.forAlias("test/1");
+        
+        assertThat(channel.requireValue().getId(), is(channelId1));
+    }
     
     @Test 
     public void testRetrievesChannelByURI() {

@@ -72,12 +72,12 @@ public class MongoScheduleStoreTest {
     private final Channel AL_JAZEERA_ENGLISH = new Channel(Publisher.C4, "Al Jazeera English", "aljazeera", false, MediaType.VIDEO, "http://www.aljazeera.com/");
     
     private final DateTime now = new DateTime(DateTimeZones.UTC);
-    private final Broadcast broadcast1 = new Broadcast(BBC_ONE.uri(), now.minusHours(4), now.minusHours(2));
-    private final Broadcast broadcast2 = new Broadcast(BBC_TWO.uri(), now.minusHours(4), now.minusHours(1));
-    private final Broadcast broadcast3 = new Broadcast(BBC_ONE.uri(), now.minusHours(2), now.minusHours(1));
-    private final Broadcast broadcast4 = new Broadcast(BBC_TWO.uri(), now.minusHours(1), now);
+    private final Broadcast broadcast1 = new Broadcast(BBC_ONE.getUri(), now.minusHours(4), now.minusHours(2));
+    private final Broadcast broadcast2 = new Broadcast(BBC_TWO.getUri(), now.minusHours(4), now.minusHours(1));
+    private final Broadcast broadcast3 = new Broadcast(BBC_ONE.getUri(), now.minusHours(2), now.minusHours(1));
+    private final Broadcast broadcast4 = new Broadcast(BBC_TWO.getUri(), now.minusHours(1), now);
 
-    private final Broadcast veryOldBroadcast = new Broadcast(BBC_TWO.uri(), now.minusYears(1).minusHours(1), now.minusYears(1));
+    private final Broadcast veryOldBroadcast = new Broadcast(BBC_TWO.getUri(), now.minusYears(1).minusHours(1), now.minusYears(1));
     
     private final Version version1 = new Version();
     private final Version version2 = new Version();
@@ -144,7 +144,7 @@ public class MongoScheduleStoreTest {
     @Test
     public void testShouldIgnoreBroadcastsOverAYearOld() throws Exception {
   
-    	Item item = itemWithBroadcast("id", new Broadcast(BBC_ONE.uri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
+    	Item item = itemWithBroadcast("id", new Broadcast(BBC_ONE.getUri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
     	store.writeScheduleFrom(item);
 
         assertEquals(1, Iterables.size(database.collection("schedule").find()));
@@ -174,13 +174,13 @@ public class MongoScheduleStoreTest {
     public void shouldReplaceScheduleBlock() throws Exception {
     	DateTime broadcast1Start = now.withMinuteOfHour(20);
     	DateTime broadcast1End = broadcast1Start.plusMinutes(30);
-    	Broadcast b1 = new Broadcast(Channel_4_HD.uri(), broadcast1Start, broadcast1End);
+    	Broadcast b1 = new Broadcast(Channel_4_HD.getUri(), broadcast1Start, broadcast1End);
     	
     	DateTime broadcast2End = broadcast1End.plusMinutes(45);
-    	Broadcast b2 = new Broadcast(Channel_4_HD.uri(), broadcast1End, broadcast2End);
+    	Broadcast b2 = new Broadcast(Channel_4_HD.getUri(), broadcast1End, broadcast2End);
     	
     	DateTime broadcast3End = broadcast2End.plusMinutes(60);
-    	Broadcast b3 = new Broadcast(Channel_4_HD.uri(), broadcast2End, broadcast3End);
+    	Broadcast b3 = new Broadcast(Channel_4_HD.getUri(), broadcast2End, broadcast3End);
     	  
     	Version v1 = new Version();
     	Version v2 = new Version();
@@ -235,7 +235,7 @@ public class MongoScheduleStoreTest {
     
     @Test(expected=IllegalArgumentException.class)
     public void overlappingScheduleShouldError() throws Exception {
-    	Broadcast wrongBroadcast = new Broadcast(BBC_ONE.uri(), now.minusHours(3), now.minusHours(1));
+    	Broadcast wrongBroadcast = new Broadcast(BBC_ONE.getUri(), now.minusHours(3), now.minusHours(1));
     	version3.setBroadcasts(ImmutableSet.of(wrongBroadcast));
     	List<ItemRefAndBroadcast> itemsAndBroadcasts = Lists.newArrayList();
     	itemsAndBroadcasts.add(new ItemRefAndBroadcast(item1, broadcast1));
@@ -254,7 +254,7 @@ public class MongoScheduleStoreTest {
     
     @Test
     public void wrongChannelShouldBeFiltered() throws Exception {
-        Broadcast broadcast = new Broadcast(AL_JAZEERA_ENGLISH.uri(), now.minusHours(2), now.minusHours(3));
+        Broadcast broadcast = new Broadcast(AL_JAZEERA_ENGLISH.getUri(), now.minusHours(2), now.minusHours(3));
         version1.addBroadcast(broadcast);
         
         store.writeScheduleFrom(item1);
@@ -266,7 +266,7 @@ public class MongoScheduleStoreTest {
     
     @Test
     public void wrongIntervalShouldBeFiltered() throws Exception {
-        Broadcast broadcast = new Broadcast(BBC_ONE.uri(), now.minusHours(6), now.minusHours(5));
+        Broadcast broadcast = new Broadcast(BBC_ONE.getUri(), now.minusHours(6), now.minusHours(5));
         version1.addBroadcast(broadcast);
         
         store.writeScheduleFrom(item1);

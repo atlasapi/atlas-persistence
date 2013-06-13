@@ -1,7 +1,12 @@
 package org.atlasapi.media.channel;
 
+import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
@@ -32,6 +37,28 @@ public class ChannelNumberingTranslator {
             .withStartDate(TranslatorUtils.toLocalDate(dbo, START_DATE_KEY))
             .withEndDate(TranslatorUtils.toLocalDate(dbo, END_DATE_KEY))
             .build();
+    }
+    
+    public void fromChannelNumberingSet(DBObject dbObject, String key, Set<ChannelNumbering> set) {
+        BasicDBList values = new BasicDBList();
+        for (ChannelNumbering value : set) {
+            if (value != null) {
+                values.add(toDBObject(value));
+            }
+        }
+        dbObject.put(key, values);
+    }
+    
+    @SuppressWarnings("unchecked")
+    public Set<ChannelNumbering> toChannelNumberingSet(DBObject object, String name) {
+        Set<ChannelNumbering> channelNumbers = Sets.newLinkedHashSet();
+        if (object.containsField(name)) {
+            for (DBObject element : (List<DBObject>) object.get(name)) {
+                channelNumbers.add(fromDBObject(element));
+            }
+            return channelNumbers;
+        }
+        return Sets.newLinkedHashSet();
     }
 
 }
