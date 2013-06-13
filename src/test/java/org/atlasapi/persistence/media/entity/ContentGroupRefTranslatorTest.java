@@ -1,6 +1,10 @@
 package org.atlasapi.persistence.media.entity;
 
-import org.atlasapi.media.entity.TopicRef;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+
+import org.atlasapi.media.entity.ContentGroupRef;
 import org.junit.Test;
 
 import com.metabroadcast.common.persistence.MongoTestHelper;
@@ -8,11 +12,6 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroupRef;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 
 public class ContentGroupRefTranslatorTest {
 

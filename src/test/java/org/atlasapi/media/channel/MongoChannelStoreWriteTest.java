@@ -35,9 +35,9 @@ public class MongoChannelStoreWriteTest extends TestCase {
         
         Channel channel = maybeChannel.requireValue();
         
-        assertEquals("uri1", channel.uri());
-        assertEquals("key1", channel.key());
-        assertEquals(MediaType.VIDEO, channel.mediaType());
+        assertEquals("uri1", channel.getUri());
+        assertEquals("key1", channel.getKey());
+        assertEquals(MediaType.VIDEO, channel.getMediaType());
         assertEquals(ImmutableSet.of("test/1", "test/2"), channel.getAliasUrls());
     }
     
@@ -53,9 +53,9 @@ public class MongoChannelStoreWriteTest extends TestCase {
         channel.setAliasUrls(ImmutableList.of("newAlias"));
         channel = channelStore.createOrUpdate(channel);
         
-        assertEquals("uri2", channel.uri());
-        assertEquals("key2", channel.key());
-        assertEquals(MediaType.AUDIO, channel.mediaType());
+        assertEquals("uri2", channel.getUri());
+        assertEquals("key2", channel.getKey());
+        assertEquals(MediaType.AUDIO, channel.getMediaType());
         assertEquals(ImmutableSet.of("newAlias"), channel.getAliasUrls());
     }
     
@@ -71,18 +71,18 @@ public class MongoChannelStoreWriteTest extends TestCase {
         oldParent = channelStore.fromId(oldParentId).requireValue();
         newParent = channelStore.fromId(newParentId).requireValue();
         
-        assertEquals(oldParentId, child.parent());
-        assertEquals(ImmutableSet.of(child.getId()), oldParent.variations());
-        assertEquals(ImmutableSet.of(), newParent.variations());
+        assertEquals(oldParentId, child.getParent());
+        assertEquals(ImmutableSet.of(child.getId()), oldParent.getVariations());
+        assertEquals(ImmutableSet.of(), newParent.getVariations());
         
         child.setParent(newParentId);
         child = channelStore.createOrUpdate(child);
         oldParent = channelStore.fromId(oldParentId).requireValue();
         newParent = channelStore.fromId(newParentId).requireValue();
         
-        assertEquals(newParentId, child.parent());
-        assertEquals(ImmutableSet.of(), oldParent.variations());
-        assertEquals(ImmutableSet.of(child.getId()), newParent.variations());
+        assertEquals(newParentId, child.getParent());
+        assertEquals(ImmutableSet.of(), oldParent.getVariations());
+        assertEquals(ImmutableSet.of(child.getId()), newParent.getVariations());
     }
     
     @Test
@@ -123,7 +123,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         oldAndNewGroup = channelGroupStore.channelGroupFor(oldAndNewGroupId).get();
         newGroup = channelGroupStore.channelGroupFor(newGroupId).get();
         
-        assertThat(channel.channelNumbers().size(), is(2));
+        assertThat(channel.getChannelNumbers().size(), is(2));
         assertThat(oldGroup.getChannelNumberings().size(), is(1));
         assertThat(oldAndNewGroup.getChannelNumberings().size(), is(1));
         assertTrue(newGroup.getChannelNumberings().isEmpty());
@@ -137,7 +137,7 @@ public class MongoChannelStoreWriteTest extends TestCase {
         oldAndNewGroup = channelGroupStore.channelGroupFor(oldAndNewGroupId).get();
         newGroup = channelGroupStore.channelGroupFor(newGroupId).get();
 
-        assertThat(channel.channelNumbers().size(), is(2));
+        assertThat(channel.getChannelNumbers().size(), is(2));
         assertTrue(oldGroup.getChannelNumberings().isEmpty());
         assertThat(oldAndNewGroup.getChannelNumberings().size(), is(1));
         assertThat(newGroup.getChannelNumberings().size(), is(1));

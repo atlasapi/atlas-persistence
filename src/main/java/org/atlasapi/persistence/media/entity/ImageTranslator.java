@@ -2,7 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.ImageAspectRatio;
-import org.atlasapi.media.entity.ImageBackground;
+import org.atlasapi.media.entity.ImageTheme;
 import org.atlasapi.media.entity.ImageColor;
 import org.atlasapi.media.entity.ImageType;
 import org.atlasapi.persistence.ModelTranslator;
@@ -21,7 +21,7 @@ public class ImageTranslator implements ModelTranslator<Image> {
     private static final String WIDTH = "width";
     private static final String IMAGE_TYPE = "type";
     private static final String COLOR = "color";
-    private static final String BACKGROUND = "background";
+    private static final String THEME = "theme";
     private static final String ASPECT_RATIO = "aspectRatio";
     private static final String MIME_TYPE = "mimeType";
 
@@ -47,11 +47,11 @@ public class ImageTranslator implements ModelTranslator<Image> {
         String color = model.getColor() != null ? model.getColor().toString().toLowerCase() : null;
         TranslatorUtils.from(dbObject, COLOR, color);
 
-        String bg = model.getBackground() != null ? model.getBackground()
+        String theme = model.getTheme() != null ? model.getTheme()
                 .toString()
                 .toLowerCase() : null;
 
-        TranslatorUtils.from(dbObject, BACKGROUND, bg);
+        TranslatorUtils.from(dbObject, THEME, theme);
 
         String aspectRatio = model.getAspectRatio() != null ? model.getAspectRatio()
                 .toString()
@@ -90,9 +90,9 @@ public class ImageTranslator implements ModelTranslator<Image> {
             model.setColor(ImageColor.valueOf(color.toUpperCase()));
         }
 
-        String background = TranslatorUtils.toString(dbObject, BACKGROUND);
+        String background = TranslatorUtils.toString(dbObject, THEME);
         if (background != null) {
-            model.setBackground(ImageBackground.valueOf(background.toUpperCase()));
+            model.setTheme(ImageTheme.valueOf(background.toUpperCase()));
         }
 
         String aspectRatio = TranslatorUtils.toString(dbObject, ASPECT_RATIO);
