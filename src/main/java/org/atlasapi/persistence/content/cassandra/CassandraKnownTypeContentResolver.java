@@ -18,6 +18,6 @@ public class CassandraKnownTypeContentResolver implements KnownTypeContentResolv
 
     @Override
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
-        return store.findByCanonicalUris(Iterables.transform(lookupRefs, LookupRef.TO_ID));
+        return store.findByCanonicalUris(Iterables.transform(lookupRefs, LookupRef.TO_URI));
     }
 }
