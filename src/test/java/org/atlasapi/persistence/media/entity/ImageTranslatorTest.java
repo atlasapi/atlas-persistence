@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import org.atlasapi.media.entity.Image;
-import org.atlasapi.media.entity.ImageBackground;
+import org.atlasapi.media.entity.ImageTheme;
 import org.atlasapi.media.entity.ImageColor;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
@@ -27,7 +27,7 @@ public class ImageTranslatorTest {
         assertThat(decodedImage.getCanonicalUri(), is(equalTo(image.getCanonicalUri())));
         assertThat(decodedImage.getAvailabilityStart(), is(equalTo(image.getAvailabilityStart())));
         assertThat(decodedImage.getAvailabilityEnd(), is(equalTo(image.getAvailabilityEnd())));
-        assertThat(decodedImage.getBackground(), is(equalTo(image.getBackground())));
+        assertThat(decodedImage.getTheme(), is(equalTo(image.getTheme())));
         assertThat(decodedImage.getColor(), is(equalTo(image.getColor())));
         assertThat(decodedImage.getHeight(), is(equalTo(image.getHeight())));
         assertThat(decodedImage.getWidth(), is(equalTo(image.getWidth())));
@@ -40,7 +40,7 @@ public class ImageTranslatorTest {
         Image image = new Image("http://example.com");
         image.setAvailabilityStart(new DateTime(2013, DateTimeConstants.FEBRUARY, 1, 0, 0, 0, 0).withZone(DateTimeZone.UTC));
         image.setAvailabilityEnd(new DateTime(2013, DateTimeConstants.FEBRUARY, 2, 0, 0, 0, 0).withZone(DateTimeZone.UTC));
-        image.setBackground(ImageBackground.BLACK);
+        image.setTheme(ImageTheme.DARK_OPAQUE);
         image.setColor(ImageColor.BLACK_AND_WHITE);
         image.setHeight(300);
         image.setWidth(200);

@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Image;
 import org.joda.time.Duration;
 import org.junit.Test;
 
@@ -35,7 +36,7 @@ public class ChannelTranslatorTest {
             .withKey("key")
             .withBroadcaster(Publisher.BBC)
             .withTitle("title")
-            .withImage("image")
+            .withImage(new Image("image"))
             .withMediaType(MediaType.AUDIO)
             .withHighDefinition(false)
             .withHighDefinition(true)
@@ -51,19 +52,19 @@ public class ChannelTranslatorTest {
         Channel decoded = channelTranslator.fromDBObject(encoded, null);
         
         assertThat(decoded, is(equalTo(channel)));
-        assertThat(decoded.title(), is(equalTo(channel.title())));
-        assertThat(decoded.uri(), is(equalTo(channel.uri())));
-        assertThat(decoded.key(), is(equalTo(channel.key())));
-        assertThat(decoded.mediaType(), is(equalTo(channel.mediaType())));
-        assertThat(decoded.source(),is(equalTo(channel.source())));
-        assertThat(decoded.availableFrom(), is(equalTo(channel.availableFrom())));
-        assertThat(decoded.highDefinition(), is(equalTo(channel.highDefinition())));
-        assertThat(decoded.regional(), is(equalTo(channel.regional())));
-        assertThat(decoded.timeshift(), is(equalTo(channel.timeshift())));
-        assertThat(decoded.image(), is(equalTo(channel.image())));
-        assertThat(decoded.parent(), is(equalTo(channel.parent())));
-        assertThat(decoded.variations(), is(equalTo(channel.variations())));
-        assertThat(decoded.channelNumbers(), is(equalTo(channel.channelNumbers())));
+        assertThat(decoded.getTitle(), is(equalTo(channel.getTitle())));
+        assertThat(decoded.getUri(), is(equalTo(channel.getUri())));
+        assertThat(decoded.getKey(), is(equalTo(channel.getKey())));
+        assertThat(decoded.getMediaType(), is(equalTo(channel.getMediaType())));
+        assertThat(decoded.getSource(),is(equalTo(channel.getSource())));
+        assertThat(decoded.getAvailableFrom(), is(equalTo(channel.getAvailableFrom())));
+        assertThat(decoded.getHighDefinition(), is(equalTo(channel.getHighDefinition())));
+        assertThat(decoded.getRegional(), is(equalTo(channel.getRegional())));
+        assertThat(decoded.getTimeshift(), is(equalTo(channel.getTimeshift())));
+        assertThat(decoded.getImages(), is(equalTo(channel.getImages())));
+        assertThat(decoded.getParent(), is(equalTo(channel.getParent())));
+        assertThat(decoded.getVariations(), is(equalTo(channel.getVariations())));
+        assertThat(decoded.getChannelNumbers(), is(equalTo(channel.getChannelNumbers())));
         
     }
 
