@@ -10,6 +10,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Map;
+
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
@@ -285,5 +287,24 @@ public class MongoLookupEntryStoreTest {
         assertThat(first, isOneOf(testEntryOne, testEntryTwo));
         assertThat(second, isOneOf(testEntryOne, testEntryTwo));
         assertThat(first, is(not(second)));        
+    }
+    
+    @Test
+    public void testLookupIdsByUri() {
+        Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.setId(1L);
+        Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.BBC);
+        testItemTwo.setId(2L);
+        Item testItemThree = new Item("testItemThreeUri", "testItem3Curie", Publisher.BBC);
+        
+        entryStore.store(LookupEntry.lookupEntryFrom(testItemOne));
+        entryStore.store(LookupEntry.lookupEntryFrom(testItemTwo));
+        entryStore.store(LookupEntry.lookupEntryFrom(testItemThree));
+        
+        Map<String, Long> idsForCanonicalUris = entryStore.idsForCanonicalUris(
+                ImmutableSet.of(testItemOne.getCanonicalUri(), testItemTwo.getCanonicalUri(), testItemThree.getCanonicalUri()));
+        assertThat(idsForCanonicalUris.get(testItemOne.getCanonicalUri()), is(testItemOne.getId()));
+        assertThat(idsForCanonicalUris.get(testItemTwo.getCanonicalUri()), is(testItemTwo.getId()));
+        assertThat(idsForCanonicalUris.size(), is(2));
     }
 }
