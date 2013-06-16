@@ -4,7 +4,9 @@ import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
@@ -16,6 +18,7 @@ import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE
 import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -27,11 +30,14 @@ import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -126,6 +132,22 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         return Iterables.transform(find(namespace, values), translator.FROM_DBO);
     }
 
+    @Override
+    public Map<String, Long> idsForCanonicalUris(Iterable<String> uris) {
+        Builder<String, Long> results = ImmutableMap.builder();
+        DBCursor cursor = lookup.find(
+                where().idIn(uris).build(), 
+                select().field(OPAQUE_ID).field(ID).build()
+        );
+        for (DBObject dbo : cursor) {
+            Long id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
+            if (id != null) {
+                results.put(TranslatorUtils.toString(dbo, ID), id);
+            }
+        }
+        return results.build();
+    }
+    
     private Iterable<DBObject> find(Optional<String> namespace, Iterable<String> values) {
         if (namespace.isPresent()) {
             return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values)).build());        
@@ -133,4 +155,5 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values)).build());
         }
     }
+
 }
