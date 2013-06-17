@@ -1,5 +1,7 @@
 package org.atlasapi.persistence.lookup.entry;
 
+import java.util.Map;
+
 import com.google.common.base.Optional;
 
 public interface LookupEntryStore {
@@ -41,4 +43,5 @@ public interface LookupEntryStore {
 
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
 
+    Map<String, Long> idsForCanonicalUris(Iterable<String> uris);
 }
