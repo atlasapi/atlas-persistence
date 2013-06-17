@@ -54,7 +54,11 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         }
         else {
             description.setCanonicalUri((String) dbObject.get(ID));
-        	    description.setId((Long) dbObject.get(OPAQUE_ID));
+            try {
+                description.setId((Long) dbObject.get(OPAQUE_ID));
+            } catch (ClassCastException cce) {
+                description.setId(((Double) dbObject.get(OPAQUE_ID)).longValue());
+            }
         }
         
         description.setCurie((String) dbObject.get(CURIE));
