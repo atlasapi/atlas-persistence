@@ -76,4 +76,9 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
             return Iterables.concat(Iterables.filter(Iterables.transform(values, Functions.forMap(aliasValueStore.asMap(), null)), Predicates.notNull()));
         }
     }
+
+    @Override
+    public Map<String, Long> idsForCanonicalUris(Iterable<String> uris) {
+        throw new UnsupportedOperationException();
+    }
 }
