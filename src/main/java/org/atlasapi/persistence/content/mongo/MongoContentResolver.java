@@ -16,6 +16,8 @@ import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -29,6 +31,8 @@ import com.mongodb.DBObject;
 
 public class MongoContentResolver implements KnownTypeContentResolver {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     private final ItemTranslator itemTranslator;
     private final ContainerTranslator containerTranslator;
     private final MongoContentTables contentTables;
@@ -72,6 +76,9 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         
         for(Entry<String, Identified> result : uriToIdentified.entrySet()) {
             Long id = idsForCanonicalUris.get(result.getKey());
+            if (id == null) {
+                log.info("null id for {}, {}, {}", new Object[]{result.getKey(), uriToIdentified.keySet(), idsForCanonicalUris});
+            }
             result.getValue().setId(id);
         }
     }
