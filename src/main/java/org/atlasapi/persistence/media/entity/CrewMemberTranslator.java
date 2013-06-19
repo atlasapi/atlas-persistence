@@ -17,6 +17,7 @@ public class CrewMemberTranslator implements ModelTranslator<CrewMember> {
         String uri = (String) dbObject.get("uri");
         String curie = (String) dbObject.get("curie");
         Publisher publisher = Publisher.fromKey((String) dbObject.get("publisher")).requireValue();
+        Long aid = TranslatorUtils.toLong(dbObject, IdentifiedTranslator.OPAQUE_ID);
         
         String roleKey = (String) dbObject.get("role");
         Role role = roleKey != null ? Role.fromKey(roleKey) : null; 
@@ -28,7 +29,7 @@ public class CrewMemberTranslator implements ModelTranslator<CrewMember> {
             crew = new CrewMember(uri, curie, publisher).withRole(role);
         }
         crew.withProfileLinks(TranslatorUtils.toSet(dbObject, "profileLinks")).withName((String) dbObject.get("name"));
-        
+        crew.setId(aid);
         return crew;
     }
 
@@ -39,6 +40,7 @@ public class CrewMemberTranslator implements ModelTranslator<CrewMember> {
         TranslatorUtils.from(dbObject, "name", model.name());
         TranslatorUtils.fromSet(dbObject, model.profileLinks(), "profileLinks");
         TranslatorUtils.from(dbObject, "uri", model.getCanonicalUri());
+        TranslatorUtils.from(dbObject, IdentifiedTranslator.OPAQUE_ID, model.getId());
         TranslatorUtils.from(dbObject, "curie", model.getCurie());
         TranslatorUtils.from(dbObject, "publisher", model.publisher().key());
         if (model.role() != null) {
