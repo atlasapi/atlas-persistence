@@ -9,6 +9,7 @@ import java.util.Set;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Image;
+import org.atlasapi.media.entity.RelatedLink;
 import org.joda.time.Duration;
 import org.junit.Test;
 
@@ -30,6 +31,8 @@ public class ChannelTranslatorTest {
         
         Set<Long> variations = ImmutableSet.of(2345L, 2346L, 2347L);
         
+        RelatedLink relatedLink = RelatedLink.simulcastLink("simulcast_url").build();
+        
         Channel channel = Channel.builder()
             .withSource(Publisher.BBC)
             .withUri("uri")
@@ -45,6 +48,7 @@ public class ChannelTranslatorTest {
             .withChannelNumber(channelNumber)
             .withParent(2345L)
             .withVariationIds(variations)
+            .withRelatedLink(relatedLink)
             .build();
         
         DBObject encoded = channelTranslator.toDBObject(null, channel);
@@ -65,7 +69,7 @@ public class ChannelTranslatorTest {
         assertThat(decoded.getParent(), is(equalTo(channel.getParent())));
         assertThat(decoded.getVariations(), is(equalTo(channel.getVariations())));
         assertThat(decoded.getChannelNumbers(), is(equalTo(channel.getChannelNumbers())));
-        
+        assertThat(decoded.getRelatedLinks(), is(equalTo(channel.getRelatedLinks())));
     }
 
 }

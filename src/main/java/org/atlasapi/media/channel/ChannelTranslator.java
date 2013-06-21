@@ -2,18 +2,17 @@ package org.atlasapi.media.channel;
 
 import static com.google.common.collect.Iterables.transform;
 
-import java.util.List;
-import java.util.Set;
-
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+import org.atlasapi.persistence.media.entity.RelatedLinkTranslator;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -33,6 +32,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String KEY = "key";
 	public static final String IMAGE = "image";
 	public static final String IMAGES = "images";
+	public static final String RELATED_LINKS = "relatedLinks";
 	public static final String PARENT = "parent";
 	public static final String VARIATIONS = "variations";
 	public static final String NUMBERINGS = "numberings";
@@ -44,12 +44,14 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	private ChannelNumberingTranslator channelNumberingTranslator;
 	private TemporalTitleTranslator temporalTitleTranslator;
 	private final TemporalImageTranslator temporalImageTranslator;
+	private RelatedLinkTranslator relatedLinkTranslator;
 
 	public ChannelTranslator() {
 		this.identifiedTranslator = new IdentifiedTranslator(true);
 		this.channelNumberingTranslator = new ChannelNumberingTranslator();
 		this.temporalTitleTranslator = new TemporalTitleTranslator();
 		this.temporalImageTranslator = new TemporalImageTranslator();
+		this.relatedLinkTranslator = new RelatedLinkTranslator();
 	}
 
 	@Override
@@ -60,6 +62,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		
 		temporalTitleTranslator.fromTemporalTitleSet(dbObject, TITLES, model.getAllTitles());
 		temporalImageTranslator.fromTemporalImageSet(dbObject, IMAGES, model.getAllImages());
+		encodeRelatedLinks(dbObject, model);
 		
 		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.getMediaType().name());
 		TranslatorUtils.from(dbObject, PUBLISHER, model.getSource().key());
@@ -105,6 +108,8 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         if (dbObject.containsField(IMAGES)) {
             model.setImages(temporalImageTranslator.toTemporalImageSet(dbObject, IMAGES));
         }
+        
+        decodeRelatedLinks(dbObject, model);
 		model.setKey((String) dbObject.get(KEY));
 		model.setHighDefinition(TranslatorUtils.toBoolean(dbObject, HIGH_DEFINITION));
 		model.setRegional(TranslatorUtils.toBoolean(dbObject, REGIONAL));
@@ -121,4 +126,29 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		
 		return (Channel) identifiedTranslator.fromDBObject(dbObject, model);
 	}
+
+    @SuppressWarnings("unchecked")
+    private void decodeRelatedLinks(DBObject dbObject, Channel channel) {
+        if (dbObject.containsField(RELATED_LINKS)) {
+            channel.setRelatedLinks(Iterables.transform(
+                (Iterable<DBObject>) dbObject.get(RELATED_LINKS), 
+                new Function<DBObject, RelatedLink>() {
+                    @Override
+                    public RelatedLink apply(DBObject input) {
+                        return relatedLinkTranslator.fromDBObject(input);
+                    }
+                }
+            ));
+        }
+    }
+
+    private void encodeRelatedLinks(DBObject dbObject, Channel channel) {
+        if (!channel.getRelatedLinks().isEmpty()) {
+            BasicDBList values = new BasicDBList(); 
+            for(RelatedLink link : channel.getRelatedLinks()) {
+                values.add(relatedLinkTranslator.toDBObject(link));
+            }
+            dbObject.put(RELATED_LINKS, values);
+        }
+    }
 }
