@@ -10,6 +10,8 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.PeopleListerListener;
+import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
+import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,7 +32,8 @@ public class MongoPersonStoreTest {
     @Before
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
-        store = new MongoPersonStore(db);
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
+        store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), entryStore);
     }
     
     @Test 
@@ -76,7 +79,7 @@ public class MongoPersonStoreTest {
             store.updatePersonItems(person);
         }
         
-        Person found = store.person(uri);
+        Person found = store.person(uri).get();
         assertNotNull(found);
         assertEquals(uri, found.getCanonicalUri());
         assertEquals(person.getId(), found.getId());
@@ -85,7 +88,7 @@ public class MongoPersonStoreTest {
         assertEquals(10, found.getContents().size());
         assertEquals(items, ImmutableList.copyOf(Iterables.transform(found.getContents(), ChildRef.TO_URI)));
         
-        found = store.person(1L);
+        found = store.person(1L).get();
         
         assertEquals(uri, found.getCanonicalUri());
     }

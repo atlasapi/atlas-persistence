@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.LookupRef;
 import org.joda.time.DateTime;
 
@@ -16,7 +17,7 @@ import com.metabroadcast.common.time.DateTimeZones;
 
 public class LookupEntry {
     
-    public static LookupEntry lookupEntryFrom(Content c) {
+    public static LookupEntry lookupEntryFrom(Described c) {
         DateTime now = new DateTime(DateTimeZones.UTC);
         LookupRef lookupRef = LookupRef.from(c);
         ImmutableSet<LookupRef> reflexiveSet = ImmutableSet.of(lookupRef);
