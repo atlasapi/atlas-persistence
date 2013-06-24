@@ -8,6 +8,7 @@ import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.PeopleListerListener;
 import org.atlasapi.persistence.content.people.PersonStore;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.joda.time.DateTime;
@@ -31,9 +32,11 @@ public class MongoPersonStore implements PersonStore {
 	
     private final DBCollection collection;
     private final PersonTranslator translator = new PersonTranslator();
+    private final ItemCrewRefUpdater itemCrewRefUpdater;
 
-    public MongoPersonStore(DatabasedMongo db) {
+    public MongoPersonStore(DatabasedMongo db, LookupEntryStore entryStore) {
         collection = db.collection("people");
+        itemCrewRefUpdater = new ItemCrewRefUpdater(db, entryStore);
     }
 
     @Override
@@ -41,6 +44,7 @@ public class MongoPersonStore implements PersonStore {
         DBObject idQuery = translator.idQuery(person.getCanonicalUri()).build();
         
         collection.update(idQuery, translator.updateContentUris(person), true, false);
+        itemCrewRefUpdater.updateCrewRefInItems(person);
     }
 
     @Override

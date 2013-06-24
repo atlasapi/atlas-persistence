@@ -12,12 +12,15 @@ import com.mongodb.DBObject;
 
 public class CrewMemberTranslator implements ModelTranslator<CrewMember> {
     
+    public static final String PERSON_URI = "uri";
+    public static final String PERSON_ID = IdentifiedTranslator.OPAQUE_ID;
+
     @Override
     public CrewMember fromDBObject(DBObject dbObject, CrewMember model) {
-        String uri = (String) dbObject.get("uri");
+        String uri = (String) dbObject.get(PERSON_URI);
         String curie = (String) dbObject.get("curie");
         Publisher publisher = Publisher.fromKey((String) dbObject.get("publisher")).requireValue();
-        Long aid = TranslatorUtils.toLong(dbObject, IdentifiedTranslator.OPAQUE_ID);
+        Long aid = TranslatorUtils.toLong(dbObject, PERSON_ID);
         
         String roleKey = (String) dbObject.get("role");
         Role role = roleKey != null ? Role.fromKey(roleKey) : null; 
@@ -39,8 +42,8 @@ public class CrewMemberTranslator implements ModelTranslator<CrewMember> {
         
         TranslatorUtils.from(dbObject, "name", model.name());
         TranslatorUtils.fromSet(dbObject, model.profileLinks(), "profileLinks");
-        TranslatorUtils.from(dbObject, "uri", model.getCanonicalUri());
-        TranslatorUtils.from(dbObject, IdentifiedTranslator.OPAQUE_ID, model.getId());
+        TranslatorUtils.from(dbObject, PERSON_URI, model.getCanonicalUri());
+        TranslatorUtils.from(dbObject, PERSON_ID, model.getId());
         TranslatorUtils.from(dbObject, "curie", model.getCurie());
         TranslatorUtils.from(dbObject, "publisher", model.publisher().key());
         if (model.role() != null) {
