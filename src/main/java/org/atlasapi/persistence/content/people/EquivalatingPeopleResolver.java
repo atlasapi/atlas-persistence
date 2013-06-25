@@ -40,25 +40,58 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     
     @Override
     public Optional<Person> person(String uri, ApplicationConfiguration configuration) {
-        Iterable<LookupEntry> entriesForIdentifiers = peopleLookupEntryStore.entriesForIdentifiers(ImmutableList.of(uri), true);
-        if(Iterables.isEmpty(entriesForIdentifiers)) {
-            return Optional.<Person>absent();
-        }
-        
-        return Optional.fromNullable(Iterables.getFirst(outputContentMerger.merge(configuration, resolvePeople(configuration, entriesForIdentifiers)), null));
+        return Optional.fromNullable(findOrMerge(uri, resolvePeople(configuration, entriesForUri(uri)), configuration));
     }
 
     @Override
     public Optional<Person> person(Long id, ApplicationConfiguration configuration) {
-        Iterable<LookupEntry> entriesForIdentifiers = peopleLookupEntryStore.entriesForIds(ImmutableList.of(id));
-        if(Iterables.isEmpty(entriesForIdentifiers)) {
-            return Optional.<Person>absent();
+        return Optional.fromNullable(findOrMerge(id, resolvePeople(configuration, entriesForId(id)), configuration));
+    }
+
+    private Person findOrMerge(String uri, List<Person> resolved, ApplicationConfiguration configuration) {
+        return configuration.precedenceEnabled() ? merge(resolved, configuration)
+                                                 : find(uri, resolved);
+    }
+    
+    private Person findOrMerge(Long id, List<Person> resolved, ApplicationConfiguration configuration) {
+        return configuration.precedenceEnabled() ? merge(resolved, configuration)
+                                                 : find(id, resolved);
+    }
+
+    private Person merge(List<Person> resolved, ApplicationConfiguration configuration) {
+        return Iterables.getFirst(outputContentMerger.merge(configuration, resolved), null);
+    }
+
+    private Person find(String uri, List<Person> resolved) {
+        for (Person person : resolved) {
+            if (uri.equals(person.getCanonicalUri())) {
+                return person;
+            }
         }
-        
-        return Optional.fromNullable(Iterables.getFirst(outputContentMerger.merge(configuration, resolvePeople(configuration, entriesForIdentifiers)), null));
+        return null;
+    }
+    
+    private Person find(Long id, List<Person> resolved) {
+        for (Person person : resolved) {
+            if (id.equals(person.getId())) {
+                return person;
+            }
+        }
+        return null;
+    }
+
+    private Iterable<LookupEntry> entriesForId(Long id) {
+        return peopleLookupEntryStore.entriesForIds(ImmutableList.of(id));
+    }
+    
+    private Iterable<LookupEntry> entriesForUri(String uri) {
+        return peopleLookupEntryStore.entriesForIdentifiers(ImmutableList.of(uri), true);
     }
     
     private List<Person> resolvePeople(final ApplicationConfiguration configuration, Iterable<LookupEntry> lookupEntries) {
+        if(Iterables.isEmpty(lookupEntries)) {
+            return ImmutableList.of();
+        }
         
         ImmutableMap<String, LookupEntry> lookup = Maps.uniqueIndex(Iterables.filter(lookupEntries, new Predicate<LookupEntry>() {
 
