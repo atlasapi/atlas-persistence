@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -49,8 +48,8 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     private DBCollection lookup;
     private LookupEntryTranslator translator;
 
-    public MongoLookupEntryStore(DatabasedMongo mongo) {
-        this.lookup = mongo.collection("lookup");
+    public MongoLookupEntryStore(DBCollection lookup) {
+        this.lookup = lookup;
         this.translator = new LookupEntryTranslator();
     }
     

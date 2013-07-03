@@ -2,9 +2,11 @@ package org.atlasapi.persistence.content.people;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.PeopleListerListener;
 
+import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.IdGenerator;
 
 
@@ -30,9 +32,9 @@ public class IdSettingPersonStore implements PersonStore {
     }
 
     private Person generateOrRestoreId(Person person) {
-        Person existing = person(person.getCanonicalUri());
-        if (existing != null && existing.getId() != null) {
-            person.setId(existing.getId());
+        Optional<Person> existing = person(person.getCanonicalUri());
+        if (existing.isPresent() && existing.get().getId() != null) {
+            person.setId(existing.get().getId());
         } else {
             person.setId(idGenerator.generateRaw());
         }
@@ -40,18 +42,23 @@ public class IdSettingPersonStore implements PersonStore {
     }
 
     @Override
-    public Person person(String uri) {
+    public Optional<Person> person(String uri) {
         return delegate.person(uri);
     }
 
     @Override
-    public Person person(Long id) {
+    public Optional<Person> person(Long id) {
         return delegate.person(id);
     }
 
     @Override
     public void list(PeopleListerListener handler) {
         delegate.list(handler);
+    }
+
+    @Override
+    public Iterable<Person> people(Iterable<LookupRef> lookupRefs) {
+        return delegate.people(lookupRefs);
     }
 
 }
