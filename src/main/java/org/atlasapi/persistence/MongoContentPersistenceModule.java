@@ -71,92 +71,92 @@ import com.mongodb.WriteConcern;
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     private @Autowired Mongo mongo;
-	private @Autowired DatabasedMongo db;
-	private @Autowired AdapterLog log;
-	
-	private final Parameter processingConfig = Configurer.get("processing.config");
-	
-	private @Value("${ids.generate}") String generateIds;
-	
-	public MongoContentPersistenceModule() {}
-	
-	public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AdapterLog log) {
+    private @Autowired DatabasedMongo db;
+    private @Autowired AdapterLog log;
+    
+    private final Parameter processingConfig = Configurer.get("processing.config");
+    
+    private @Value("${ids.generate}") String generateIds;
+    
+    public MongoContentPersistenceModule() {}
+    
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AdapterLog log) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
     }
-	
-	private @Autowired ChannelResolver channelResolver;
+    
+    private @Autowired ChannelResolver channelResolver;
     
     public @Bean ContentGroupWriter contentGroupWriter() {
-		ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
-		return contentGroupWriter;
-	}
-	
-	public @Bean ContentGroupResolver contentGroupResolver() {
-	    return new MongoContentGroupResolver(db);
-	}
-	
-	public @Primary @Bean ContentWriter contentWriter() {
-		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
-		contentWriter = new EquivalenceWritingContentWriter(contentWriter,
-			new MongoLookupEntryStore(readOnlyFromPrimary(db.collection("lookup")))
-		);
-		if (Boolean.valueOf(generateIds)) {
-		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
-		}
+        ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
+        return contentGroupWriter;
+    }
+    
+    public @Bean ContentGroupResolver contentGroupResolver() {
+        return new MongoContentGroupResolver(db);
+    }
+    
+    public @Primary @Bean ContentWriter contentWriter() {
+        ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
+        contentWriter = new EquivalenceWritingContentWriter(contentWriter,
+            new MongoLookupEntryStore(readOnlyFromPrimary(db.collection("lookup")))
+        );
+        if (Boolean.valueOf(generateIds)) {
+            contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
+        }
         return contentWriter;
-	}
+    }
 
     private DBCollection readOnlyFromPrimary(DBCollection collection) {
         collection.setReadPreference(ReadPreference.primary());
         return collection;
     }
 
-	public @Primary @Bean ContentResolver contentResolver() {
-	    return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
-	}
-	
-	public @Primary @Bean KnownTypeContentResolver knownTypeContentResolver() {
-	    return new MongoContentResolver(db, lookupStore());
-	}
-	
-	public @Primary @Bean MongoLookupEntryStore lookupStore() {
-	    return new MongoLookupEntryStore(db.collection("lookup"));
-	}
-	
-	public @Primary @Bean MongoScheduleStore scheduleStore() {
-	    try {
+    public @Primary @Bean ContentResolver contentResolver() {
+        return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
+    }
+    
+    public @Primary @Bean KnownTypeContentResolver knownTypeContentResolver() {
+        return new MongoContentResolver(db, lookupStore());
+    }
+    
+    public @Primary @Bean MongoLookupEntryStore lookupStore() {
+        return new MongoLookupEntryStore(db.collection("lookup"));
+    }
+    
+    public @Primary @Bean MongoScheduleStore scheduleStore() {
+        try {
             return new MongoScheduleStore(db, contentResolver(), channelResolver, equivContentResolver());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-	}
+    }
 
-	public @Primary @Bean EquivalentContentResolver equivContentResolver() {
-	    return new DefaultEquivalentContentResolver(knownTypeContentResolver(), lookupStore());
-	}
-	
-	public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
-	    return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
-	}
-	
-	public @Primary @Bean PersonStore personStore() {
+    public @Primary @Bean EquivalentContentResolver equivContentResolver() {
+        return new DefaultEquivalentContentResolver(knownTypeContentResolver(), lookupStore());
+    }
+    
+    public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
+        return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
+    }
+    
+    public @Primary @Bean PersonStore personStore() {
         LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
-	    PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), personLookupEntryStore);
-	    if (Boolean.valueOf(generateIds)) {
-	        //For now people occupy the same id space as content.
-	        personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));
+        PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), personLookupEntryStore);
+        if (Boolean.valueOf(generateIds)) {
+            //For now people occupy the same id space as content.
+            personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));
         }
         return personStore;
-	}
+    }
 
-	public @Primary @Bean ShortUrlSaver shortUrlSaver() {
-		return new MongoShortUrlSaver(db);
-	}
-	
-	public @Primary @Bean MongoContentLister contentLister() {
-		return new MongoContentLister(db);
+    public @Primary @Bean ShortUrlSaver shortUrlSaver() {
+        return new MongoShortUrlSaver(db);
+    }
+    
+    public @Primary @Bean MongoContentLister contentLister() {
+        return new MongoContentLister(db);
     }
 
     public @Primary @Bean TopicStore topicStore() {
