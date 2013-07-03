@@ -28,7 +28,7 @@ public class IdSettingPersonStoreTest {
         Person person = new Person("uri", "curie", Publisher.BBC);
         
         when(delegate.person(person.getCanonicalUri()))
-            .thenReturn(null);
+            .thenReturn(Optional.<Person>absent());
         when(idGenerator.generateRaw()).thenReturn(1L);
         
         store.createOrUpdatePerson(person);
