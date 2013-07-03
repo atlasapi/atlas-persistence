@@ -62,7 +62,9 @@ import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
+import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 
 @Configuration
@@ -97,12 +99,19 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 	
 	public @Primary @Bean ContentWriter contentWriter() {
 		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
-		contentWriter = new EquivalenceWritingContentWriter(contentWriter, lookupStore());
+		contentWriter = new EquivalenceWritingContentWriter(contentWriter,
+			new MongoLookupEntryStore(readOnlyFromPrimary(db.collection("lookup")))
+		);
 		if (Boolean.valueOf(generateIds)) {
 		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
 		}
         return contentWriter;
 	}
+
+    private DBCollection readOnlyFromPrimary(DBCollection collection) {
+        collection.setReadPreference(ReadPreference.primary());
+        return collection;
+    }
 
 	public @Primary @Bean ContentResolver contentResolver() {
 	    return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
