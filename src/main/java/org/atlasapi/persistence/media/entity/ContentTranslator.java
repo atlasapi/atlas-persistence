@@ -25,6 +25,7 @@ import org.atlasapi.media.entity.ContentGroupRef;
 
 public class ContentTranslator implements ModelTranslator<Content> {
 
+    public static final String PEOPLE = "people";
     public static String CLIPS_KEY = "clips";
     public static String TOPICS_KEY = "topics";
     private static final String LINKS_KEY = "links";
@@ -69,7 +70,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeCertificates(dbObject, entity); 
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         
-        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, "people");
+        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, PEOPLE);
         if (list != null && ! list.isEmpty()) {
             for (DBObject dbPerson: list) {
                 CrewMember crewMember = crewMemberTranslator.fromDBObject(dbPerson, null);
@@ -184,7 +185,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
             for (CrewMember person: entity.people()) {
                 list.add(crewMemberTranslator.toDBObject(null, person));
             }
-            dbObject.put("people", list);
+            dbObject.put(PEOPLE, list);
         }
 
         return dbObject;
