@@ -18,6 +18,7 @@ import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.logging.AdapterLogEntry;
 import org.atlasapi.persistence.logging.AdapterLogEntry.Severity;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -26,17 +27,17 @@ import com.google.common.collect.Sets;
 
 public class QueuingPersonWriter {
 
-    private final PersonWriter store;
+    private final PersonStore store;
     private final BlockingQueue<Person> queue = new LinkedBlockingQueue<Person>();
     private final ScheduledExecutorService schedule;
     private final Set<String> processedUris = Sets.newHashSet();
     private final AdapterLog log;
     
-    public QueuingPersonWriter(PersonWriter store, AdapterLog log) {
+    public QueuingPersonWriter(PersonStore store, AdapterLog log) {
         this(store, log, Executors.newSingleThreadScheduledExecutor());
     }
 
-    public QueuingPersonWriter(PersonWriter store, AdapterLog log, ScheduledExecutorService schedule) {
+    public QueuingPersonWriter(PersonStore store, AdapterLog log, ScheduledExecutorService schedule) {
         this.store = store;
         this.log = log;
         this.schedule = schedule;
@@ -68,11 +69,11 @@ public class QueuingPersonWriter {
                 
                 for (Person person: dedupePeople(people)) {
                     if (! processedUris.contains(person.getCanonicalUri())) {
-                        
-                        store.createOrUpdatePerson(person);
+                        if (! store.person(person.getCanonicalUri()).isPresent()) {
+                            store.createOrUpdatePerson(person);
+                        }
                         processedUris.add(person.getCanonicalUri());
                     }
-                    
                     store.updatePersonItems(person);
                 }
             } catch (Exception e) {
