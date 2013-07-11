@@ -35,8 +35,8 @@ import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
-import org.atlasapi.persistence.content.people.IdSettingPersonStore;
 import org.atlasapi.persistence.content.people.EquivalatingPeopleResolver;
+import org.atlasapi.persistence.content.people.IdSettingPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.PersonStore;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
@@ -90,8 +90,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.db = db;
         this.log = log;
     }
-	
-	private @Autowired ChannelResolver channelResolver;
+    
+    private @Autowired ChannelResolver channelResolver;
     
     public @Bean ContentGroupWriter contentGroupWriter() {
 		ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
@@ -110,7 +110,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
 		}
         return contentWriter;
-	}
+    }
 
 	private LookupWriter explicitLookupWriter() {
         return TransitiveLookupWriter.explicitTransitiveLookupWriter(lookupStore());
@@ -138,32 +138,32 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-	}
+    }
 
-	public @Primary @Bean EquivalentContentResolver equivContentResolver() {
-	    return new DefaultEquivalentContentResolver(knownTypeContentResolver(), lookupStore());
-	}
-	
-	public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
-	    return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
-	}
-	
-	public @Primary @Bean PersonStore personStore() {
+    public @Primary @Bean EquivalentContentResolver equivContentResolver() {
+        return new DefaultEquivalentContentResolver(knownTypeContentResolver(), lookupStore());
+    }
+    
+    public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
+        return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
+    }
+    
+    public @Primary @Bean PersonStore personStore() {
         LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
-	    PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), personLookupEntryStore);
-	    if (Boolean.valueOf(generateIds)) {
-	        //For now people occupy the same id space as content.
-	        personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));
+        PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), personLookupEntryStore);
+        if (Boolean.valueOf(generateIds)) {
+            //For now people occupy the same id space as content.
+            personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));
         }
         return personStore;
-	}
+    }
 
-	public @Primary @Bean ShortUrlSaver shortUrlSaver() {
-		return new MongoShortUrlSaver(db);
-	}
-	
-	public @Primary @Bean MongoContentLister contentLister() {
-		return new MongoContentLister(db);
+    public @Primary @Bean ShortUrlSaver shortUrlSaver() {
+        return new MongoShortUrlSaver(db);
+    }
+    
+    public @Primary @Bean MongoContentLister contentLister() {
+        return new MongoContentLister(db);
     }
 
     public @Primary @Bean TopicStore topicStore() {

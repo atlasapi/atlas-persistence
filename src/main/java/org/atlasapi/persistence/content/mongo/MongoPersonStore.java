@@ -47,12 +47,13 @@ public class MongoPersonStore implements PersonStore {
 	
     private final DBCollection collection;
     private final PersonTranslator translator = new PersonTranslator();
+
     private final TransitiveLookupWriter equivalenceWriter;
     private final LookupEntryStore lookupEntryStore;
     private final ItemCrewRefUpdater itemCrewRefUpdater;
 
     public MongoPersonStore(DatabasedMongo db, TransitiveLookupWriter equivalenceWriter, LookupEntryStore lookupEntryStore) {
-        collection = db.collection("people");
+        this.collection = db.collection("people");
         this.equivalenceWriter = equivalenceWriter;
         this.lookupEntryStore = lookupEntryStore;
         this.itemCrewRefUpdater = new ItemCrewRefUpdater(db, lookupEntryStore);

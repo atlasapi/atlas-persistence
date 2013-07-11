@@ -49,7 +49,6 @@ public class MongoPersonStoreTest {
         store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), entryStore);
         contentWriter = new MongoContentWriter(db, entryStore, new SystemClock());
         contentResolver = new LookupResolvingContentResolver(new MongoContentResolver(db, entryStore), entryStore);
-        store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), entryStore);
     }
     
     @Test 

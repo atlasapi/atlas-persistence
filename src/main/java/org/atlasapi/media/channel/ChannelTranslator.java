@@ -3,6 +3,7 @@ package org.atlasapi.media.channel;
 import static com.google.common.collect.Iterables.transform;
 
 import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.RelatedLink;
@@ -11,6 +12,7 @@ import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.RelatedLinkTranslator;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -32,6 +34,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String KEY = "key";
 	public static final String IMAGE = "image";
 	public static final String IMAGES = "images";
+	public static final String NEW_IMAGES = "new_images";
 	public static final String RELATED_LINKS = "relatedLinks";
 	public static final String PARENT = "parent";
 	public static final String VARIATIONS = "variations";
@@ -61,7 +64,10 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		identifiedTranslator.toDBObject(dbObject, model);
 		
 		temporalTitleTranslator.fromTemporalTitleSet(dbObject, TITLES, model.getAllTitles());
-		temporalImageTranslator.fromTemporalImageSet(dbObject, IMAGES, model.getAllImages());
+		temporalImageTranslator.fromTemporalImageSet(dbObject, NEW_IMAGES, model.getAllImages());
+		// TODO remove this once migration is complete
+		setPreviousOldChannelImagesField(dbObject, IMAGES, model.getAllImages());
+		
 		encodeRelatedLinks(dbObject, model);
 		
 		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.getMediaType().name());
@@ -87,7 +93,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		return dbObject;
 	}
 
-	@Override
+    @Override
 	public Channel fromDBObject(DBObject dbObject, Channel model) {
 	    if (dbObject == null) {
 	        return null;
@@ -106,7 +112,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
             model.addTitle(TranslatorUtils.toString(dbObject, TITLE));
         }
         if (dbObject.containsField(IMAGES)) {
-            model.setImages(temporalImageTranslator.toTemporalImageSet(dbObject, IMAGES));
+            model.setImages(temporalImageTranslator.toTemporalImageSet(dbObject, NEW_IMAGES));
         }
         
         decodeRelatedLinks(dbObject, model);
@@ -150,5 +156,42 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
             }
             dbObject.put(RELATED_LINKS, values);
         }
+    }
+
+    // Translates the new images set into the previous set of images, for migration purposes
+    // uses the title translator, as they have the same form, and use the same keys
+    // to determine which are the images which were used previously, we use the IS_PRIMARY_IMAGE filter,
+    // which returns images of theme Light_Opaque
+    private void setPreviousOldChannelImagesField(DBObject dbObject, String key, Iterable<TemporalField<Image>> newImages) {
+        Iterable<TemporalField<String>> primaryImages = Iterables.transform(
+            Iterables.filter(
+                newImages, 
+                new Predicate<TemporalField<Image>>() {
+                    @Override
+                    public boolean apply(TemporalField<Image> input) {
+                        Image image = input.getValue();
+                        return Channel.IS_PRIMARY_IMAGE.apply(image);
+                    }
+                }
+            ),
+            new Function<TemporalField<Image>, TemporalField<String>>() {
+                @Override
+                public TemporalField<String> apply(TemporalField<Image> input) {
+                    return new TemporalField<String>(
+                        input.getValue().getCanonicalUri(), 
+                        input.getStartDate(), 
+                        input.getEndDate()
+                    );
+                }
+            
+        });
+        
+        BasicDBList values = new BasicDBList();
+        for (TemporalField<String> value : primaryImages) {
+            if (value != null) {
+                values.add(temporalTitleTranslator.toDBObject(value));
+            }
+        }
+        dbObject.put(key, values);
     }
 }
