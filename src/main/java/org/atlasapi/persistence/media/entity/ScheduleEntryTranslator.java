@@ -36,7 +36,7 @@ public class ScheduleEntryTranslator {
         DBObject dbObject = new BasicDBObject();
         dbObject.put(MongoConstants.ID, entry.toKey());
         dbObject.put("publisher", entry.publisher().key());
-        dbObject.put("channel", entry.channel().key());
+        dbObject.put("channel", entry.channel().getKey());
         TranslatorUtils.fromDateTime(dbObject, "intervalStart", entry.interval().getStart());
         TranslatorUtils.fromDateTime(dbObject, "intervalEnd", entry.interval().getEnd());
         

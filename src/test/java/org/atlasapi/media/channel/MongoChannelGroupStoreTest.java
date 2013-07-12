@@ -6,11 +6,9 @@ import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.LocalDate;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Optional;
@@ -28,7 +26,6 @@ public class MongoChannelGroupStoreTest {
     
     private static final MongoChannelGroupStore store = new MongoChannelGroupStore(mongo);
 
-    private static final long channelId = 9L;
     private static Long platformId;
     private static Long newPlatformId;
     private static Long region1Id;
