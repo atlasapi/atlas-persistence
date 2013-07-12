@@ -16,6 +16,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -115,14 +116,21 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public Optional<ChannelGroup> fromAlias(String alias) {
-        for (DBObject dbo : channelGroups.find()) {
-            ChannelGroup channelGroup = translator.fromDBObject(dbo, null);
-            for (String channelGroupAlias : channelGroup.getAliasUrls()) {
-                if (alias.equals(channelGroupAlias)) {
-                    return Optional.of(channelGroup);
-                }
-            }
+        MongoQueryBuilder query = new MongoQueryBuilder()
+            .fieldEquals("aliases", alias);
+        DBCursor cursor = channelGroups.find(query.build());
+        if (Iterables.isEmpty(cursor)) {
+            return Optional.absent();
         }
-        return Optional.absent();
+        return Optional.fromNullable(translator.fromDBObject(Iterables.getOnlyElement(cursor), null));
+//        for (DBObject dbo : channelGroups.find()) {
+//            ChannelGroup channelGroup = translator.fromDBObject(dbo, null);
+//            for (String channelGroupAlias : channelGroup.getAliasUrls()) {
+//                if (alias.equals(channelGroupAlias)) {
+//                    return Optional.of(channelGroup);
+//                }
+//            }
+//        }
+//        return Optional.absent();
     }
 }

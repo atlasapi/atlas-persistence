@@ -1,31 +1,13 @@
 package org.atlasapi.persistence.content.cassandra;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.metabroadcast.common.base.Maybe;
-import com.netflix.astyanax.AstyanaxContext;
-import com.netflix.astyanax.Keyspace;
-import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
-import com.netflix.astyanax.connectionpool.OperationResult;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
-import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
-import com.netflix.astyanax.model.ColumnList;
-import com.netflix.astyanax.model.ConsistencyLevel;
-import com.netflix.astyanax.model.Row;
-import com.netflix.astyanax.model.Rows;
-import com.netflix.astyanax.query.AllRowsQuery;
-import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.CHILDREN_COLUMN;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.CLIPS_COLUMN;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.CONTAINER_CF;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.CONTAINER_COLUMN;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.ITEMS_CF;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.ITEM_COLUMN;
+import static org.atlasapi.persistence.cassandra.CassandraSchema.VERSIONS_COLUMN;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,8 +16,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
@@ -45,38 +29,46 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.ResolvedContent;
-import org.atlasapi.serialization.json.JsonFactory;
-import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.serialization.json.ContainerConfiguration;
 import org.atlasapi.serialization.json.ItemConfiguration;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.*;
+import org.atlasapi.serialization.json.JsonFactory;
 
-/**
- */
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.metabroadcast.common.base.Maybe;
+import com.netflix.astyanax.AstyanaxContext;
+import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.OperationResult;
+import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.model.ConsistencyLevel;
+import com.netflix.astyanax.model.Row;
+import com.netflix.astyanax.model.Rows;
+import com.netflix.astyanax.query.AllRowsQuery;
+
 public class CassandraContentStore implements ContentWriter, ContentResolver, ContentLister {
 
     private final ObjectMapper mapper = JsonFactory.makeJsonMapper();
-    //
     private final AstyanaxContext<Keyspace> context;
     private final int requestTimeout;
-    //
     private Keyspace keyspace;
 
-    public CassandraContentStore(String environment, List<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
-        this.context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
-                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
-                withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
-                setMaxBlockedThreadsPerHost(maxConnections).
-                setMaxConnsPerHost(maxConnections).
-                setConnectTimeout(connectionTimeout).
-                setSeeds(Joiner.on(",").join(seeds))).
-                withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
-                buildKeyspace(ThriftFamilyFactory.getInstance());
+    public CassandraContentStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
+        this.context = context;
         this.requestTimeout = requestTimeout;
     }
 
@@ -143,10 +135,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(ITEMS_CF).setConsistencyLevel(ConsistencyLevel.CL_QUORUM).getAllRows();
                 allRowsQuery.setRowLimit(100);
                 OperationResult<Rows<String, String>> result = allRowsQuery.execute();
-                items = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
+                items = Iterators.transform(result.getResult().iterator(), new Function<Row<String, String>, Content>() {
 
                     @Override
-                    public Content apply(Row input) {
+                    public Content apply(Row<String, String> input) {
                         try {
                             return unmarshalItem(input.getColumns());
                         } catch (Exception ex) {
@@ -159,10 +151,10 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
                 AllRowsQuery<String, String> allRowsQuery = keyspace.prepareQuery(CONTAINER_CF).setConsistencyLevel(ConsistencyLevel.CL_QUORUM).getAllRows();
                 allRowsQuery.setRowLimit(100);
                 OperationResult<Rows<String, String>> result = allRowsQuery.execute();
-                containers = Iterators.transform(result.getResult().iterator(), new Function<Row, Content>() {
+                containers = Iterators.transform(result.getResult().iterator(), new Function<Row<String, String>, Content>() {
 
                     @Override
-                    public Content apply(Row input) {
+                    public Content apply(Row<String, String> input) {
                         try {
                             return unmarshalContainer(input.getColumns());
                         } catch (Exception ex) {

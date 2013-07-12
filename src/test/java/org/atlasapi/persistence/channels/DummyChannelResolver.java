@@ -21,7 +21,7 @@ public class DummyChannelResolver implements ChannelResolver {
 		 this.channels = Maps.uniqueIndex(channels, new Function<Channel, String>() {
 			@Override
 			public String apply(Channel input) {
-				return input.uri();
+				return input.getUri();
 			}
 		});
 	}
@@ -37,7 +37,7 @@ public class DummyChannelResolver implements ChannelResolver {
 
 			@Override
 			public boolean apply(Channel input) {
-				return key.equals(input.key());
+				return key.equals(input.getKey());
 			}
 		}
 		);

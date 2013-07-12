@@ -1,6 +1,5 @@
 package org.atlasapi.equiv;
 
-import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -29,7 +28,9 @@ public class CassandraEquivalenceSummaryStoreTest {
 
     private CassandraEquivalenceSummaryStore store;
     
+    // TODO move these out to an environment property
     private static final String CASSANDRA_HOST = "127.0.0.1";
+    private static final String CLUSTER = "Build";
 
     private AstyanaxContext<Keyspace> context;
     

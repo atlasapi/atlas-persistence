@@ -3,7 +3,16 @@ package org.atlasapi.persistence.content.cassandra;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.netflix.astyanax.AstyanaxContext;
+import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
+import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
+import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
+import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
+import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+
 import java.util.Arrays;
+
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
@@ -14,25 +23,40 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.junit.After;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
+
 import org.junit.Before;
 import org.junit.Ignore;
 
-/**
- */
 @Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraContentStoreTest {
     
-    //
     //private static final String CASSANDRA_HOST = "cassandra1.owl.atlas.mbst.tv";
+    // TODO move these to test environment properties
     private static final String CASSANDRA_HOST = "127.0.0.1";
-    //
+    private static final String CLUSTER = "Build";
+    private static final String KEYSPACE = "Atlas";
     private CassandraContentStore store;
-    //
     
     @Before
     public void before() {
-        store = new CassandraContentStore("prod", Arrays.asList(CASSANDRA_HOST), 9160, 10, 10000, 10000);
+        AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder()
+            .forCluster(CLUSTER)
+            .forKeyspace(KEYSPACE)
+            .withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE))
+            .withConnectionPoolConfiguration(
+                new ConnectionPoolConfigurationImpl(CLUSTER)
+                    .setPort(9160)
+                    .setMaxBlockedThreadsPerHost(10)
+                    .setMaxConnsPerHost(10)
+                    .setConnectTimeout(10000)
+                    .setSeeds(CASSANDRA_HOST)
+                )
+            .withConnectionPoolMonitor(new CountingConnectionPoolMonitor())
+            .buildKeyspace(ThriftFamilyFactory.getInstance());
+        
+        store = new CassandraContentStore(context, 10000);
         store.init();
     }
     

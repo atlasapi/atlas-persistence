@@ -1,9 +1,5 @@
 package org.atlasapi.equiv;
 
-import static org.atlasapi.persistence.cassandra.CassandraSchema.CLUSTER;
-import static org.atlasapi.persistence.cassandra.CassandraSchema.getKeyspace;
-
-import java.util.ArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -11,7 +7,6 @@ import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
 import org.atlasapi.serialization.json.JsonFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -22,11 +17,7 @@ import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.OperationResult;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
-import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ConsistencyLevel;
@@ -35,7 +26,6 @@ import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.query.ColumnFamilyQuery;
 import com.netflix.astyanax.query.RowSliceQuery;
 import com.netflix.astyanax.serializers.StringSerializer;
-import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 
 public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore {
 
@@ -57,27 +47,6 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
     public CassandraEquivalenceSummaryStore(AstyanaxContext<Keyspace> context, int requestTimeout) {
         this.keyspace = context.getEntity();
         this.requestTimeout = requestTimeout;
-    }
-    
-    @Deprecated
-    public CassandraEquivalenceSummaryStore(String environment, ArrayList<String> seeds, int port, int maxConnections, int connectionTimeout, int requestTimeout) {
-        this(createContext(environment, seeds, port, maxConnections, connectionTimeout), 
-            requestTimeout
-        );
-    }
-
-    protected static AstyanaxContext<Keyspace> createContext(String environment, ArrayList<String> seeds, int port, int maxConnections, int connectionTimeout) {
-        AstyanaxContext<Keyspace> context = new AstyanaxContext.Builder().forCluster(CLUSTER).forKeyspace(getKeyspace(environment)).
-                withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)).
-                withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl(CLUSTER).setPort(port).
-                setMaxBlockedThreadsPerHost(maxConnections).
-                setMaxConnsPerHost(maxConnections).
-                setConnectTimeout(connectionTimeout).
-                setSeeds(Joiner.on(",").join(seeds))).
-                withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).
-                buildKeyspace(ThriftFamilyFactory.getInstance());
-        context.start();
-        return context;
     }
 
     @Override

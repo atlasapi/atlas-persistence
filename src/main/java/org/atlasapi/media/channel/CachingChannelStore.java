@@ -51,7 +51,7 @@ public class CachingChannelStore implements ChannelStore {
     @Deprecated
     public Maybe<Channel> fromKey(String key) {
         for (Channel channel : channels.get()) {
-            if (channel.key().equals(key)) { 
+            if (channel.getKey().equals(key)) { 
                 return Maybe.just(channel);
             }
         }
@@ -71,7 +71,7 @@ public class CachingChannelStore implements ChannelStore {
     @Override
     public Maybe<Channel> fromUri(String uri) {
         for (Channel channel : channels.get()) {
-            if (channel.uri().equals(uri)) { 
+            if (channel.getUri().equals(uri)) { 
                 return Maybe.just(channel);
             }
         }
