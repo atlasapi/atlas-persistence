@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
+import org.atlasapi.media.entity.ImageTheme;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Image;
@@ -33,13 +34,16 @@ public class ChannelTranslatorTest {
         
         RelatedLink relatedLink = RelatedLink.simulcastLink("simulcast_url").build();
         
+        Image image = new Image("image");
+        image.setTheme(ImageTheme.LIGHT_OPAQUE);
+        
         Channel channel = Channel.builder()
             .withSource(Publisher.BBC)
             .withUri("uri")
             .withKey("key")
             .withBroadcaster(Publisher.BBC)
             .withTitle("title")
-            .withImage(new Image("image"))
+            .withImage(image)
             .withMediaType(MediaType.AUDIO)
             .withHighDefinition(false)
             .withHighDefinition(true)

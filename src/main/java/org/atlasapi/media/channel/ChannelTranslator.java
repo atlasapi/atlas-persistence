@@ -111,7 +111,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         if (dbObject.containsField(TITLE)) {
             model.addTitle(TranslatorUtils.toString(dbObject, TITLE));
         }
-        if (dbObject.containsField(IMAGES)) {
+        if (dbObject.containsField(NEW_IMAGES)) {
             model.setImages(temporalImageTranslator.toTemporalImageSet(dbObject, NEW_IMAGES));
         }
         
