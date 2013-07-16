@@ -18,6 +18,7 @@ import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -83,13 +84,13 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		
 		List<DBObject> imagesDboList = TranslatorUtils.toDBObjectList(dbObject, IMAGES_KEY);
 		
-		Set<Image> images = Sets.newHashSet();
 		if (imagesDboList != null) {
-		    for (DBObject imagesDbo : imagesDboList ) {
+		    ImmutableSet.Builder<Image> images = ImmutableSet.builder();
+		    for (DBObject imagesDbo : imagesDboList) {
 		        images.add(imageTranslator.fromDBObject(imagesDbo, null));
 		    }
+		    entity.setImages(images.build());
 		}
-		entity.setImages(images);
 
 		entity.setTags(TranslatorUtils.toSet(dbObject, TAGS_KEY));
 		entity.setThumbnail((String) dbObject.get(THUMBNAIL_KEY));
