@@ -1,21 +1,31 @@
 package org.atlasapi.persistence.output;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDBObject;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDBObjectList;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDateTime;
 
+import java.util.Collection;
 import java.util.Comparator;
 
+import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
+import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -25,6 +35,16 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
+/**
+ * Resolves URIs of available children of a given Container.
+ * 
+ * Queries Mongo for available children of a primary Container and its
+ * equivalents (filtered by those available to application configuration).
+ * 
+ * The URIs are converted back to URIs of the primary Container's source via
+ * resolution of their LookupEntries.
+ * 
+ */
 public class MongoAvailableChildrenResolver implements AvailableChildrenResolver {
 
     private static final Ordering<DBObject> AVAILABILITY_START_ORDERING = Ordering.from(new Comparator<DBObject>() {
@@ -70,22 +90,37 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
     
     private final DBObject fields = select().fields(availabilityStartKey, availabilityEndKey).build();
 
-    private DBCollection children;
+    private final LookupEntryStore entryStore;
+    private final DBCollection children;
     private final Clock clock;
+
     
-    public MongoAvailableChildrenResolver(DatabasedMongo db) {
-        this(db, new SystemClock());
+    public MongoAvailableChildrenResolver(DatabasedMongo db, LookupEntryStore entryStore) {
+        this(db, entryStore, new SystemClock());
     }
     
-    public MongoAvailableChildrenResolver(DatabasedMongo db, Clock clock) {
+    public MongoAvailableChildrenResolver(DatabasedMongo db, LookupEntryStore entryStore, Clock clock) {
         this.children = db.collection(ContentCategory.CHILD_ITEM.tableName());
+        this.entryStore = checkNotNull(entryStore);
         this.clock = clock;
     }
     
     @Override
-    public Iterable<String> availableChildrenFor(Container container) {
+    public Iterable<String> availableChildrenFor(Container container, ApplicationConfiguration config) {
         final DateTime now = clock.now();
-        return filterChildren(now, sortByAvailabilityStart(availablityWindowsForChildrenOf(container, now)));
+        return switchEquivs(filterChildren(now, sortByAvailabilityStart(availablityWindowsForChildrenOf(container, config, now))), container.getPublisher());
+    }
+
+    //switch URIs of available children to URIs of the containers source via their lookup refs.
+    private Iterable<String> switchEquivs(Iterable<String> uris, final Publisher source) {
+        Iterable<LookupEntry> entries = entryStore.entriesForCanonicalUris(uris);
+        Iterable<LookupRef> refs = Iterables.concat(Iterables.transform(entries, LookupEntry.TO_EQUIVS));
+        Iterable<LookupRef> sourceRefs = Iterables.filter(refs, sourceFilter(ImmutableSet.of(source)));
+        return Iterables.transform(sourceRefs, LookupRef.TO_URI);
+    }
+
+    private Predicate<LookupRef> sourceFilter(Collection<Publisher> sources) {
+        return MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(sources));
     }
 
     private Iterable<DBObject> sortByAvailabilityStart(Iterable<DBObject> childDbos) {
@@ -120,9 +155,20 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
         return dateTime != null && dateTime.isAfter(now);
     }
 
-    private Iterable<DBObject> availablityWindowsForChildrenOf(Container container, DateTime time) {
-        DBObject query = where().fieldEquals(containerKey, container.getCanonicalUri()).fieldAfter(availabilityEndKey, time).build();
+    // find available children for container and its equivalents from enabled sources
+    private Iterable<DBObject> availablityWindowsForChildrenOf(Container container, ApplicationConfiguration config, DateTime time) {
+        DBObject query = where()
+            .fieldIn(containerKey, containerAndEquivalents(container, config))
+            .fieldAfter(availabilityEndKey, time)
+            .build();
         return children.find(query,fields);
+    }
+
+    private Iterable<String> containerAndEquivalents(Container container, final ApplicationConfiguration config) {
+        return Iterables.concat(ImmutableSet.of(container.getCanonicalUri()),
+                Iterables.transform(Iterables.filter(
+                        container.getEquivalentTo(), sourceFilter(config.getEnabledSources())), 
+                LookupRef.TO_URI));
     }
     
     
