@@ -17,17 +17,23 @@ import org.atlasapi.persistence.content.PeopleResolver;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.base.MorePredicates;
 
 public class EquivalatingPeopleResolver implements PeopleQueryResolver {
 
+    private static final Person DEFAULTING_TO_NULL = null;
+    
     private final PeopleResolver peopleResolver;
     private final LookupEntryStore peopleLookupEntryStore;
     private final OutputContentMerger outputContentMerger;
@@ -46,6 +52,65 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     @Override
     public Optional<Person> person(Long id, ApplicationConfiguration configuration) {
         return Optional.fromNullable(findOrMerge(id, resolvePeople(configuration, entriesForId(id)), configuration));
+    }
+    
+    @Override
+    /*
+     * Find people for URIs by resolving entries for those URIs to create an
+     * entry index. 
+     * All required people are resolved from the set of all
+     * equivalents of the resolved entries, creating an index of required
+     * people. 
+     * The requested uris are transformed to people equivalence sets and
+     * merged as necessary.
+     */
+    public Iterable<Person> people(Iterable<String> uris, final ApplicationConfiguration config) {
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(config.getEnabledSources()));
+
+        Map<String, LookupEntry> entriesIndex = entriesForEnabledSources(uris, sourceFilter);
+        if (entriesIndex.isEmpty()) {
+            return ImmutableList.of();
+        }
+        
+        Map<String, Person> peopleIndex = peopleForEntryEnabledEquivs(entriesIndex.values(), sourceFilter);
+        
+        return urisToPeople(uris, entriesIndex, peopleIndex, config);
+    }
+
+    private Iterable<Person> urisToPeople(Iterable<String> uris,
+            Map<String, LookupEntry> entriesIndex, Map<String, Person> peopleIndex,
+            ApplicationConfiguration config) {
+        
+        Function<LookupRef, Person> refToPerson = Functions.compose(Functions.forMap(peopleIndex, DEFAULTING_TO_NULL), LookupRef.TO_URI);
+        
+        ImmutableList.Builder<Person> result = ImmutableList.builder();
+        for (String uri : uris) {
+            LookupEntry entry = entriesIndex.get(uri);
+            if (entry == null) {
+                // entries may not be in the index because the
+                // people don't exist or because they're from
+                // disabled sources.
+                continue;
+            }
+            Set<LookupRef> equivs = entry.equivalents();
+            Iterable<Person> people = Iterables.filter(Iterables.transform(equivs, refToPerson), Predicates.notNull());
+            List<Person> equivPeople = setEquivalentToFields(ImmutableList.copyOf(people));
+            result.add(findOrMerge(uri, equivPeople, config));
+        }
+        return result.build();
+    }
+
+    private Map<String, Person> peopleForEntryEnabledEquivs(Iterable<LookupEntry> entries, Predicate<LookupRef> sourceFilter) {
+        Iterable<Set<LookupRef>> entryRefs = Iterables.transform(entries,LookupEntry.TO_EQUIVS);
+        Iterable<LookupRef> enabledRefs = Iterables.filter(Iterables.concat(entryRefs), sourceFilter);
+        Iterable<Person> people = peopleResolver.people(enabledRefs);
+        return Maps.uniqueIndex(people, Identified.TO_URI);
+    }
+
+    private Map<String, LookupEntry> entriesForEnabledSources(Iterable<String> uris, Predicate<LookupRef> sourceFilter) {
+        Iterable<LookupEntry> entries = peopleLookupEntryStore.entriesForCanonicalUris(uris);
+        return Maps.filterValues(Maps.uniqueIndex(entries, LookupEntry.TO_ID), 
+                MorePredicates.transformingPredicate(LookupEntry.TO_SELF, sourceFilter));
     }
 
     private Person findOrMerge(String uri, List<Person> resolved, ApplicationConfiguration configuration) {
@@ -108,7 +173,6 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
         if (Iterables.isEmpty(filteredRefs)) {
             return ImmutableList.of();
         }
-        
 
         return setEquivalentToFields(ImmutableList.copyOf(peopleResolver.people(filteredRefs)));
         
