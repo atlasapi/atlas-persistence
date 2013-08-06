@@ -29,14 +29,14 @@ import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.TimeMachine;
 
 
-public class MongoAvailableChildrenResolverTest {
+public class MongoAvailableItemsResolverTest {
     
     private final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     private final TimeMachine clock = new TimeMachine();
     private final MongoLookupEntryStore lookupStore
         = new MongoLookupEntryStore(mongo.collection("lookup"));
-    private final MongoAvailableChildrenResolver resolver
-        = new MongoAvailableChildrenResolver(mongo, lookupStore, clock);
+    private final MongoAvailableItemsResolver resolver
+        = new MongoAvailableItemsResolver(mongo, lookupStore, clock);
     private final ContentWriter writer = new MongoContentWriter(mongo, lookupStore, clock);
     
     @Test
@@ -65,13 +65,13 @@ public class MongoAvailableChildrenResolverTest {
         
         clock.jumpTo(dateTime(5));
         ApplicationConfiguration noPaConfig = ApplicationConfiguration.defaultConfiguration();
-        Set<String> uris = ImmutableSet.copyOf(resolver.availableChildrenFor(primary, noPaConfig));
+        Set<String> uris = ImmutableSet.copyOf(resolver.availableItemsFor(primary, noPaConfig));
         assertThat(uris.size(), is(1));
         assertThat(uris, hasItems(p1.getCanonicalUri()));
 
         ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
             .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA);
-        uris = ImmutableSet.copyOf(resolver.availableChildrenFor(primary, withPaConfig));
+        uris = ImmutableSet.copyOf(resolver.availableItemsFor(primary, withPaConfig));
         assertThat(uris.size(), is(2));
         assertThat(uris, hasItems(p1.getCanonicalUri(), p2.getCanonicalUri()));
         
