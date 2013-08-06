@@ -11,8 +11,10 @@ import java.util.Collection;
 import java.util.Comparator;
 
 import org.atlasapi.application.ApplicationConfiguration;
+import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -36,16 +38,16 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
 /**
- * Resolves URIs of available children of a given Container.
+ * Resolves URIs of available items of a given Container.
  * 
- * Queries Mongo for available children of a primary Container and its
+ * Queries Mongo for available items of a primary Container and its
  * equivalents (filtered by those available to application configuration).
  * 
  * The URIs are converted back to URIs of the primary Container's source via
  * resolution of their LookupEntries.
  * 
  */
-public class MongoAvailableChildrenResolver implements AvailableChildrenResolver {
+public class MongoAvailableItemsResolver implements AvailableItemsResolver {
 
     private static final Ordering<DBObject> AVAILABILITY_START_ORDERING = Ordering.from(new Comparator<DBObject>() {
 
@@ -62,7 +64,7 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
             for (DBObject version : toDBObjectList(dbo, versions)) {
                 for (DBObject encoding : toDBObjectList(version, encodings)) {
                     for (DBObject location : toDBObjectList(encoding, locations)) {
-                        DBObject policy = toDBObject(location, MongoAvailableChildrenResolver.policy);
+                        DBObject policy = toDBObject(location, MongoAvailableItemsResolver.policy);
                         if (policy != null) {
                             DateTime start = toDateTime(policy, availabilityStart);
                             if (before(start, earliest)) {
@@ -95,23 +97,40 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
     private final Clock clock;
 
     
-    public MongoAvailableChildrenResolver(DatabasedMongo db, LookupEntryStore entryStore) {
+    public MongoAvailableItemsResolver(DatabasedMongo db, LookupEntryStore entryStore) {
         this(db, entryStore, new SystemClock());
     }
     
-    public MongoAvailableChildrenResolver(DatabasedMongo db, LookupEntryStore entryStore, Clock clock) {
+    public MongoAvailableItemsResolver(DatabasedMongo db, LookupEntryStore entryStore, Clock clock) {
         this.children = db.collection(ContentCategory.CHILD_ITEM.tableName());
         this.entryStore = checkNotNull(entryStore);
         this.clock = clock;
     }
     
     @Override
-    public Iterable<String> availableChildrenFor(Container container, ApplicationConfiguration config) {
+    public Iterable<String> availableItemsFor(Container container, ApplicationConfiguration config) {
         final DateTime now = clock.now();
-        return switchEquivs(filterChildren(now, sortByAvailabilityStart(availablityWindowsForChildrenOf(container, config, now))), container.getPublisher());
+        return switchEquivs(filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(container, config, now))), container.getPublisher());
+    }
+    
+    @Override
+    /*
+     * TODO: make this work better for Person from schedule-only sources.
+     * 
+     * At the moment we only look at the contents of the Person directly - for
+     * more availability the LookupEntrys for the Person's contents should be
+     * resolved and the entire set of all equivalents tested, switching back to
+     * the Person's content identifiers for the final result.
+     * 
+     * So if a Person has Item I, resolve LE for I, and I -> (J, K), test
+     * (I,J,K), J is available, return I.
+     */
+    public Iterable<String> availableItemsFor(Person person, ApplicationConfiguration config) {
+        final DateTime now = clock.now();
+        return switchEquivs(filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(person, now))), person.getPublisher());
     }
 
-    //switch URIs of available children to URIs of the containers source via their lookup refs.
+    //switch URIs of available items to URIs of the containers source via their lookup refs.
     private Iterable<String> switchEquivs(Iterable<String> uris, final Publisher source) {
         Iterable<LookupEntry> entries = entryStore.entriesForCanonicalUris(uris);
         Iterable<LookupRef> refs = Iterables.concat(Iterables.transform(entries, LookupEntry.TO_EQUIVS));
@@ -127,15 +146,15 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
         return AVAILABILITY_START_ORDERING.immutableSortedCopy(childDbos);
     }
 
-    private Iterable<String> filterChildren(final DateTime now, Iterable<DBObject> availbleChildren) {
-        return Iterables.filter(Iterables.transform(availbleChildren, new Function<DBObject, String>() {
+    private Iterable<String> filterItems(final DateTime now, Iterable<DBObject> availbleItems) {
+        return Iterables.filter(Iterables.transform(availbleItems, new Function<DBObject, String>() {
 
             @Override
             public String apply(DBObject input) {
                 for (DBObject version : toDBObjectList(input, versions)) {
                     for (DBObject encoding : toDBObjectList(version, encodings)) {
                         for (DBObject location : toDBObjectList(encoding, locations)) {
-                            DBObject policy = toDBObject(location, MongoAvailableChildrenResolver.policy);
+                            DBObject policy = toDBObject(location, MongoAvailableItemsResolver.policy);
                             if (policy != null && before(toDateTime(policy, availabilityStart), now) && after(toDateTime(policy, availabilityEnd), now)) {
                                 return TranslatorUtils.toString(input, MongoConstants.ID);
                             }
@@ -155,8 +174,8 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
         return dateTime != null && dateTime.isAfter(now);
     }
 
-    // find available children for container and its equivalents from enabled sources
-    private Iterable<DBObject> availablityWindowsForChildrenOf(Container container, ApplicationConfiguration config, DateTime time) {
+    // find available items for container and its equivalents from enabled sources
+    private Iterable<DBObject> availablityWindowsForItemsOf(Container container, ApplicationConfiguration config, DateTime time) {
         DBObject query = where()
             .fieldIn(containerKey, containerAndEquivalents(container, config))
             .fieldAfter(availabilityEndKey, time)
@@ -170,6 +189,14 @@ public class MongoAvailableChildrenResolver implements AvailableChildrenResolver
                         container.getEquivalentTo(), sourceFilter(config.getEnabledSources())), 
                 LookupRef.TO_URI));
     }
-    
+
+    // find available items for container and its equivalents from enabled sources
+    private Iterable<DBObject> availablityWindowsForItemsOf(Person person, DateTime time) {
+        DBObject query = where()
+                .idIn(Iterables.transform(person.getContents(), ChildRef.TO_URI))
+                .fieldAfter(availabilityEndKey, time)
+                .build();
+        return children.find(query,fields);
+    }
     
 }
