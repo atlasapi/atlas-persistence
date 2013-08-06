@@ -5,7 +5,9 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDBObjectList;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDateTime;
 
+import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.joda.time.DateTime;
 
@@ -21,7 +23,7 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
+public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     
     private final String versions = "versions";
     private final String broadcasts = "broadcasts";
@@ -35,19 +37,30 @@ public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
     private DBCollection children;
     private final Clock clock;
     
-    public MongoUpcomingChildrenResolver(DatabasedMongo db) {
+    public MongoUpcomingItemsResolver(DatabasedMongo db) {
         this(db, new SystemClock());
     }
     
-    public MongoUpcomingChildrenResolver(DatabasedMongo db, Clock clock) {
+    public MongoUpcomingItemsResolver(DatabasedMongo db, Clock clock) {
         this.children = db.collection(ContentCategory.CHILD_ITEM.tableName());
         this.clock = clock;
     }
     
     @Override
-    public Iterable<String> availableChildrenFor(Container container) {
+    public Iterable<String> upcomingItemsFor(Container container) {
         final DateTime now = clock.now();
-        return Iterables.filter(Iterables.transform(availablityWindowsForChildrenOf(container, now), new Function<DBObject, String>() {
+        return filterToUri(now, broadcastEndsForChildrenOf(container, now));
+    }
+    
+    @Override
+    public Iterable<String> upcomingItemsFor(Person person) {
+        final DateTime now = clock.now();
+        return filterToUri(now, broadcastEndsForChildrenOf(person, now));
+    }
+
+    private Iterable<String> filterToUri(final DateTime now,
+            Iterable<DBObject> broadcastEnds) {
+        return Iterables.filter(Iterables.transform(broadcastEnds, new Function<DBObject, String>() {
 
             @Override
             public String apply(DBObject input) {
@@ -67,8 +80,19 @@ public class MongoUpcomingChildrenResolver implements UpcomingChildrenResolver {
         return dateTime != null && dateTime.isAfter(now);
     }
 
-    private Iterable<DBObject> availablityWindowsForChildrenOf(Container container, DateTime time) {
-        DBObject query = where().fieldEquals(containerKey, container.getCanonicalUri()).fieldAfter(transmissionEndTimeKey, time).build();
+    private Iterable<DBObject> broadcastEndsForChildrenOf(Container container, DateTime time) {
+        DBObject query = where()
+            .fieldEquals(containerKey, container.getCanonicalUri())
+            .fieldAfter(transmissionEndTimeKey, time)
+            .build();
+        return children.find(query,fields);
+    }
+
+    private Iterable<DBObject> broadcastEndsForChildrenOf(Person person, DateTime time) {
+        DBObject query = where()
+            .idIn(Iterables.transform(person.getContents(), ChildRef.TO_URI))
+            .fieldAfter(transmissionEndTimeKey, time)
+            .build();
         return children.find(query,fields);
     }
     
