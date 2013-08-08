@@ -46,7 +46,8 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     
     @Override
     public Optional<Person> person(String uri, ApplicationConfiguration configuration) {
-        return Optional.fromNullable(findOrMerge(uri, resolvePeople(configuration, entriesForUri(uri)), configuration));
+        List<Person> people = people(ImmutableList.of(uri), configuration);
+        return Optional.fromNullable(Iterables.getOnlyElement(people, null));
     }
 
     @Override
@@ -64,20 +65,20 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
      * The requested uris are transformed to people equivalence sets and
      * merged as necessary.
      */
-    public Iterable<Person> people(Iterable<String> uris, final ApplicationConfiguration config) {
-        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(config.getEnabledSources()));
+    public List<Person> people(Iterable<String> uris, final ApplicationConfiguration config) {
 
-        Map<String, LookupEntry> entriesIndex = entriesForEnabledSources(uris, sourceFilter);
+        Map<String, LookupEntry> entriesIndex = entriesForUris(uris);
         if (entriesIndex.isEmpty()) {
             return ImmutableList.of();
         }
         
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(config.getEnabledSources()));
         Map<String, Person> peopleIndex = peopleForEntryEnabledEquivs(entriesIndex.values(), sourceFilter);
         
         return urisToPeople(uris, entriesIndex, peopleIndex, config);
     }
 
-    private Iterable<Person> urisToPeople(Iterable<String> uris,
+    private List<Person> urisToPeople(Iterable<String> uris,
             Map<String, LookupEntry> entriesIndex, Map<String, Person> peopleIndex,
             ApplicationConfiguration config) {
         
@@ -95,7 +96,10 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
             Set<LookupRef> equivs = entry.equivalents();
             Iterable<Person> people = Iterables.filter(Iterables.transform(equivs, refToPerson), Predicates.notNull());
             List<Person> equivPeople = setEquivalentToFields(ImmutableList.copyOf(people));
-            result.add(findOrMerge(uri, equivPeople, config));
+            Person person = findOrMerge(uri, equivPeople, config);
+            if (person != null) {
+                result.add(person);
+            }
         }
         return result.build();
     }
@@ -103,14 +107,16 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     private Map<String, Person> peopleForEntryEnabledEquivs(Iterable<LookupEntry> entries, Predicate<LookupRef> sourceFilter) {
         Iterable<Set<LookupRef>> entryRefs = Iterables.transform(entries,LookupEntry.TO_EQUIVS);
         Iterable<LookupRef> enabledRefs = Iterables.filter(Iterables.concat(entryRefs), sourceFilter);
+        if (Iterables.isEmpty(enabledRefs)) {
+            return ImmutableMap.of();
+        }
         Iterable<Person> people = peopleResolver.people(enabledRefs);
         return Maps.uniqueIndex(people, Identified.TO_URI);
     }
 
-    private Map<String, LookupEntry> entriesForEnabledSources(Iterable<String> uris, Predicate<LookupRef> sourceFilter) {
-        Iterable<LookupEntry> entries = peopleLookupEntryStore.entriesForCanonicalUris(uris);
-        return Maps.filterValues(Maps.uniqueIndex(entries, LookupEntry.TO_ID), 
-                MorePredicates.transformingPredicate(LookupEntry.TO_SELF, sourceFilter));
+    private Map<String, LookupEntry> entriesForUris(Iterable<String> uris) {
+        Iterable<LookupEntry> entries = peopleLookupEntryStore.entriesForIdentifiers(uris, true);
+        return Maps.uniqueIndex(entries, LookupEntry.TO_ID);
     }
 
     private Person findOrMerge(String uri, List<Person> resolved, ApplicationConfiguration configuration) {
@@ -158,13 +164,7 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
             return ImmutableList.of();
         }
         
-        ImmutableMap<String, LookupEntry> lookup = Maps.uniqueIndex(Iterables.filter(lookupEntries, new Predicate<LookupEntry>() {
-
-            @Override
-            public boolean apply(LookupEntry input) {
-                return configuration.isEnabled(input.lookupRef().publisher());
-            }
-        }), LookupEntry.TO_ID);
+        ImmutableMap<String, LookupEntry> lookup = Maps.uniqueIndex(lookupEntries, LookupEntry.TO_ID);
 
         Map<String, Set<LookupRef>> lookupRefs = Maps.transformValues(lookup, LookupEntry.TO_EQUIVS);
 
