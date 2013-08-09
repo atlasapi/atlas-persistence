@@ -1,10 +1,11 @@
 package org.atlasapi.persistence.content.people;
 
 import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -20,6 +21,7 @@ import org.atlasapi.persistence.content.PeopleResolver;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -92,7 +94,7 @@ public class EquivalatingPeopleResolverTest {
         
         assertTrue(person.isPresent());
         assertThat(person.get().getCanonicalUri(), is(equiv.getCanonicalUri()));
-//        assertThat(person.get().getEquivalentTo(), hasItems(equivRef));
+        assertThat(person.get().getEquivalentTo(), hasItems(primaryEntry.lookupRef(), equivRef));
     }
 
     @Test
@@ -160,7 +162,7 @@ public class EquivalatingPeopleResolverTest {
         
         assertTrue(person.isPresent());
         assertThat(person.get().getCanonicalUri(), is(equiv.getCanonicalUri()));
-//        assertThat(person.get().getEquivalentTo(), hasItems(equivRef));
+        assertThat(person.get().getEquivalentTo(), hasItems(primaryEntry.lookupRef(), equivRef));
     }
     
     @Test
@@ -183,7 +185,7 @@ public class EquivalatingPeopleResolverTest {
         
         Person person = Iterables.getOnlyElement(persons);
         assertThat(person, is(primary));
-        assertThat(person.getEquivalentTo(), hasItem(LookupRef.from(equiv)));
+        assertThat(person.getEquivalentTo(), hasItems(primaryEntry.lookupRef(), LookupRef.from(equiv)));
     }
     
     @Test
@@ -192,8 +194,9 @@ public class EquivalatingPeopleResolverTest {
         Person primary = person(1L, "primary", Publisher.BBC);
         Person equiv = person(2L, "equiv", Publisher.PA);
         
+        LookupRef equivRef = LookupRef.from(equiv);
         LookupEntry primaryEntry = LookupEntry.lookupEntryFrom(primary)
-                .copyWithEquivalents(ImmutableSet.of(LookupRef.from(equiv)));
+                .copyWithEquivalents(ImmutableSet.of(equivRef));
         
         when(entryStore.entriesForIdentifiers(argThat(hasItems(primary.getCanonicalUri())),anyBoolean()))
             .thenReturn(ImmutableList.of(primaryEntry));
@@ -206,7 +209,7 @@ public class EquivalatingPeopleResolverTest {
         
         Person person = Iterables.getOnlyElement(persons);
         assertThat(person, is(primary));
-        assertTrue(person.getEquivalentTo().isEmpty());
+        assertThat(person.getEquivalentTo(), hasItems(primaryEntry.lookupRef(), equivRef));
     }
     
     @Test
@@ -234,14 +237,25 @@ public class EquivalatingPeopleResolverTest {
         
         when(entryStore.entriesForIdentifiers(argThat(hasItems(disabledSourcePerson.getCanonicalUri())),anyBoolean()))
             .thenReturn(ImmutableList.of(disabledSourceEntry));
+
+        when(peopleResolver.people(anyLookupRefs()))
+            .thenReturn(ImmutableList.<Person>of());
         
         ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration();
         Iterable<Person> persons = resolver.people(ImmutableList.of(disabledSourcePerson.getCanonicalUri()), config);
         
         assertTrue(Iterables.isEmpty(persons));
         
-        verify(peopleResolver, never()).people(anyLookupRefs());
+        ArgumentCaptor<Iterable<LookupRef>> refsCaptor = refsCaptor();
+        verify(peopleResolver).people(refsCaptor.capture());
         
+        assertTrue(Iterables.isEmpty(refsCaptor.getValue()));
+        
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private ArgumentCaptor<Iterable<LookupRef>> refsCaptor() {
+        return (ArgumentCaptor) ArgumentCaptor.forClass(Iterable.class);
     }
     
     @SuppressWarnings("unchecked")
