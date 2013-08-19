@@ -94,7 +94,9 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
 
     private final LookupEntryStore entryStore;
     private final DBCollection children;
+    private final DBCollection topLevelItems;
     private final Clock clock;
+
 
     
     public MongoAvailableItemsResolver(DatabasedMongo db, LookupEntryStore entryStore) {
@@ -103,6 +105,7 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
     
     public MongoAvailableItemsResolver(DatabasedMongo db, LookupEntryStore entryStore, Clock clock) {
         this.children = db.collection(ContentCategory.CHILD_ITEM.tableName());
+        this.topLevelItems = db.collection(ContentCategory.TOP_LEVEL_ITEM.tableName());
         this.entryStore = checkNotNull(entryStore);
         this.clock = clock;
     }
@@ -196,7 +199,7 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
                 .idIn(Iterables.transform(person.getContents(), ChildRef.TO_URI))
                 .fieldAfter(availabilityEndKey, time)
                 .build();
-        return children.find(query,fields);
+        return Iterables.concat(children.find(query,fields), topLevelItems.find(query,fields));
     }
     
 }
