@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelQuery;
 import org.atlasapi.media.channel.ChannelResolver;
 
 import com.google.common.base.Function;
@@ -77,6 +78,11 @@ public class DummyChannelResolver implements ChannelResolver {
 
     @Override
     public Maybe<Channel> forAlias(String alias) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterable<Channel> allChannels(ChannelQuery query) {
         throw new UnsupportedOperationException();
     }
 	
