@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
@@ -38,17 +39,18 @@ import com.mongodb.DBObject;
 
 public class MongoChannelStore implements ChannelStore {
 
-	public static final String COLLECTION = "channels";
+    public static final String COLLECTION = "channels";
+	private static final ChannelTranslator translator = new ChannelTranslator();
+	private static final Joiner JOIN_ON_DOT = Joiner.on('.');
 	
 	private final DBCollection collection;
-	private static final ChannelTranslator translator = new ChannelTranslator();
 
-	private MongoSequentialIdGenerator idGenerator;
-	private SubstitutionTableNumberCodec codec;
-	
 	private final ChannelGroupResolver channelGroupResolver;
 	private final ChannelGroupWriter channelGroupWriter;
 	private final Logger log = LoggerFactory.getLogger(MongoChannelStore.class);
+	
+	private MongoSequentialIdGenerator idGenerator;
+	private SubstitutionTableNumberCodec codec;
 	
 	public MongoChannelStore(DatabasedMongo mongo, ChannelGroupResolver channelGroupResolver, ChannelGroupWriter channelGroupWriter) {
 		this.channelGroupResolver = channelGroupResolver;
@@ -202,6 +204,24 @@ public class MongoChannelStore implements ChannelStore {
             return Maybe.nothing();
         }
         return Maybe.just(translator.fromDBObject(Iterables.getOnlyElement(cursor), null));
+    }
+
+    @Override
+    public Iterable<Channel> allChannels(ChannelQuery query) {
+        MongoQueryBuilder mongoQuery = new MongoQueryBuilder();
+        if (query.getBroadcaster().isPresent()) {
+            mongoQuery.fieldEquals(ChannelTranslator.BROADCASTER, query.getBroadcaster().get().key());
+        }
+        if (query.getMediaType().isPresent()) {
+            mongoQuery.fieldEquals(ChannelTranslator.MEDIA_TYPE, query.getMediaType().get().name());
+        }
+        if (query.getAvailableFrom().isPresent()) {
+            mongoQuery.fieldEquals(ChannelTranslator.AVAILABLE_ON, query.getAvailableFrom().get().key());
+        }
+        if (query.getChannelGroups().isPresent()) {
+            mongoQuery.longFieldIn(JOIN_ON_DOT.join(ChannelTranslator.NUMBERINGS, ChannelNumberingTranslator.CHANNEL_GROUP_KEY, MongoConstants.ID), query.getChannelGroups().get());
+        }
+        return Iterables.transform(collection.find(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
 
 }
