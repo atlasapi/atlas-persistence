@@ -6,9 +6,9 @@ import java.util.Set;
 import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.ContentGroupRef;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.KeyPhrase;
-import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -21,14 +21,12 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroupRef;
 
 public class ContentTranslator implements ModelTranslator<Content> {
 
     public static final String PEOPLE = "people";
     public static String CLIPS_KEY = "clips";
     public static String TOPICS_KEY = "topics";
-    private static final String LINKS_KEY = "links";
     private static final String PHRASES_KEY = "phrases";
     private static String CONTENT_GROUP_KEY = "contentGroups";
     private static final String CERTIFICATES_KEY = "certificates";
@@ -37,7 +35,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
-    private final RelatedLinkTranslator relatedLinkTranslator;
     private final TopicRefTranslator contentTopicTranslator;
     private final ContentGroupRefTranslator contentGroupRefTranslator;
     private final CrewMemberTranslator crewMemberTranslator;
@@ -51,7 +48,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.describedTranslator = describedTranslator;
         this.clipTranslator = clipTranslator;
         this.keyPhraseTranslator = new KeyPhraseTranslator();
-        this.relatedLinkTranslator = new RelatedLinkTranslator();
         this.contentTopicTranslator = new TopicRefTranslator();
         this.contentGroupRefTranslator = new ContentGroupRefTranslator();
         this.crewMemberTranslator = new CrewMemberTranslator();
@@ -63,7 +59,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
         decodeClips(dbObject, entity);
         decodeKeyPhrases(dbObject, entity);
-        decodeRelatedLinks(dbObject, entity);
         decodeTopics(dbObject, entity);
         decodeContentGroups(dbObject, entity);
         decodeLanguages(dbObject, entity);
@@ -130,19 +125,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
     }
 
     @SuppressWarnings("unchecked")
-    private void decodeRelatedLinks(DBObject dbObject, Content entity) {
-        if (dbObject.containsField(LINKS_KEY)) {
-            entity.setRelatedLinks(Iterables.transform((Iterable<DBObject>) dbObject.get(LINKS_KEY), new Function<DBObject, RelatedLink>() {
-
-                @Override
-                public RelatedLink apply(DBObject input) {
-                    return relatedLinkTranslator.fromDBObject(input);
-                }
-            }));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     private void decodeKeyPhrases(DBObject dbObject, Content entity) {
         if (dbObject.containsField(PHRASES_KEY)) {
             entity.setKeyPhrases(Iterables.transform((Iterable<DBObject>) dbObject.get(PHRASES_KEY), new Function<DBObject, KeyPhrase>() {
@@ -173,7 +155,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         dbObject = describedTranslator.toDBObject(dbObject, entity);
         encodeClips(dbObject, entity);
         encodeKeyPhrases(dbObject, entity);
-        encodeRelatedLinks(dbObject, entity);
         encodeTopics(dbObject, entity);
         encodeContentGroups(dbObject, entity);
         encodeLanguages(dbObject, entity);
@@ -227,16 +208,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
                 values.add(contentTopicTranslator.toDBObject(topicRef));
             }
             dbObject.put(TOPICS_KEY, values);
-        }
-    }
-
-    private void encodeRelatedLinks(DBObject dbObject, Content entity) {
-        if (!entity.getRelatedLinks().isEmpty()) {
-            BasicDBList values = new BasicDBList(); 
-            for(RelatedLink link : entity.getRelatedLinks()) {
-                values.add(relatedLinkTranslator.toDBObject(link));
-            }
-            dbObject.put(LINKS_KEY, values);
         }
     }
 
