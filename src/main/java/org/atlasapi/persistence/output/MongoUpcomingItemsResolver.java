@@ -34,7 +34,8 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     
     private final DBObject fields = select().field(transmissionEndTimeKey).build();
 
-    private DBCollection children;
+    private final DBCollection children;
+    private final DBCollection topLevelItems;
     private final Clock clock;
     
     public MongoUpcomingItemsResolver(DatabasedMongo db) {
@@ -43,6 +44,7 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     
     public MongoUpcomingItemsResolver(DatabasedMongo db, Clock clock) {
         this.children = db.collection(ContentCategory.CHILD_ITEM.tableName());
+        this.topLevelItems = db.collection(ContentCategory.TOP_LEVEL_ITEM.tableName());
         this.clock = clock;
     }
     
@@ -55,7 +57,7 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     @Override
     public Iterable<String> upcomingItemsFor(Person person) {
         final DateTime now = clock.now();
-        return filterToUri(now, broadcastEndsForChildrenOf(person, now));
+        return filterToUri(now, broadcastEndsForItemsOf(person, now));
     }
 
     private Iterable<String> filterToUri(final DateTime now,
@@ -88,12 +90,12 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
         return children.find(query,fields);
     }
 
-    private Iterable<DBObject> broadcastEndsForChildrenOf(Person person, DateTime time) {
+    private Iterable<DBObject> broadcastEndsForItemsOf(Person person, DateTime time) {
         DBObject query = where()
             .idIn(Iterables.transform(person.getContents(), ChildRef.TO_URI))
             .fieldAfter(transmissionEndTimeKey, time)
             .build();
-        return children.find(query,fields);
+        return Iterables.concat(children.find(query,fields), topLevelItems.find(query,fields));
     }
     
 }
