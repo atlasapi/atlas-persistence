@@ -15,6 +15,7 @@ import org.atlasapi.persistence.ModelTranslator;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -228,6 +229,20 @@ public class ContentTranslator implements ModelTranslator<Content> {
                 values.add(keyPhraseTranslator.toDBObject(phrase));
             }
             dbObject.put(PHRASES_KEY, values);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void removeFieldsForHash(DBObject dbObject) {
+        describedTranslator.removeFieldsForHash(dbObject);
+        Iterable<DBObject> clips = (Iterable<DBObject>) dbObject.get(ContentTranslator.CLIPS_KEY);
+        if (clips != null) {
+            Set<DBObject> unorderedClips = Sets.newHashSet();
+            for (DBObject clipDbo : clips) {
+                clipTranslator.removeFieldsForHash(clipDbo);
+                unorderedClips.add(clipDbo);
+            }
+            dbObject.put(ContentTranslator.CLIPS_KEY, unorderedClips);
         }
     }
 }
