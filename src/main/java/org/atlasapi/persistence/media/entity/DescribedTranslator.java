@@ -175,4 +175,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 			throw new RuntimeException(e);
 		}
 	}
+
+    public void removeFieldsForHash(DBObject dbObject) {
+        descriptionTranslator.removeFieldsForHash(dbObject);
+        dbObject.removeField(LAST_FETCHED_KEY);
+        dbObject.removeField(THIS_OR_CHILD_LAST_UPDATED_KEY);
+    }
 }
