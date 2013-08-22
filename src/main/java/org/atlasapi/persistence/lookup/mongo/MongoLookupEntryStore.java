@@ -6,6 +6,7 @@ import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
@@ -15,6 +16,7 @@ import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.IDS;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.SELF;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 
@@ -24,9 +26,11 @@ import java.util.regex.Pattern;
 
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -44,6 +48,7 @@ import com.mongodb.DBObject;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
+    private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
     private DBCollection lookup;
     private LookupEntryTranslator translator;
@@ -153,6 +158,15 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         } else {
             return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values)).build());
         }
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers) {
+        return Iterables.transform(
+                lookup.find(where().fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
+                                   .build())
+                      .sort(sort().ascending(OPAQUE_ID).build()),
+                translator.FROM_DBO);
     }
 
 }
