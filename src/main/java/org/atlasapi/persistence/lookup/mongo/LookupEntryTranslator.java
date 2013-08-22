@@ -22,7 +22,6 @@ import com.mongodb.DBObject;
 
 public class LookupEntryTranslator {
 
-    private static final String SELF = "self";
     private static final String DIRECT = "direct";
     private static final String EQUIVS = "equivs";
     private static final String LAST_UPDATED = "updated";
@@ -30,6 +29,7 @@ public class LookupEntryTranslator {
     public static final String ALIASES = "aliases";
     public static final String IDS = "ids";
     public static final String OPAQUE_ID = "aid";
+    public static final String SELF = "self";
     
     private final AliasTranslator aliasTranslator = new AliasTranslator();
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
