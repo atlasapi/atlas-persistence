@@ -32,12 +32,12 @@ public class EquivalenceWritingContentWriter implements ContentWriter {
         if (!content.getEquivalentTo().isEmpty()) {
             ImmutableSet<Publisher> publishers = publishers(content);
             Iterable<ContentRef> equivalentUris = Iterables.transform(content.getEquivalentTo(),
-                    new Function<LookupRef, ContentRef>() {
-                        @Override
-                        public ContentRef apply(LookupRef input) {
-                            return new ContentRef(input.uri(), input.publisher(), null);
-                        }
-                    });
+                new Function<LookupRef, ContentRef>() {
+                    @Override
+                    public ContentRef apply(LookupRef input) {
+                        return new ContentRef(input.uri(), input.publisher(), null);
+                    }
+                });
             equivalenceWriter.writeLookup(ContentRef.valueOf(content), equivalentUris, publishers);
         }
     }

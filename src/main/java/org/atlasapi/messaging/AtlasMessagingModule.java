@@ -22,6 +22,16 @@ public class AtlasMessagingModule {
     @Value("${messaging.destination.equiv.changes}")
     private String equivChangesDestination;
     
+    public AtlasMessagingModule(String brokerUrl, String contentChangesDestination,
+            String topicChangesDestination, String equivChangesDestination) {
+        this.brokerUrl = brokerUrl;
+        this.contentChangesDestination = contentChangesDestination;
+        this.topicChangesDestination = topicChangesDestination;
+        this.equivChangesDestination = equivChangesDestination;
+    }
+
+    public AtlasMessagingModule() { }
+    
     @Bean
     @Lazy(true)
     public ConnectionFactory activemqConnectionFactory() {
