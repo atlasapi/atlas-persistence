@@ -198,7 +198,7 @@ public class ItemTranslatorTest extends TestCase {
         item.addClip(clip);
         
         DBObject dbo = itemTranslator.toDB(item);
-        itemTranslator.removeUpdateTimeFromItem(dbo);
+        itemTranslator.removeFieldsForHash(dbo);
         
         assertTimesAreNull(dbo);
         
