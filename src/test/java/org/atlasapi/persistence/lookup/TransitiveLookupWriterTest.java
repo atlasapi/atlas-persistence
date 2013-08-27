@@ -2,12 +2,19 @@ package org.atlasapi.persistence.lookup;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriter;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
+import static org.hamcrest.Matchers.hasItems;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -23,12 +30,16 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ContiguousSet;
+import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Range;
 
 public class TransitiveLookupWriterTest extends TestCase {
 
@@ -43,7 +54,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         
         store.store(LookupEntry.lookupEntryFrom(item));
 
-        writeLookup(item, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.BBC));
+        writeLookup(writer, item, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.BBC));
 
         LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of("testUri")));
         assertEquals(item.getCanonicalUri(), uriEntry.uri());
@@ -82,7 +93,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         store.store(LookupEntry.lookupEntryFrom(c4Item));
 
         // Make items BBC and C4 equivalent.
-        writeLookup(bbcItem, ImmutableSet.<Content> of(c4Item), publishers);
+        writeLookup(writer, bbcItem, ImmutableSet.<Content> of(c4Item), publishers);
 
         hasEquivs(paItem, paItem);
         hasDirectEquivs(paItem, paItem);
@@ -95,7 +106,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         // Make items PA and BBC equivalent, so all three are transitively
         // equivalent
-        writeLookup(paItem, ImmutableSet.<Content> of(bbcItem), publishers);
+        writeLookup(writer, paItem, ImmutableSet.<Content> of(bbcItem), publishers);
 
         hasEquivs(paItem, bbcItem, c4Item, paItem);
         hasDirectEquivs(paItem, paItem, bbcItem);
@@ -108,7 +119,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         // Make item PA equivalent to nothing. Item PA just reflexive, item BBC and
         // C4 still equivalent.
-        writeLookup(paItem, ImmutableSet.<Content> of(), publishers);
+        writeLookup(writer, paItem, ImmutableSet.<Content> of(), publishers);
 
         hasEquivs(paItem, paItem);
         hasDirectEquivs(paItem, paItem);
@@ -120,7 +131,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasDirectEquivs(c4Item, bbcItem, c4Item);
 
         // Make PA and BBC equivalent again.
-        writeLookup(paItem, ImmutableSet.<Content> of(bbcItem), publishers);
+        writeLookup(writer, paItem, ImmutableSet.<Content> of(bbcItem), publishers);
 
         hasEquivs(paItem, bbcItem, c4Item, paItem);
         hasDirectEquivs(paItem, paItem, bbcItem);
@@ -137,7 +148,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         // Make PA equivalent to just Itunes, instead of BBC. PA and Itunes equivalent, BBC and
         // C4 equivalent.
-        writeLookup(paItem, ImmutableSet.<Content> of(itunesItem), publishers);
+        writeLookup(writer, paItem, ImmutableSet.<Content> of(itunesItem), publishers);
 
         hasEquivs(paItem, paItem, itunesItem);
         hasDirectEquivs(paItem, paItem, itunesItem);
@@ -152,7 +163,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasDirectEquivs(itunesItem, paItem, itunesItem);
 
         // Make all items equivalent.
-        writeLookup(paItem, ImmutableSet.<Content> of(c4Item, itunesItem), publishers);
+        writeLookup(writer, paItem, ImmutableSet.<Content> of(c4Item, itunesItem), publishers);
 
         hasEquivs(paItem, paItem, bbcItem, c4Item, itunesItem);
         hasDirectEquivs(paItem, paItem, c4Item, itunesItem);
@@ -168,7 +179,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
     }
 
-    protected void writeLookup(Content subject, ImmutableSet<? extends Content> equivs, Set<Publisher> publishers) {
+    protected void writeLookup(TransitiveLookupWriter writer, Content subject, ImmutableSet<? extends Content> equivs, Set<Publisher> publishers) {
         writer.writeLookup(ContentRef.valueOf(subject), Iterables.transform(equivs, new Function<Content, ContentRef>() {
             @Override
             public ContentRef apply(@Nullable Content input) {
@@ -198,11 +209,11 @@ public class TransitiveLookupWriterTest extends TestCase {
         store.store(LookupEntry.lookupEntryFrom(right));
 
         Set<Publisher> publishers = ImmutableSet.of(Publisher.PA);
-        writeLookup(pivot, ImmutableSet.of(left,right), publishers);
-        writeLookup(left, ImmutableSet.of(right), publishers);
+        writeLookup(writer, pivot, ImmutableSet.of(left,right), publishers);
+        writeLookup(writer, left, ImmutableSet.of(right), publishers);
         
-        writeLookup(pivot, ImmutableSet.of(left), publishers);
-        writeLookup(left, ImmutableSet.<Content>of(), publishers);
+        writeLookup(writer, pivot, ImmutableSet.of(left), publishers);
+        writeLookup(writer, left, ImmutableSet.<Content>of(), publishers);
         
         hasEquivs(pivot, pivot);
         
@@ -216,13 +227,13 @@ public class TransitiveLookupWriterTest extends TestCase {
         store.store(LookupEntry.lookupEntryFrom(paItem));
         store.store(LookupEntry.lookupEntryFrom(c4Item));
         
-        writeLookup(paItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.PA));
-        writeLookup(c4Item, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.C4));
+        writeLookup(writer, paItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.PA));
+        writeLookup(writer, c4Item, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.C4));
 
         hasEquivs(paItem, paItem);
         hasEquivs(c4Item, c4Item);
         
-        writeLookup(paItem, ImmutableSet.of(c4Item), ImmutableSet.of(Publisher.PA, Publisher.BBC));
+        writeLookup(writer, paItem, ImmutableSet.of(c4Item), ImmutableSet.of(Publisher.PA, Publisher.BBC));
         
         hasEquivs(paItem, paItem);
         hasEquivs(c4Item, c4Item);
@@ -242,13 +253,13 @@ public class TransitiveLookupWriterTest extends TestCase {
         store.store(LookupEntry.lookupEntryFrom(bbcItem));
         store.store(LookupEntry.lookupEntryFrom(fiveItem));
         
-        writeLookup(paItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.PA));
-        writeLookup(c4Item, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.C4));
-        writeLookup(bbcItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.BBC));
-        writeLookup(fiveItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.FIVE));
+        writeLookup(writer, paItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.PA));
+        writeLookup(writer, c4Item, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.C4));
+        writeLookup(writer, bbcItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.BBC));
+        writeLookup(writer, fiveItem, ImmutableSet.<Content> of(), ImmutableSet.of(Publisher.FIVE));
         
         //Make PA and BBC equivalent
-        writeLookup(paItem, ImmutableSet.of(bbcItem), ImmutableSet.of(Publisher.PA, Publisher.BBC));
+        writeLookup(writer, paItem, ImmutableSet.of(bbcItem), ImmutableSet.of(Publisher.PA, Publisher.BBC));
 
         hasEquivs(paItem, paItem, bbcItem);
         hasDirectEquivs(paItem, paItem, bbcItem);
@@ -263,7 +274,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasDirectEquivs(fiveItem, fiveItem);
 
         //Make PA and C4 equivalent, ignoring BBC content. PA, BBC, C4 all equivalent.
-        writeLookup(paItem, ImmutableSet.of(c4Item), ImmutableSet.of(Publisher.PA, Publisher.C4));
+        writeLookup(writer, paItem, ImmutableSet.of(c4Item), ImmutableSet.of(Publisher.PA, Publisher.C4));
 
         hasEquivs(paItem, paItem, bbcItem, c4Item);
         hasDirectEquivs(paItem, paItem, bbcItem, c4Item);
@@ -278,7 +289,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasDirectEquivs(fiveItem, fiveItem);
         
         //Make PA and 5 equivalent, including C4 content. PA, BBC, 5 all equivalent. 
-        writeLookup(paItem, ImmutableSet.of(fiveItem), ImmutableSet.of(Publisher.PA, Publisher.C4, Publisher.FIVE));
+        writeLookup(writer, paItem, ImmutableSet.of(fiveItem), ImmutableSet.of(Publisher.PA, Publisher.C4, Publisher.FIVE));
         
         hasEquivs(paItem, paItem, bbcItem, fiveItem);
         hasDirectEquivs(paItem, paItem, bbcItem, fiveItem);
@@ -305,9 +316,9 @@ public class TransitiveLookupWriterTest extends TestCase {
         store.store(LookupEntry.lookupEntryFrom(bbcItem));
     
         //Make PA and BBC equivalent
-        writeLookup(paItem, ImmutableSet.of(bbcItem), ImmutableSet.of(Publisher.PA, Publisher.BBC));
+        writeLookup(writer, paItem, ImmutableSet.of(bbcItem), ImmutableSet.of(Publisher.PA, Publisher.BBC));
         
-        writeLookup(pnItem, ImmutableSet.of(paItem), ImmutableSet.of(Publisher.PREVIEW_NETWORKS, Publisher.PA));
+        writeLookup(writer, pnItem, ImmutableSet.of(paItem), ImmutableSet.of(Publisher.PREVIEW_NETWORKS, Publisher.PA));
         
         hasEquivs(paItem, paItem, bbcItem, pnItem);
         hasDirectEquivs(paItem, paItem, bbcItem, pnItem);
@@ -325,14 +336,115 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntryStore store = mock(LookupEntryStore.class);
         TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
         
-        Item paItem = createItem("paItem2",Publisher.PA);
-        Item pnItem = createItem("pnItem2",Publisher.PREVIEW_NETWORKS);
+        Item paItem = createItem("paItem3",Publisher.PA);
+        Item pnItem = createItem("pnItem3",Publisher.PREVIEW_NETWORKS);
         
         LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(ImmutableList.of(LookupRef.from(pnItem)));
-        when(store.entriesForCanonicalUris(ImmutableList.of(paItem.getCanonicalUri()))).thenReturn(ImmutableList.of(paLookupEntry));
+        LookupEntry pnLookupEntry = lookupEntryFrom(pnItem).copyWithDirectEquivalents(ImmutableList.of(LookupRef.from(paItem)));
+        
+        when(store.entriesForCanonicalUris(ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri())))
+            .thenReturn(ImmutableList.of(paLookupEntry, pnLookupEntry));
+        when(store.entriesForCanonicalUris(ImmutableList.of(paItem.getCanonicalUri())))
+            .thenReturn(ImmutableList.of(paLookupEntry));
         
         writer.writeLookup(ContentRef.valueOf(paItem), ImmutableSet.of(ContentRef.valueOf(pnItem)), ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS));
         
+        verify(store).entriesForCanonicalUris(ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri()));
+        verify(store).entriesForCanonicalUris(ImmutableList.of(paItem.getCanonicalUri()));
         verify(store, never()).store(Mockito.isA(LookupEntry.class));
+        
+        Mockito.validateMockitoUsage();
+    }
+    
+    public void testCanRunTwoWriteSimultaneously() throws InterruptedException {
+        
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        
+        final Item one = createItem("one",Publisher.BBC);
+        final Item two = createItem("two",Publisher.PA);
+        final Item three = createItem("three",Publisher.ITV);
+        final Item four = createItem("four",Publisher.C4);
+        final Item five = createItem("five",Publisher.FIVE);
+        
+        store.store(LookupEntry.lookupEntryFrom(one));
+        store.store(LookupEntry.lookupEntryFrom(two));
+        store.store(LookupEntry.lookupEntryFrom(three));
+        store.store(LookupEntry.lookupEntryFrom(four));
+        store.store(LookupEntry.lookupEntryFrom(five));
+        
+        writeLookup(writer, three, ImmutableSet.of(two, four), Publisher.all());
+        
+        final CountDownLatch start = new CountDownLatch(1);
+        final CountDownLatch finish= new CountDownLatch(2);
+        executor.submit(new Callable<Void>() {
+            @Override
+            public Void call() throws InterruptedException {
+                start.await();
+                writeLookup(writer, one, ImmutableSet.of(two), ImmutableSet.of(Publisher.BBC, Publisher.PA));
+                finish.countDown();
+                return null;
+            }
+        });
+        executor.submit(new Callable<Void>() {
+            @Override
+            public Void call() throws InterruptedException {
+                start.await();
+                writeLookup(writer, four, ImmutableSet.of(five), ImmutableSet.of(Publisher.C4, Publisher.FIVE));
+                finish.countDown();
+                return null;
+            }
+        });
+        
+        start.countDown();
+        assertTrue(finish.await(1, TimeUnit.SECONDS));
+        
+        hasEquivs(one, one, three, two, four, five);
+        hasDirectEquivs(one, one, two);
+        
+        hasEquivs(two, one, three, two, four, five);
+        hasDirectEquivs(two, one, two, three);
+        
+        hasEquivs(three, one, three, two, four, five);
+        hasDirectEquivs(three, two, three, four);
+        
+        hasEquivs(four, one, three, two, four, five);
+        hasDirectEquivs(four, three, four, five);
+
+        hasEquivs(five, one, three, two, four, five);
+        hasDirectEquivs(five, four, five);
+    }
+    
+    @Test
+    public void testAbortsWriteWhenSetTooLarge() {
+        
+        LookupEntryStore store = mock(LookupEntryStore.class);
+        TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
+        
+        Item big = createItem("big", Publisher.BBC);
+        Item equiv = createItem("equiv", Publisher.PA);
+        
+        LookupEntry bigEntry = LookupEntry.lookupEntryFrom(big);
+        LookupEntry equivEntry = LookupEntry.lookupEntryFrom(equiv);
+        
+        bigEntry = bigEntry.copyWithEquivalents(Iterables.transform(
+            ContiguousSet.create(Range.closedOpen(0, 200), DiscreteDomain.integers()), 
+            new Function<Integer, LookupRef>() {
+                @Override
+                public LookupRef apply(Integer input) {
+                    return new LookupRef(input+"Uri", input.longValue(), Publisher.BBC_REDUX, ContentCategory.CHILD_ITEM);
+                }
+            }
+        ));
+        
+        when(store.entriesForCanonicalUris(argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri()))))
+            .thenReturn(ImmutableList.of(bigEntry, equivEntry));
+        
+        writeLookup(writer, equiv, ImmutableSet.of(big), Publisher.all());
+        
+        verify(store).entriesForCanonicalUris(argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri())));
+        verify(store, never()).store(Mockito.isA(LookupEntry.class));
+        
+        Mockito.validateMockitoUsage();
+        
     }
 }
