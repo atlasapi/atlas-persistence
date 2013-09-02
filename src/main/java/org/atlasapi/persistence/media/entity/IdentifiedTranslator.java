@@ -116,4 +116,9 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
             return lookupRefTranslator.toDBObject(null, input);
         }
     };
+
+    public void removeFieldsForHash(DBObject dbObject) {
+        dbObject.removeField(LAST_UPDATED);
+
+    }
 }
