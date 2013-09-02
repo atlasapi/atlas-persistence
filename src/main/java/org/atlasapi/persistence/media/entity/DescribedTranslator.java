@@ -1,26 +1,20 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
-import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
-import org.atlasapi.media.entity.ImageAspectRatio;
-import org.atlasapi.media.entity.ImageType;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.ModelTranslator;
-import org.joda.time.DateTime;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.metabroadcast.common.media.MimeType;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -48,13 +42,16 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String MEDIUM_DESC_KEY = "mediumDescription";
     public static final String LONG_DESC_KEY = "longDescription";
     private static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
+    private static final String LINKS_KEY = "links";
 	
 	private final IdentifiedTranslator descriptionTranslator;
     private final ImageTranslator imageTranslator;
+    private final RelatedLinkTranslator relatedLinkTranslator;
 
 	public DescribedTranslator(IdentifiedTranslator descriptionTranslator, ImageTranslator imageTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
 		this.imageTranslator = imageTranslator;
+        this.relatedLinkTranslator = new RelatedLinkTranslator();
 	}
 	
 	@Override
@@ -62,6 +59,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
 		descriptionTranslator.fromDBObject(dbObject, entity);
 
+        decodeRelatedLinks(dbObject, entity);
+		
 		entity.setDescription((String) dbObject.get(DESCRIPTION_KEY));
 		
 		entity.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESC_KEY));
@@ -114,6 +113,19 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
 		return entity;
 	}
+	
+    @SuppressWarnings("unchecked")
+    private void decodeRelatedLinks(DBObject dbObject, Described entity) {
+        if (dbObject.containsField(LINKS_KEY)) {
+            entity.setRelatedLinks(Iterables.transform((Iterable<DBObject>) dbObject.get(LINKS_KEY), new Function<DBObject, RelatedLink>() {
+
+                @Override
+                public RelatedLink apply(DBObject input) {
+                    return relatedLinkTranslator.fromDBObject(input);
+                }
+            }));
+        }
+    }
 
     @Override
 	public DBObject toDBObject(DBObject dbObject, Described entity) {
@@ -122,6 +134,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
          }
 		 
 	    descriptionTranslator.toDBObject(dbObject, entity);
+
+        encodeRelatedLinks(dbObject, entity);
 
 	    TranslatorUtils.from(dbObject, SHORT_DESC_KEY, entity.getShortDescription());
 	    TranslatorUtils.from(dbObject, MEDIUM_DESC_KEY, entity.getMediumDescription());
@@ -166,6 +180,16 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         
         return dbObject;
 	}
+    
+    private void encodeRelatedLinks(DBObject dbObject, Described entity) {
+        if (!entity.getRelatedLinks().isEmpty()) {
+            BasicDBList values = new BasicDBList(); 
+            for(RelatedLink link : entity.getRelatedLinks()) {
+                values.add(relatedLinkTranslator.toDBObject(link));
+            }
+            dbObject.put(LINKS_KEY, values);
+        }
+    }
 	
 	static Identified newModel(DBObject dbObject) {
 		EntityType type = EntityType.from((String) dbObject.get(TYPE_KEY));
