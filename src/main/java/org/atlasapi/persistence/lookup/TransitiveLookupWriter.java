@@ -37,7 +37,7 @@ import com.metabroadcast.common.collect.MoreSets;
 
 public class TransitiveLookupWriter implements LookupWriter {
     
-    private static final GroupLock<String> lock = GroupLock.natural();
+    private static final GroupLock<String> lock = GroupLock.<String>natural();
     
     private static final Logger log = LoggerFactory.getLogger(TransitiveLookupWriter.class);
     private static final int maxSetSize = 150;
