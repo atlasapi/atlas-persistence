@@ -2,6 +2,8 @@ package org.atlasapi.persistence.lookup.entry;
 
 import java.util.Map;
 
+import org.atlasapi.media.entity.Publisher;
+
 import com.google.common.base.Optional;
 
 public interface LookupEntryStore {
@@ -43,5 +45,7 @@ public interface LookupEntryStore {
 
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
 
+    Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers);
+    
     Map<String, Long> idsForCanonicalUris(Iterable<String> uris);
 }
