@@ -10,6 +10,7 @@ import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.PeopleResolver;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -27,6 +28,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.query.Selection;
 
 public class EquivalatingPeopleResolver implements PeopleQueryResolver {
 
@@ -52,6 +54,19 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     public Optional<Person> person(Long id, ApplicationConfiguration configuration) {
         List<Person> people = peopleByIds(ImmutableList.of(id), configuration);
         return Optional.fromNullable(Iterables.getOnlyElement(people, null));
+    }
+    
+    @Override
+    public Iterable<Person> people(Iterable<Publisher> publishers, ApplicationConfiguration config, 
+            Selection selection) {
+        
+        Iterable<LookupEntry> entries = selection.apply(peopleLookupEntryStore.entriesForPublishers(publishers));
+        Map<String, LookupEntry> entriesIndex = Maps.uniqueIndex(entries, Functions.compose(LookupRef.TO_URI, LookupEntry.TO_SELF));
+        
+        Map<String, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, config), Identified.TO_URI);
+        
+        ListMultimap<String, Person> idToPeople = keysToPeople(entriesIndex, peopleIndex, LookupRef.TO_URI);
+        return findOrMerge(peopleIndex.keySet(), idToPeople, Identified.TO_URI, config);
     }
     
     @Override
