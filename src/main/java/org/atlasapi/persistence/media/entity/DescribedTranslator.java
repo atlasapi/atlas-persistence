@@ -25,10 +25,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     private static final String TAGS_KEY = "tags";
     private static final String THUMBNAIL_KEY = "thumbnail";
     private static final String TITLE_KEY = "title";
-    private static final String MEDIA_TYPE_KEY = "mediaType";
+    public static final String MEDIA_TYPE_KEY = "mediaType";
     private static final String SPECIALIZATION_KEY = "specialization";
     private static final String PRESENTATION_CHANNEL_KEY = "presentationChannel";
-    private static final String IMAGES_KEY = "images";
+    public static final String IMAGES_KEY = "images";
     private static final String IMAGE_KEY = "image";
     private static final String GENRES_KEY = "genres";
     private static final String FIRST_SEEN_KEY = "firstSeen";
@@ -41,7 +41,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String SHORT_DESC_KEY = "shortDescription";
     public static final String MEDIUM_DESC_KEY = "mediumDescription";
     public static final String LONG_DESC_KEY = "longDescription";
-    private static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
+    public static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
     private static final String LINKS_KEY = "links";
 	
 	private final IdentifiedTranslator descriptionTranslator;
