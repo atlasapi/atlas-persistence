@@ -24,14 +24,14 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ContentTranslatorTest {
+public class DescribedTranslatorTest {
 
-    private final DescribedTranslator describedTranslator = mock(DescribedTranslator.class);
+    private final IdentifiedTranslator identifiedTranslator = mock(IdentifiedTranslator.class);
     
     @Test
     public void testHashCodeSymmetry() {
         
-        stub(describedTranslator.toDBObject((DBObject)any(), (Described)any())).toAnswer(new Answer<DBObject>() {
+        stub(identifiedTranslator.toDBObject((DBObject)any(), (Described)any())).toAnswer(new Answer<DBObject>() {
             public DBObject answer(InvocationOnMock invocation) {
                 return (DBObject) invocation.getArguments()[0];
             }
@@ -52,10 +52,14 @@ public class ContentTranslatorTest {
                 RelatedLink.unknownTypeLink("http://example.com/").build(),
                 RelatedLink.unknownTypeLink("http://another.com/").build()
                 ));
-        ContentTranslator translator = new ContentTranslator(describedTranslator, null);
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
         
         BasicDBObject dboFromContent = new BasicDBObject();
         translator.toDBObject(dboFromContent, content);
+        dboFromContent.remove(DescribedTranslator.MEDIA_TYPE_KEY);
+        dboFromContent.remove(DescribedTranslator.IMAGES_KEY);
+        dboFromContent.remove(DescribedTranslator.ACTIVELY_PUBLISHED_KEY);
+        
         int hashCodeFromContent = dboFromContent.hashCode();
         
         System.out.println(dbo);
