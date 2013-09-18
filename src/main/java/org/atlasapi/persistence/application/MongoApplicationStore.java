@@ -19,13 +19,15 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.ids.IdGenerator;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.text.MoreStrings;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.ReadPreference;
 
-public class MongoApplicationStore implements ApplicationStore {
+public class MongoApplicationStore extends AbstractApplicationStore implements ApplicationStore {
 
     public static final String APPLICATION_COLLECTION = "applications";
     private final DBCollection applications;
@@ -38,16 +40,11 @@ public class MongoApplicationStore implements ApplicationStore {
             return translator.fromDBObject(dbo);
         }
     };
-    
-    private final Function<Id, Long> idToLongTransformer = new Function<Id, Long>() {
 
-        @Override
-        public Long apply(Id input) {
-            // TODO Auto-generated method stub
-            return input.longValue();
-        }};
-
-    public MongoApplicationStore(DatabasedMongo adminMongo) {
+    public MongoApplicationStore(IdGenerator idGenerator, 
+            NumberToShortStringCodec idCodec,
+            DatabasedMongo adminMongo) {
+        super(idGenerator, idCodec);
         this.applications = adminMongo.collection(APPLICATION_COLLECTION);
         this.applications.setReadPreference(ReadPreference.primary());
     }
@@ -67,15 +64,19 @@ public class MongoApplicationStore implements ApplicationStore {
                 );
     }
 
-    @Override
-    public void store(Application application) {
+    private void store(Application application) {
         Preconditions.checkNotNull(application);
+        // Ensure slug is present for compatibility with 3.0
+        if (application.getSlug() == null || application.getSlug().isEmpty()) {
+            application = application.copy()
+                    .withSlug(generateSlug(application.getId())).build();
+        }
         applications.save(translator.toDBObject(application));
     }
 
     @Override
     public Iterable<Application> applicationsFor(Iterable<Id> ids) {
-        Iterable<Long> idLongs = Iterables.transform(ids, idToLongTransformer);
+        Iterable<Long> idLongs = Iterables.transform(ids, Id.toLongValue());
         return Iterables.transform(applications.find(where()
                 .longFieldIn(MongoApplicationTranslator.DEER_ID_KEY,idLongs).build()), translatorFunction);
     }
@@ -97,4 +98,17 @@ public class MongoApplicationStore implements ApplicationStore {
     private Iterable<String> states() {
         return Iterables.transform(ImmutableSet.of(SourceState.AVAILABLE, SourceState.REQUESTED), Functions.compose(MoreStrings.toLower(), Functions.toStringFunction()));
     }
+
+    @Override
+    public void createApplication(Application application) {
+        store(addIdAndApiKey(application));        
+    }
+
+    @Override
+    public void updateApplication(Application application) {
+        store(application);
+    }
+    
+    
+  
 }
