@@ -12,6 +12,7 @@ import org.atlasapi.application.Application;
 import org.atlasapi.application.SourceStatus.SourceState;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.util.Resolved;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -19,6 +20,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -107,6 +110,16 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
     @Override
     public void updateApplication(Application application) {
         store(application);
+    }
+
+    @Override
+    public ListenableFuture<Resolved<Application>> resolveIds(Iterable<Id> ids) {
+        return Futures.immediateFuture(Resolved.valueOf(Iterables.transform(ids, new Function<Id, Application>() {
+
+            @Override
+            public Application apply(Id input) {
+                return applicationFor(input).get();
+            }})));
     }
     
     
