@@ -127,6 +127,11 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     @Override
+    public ResolvedContent findByUris(Iterable<String> uris) {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
     public Iterator<Content> listContent(ContentListingCriteria criteria) {
         try {
             Iterator<Content> items = Iterators.emptyIterator();

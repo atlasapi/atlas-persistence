@@ -8,15 +8,21 @@ import com.metabroadcast.common.base.Maybe;
 
 public class FilterScheduleOnlyContentResolver implements ContentResolver {
 
-    private final ContentResolver contentResovler;
+    private final ContentResolver contentResolver;
 
-    public FilterScheduleOnlyContentResolver(ContentResolver contentResovler) {
-        this.contentResovler = contentResovler;
+    public FilterScheduleOnlyContentResolver(ContentResolver contentResolver) {
+        this.contentResolver = contentResolver;
     }
 
     @Override
     public ResolvedContent findByCanonicalUris(Iterable<String> lookups) {
-        ResolvedContent resolvedContent = contentResovler.findByCanonicalUris(lookups);
+        ResolvedContent resolvedContent = contentResolver.findByCanonicalUris(lookups);
+        return resolvedContent.filterContent(NOT_SCHEDULE_ONLY);
+    }
+
+    @Override
+    public ResolvedContent findByUris(Iterable<String> uris) {
+        ResolvedContent resolvedContent = contentResolver.findByUris(uris);
         return resolvedContent.filterContent(NOT_SCHEDULE_ONLY);
     }
     
@@ -30,4 +36,5 @@ public class FilterScheduleOnlyContentResolver implements ContentResolver {
             return true;
         }
     };
+
 }
