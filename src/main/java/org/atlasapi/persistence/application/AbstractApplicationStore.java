@@ -4,6 +4,7 @@ import org.atlasapi.application.Application;
 import org.atlasapi.application.ApplicationCredentials;
 import org.atlasapi.media.common.Id;
 
+import com.google.common.base.Preconditions;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.ids.UUIDGenerator;
@@ -19,7 +20,7 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
     }
     
     // For compatibility with 3.0
-    protected String generateSlug(Id id) {
+    private String generateSlug(Id id) {
         return "app-" + idCodec.encode(id.toBigInteger());
     }
     
@@ -40,9 +41,26 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
     }
 
     abstract void doCreateApplication(Application application);
+
+    abstract void doUpdateApplication(Application application);
     
     public void createApplication(Application application) {
-        doCreateApplication(addIdAndApiKey(application));
+        doCreateApplication(addIdAndApiKey(ensureApplicationHasSlug(application)));
+    }
+
+    @Override
+    public void updateApplication(Application application) {
+        doUpdateApplication(ensureApplicationHasSlug(application));
+    }
+    
+    private Application ensureApplicationHasSlug(Application application) {
+        Preconditions.checkNotNull(application);
+        // Ensure slug is present for compatibility with 3.0
+        if (application.getSlug() == null || application.getSlug().isEmpty()) {
+            application = application.copy()
+                    .withSlug(generateSlug(application.getId())).build();
+        }
+        return application;
     }
   
 }

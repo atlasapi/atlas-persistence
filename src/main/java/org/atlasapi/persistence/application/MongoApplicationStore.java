@@ -17,7 +17,6 @@ import org.atlasapi.media.util.Resolved;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Futures;
@@ -68,12 +67,6 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
     }
 
     private void store(Application application) {
-        Preconditions.checkNotNull(application);
-        // Ensure slug is present for compatibility with 3.0
-        if (application.getSlug() == null || application.getSlug().isEmpty()) {
-            application = application.copy()
-                    .withSlug(generateSlug(application.getId())).build();
-        }
         applications.save(translator.toDBObject(application));
     }
 
@@ -104,11 +97,11 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
 
     @Override
     public void doCreateApplication(Application application) {
-        store(application);        
+        store(application);
     }
 
     @Override
-    public void updateApplication(Application application) {
+    public void doUpdateApplication(Application application) {
         store(application);
     }
 
@@ -121,6 +114,7 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
                 return applicationFor(input).get();
             }})));
     }
+
     
     
   
