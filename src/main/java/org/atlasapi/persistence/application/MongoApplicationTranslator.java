@@ -13,6 +13,7 @@ public class MongoApplicationTranslator {
     public static final String SLUG_KEY = MongoConstants.ID;
     public static final String DEER_ID_KEY = "deerId";
     public static final String TITLE_KEY = "title";
+    public static final String DESCRIPTION_KEY = "description";
     public static final String CREATED_KEY = "created";
     public static final String CREDENTIALS_KEY = "credentials";
     public static final String CONFIG_KEY = "configuration";
@@ -25,6 +26,7 @@ public class MongoApplicationTranslator {
         TranslatorUtils.from(dbo, DEER_ID_KEY, application.getId().longValue());
         TranslatorUtils.from(dbo, SLUG_KEY, application.getSlug());
         TranslatorUtils.from(dbo, TITLE_KEY, application.getTitle());
+        TranslatorUtils.from(dbo,  DESCRIPTION_KEY, application.getDescription());
         TranslatorUtils.fromDateTime(dbo, CREATED_KEY, application.getCreated());
         TranslatorUtils.from(dbo,
                 CREDENTIALS_KEY,
@@ -49,6 +51,7 @@ public class MongoApplicationTranslator {
                 .withId(Id.valueOf(applicationId))
                 .withSlug(TranslatorUtils.toString(dbo, SLUG_KEY))
                 .withTitle(TranslatorUtils.toString(dbo, TITLE_KEY))
+                .withDescription(TranslatorUtils.toString(dbo, DESCRIPTION_KEY))
                 .withCreated(TranslatorUtils.toDateTime(dbo, CREATED_KEY))
                 .withCredentials(credentialsTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo,
                         CREDENTIALS_KEY)))

@@ -103,8 +103,8 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
     }
 
     @Override
-    public void createApplication(Application application) {
-        store(addIdAndApiKey(application));        
+    public void doCreateApplication(Application application) {
+        store(application);        
     }
 
     @Override

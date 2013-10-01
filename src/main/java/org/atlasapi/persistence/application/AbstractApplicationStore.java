@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.application;
 
-import java.util.UUID;
-
 import org.atlasapi.application.Application;
 import org.atlasapi.application.ApplicationCredentials;
 import org.atlasapi.media.common.Id;
@@ -25,7 +23,7 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
         return "app-" + idCodec.encode(id.toBigInteger());
     }
     
-    protected String generateApiKey() {
+    private String generateApiKey() {
         return new UUIDGenerator().generate();
     }
     
@@ -39,6 +37,12 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
                 .withSlug(generateSlug(id))
                 .build();
         return modified;
+    }
+
+    abstract void doCreateApplication(Application application);
+    
+    public void createApplication(Application application) {
+        doCreateApplication(addIdAndApiKey(application));
     }
   
 }

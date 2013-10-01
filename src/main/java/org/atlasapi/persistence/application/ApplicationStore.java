@@ -14,7 +14,7 @@ public interface ApplicationStore extends IdResolver<Application> {
     Optional<Application> applicationFor(Id id);
     
     void createApplication(Application application);
-
+    
     void updateApplication(Application application);
 
     Iterable<Application> applicationsFor(Iterable<Id> ids);

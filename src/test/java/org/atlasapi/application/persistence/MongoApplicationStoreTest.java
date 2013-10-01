@@ -105,6 +105,7 @@ public class MongoApplicationStoreTest {
     @Test
     public void testAddIdAndApiKey() {
         final String title = "test application for api key";
+        final String description = "description";
         final DateTime created = new DateTime(DateTimeZones.UTC)
                .withDate(2013, 9, 13)
                .withTime(15, 13, 0, 0);
@@ -122,6 +123,7 @@ public class MongoApplicationStoreTest {
         
         Application application = Application.builder()
                 .withTitle(title)
+                .withDescription(description)
                 .withCreated(created)
                 .withCredentials(credentials)
                 .withSources(sources)
@@ -135,6 +137,7 @@ public class MongoApplicationStoreTest {
         }
         assertEquals(Id.valueOf(5004), retrieved.get().getId());
         assertEquals(title, retrieved.get().getTitle());
+        assertEquals(description, retrieved.get().getDescription());
         assertFalse(retrieved.get().getCredentials().getApiKey().isEmpty());
     }
     
