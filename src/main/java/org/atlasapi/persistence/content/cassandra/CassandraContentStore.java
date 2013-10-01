@@ -127,6 +127,12 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     @Override
+    public ResolvedContent findByUris(Iterable<String> uris) {
+        //TODO Support lookup by alias
+        return findByCanonicalUris(uris);
+    }
+    
+    @Override
     public Iterator<Content> listContent(ContentListingCriteria criteria) {
         try {
             Iterator<Content> items = Iterators.emptyIterator();
