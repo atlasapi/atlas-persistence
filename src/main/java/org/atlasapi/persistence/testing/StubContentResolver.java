@@ -28,5 +28,10 @@ public class StubContentResolver implements ContentResolver {
 		}
 		return builder.build();
 	}
+
+    @Override
+    public ResolvedContent findByUris(Iterable<String> uris) {
+        return findByCanonicalUris(uris);
+    }
 }
 
