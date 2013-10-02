@@ -6,7 +6,7 @@ import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.STATE_KEY;
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.WRITABLE_KEY;
 import static org.atlasapi.persistence.application.MongoApplicationTranslator.CONFIG_KEY;
-import static org.atlasapi.persistence.application.MongoApplicationTranslator.DEER_ID_KEY;
+import static org.atlasapi.persistence.application.MongoApplicationTranslator.APPLICATION_ID_KEY;
 
 import org.atlasapi.application.Application;
 import org.atlasapi.application.SourceStatus.SourceState;
@@ -60,7 +60,7 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
     public Optional<Application> applicationFor(Id id) {
         return Optional.fromNullable(translator.fromDBObject(
                 applications.findOne(
-                        where().fieldEquals(DEER_ID_KEY, id.longValue())
+                        where().fieldEquals(APPLICATION_ID_KEY, id.longValue())
                                 .build())
                 )
                 );
@@ -74,7 +74,7 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
     public Iterable<Application> applicationsFor(Iterable<Id> ids) {
         Iterable<Long> idLongs = Iterables.transform(ids, Id.toLongValue());
         return Iterables.transform(applications.find(where()
-                .longFieldIn(MongoApplicationTranslator.DEER_ID_KEY,idLongs).build()), translatorFunction);
+                .longFieldIn(MongoApplicationTranslator.APPLICATION_ID_KEY,idLongs).build()), translatorFunction);
     }
 
     @Override
