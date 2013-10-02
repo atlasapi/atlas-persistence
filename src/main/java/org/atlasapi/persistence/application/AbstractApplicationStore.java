@@ -45,7 +45,7 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
     abstract void doUpdateApplication(Application application);
     
     public void createApplication(Application application) {
-        doCreateApplication(addIdAndApiKey(ensureApplicationHasSlug(application)));
+        doCreateApplication(ensureApplicationHasSlug(addIdAndApiKey(application)));
     }
 
     @Override
