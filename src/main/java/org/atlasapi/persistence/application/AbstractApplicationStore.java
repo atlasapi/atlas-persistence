@@ -5,6 +5,7 @@ import org.atlasapi.application.ApplicationCredentials;
 import org.atlasapi.media.common.Id;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.ids.UUIDGenerator;
@@ -44,19 +45,23 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
 
     abstract void doUpdateApplication(Application application);
     
-    public void createApplication(Application application) {
-        doCreateApplication(addIdAndApiKey(ensureApplicationHasSlug(application)));
+    public Application createApplication(Application application) {
+        Application created = withGuaranteedSlug(addIdAndApiKey(application));
+        doCreateApplication(created);
+        return created;
     }
 
     @Override
-    public void updateApplication(Application application) {
-        doUpdateApplication(ensureApplicationHasSlug(application));
+    public Application updateApplication(Application application) {
+        Application updated = withGuaranteedSlug(application);
+        doUpdateApplication(updated);
+        return updated;
     }
     
-    private Application ensureApplicationHasSlug(Application application) {
+    private Application withGuaranteedSlug(Application application) {
         Preconditions.checkNotNull(application);
         // Ensure slug is present for compatibility with 3.0
-        if (application.getSlug() == null || application.getSlug().isEmpty()) {
+        if (Strings.isNullOrEmpty(application.getSlug())) {
             application = application.copy()
                     .withSlug(generateSlug(application.getId())).build();
         }
