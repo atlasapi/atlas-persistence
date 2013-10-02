@@ -11,7 +11,7 @@ import com.mongodb.DBObject;
 public class MongoApplicationTranslator {
 
     public static final String SLUG_KEY = MongoConstants.ID;
-    public static final String DEER_ID_KEY = "deerId";
+    public static final String APPLICATION_ID_KEY = "aid";
     public static final String TITLE_KEY = "title";
     public static final String DESCRIPTION_KEY = "description";
     public static final String CREATED_KEY = "created";
@@ -23,7 +23,7 @@ public class MongoApplicationTranslator {
 
     public DBObject toDBObject(Application application) {
         DBObject dbo = new BasicDBObject();
-        TranslatorUtils.from(dbo, DEER_ID_KEY, application.getId().longValue());
+        TranslatorUtils.from(dbo, APPLICATION_ID_KEY, application.getId().longValue());
         TranslatorUtils.from(dbo, SLUG_KEY, application.getSlug());
         TranslatorUtils.from(dbo, TITLE_KEY, application.getTitle());
         TranslatorUtils.from(dbo,  DESCRIPTION_KEY, application.getDescription());
@@ -43,7 +43,7 @@ public class MongoApplicationTranslator {
         }
 
         return Application.builder()
-                .withId(Id.valueOf(TranslatorUtils.toLong(dbo, DEER_ID_KEY)))
+                .withId(Id.valueOf(TranslatorUtils.toLong(dbo, APPLICATION_ID_KEY)))
                 .withSlug(TranslatorUtils.toString(dbo, SLUG_KEY))
                 .withTitle(TranslatorUtils.toString(dbo, TITLE_KEY))
                 .withDescription(TranslatorUtils.toString(dbo, DESCRIPTION_KEY))
