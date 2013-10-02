@@ -42,13 +42,8 @@ public class MongoApplicationTranslator {
             return null;
         }
 
-        Long applicationId = TranslatorUtils.toLong(dbo, DEER_ID_KEY);
-        if (DEER_ID_KEY == null) {
-            return null;
-        }
-
         return Application.builder()
-                .withId(Id.valueOf(applicationId))
+                .withId(Id.valueOf(TranslatorUtils.toLong(dbo, DEER_ID_KEY)))
                 .withSlug(TranslatorUtils.toString(dbo, SLUG_KEY))
                 .withTitle(TranslatorUtils.toString(dbo, TITLE_KEY))
                 .withDescription(TranslatorUtils.toString(dbo, DESCRIPTION_KEY))
