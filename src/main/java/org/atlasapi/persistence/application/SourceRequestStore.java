@@ -16,5 +16,7 @@ public interface SourceRequestStore {
     Set<SourceRequest> sourceRequestsFor(Publisher source);
     
     Set<SourceRequest> all();
+    
+    Optional<SourceRequest> sourceRequestFor(Id id);
 
 }
