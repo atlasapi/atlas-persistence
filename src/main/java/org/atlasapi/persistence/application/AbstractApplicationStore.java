@@ -1,17 +1,11 @@
 package org.atlasapi.persistence.application;
 
-import java.util.List;
-
 import org.atlasapi.application.Application;
 import org.atlasapi.application.ApplicationCredentials;
 import org.atlasapi.application.ApplicationSources;
-import org.atlasapi.application.SourceReadEntry;
 import org.atlasapi.media.common.Id;
-import org.atlasapi.media.entity.Publisher;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.ids.UUIDGenerator;
@@ -60,12 +54,7 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
         ApplicationSources sources = application.getSources();
         // If sources not given create an empty sources object
         if (sources == null) {
-            sources = ApplicationSources
-                       .builder()
-                       .withPrecedence(false)
-                       .withReads(ImmutableList.<SourceReadEntry>of())
-                       .withWrites(ImmutableList.<Publisher>of())
-                       .build();
+            sources = ApplicationSources.EMPTY_SOURCES;
         }
         
         Id id = Id.valueOf(idGenerator.generateRaw());
