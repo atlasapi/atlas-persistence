@@ -56,4 +56,9 @@ public static final String SOURCE_REQUESTS_COLLECTION = "sourceReadRequests";
     public Set<SourceRequest> all() {
         return ImmutableSet.copyOf(Iterables.transform(sourceRequests.find(), translatorFunction));
     }
+    @Override
+    public Optional<SourceRequest> sourceRequestFor(Id id) {
+        return Optional.fromNullable(translator.fromDBObject(
+                this.sourceRequests.findOne(where().idEquals(id.longValue()).build())));
+    }
 }
