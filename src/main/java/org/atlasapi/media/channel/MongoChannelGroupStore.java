@@ -103,10 +103,6 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
                 }
             }
         }
-
-        if (newGroup instanceof Platform) {
-            ((Platform)newGroup).setRegionIds(((Platform)existingGroup).getRegions());
-        }
     }
 
     @Override
