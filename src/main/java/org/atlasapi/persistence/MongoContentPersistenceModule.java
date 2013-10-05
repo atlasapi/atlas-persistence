@@ -100,17 +100,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public @Primary @Bean ContentWriter contentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
         contentWriter = new EquivalenceWritingContentWriter(contentWriter,
-            new MongoLookupEntryStore(readOnlyFromPrimary(db.collection("lookup")))
+            new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary())
         );
         if (Boolean.valueOf(generateIds)) {
             contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
         }
         return contentWriter;
-    }
-
-    private DBCollection readOnlyFromPrimary(DBCollection collection) {
-        collection.setReadPreference(ReadPreference.primary());
-        return collection;
     }
 
     public @Primary @Bean ContentResolver contentResolver() {
