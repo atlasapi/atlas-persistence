@@ -51,7 +51,7 @@ import com.mongodb.ReadPreference;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
-    private final Parameter processingConfig = Configurer.get("processing.config");
+    private static final Parameter processingConfig = Configurer.get("processing.config");
     private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
     private DBCollection lookup;
@@ -59,11 +59,14 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     private final ReadPreference readPreference;
 
     public MongoLookupEntryStore(DBCollection lookup) {
-        this.lookup = lookup;
+        this(lookup, defaultReadPreference());
+    }
+    
+    private static ReadPreference defaultReadPreference() { 
         if(processingConfig == null || !processingConfig.toBoolean()) {
-            readPreference = ReadPreference.secondaryPreferred();
+            return ReadPreference.secondaryPreferred();
         } else {
-            readPreference = ReadPreference.primary();
+            return ReadPreference.primary();
         }
     }
     
