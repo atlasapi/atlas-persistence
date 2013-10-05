@@ -41,6 +41,8 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.metabroadcast.common.properties.Configurer;
+import com.metabroadcast.common.properties.Parameter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -49,6 +51,7 @@ import com.mongodb.ReadPreference;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
+    private final Parameter processingConfig = Configurer.get("processing.config");
     private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
     private DBCollection lookup;
@@ -56,7 +59,12 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     private final ReadPreference readPreference;
 
     public MongoLookupEntryStore(DBCollection lookup) {
-        this(lookup, null);
+        this.lookup = lookup;
+        if(processingConfig == null || !processingConfig.toBoolean()) {
+            readPreference = ReadPreference.secondaryPreferred();
+        } else {
+            readPreference = ReadPreference.primary();
+        }
     }
     
     public MongoLookupEntryStore(DBCollection lookup, ReadPreference readPreference) {
