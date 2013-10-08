@@ -41,20 +41,38 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.metabroadcast.common.properties.Configurer;
+import com.metabroadcast.common.properties.Parameter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.ReadPreference;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
+    private static final Parameter processingConfig = Configurer.get("processing.config");
     private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
     private DBCollection lookup;
     private LookupEntryTranslator translator;
+    private final ReadPreference readPreference;
 
     public MongoLookupEntryStore(DBCollection lookup) {
+        this(lookup, defaultReadPreference());
+    }
+    
+    private static ReadPreference defaultReadPreference() { 
+        if(processingConfig == null || !processingConfig.toBoolean()) {
+            return ReadPreference.secondaryPreferred();
+        } else {
+            return ReadPreference.primary();
+        }
+    }
+    
+    public MongoLookupEntryStore(DBCollection lookup, ReadPreference readPreference) {
         this.lookup = lookup;
+        this.readPreference = readPreference;
         this.translator = new LookupEntryTranslator();
     }
     
@@ -65,7 +83,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     
     @Override
     public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
-        DBCursor found = lookup.find(where().idIn(uris).build());
+        DBCursor found = lookup.find(where().idIn(uris).build()).setReadPreference(readPreference);
         if (found == null) {
             return ImmutableList.of();
         }
@@ -75,7 +93,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
         DBObject queryDbo = new BasicDBObject(OPAQUE_ID, new BasicDBObject(IN, ids));
-        DBCursor found = lookup.find(queryDbo);
+        DBCursor found = lookup.find(queryDbo).setReadPreference(readPreference);
         if (found == null) {
             return ImmutableList.of();
         }
@@ -86,7 +104,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public void ensureLookup(Content content) {
         LookupEntry newEntry = lookupEntryFrom(content);
         // Since most content will already have a lookup entry we read first to avoid locking the database
-        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, content.getCanonicalUri())));
+        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, content.getCanonicalUri()), null, readPreference));
         if (existing == null) {
             store(newEntry);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
@@ -128,7 +146,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     private Iterable<DBObject> find(Iterable<String> identifiers) {
-        return lookup.find(where().fieldIn(ALIASES, identifiers).build());
+        return lookup.find(where().fieldIn(ALIASES, identifiers).build()).setReadPreference(readPreference);
     }
 
     @Override
@@ -140,9 +158,10 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public Map<String, Long> idsForCanonicalUris(Iterable<String> uris) {
         Builder<String, Long> results = ImmutableMap.builder();
         DBCursor cursor = lookup.find(
-                where().idIn(uris).build(), 
-                select().field(OPAQUE_ID).field(ID).build()
-        );
+                            where().idIn(uris).build(), 
+                            select().field(OPAQUE_ID).field(ID).build()
+                          )
+                          .setReadPreference(readPreference);
         for (DBObject dbo : cursor) {
             Long id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
             if (id != null) {
@@ -154,9 +173,11 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     
     private Iterable<DBObject> find(Optional<String> namespace, Iterable<String> values) {
         if (namespace.isPresent()) {
-            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values)).build());        
+            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values)).build())
+                    .setReadPreference(readPreference);        
         } else {
-            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values)).build());
+            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values)).build())
+                    .setReadPreference(readPreference);
         }
     }
 
@@ -165,6 +186,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         return Iterables.transform(
                 lookup.find(where().fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
                                    .build())
+                      .setReadPreference(readPreference)
                       .sort(sort().ascending(OPAQUE_ID).build()),
                 translator.FROM_DBO);
     }

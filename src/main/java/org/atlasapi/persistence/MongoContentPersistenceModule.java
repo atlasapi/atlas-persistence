@@ -68,7 +68,6 @@ import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
@@ -98,21 +97,21 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired ChannelResolver channelResolver;
     
     public @Bean ContentGroupWriter contentGroupWriter() {
-		ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
-		return contentGroupWriter;
-	}
-	
-	public @Bean ContentGroupResolver contentGroupResolver() {
-	    return new MongoContentGroupResolver(db);
-	}
-	
-	public @Primary @Bean ContentWriter contentWriter() {
-		ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
-		contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
-		contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
-		if (Boolean.valueOf(generateIds)) {
-		    contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
-		}
+        ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
+        return contentGroupWriter;
+    }
+    
+    public @Bean ContentGroupResolver contentGroupResolver() {
+        return new MongoContentGroupResolver(db);
+    }
+    
+    public @Primary @Bean ContentWriter contentWriter() {
+        ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
+        contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+        contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
+        if (Boolean.valueOf(generateIds)) {
+            contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
+        }
         return contentWriter;
     }
 
@@ -129,21 +128,16 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
 	private LookupWriter explicitLookupWriter() {
-        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(readOnlyFromPrimary(db.collection("lookup")));
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
         LookupWriter lookupWriter = TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
         return messagingLookupWriter(lookupWriter);
     }
 	
 	public @Bean LookupWriter generatedLookupWriter() {
-	    MongoLookupEntryStore entryStore = new MongoLookupEntryStore(readOnlyFromPrimary(db.collection("lookup")));
+	    MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
 	    LookupWriter lookupWriter = TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
         return messagingLookupWriter(lookupWriter);
 	}
-
-	private DBCollection readOnlyFromPrimary(DBCollection collection) {
-        collection.setReadPreference(ReadPreference.primary());
-        return collection;
-    }
 	
 	private MessageQueueingLookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
 	    return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
