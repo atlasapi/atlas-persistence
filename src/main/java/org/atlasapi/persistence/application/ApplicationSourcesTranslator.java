@@ -93,12 +93,6 @@ public class ApplicationSourcesTranslator {
                 sourceStatusFrom(dbo)
             );
         }
-        // populate missing publishers
-        for (Publisher source : Publisher.values()) {
-            if (!readsBuilder.containsKey(source)) {
-                readsBuilder.put(source, source.getDefaultSourceStatus());
-            }
-        }
         Map<Publisher, SourceStatus> reads = ImmutableMap.copyOf(readsBuilder);
         if (precedence != null && !precedence.isEmpty()) {
             // reorder if precedence enabled
