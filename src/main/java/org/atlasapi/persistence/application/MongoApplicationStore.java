@@ -115,6 +115,20 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
             }})));
     }
 
+    @Override
+    public Optional<Application> applicationForKey(String apiKey) {
+        return Optional.fromNullable(translator.fromDBObject(
+                applications.findOne(
+                        where().fieldEquals(
+                                String.format("%s.%s", 
+                                        MongoApplicationTranslator.CREDENTIALS_KEY, 
+                                        ApplicationCredentialsTranslator.API_KEY_KEY), 
+                                        apiKey)
+                                .build())
+                )
+         );
+    }
+
     
     
   

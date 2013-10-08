@@ -22,4 +22,6 @@ public interface ApplicationStore extends IdResolver<Application> {
     Iterable<Application> readersFor(Publisher source);
     
     Iterable<Application> writersFor(Publisher source);
+
+    Optional<Application> applicationForKey(String apiKey);
 }
