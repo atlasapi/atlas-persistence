@@ -1,12 +1,15 @@
 package org.atlasapi.persistence.application;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static org.atlasapi.persistence.application.MongoApplicationTranslator.APPLICATION_ID_KEY;
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.PUBLISHER_KEY;
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.SOURCES_KEY;
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.STATE_KEY;
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.WRITABLE_KEY;
 import static org.atlasapi.persistence.application.MongoApplicationTranslator.CONFIG_KEY;
 import static org.atlasapi.persistence.application.MongoApplicationTranslator.APPLICATION_ID_KEY;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.NO_UPSERT;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 
 import org.atlasapi.application.Application;
 import org.atlasapi.application.SourceStatus.SourceState;
@@ -25,6 +28,7 @@ import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.text.MoreStrings;
+import com.mongodb.CommandResult;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.ReadPreference;
@@ -32,7 +36,9 @@ import com.mongodb.ReadPreference;
 public class MongoApplicationStore extends AbstractApplicationStore implements ApplicationStore {
 
     public static final String APPLICATION_COLLECTION = "applications";
+    private static final int MONGODB_DUPLICATE_KEY_ERROR = 11000;
     private final DBCollection applications;
+    private final DatabasedMongo adminMongo;
     private final MongoApplicationTranslator translator = new MongoApplicationTranslator();
 
     private final Function<DBObject, Application> translatorFunction = new Function<DBObject, Application>() {
@@ -47,6 +53,7 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
             NumberToShortStringCodec idCodec,
             DatabasedMongo adminMongo) {
         super(idGenerator, idCodec);
+        this.adminMongo = adminMongo;
         this.applications = adminMongo.collection(APPLICATION_COLLECTION);
         this.applications.setReadPreference(ReadPreference.primary());
     }
@@ -66,9 +73,9 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
                 );
     }
 
-    private void store(Application application) {
-        applications.save(translator.toDBObject(application));
-    }
+    //private void store(Application application) {
+    //    applications.save(translator.toDBObject(application));
+    //}
 
     @Override
     public Iterable<Application> applicationsFor(Iterable<Id> ids) {
@@ -97,12 +104,17 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
 
     @Override
     public void doCreateApplication(Application application) {
-        store(application);
+        applications.insert(translator.toDBObject(application));
+        CommandResult result = adminMongo.database().getLastError();
+        if (result.get("err") != null && result.getInt("code") == MONGODB_DUPLICATE_KEY_ERROR) {
+            throw new IllegalArgumentException("Duplicate application slug");
+        }
     }
 
     @Override
     public void doUpdateApplication(Application application) {
-        store(application);
+        // check slug coorect for this deer id
+        applications.update(where().idEquals(application.getSlug()).fieldEquals(APPLICATION_ID_KEY, application.getId().longValue()).build(), translator.toDBObject(application), NO_UPSERT, SINGLE);
     }
 
     @Override
