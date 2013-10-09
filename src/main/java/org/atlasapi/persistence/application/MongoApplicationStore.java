@@ -73,10 +73,6 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
                 );
     }
 
-    //private void store(Application application) {
-    //    applications.save(translator.toDBObject(application));
-    //}
-
     @Override
     public Iterable<Application> applicationsFor(Iterable<Id> ids) {
         Iterable<Long> idLongs = Iterables.transform(ids, Id.toLongValue());
