@@ -48,9 +48,11 @@ public class MongoApplicationStoreTest {
     public void testEncodesAndDecodesApplication() {
         
         final String title = "test application";
-        final SourceReadEntry testEntry1 = new SourceReadEntry(Publisher.BBC, Publisher.BBC.getDefaultSourceStatus());
-        final SourceReadEntry testEntry2 = new SourceReadEntry(Publisher.NETFLIX, Publisher.NETFLIX.getDefaultSourceStatus());
-        List<SourceReadEntry> reads = ImmutableList.of(testEntry1, testEntry2);
+        final SourceReadEntry testEntry1 = new SourceReadEntry(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
+        final SourceReadEntry testEntry2 = new SourceReadEntry(Publisher.NETFLIX, SourceStatus.AVAILABLE_ENABLED);
+        final SourceReadEntry testEntry3 = new SourceReadEntry(Publisher.LONDON_ALSO, SourceStatus.UNAVAILABLE);
+        
+        List<SourceReadEntry> reads = ImmutableList.of(testEntry1, testEntry2, testEntry3);
         List<Publisher> writes = ImmutableList.of(Publisher.KANDL_TOPICS, Publisher.DBPEDIA);
         ApplicationSources sources = ApplicationSources.builder()
                 .withPrecedence(true)
@@ -86,9 +88,10 @@ public class MongoApplicationStoreTest {
         assertEquals(testEntry2.getPublisher(), retrievedEntry2.getPublisher());
         assertEquals(testEntry2.getSourceStatus(), retrievedEntry2.getSourceStatus());
         // Sources - Writes
-        assertTrue(retrieved.get().getSources().getWrites().contains(Publisher.KANDL_TOPICS));
-        assertTrue(retrieved.get().getSources().getWrites().contains(Publisher.DBPEDIA));
-        assertFalse(retrieved.get().getSources().getWrites().contains(Publisher.BBC));
+        assertTrue(retrieved.get().getSources().isReadEnabled(Publisher.BBC));
+        assertFalse(retrieved.get().getSources().isReadEnabled(Publisher.LONDON_ALSO));
+        assertTrue(retrieved.get().getSources().isWriteEnabled(Publisher.DBPEDIA));
+        assertFalse(retrieved.get().getSources().isWriteEnabled(Publisher.BBC));
     }
     
     @Test
