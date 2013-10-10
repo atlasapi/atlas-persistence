@@ -37,7 +37,6 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Interval;
 
-import com.fasterxml.jackson.databind.util.Annotations;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Objects;
@@ -46,13 +45,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.base.MorePredicates;
@@ -224,16 +224,16 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         Map<Channel, List<Item>> channelMap = createChannelMap(channels);
         // TODO this code inefficient, but in future we should avoid hydrating then items
         // unless explicitly requested
-        for (Entry<Channel,ItemRefAndBroadcast> entry : uniqueRefs(entries)) {
-            Maybe<Identified> possibleItem;
-            if (mergeConfig.isPresent() && mergeConfig.get().precedenceEnabled()) {
-                possibleItem = findAndMerge(mergeConfig.get(), entry.getValue());
-            } else {
-                possibleItem = resolver.findByCanonicalUris(ImmutableList.of(entry.getValue().getItemUri())).getFirstValue();
-            }
+        Iterable<Entry<Channel, ItemRefAndBroadcast>> uniqueRefs = uniqueRefs(entries);
+        Map<String, Maybe<Identified>> itemIndex = resolveItems(uniqueRefs, mergeConfig);
+        SetMultimap<String, Broadcast> broadcastIndex = indexBroadcasts(itemIndex);
+        itemIndex = removeBroadcasts(itemIndex);
+        for (Entry<Channel,ItemRefAndBroadcast> entry : uniqueRefs) {
+            String itemUri = entry.getValue().getItemUri();
+            final Maybe<Identified> possibleItem = itemIndex.get(itemUri);
             if (possibleItem.hasValue()) {
                 Item item = ((Item) possibleItem.requireValue()).copy();
-                if (selectAndTrimBroadcast(item, entry.getValue().getBroadcast())) {
+                if (selectAndTrimBroadcast(broadcastIndex.get(itemUri), item, entry.getValue().getBroadcast())) {
                     channelMap.get(entry.getKey()).add(item);
                 }
             }
@@ -241,6 +241,75 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         return channelMap;
     }
     
+    private SetMultimap<String, Broadcast> indexBroadcasts(Map<String, Maybe<Identified>> itemIndex) {
+        ImmutableSetMultimap.Builder<String, Broadcast> broadcasts = ImmutableSetMultimap.builder();
+        for (Entry<String, Maybe<Identified>> itemEntry : itemIndex.entrySet()) {
+            if (itemEntry.getValue().hasValue() && itemEntry.getValue().requireValue() instanceof Item) {
+                for (Version version : ((Item)itemEntry.getValue().requireValue()).getVersions()) {
+                    broadcasts.putAll(itemEntry.getKey(), version.getBroadcasts());
+                }
+            }
+        }
+        return broadcasts.build();
+    }
+
+    private Map<String, Maybe<Identified>> removeBroadcasts(Map<String, Maybe<Identified>> itemIndex) {
+        for (Maybe<Identified> possibleItem : itemIndex.values()) {
+            if (possibleItem.hasValue() && possibleItem.requireValue() instanceof Item) {
+                removeBroadcasts((Item)possibleItem.requireValue());
+            }
+        }
+        return itemIndex;
+    }
+
+    private void removeBroadcasts(Item item) {
+        for (Version version : item.getVersions()) {
+            version.setBroadcasts(ImmutableSet.<Broadcast>of());
+        }
+    }
+
+    private Map<String, Maybe<Identified>> resolveItems(Iterable<Entry<Channel, ItemRefAndBroadcast>> refs, Optional<ApplicationConfiguration> mergeConfig) {
+        if (mergeConfig.isPresent() && mergeConfig.get().precedenceEnabled()) {
+            return findAndMerge(mergeConfig.get(), refs);
+        } else {
+            return resolver.findByCanonicalUris(uniqueUris(refs)).asMap();
+        }
+    }
+
+    private ImmutableSet<String> uniqueUris(Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
+        return ImmutableSet.copyOf(Iterables.transform(refs,
+            new Function<Entry<Channel, ItemRefAndBroadcast>, String>() {
+                @Override
+                public String apply(Entry<Channel, ItemRefAndBroadcast> input) {
+                    return input.getValue().getItemUri();
+                }
+            }
+        ));
+    }
+
+    private Map<String, Maybe<Identified>> findAndMerge(ApplicationConfiguration mergeConfig,
+            Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
+        ImmutableSet<String> uris = uniqueUris(refs);
+        EquivalentContent resolved = equivalentContentResolver.resolveUris(uris, mergeConfig.getEnabledSources(), Annotation.defaultAnnotations(), false);
+        ImmutableMap.Builder<String, Maybe<Identified>> result = ImmutableMap.builder();
+        for (String uri : uris) {
+            Set<Content> equivalents = resolved.get(uri);
+            if (equivalents == null || equivalents.isEmpty()) {
+                result.put(uri, Maybe.<Identified>nothing());
+            } else {
+                //ensure the relevant schedule item is at the head of the Content
+                // list so it's selected as The Chosen One when merging equivalents
+                // and will bring balance to The Force.
+                ImmutableList<Content> equivList = ImmutableSet.<Content>builder()
+                    .add(find(uri, equivalents))
+                    .addAll(equivalents).build()
+                    .asList();
+                result.put(uri, Maybe.<Identified>just(merger.merge(mergeConfig, equivList).get(0)));
+            }
+        }
+        return result.build();
+    }
+
     private Iterable<Entry<Channel,ItemRefAndBroadcast>> uniqueRefs(Iterable<ScheduleEntry> entries) {
         ImmutableSet.Builder<Entry<Channel, ItemRefAndBroadcast>> refs = ImmutableSet.builder();
         for (ScheduleEntry scheduleEntry : entries) {
@@ -339,24 +408,6 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         return existing.withItems(Iterables.concat(existing.getItemRefsAndBroadcasts(), fetched.getItemRefsAndBroadcasts()));
     }
 
-    private Maybe<Identified> findAndMerge(ApplicationConfiguration mergeConfig,
-                                           ItemRefAndBroadcast itemRefAndBroadcast) {
-        String uri = itemRefAndBroadcast.getItemUri();
-        EquivalentContent resolved = equivalentContentResolver.resolveUris(ImmutableList.of(uri), mergeConfig.getEnabledSources(), Annotation.defaultAnnotations(), false);
-        Set<Content> equivalents = resolved.get(uri);
-        if (equivalents == null || equivalents.isEmpty()) {
-            return Maybe.nothing();
-        }
-        //ensure the relevant schedule item is at the head of the Content
-        // list so it's selected as The Chosen One when merging equivalents
-        // and will bring balance to The Force.
-        ImmutableList<Content> equivList = ImmutableSet.<Content>builder()
-            .add(find(uri, equivalents))
-            .addAll(equivalents).build()
-            .asList();
-        return Maybe.<Identified>just(merger.merge(mergeConfig, equivList).get(0));
-    }
-
     private Content find(String uri, Set<Content> equivalents) {
         for (Content content : equivalents) {
             if (uri.equals(content.getCanonicalUri())) {
@@ -366,24 +417,21 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         throw new IllegalStateException(uri + " not found in its own equivalent content set");
     }
 
-    private boolean selectAndTrimBroadcast(Item item, Broadcast scheduleBroadcast) {
+    private boolean selectAndTrimBroadcast(Set<Broadcast> broadcasts, Item item, Broadcast scheduleBroadcast) {
         boolean found = false;
-        for (Version version : item.getVersions()) {
-            Set<Broadcast> allBroadcasts = version.getBroadcasts();
-            version.setBroadcasts(Sets.<Broadcast>newHashSet());
-            if (found) {
-                continue;
-            }
-            for (Broadcast broadcast : allBroadcasts) {
-                if (scheduleBroadcast.equals(broadcast) && broadcast.isActivelyPublished()) {
-                    version.setBroadcasts(Sets.newHashSet(broadcast));
-                    found = true;
-                }
+        for (Broadcast broadcast : broadcasts) {
+            if (scheduleBroadcast.equals(broadcast) && broadcast.isActivelyPublished()) {
+                addBroadcast(item, broadcast);
+                found = true;
             }
         }
         return found;
     }
     
+    private void addBroadcast(Item item, Broadcast broadcast) {
+        item.getVersions().iterator().next().setBroadcasts(ImmutableSet.of(broadcast));
+    }
+
     private Map<Channel, List<Item>> createChannelMap(Iterable<Channel> channels) {
         ImmutableMap.Builder<Channel, List<Item>> channelMap = ImmutableMap.builder();
         for (Channel channel : channels) {
