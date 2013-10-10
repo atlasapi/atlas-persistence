@@ -71,8 +71,8 @@ public class ApplicationSourcesTranslator {
         boolean precedenceFlag = precedence != null && !precedence.isEmpty();
         return ApplicationSources.builder()
                 .withPrecedence(precedenceFlag)
-                .withReads(sourceStatuses)
-                .withWrites(writableSources)
+                .withReadableSources(sourceStatuses)
+                .withWritableSources(writableSources)
                 .build();
     }
 
@@ -98,6 +98,7 @@ public class ApplicationSourcesTranslator {
             // reorder if precedence enabled
             return asOrderedList(reads, precedence);
         } else {
+            // Precedence will get ordered when ApplicationSources object is built
             return asOrderedList(reads, reads.keySet());
         }
     }

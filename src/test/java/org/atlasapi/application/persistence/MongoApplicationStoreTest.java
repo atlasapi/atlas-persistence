@@ -56,8 +56,8 @@ public class MongoApplicationStoreTest {
         List<Publisher> writes = ImmutableList.of(Publisher.KANDL_TOPICS, Publisher.DBPEDIA);
         ApplicationSources sources = ApplicationSources.builder()
                 .withPrecedence(true)
-                .withReads(reads)
-                .withWrites(writes)
+                .withReadableSources(reads)
+                .withWritableSources(writes)
                 .build();
         
         Application application = Application.builder()
@@ -104,8 +104,8 @@ public class MongoApplicationStoreTest {
         List<Publisher> writes = ImmutableList.of(Publisher.KANDL_TOPICS, Publisher.DBPEDIA);
         ApplicationSources sources = ApplicationSources.builder()
                 .withPrecedence(true)
-                .withReads(reads)
-                .withWrites(writes)
+                .withReadableSources(reads)
+                .withWritableSources(writes)
                 .build();
         
         Application application = Application.builder()
@@ -132,8 +132,8 @@ public class MongoApplicationStoreTest {
         List<Publisher> writes = ImmutableList.of(Publisher.KANDL_TOPICS, Publisher.DBPEDIA);
         ApplicationSources sources = ApplicationSources.builder()
                 .withPrecedence(true)
-                .withReads(reads)
-                .withWrites(writes)
+                .withReadableSources(reads)
+                .withWritableSources(writes)
                 .build();
         ApplicationCredentials credentials = ApplicationCredentials.builder()
                 .withApiKey("").build();
@@ -163,7 +163,7 @@ public class MongoApplicationStoreTest {
         Application application = Application.builder()
                 .withTitle("Test 1")
                 .withSources(ApplicationSources.defaults()
-                        .copy().withPrecedence(true).withReads(ImmutableList.of(
+                        .copy().withPrecedence(false).withReadableSources(ImmutableList.of(
                                 new SourceReadEntry(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED))
                                 ).build())
                 .build();
