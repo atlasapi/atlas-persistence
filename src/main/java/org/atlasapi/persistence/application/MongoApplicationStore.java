@@ -7,7 +7,6 @@ import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.STATE_KEY;
 import static org.atlasapi.persistence.application.ApplicationSourcesTranslator.WRITABLE_KEY;
 import static org.atlasapi.persistence.application.MongoApplicationTranslator.CONFIG_KEY;
-import static org.atlasapi.persistence.application.MongoApplicationTranslator.APPLICATION_ID_KEY;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.NO_UPSERT;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 
@@ -37,6 +36,9 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
 
     public static final String APPLICATION_COLLECTION = "applications";
     private static final int MONGODB_DUPLICATE_KEY_ERROR = 11000;
+    private static final String CREDENTIALS_API_KEY = String.format("%s.%s", 
+            MongoApplicationTranslator.CREDENTIALS_KEY, 
+            ApplicationCredentialsTranslator.API_KEY_KEY);
     private final DBCollection applications;
     private final DatabasedMongo adminMongo;
     private final MongoApplicationTranslator translator = new MongoApplicationTranslator();
@@ -109,7 +111,7 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
 
     @Override
     public void doUpdateApplication(Application application) {
-        // check slug coorect for this deer id
+        // check slug correct for this deer id
         applications.update(where().idEquals(application.getSlug()).fieldEquals(APPLICATION_ID_KEY, application.getId().longValue()).build(), translator.toDBObject(application), NO_UPSERT, SINGLE);
     }
 
@@ -127,12 +129,7 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
     public Optional<Application> applicationForKey(String apiKey) {
         return Optional.fromNullable(translator.fromDBObject(
                 applications.findOne(
-                        where().fieldEquals(
-                                String.format("%s.%s", 
-                                        MongoApplicationTranslator.CREDENTIALS_KEY, 
-                                        ApplicationCredentialsTranslator.API_KEY_KEY), 
-                                        apiKey)
-                                .build())
+                        where().fieldEquals(CREDENTIALS_API_KEY, apiKey).build())
                 )
          );
     }
