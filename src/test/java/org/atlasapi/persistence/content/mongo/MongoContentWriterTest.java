@@ -192,7 +192,7 @@ public class MongoContentWriterTest {
     @Test
     public void testWritingContainer() {
         
-        Container container = new Container("containerUri", "containerCurie", Publisher.BBC);
+        Brand container = new Brand("containerUri", "containerCurie", Publisher.BBC);
         
         contentWriter.createOrUpdate(container);
         
