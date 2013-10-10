@@ -24,7 +24,7 @@ public class StubContentResolver implements ContentResolver {
 	public ResolvedContent findByCanonicalUris(Iterable<String> uris) {
 		ResolvedContentBuilder builder = ResolvedContent.builder();
 		for (String uri : uris) {
-			builder.put(uri, data.get(uri));
+			builder.put(uri, data.get(uri).copy());
 		}
 		return builder.build();
 	}
