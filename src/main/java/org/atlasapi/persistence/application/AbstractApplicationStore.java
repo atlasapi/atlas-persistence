@@ -54,7 +54,7 @@ public abstract class AbstractApplicationStore implements ApplicationStore {
         ApplicationSources sources = application.getSources();
         // If sources not given create an empty sources object
         if (sources == null) {
-            sources = ApplicationSources.DEFAULT_SOURCES;
+            sources = ApplicationSources.defaults();
         }
         
         Id id = Id.valueOf(idGenerator.generateRaw());

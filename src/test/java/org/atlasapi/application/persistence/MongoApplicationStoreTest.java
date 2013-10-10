@@ -162,7 +162,7 @@ public class MongoApplicationStoreTest {
     public void testGetApplicationByAPIKey() {
         Application application = Application.builder()
                 .withTitle("Test 1")
-                .withSources(ApplicationSources.DEFAULT_SOURCES
+                .withSources(ApplicationSources.defaults()
                         .copy().withPrecedence(true).withReads(ImmutableList.of(
                                 new SourceReadEntry(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED))
                                 ).build())
