@@ -65,7 +65,7 @@ public class ManualScheduleRebuildModule {
         scheduler.schedule(reduxRepopulator, reduxScheduleRepopulatorScheduled ? RepetitionRules.every(Duration.standardHours(1)) : RepetitionRules.NEVER);
         
         ScheduledTask youViewRepopulator = 
-                new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.YOUVIEW), Duration.standardDays(30*365))
+                new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.YOUVIEW), Duration.standardDays(30))
         .withName("YouView Mongo Schedule repopulator");
         
         scheduler.schedule(youViewRepopulator, RepetitionRules.NEVER);
