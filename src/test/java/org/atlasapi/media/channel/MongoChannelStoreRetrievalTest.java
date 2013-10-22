@@ -3,6 +3,7 @@ package org.atlasapi.media.channel;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -15,10 +16,13 @@ import org.atlasapi.media.entity.Publisher;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -90,6 +94,23 @@ public class MongoChannelStoreRetrievalTest {
         assertThat(channelMap.get("uri2").getId(), is(channelId2));
         assertThat(channelMap.get("uri3").getId(), is(channelId3));
         
+    }
+    
+    @Test
+    public void testRetrievesAllChannelsInOrder() {
+        
+        Iterable<Channel> channels = store.all();
+        
+        List<Long> channelIds = ImmutableList.copyOf(Iterables.transform(channels, new Function<Channel, Long>() {
+            @Override
+            public Long apply(Channel input) {
+                return input.getId();
+            }
+        }));
+        
+        List<Long> expectedIds = Ordering.natural().immutableSortedCopy(Lists.newArrayList(channelId1, channelId2, channelId3));
+        
+        assertEquals(expectedIds, channelIds);
     }
 
     @Test
