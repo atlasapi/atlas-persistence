@@ -67,12 +67,16 @@ public class MongoChannelStore implements ChannelStore {
 
 	@Override
 	public Iterable<Channel> all() {
-		return Iterables.transform(collection.find(), DB_TO_CHANNEL_TRANSLATOR);
+		return Iterables.transform(getOrderedCursor(new BasicDBObject()), DB_TO_CHANNEL_TRANSLATOR);
 	}
 
     @Override
     public Iterable<Channel> forIds(Iterable<Long> ids) {
-        return Iterables.transform(collection.find(where().longIdIn(ids).build()), DB_TO_CHANNEL_TRANSLATOR);
+        return Iterables.transform(getOrderedCursor(where().longIdIn(ids).build()), DB_TO_CHANNEL_TRANSLATOR);
+    }
+    
+    private DBCursor getOrderedCursor(DBObject query) {
+        return collection.find(query).addSpecial("$orderby", new BasicDBObject(MongoConstants.ID, 1));
     }
 
 	@Override
@@ -199,7 +203,7 @@ public class MongoChannelStore implements ChannelStore {
     public Maybe<Channel> forAlias(String alias) {
         MongoQueryBuilder query = new MongoQueryBuilder()
             .fieldEquals("aliases", alias);
-        DBCursor cursor = collection.find(query.build());
+        DBCursor cursor = getOrderedCursor(query.build());
         if (Iterables.isEmpty(cursor)) {
             return Maybe.nothing();
         }
