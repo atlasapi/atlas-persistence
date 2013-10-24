@@ -31,6 +31,7 @@ import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -65,12 +66,16 @@ public class MongoChannelStore implements ChannelStore {
 
 	@Override
 	public Iterable<Channel> all() {
-		return Iterables.transform(collection.find(), DB_TO_CHANNEL_TRANSLATOR);
+		return Iterables.transform(getOrderedCursor(new BasicDBObject()), DB_TO_CHANNEL_TRANSLATOR);
 	}
 
     @Override
     public Iterable<Channel> forIds(Iterable<Long> ids) {
-        return Iterables.transform(collection.find(where().longIdIn(ids).build()), DB_TO_CHANNEL_TRANSLATOR);
+        return Iterables.transform(getOrderedCursor(where().longIdIn(ids).build()), DB_TO_CHANNEL_TRANSLATOR);
+    }
+    
+    private DBCursor getOrderedCursor(DBObject query) {
+        return collection.find(query).sort(new MongoSortBuilder().ascending(MongoConstants.ID).build());
     }
 
 	@Override
@@ -197,7 +202,7 @@ public class MongoChannelStore implements ChannelStore {
     public Maybe<Channel> forAlias(String alias) {
         MongoQueryBuilder query = new MongoQueryBuilder()
             .fieldEquals("aliases", alias);
-        DBCursor cursor = collection.find(query.build());
+        DBCursor cursor = getOrderedCursor(query.build());
         if (Iterables.isEmpty(cursor)) {
             return Maybe.nothing();
         }
