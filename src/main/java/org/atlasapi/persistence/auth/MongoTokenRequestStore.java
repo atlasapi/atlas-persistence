@@ -27,7 +27,7 @@ public class MongoTokenRequestStore implements TokenRequestStore {
     }
 
     @Override
-    public Optional<OAuthRequest> remove(UserNamespace namespace, String token) {
+    public Optional<OAuthRequest> lookupAndRemove(UserNamespace namespace, String token) {
         DBObject dbo = tokenRequests.findOne(where()
                 .fieldEquals(MongoOAuthRequestTranslator.NAMESPACE_KEY, namespace.name())
                 .fieldEquals(MongoOAuthRequestTranslator.TOKEN_KEY, token)
