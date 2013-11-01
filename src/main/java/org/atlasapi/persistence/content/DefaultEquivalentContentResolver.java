@@ -15,8 +15,6 @@ import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -69,20 +67,23 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
 
     protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<String> uris, ApplicationConfiguration appConfig) {
-        Iterable<LookupEntry> selectedEntries = filterDisabledSources(entries, appConfig);
-        
-        if (Iterables.isEmpty(selectedEntries)) {
+        if (Iterables.isEmpty(entries)) {
             return EquivalentContent.empty();
         }
         
-        SetMultimap<String, LookupRef> uriToEquivs = byUri(subjsToEquivs(selectedEntries, appConfig));
+        SetMultimap<String, LookupRef> uriToEquivs = byUri(subjsToEquivs(entries, appConfig));
         
-        ResolvedContent resolvedContent = contentResolver.findByLookupRefs(ImmutableSet.copyOf(uriToEquivs.values()));
+        ImmutableSet<LookupRef> refs = ImmutableSet.copyOf(uriToEquivs.values());
+        if (refs.isEmpty()) {
+            return EquivalentContent.empty();
+        }
+        
+        ResolvedContent resolvedContent = contentResolver.findByLookupRefs(refs);
         
         EquivalentContent.Builder equivalentContent = EquivalentContent.builder();
         for (String uri : uris) {
-            Set<LookupRef> equivUris = uriToEquivs.get(uri);
-            Iterable<Content> content = equivContent(equivUris, resolvedContent);
+            Set<LookupRef> equivRefs = uriToEquivs.get(uri);
+            Iterable<Content> content = equivContent(equivRefs, resolvedContent);
             equivalentContent.putEquivalents(uri, content);
         }
         return equivalentContent.build();
@@ -182,13 +183,6 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
 
     private boolean isPrecedentSourceEntry(LookupEntry entry, ApplicationConfiguration appConfig) {
         return appConfig.precedence().get(0).equals(entry.lookupRef().publisher());
-    }
-
-    private Iterable<LookupEntry> filterDisabledSources(Iterable<LookupEntry> entries, ApplicationConfiguration appConfig) {
-        Predicate<Publisher> sourceFilter = Predicates.in(appConfig.getEnabledSources());
-        Function<LookupEntry, Publisher> toSource = Functions.compose(LookupRef.TO_SOURCE, LookupEntry.TO_SELF);
-        
-        return Iterables.filter(entries, MorePredicates.transformingPredicate(toSource, sourceFilter));
     }
 
 }
