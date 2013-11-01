@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.atlasapi.application.ApplicationConfiguration;
+import org.atlasapi.application.SourceStatus;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
@@ -38,7 +40,7 @@ public class DefaultEquivalentContentResolverTest {
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
-        Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
+        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC);
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
         when(lookupResolver.entriesForIdentifiers(uris, false)).thenReturn(ImmutableSet.of(
@@ -55,7 +57,7 @@ public class DefaultEquivalentContentResolverTest {
                 .put(equiv.getCanonicalUri(), equiv)
                 .build());
         
-        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
         
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get("equiv"));
@@ -76,7 +78,7 @@ public class DefaultEquivalentContentResolverTest {
         Episode equiv = new Episode("equiv", "equivCurie", Publisher.PA);
         
         Iterable<String> uris = ImmutableSet.of(subject1.getCanonicalUri(), subject2.getCanonicalUri());
-        Set<Publisher> selectedSources = ImmutableSet.of(Publisher.BBC, Publisher.PA);
+        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC);
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
         when(lookupResolver.entriesForIdentifiers(uris, false)).thenReturn(ImmutableSet.of(
@@ -96,7 +98,7 @@ public class DefaultEquivalentContentResolverTest {
                 .put(equiv.getCanonicalUri(), equiv)
                 .build());
         
-        EquivalentContent content = equivResolver.resolveUris(uris, selectedSources, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
         
         assertEquals(2, content.asMap().size());
         assertNull(content.asMap().get("equiv"));
@@ -114,4 +116,13 @@ public class DefaultEquivalentContentResolverTest {
         assertEquals(1, equivMap.size());
         assertEquals(subject2, equivMap.get(subject2.getCanonicalUri()));
     }
+
+    private ApplicationConfiguration configWithSources(Publisher... srcs) {
+        ApplicationConfiguration conf = ApplicationConfiguration.defaultConfiguration();
+        for (Publisher src : srcs) {
+            conf = conf.withSource(src, SourceStatus.AVAILABLE_ENABLED);
+        }
+        return conf;
+    }
+    
 }
