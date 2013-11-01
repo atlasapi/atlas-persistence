@@ -78,13 +78,17 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             return EquivalentContent.empty();
         }
         
+        Map<String, LookupEntry> entryIndex = Maps.uniqueIndex(entries, LookupEntry.TO_ID);
         ResolvedContent resolvedContent = contentResolver.findByLookupRefs(refs);
         
         EquivalentContent.Builder equivalentContent = EquivalentContent.builder();
         for (String uri : uris) {
             Set<LookupRef> equivRefs = uriToEquivs.get(uri);
-            Iterable<Content> content = equivContent(equivRefs, resolvedContent);
-            equivalentContent.putEquivalents(uri, content);
+            Iterable<Content> contents = equivContent(equivRefs, resolvedContent);
+            for (Content content : contents) {
+                content.setEquivalentTo(entryIndex.get(uri).equivalents());
+            }
+            equivalentContent.putEquivalents(uri, contents);
         }
         return equivalentContent.build();
     }
