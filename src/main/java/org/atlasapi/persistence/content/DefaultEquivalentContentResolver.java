@@ -17,6 +17,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
@@ -54,6 +55,17 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             uris.add(entry.uri());
         }
         return filterAndResolveEntries(entries, uris, appConfig);
+    }
+    
+    @Override
+    public EquivalentContent resolveAliases(Optional<String> namespace, Iterable<String> values,
+            ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations) {
+        Iterable<LookupEntry> entries = lookupResolver.entriesForAliases(namespace, values);
+        Set<String> uris = Sets.newHashSet();
+        for (LookupEntry entry : entries) {
+            uris.add(entry.uri());
+        }
+        return filterAndResolveEntries(entries, uris, appConfig); 
     }
 
     protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<String> uris, ApplicationConfiguration appConfig) {
