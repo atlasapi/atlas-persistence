@@ -290,7 +290,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private Map<String, Maybe<Identified>> findAndMerge(ApplicationConfiguration mergeConfig,
             Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
         ImmutableSet<String> uris = uniqueUris(refs);
-        EquivalentContent resolved = equivalentContentResolver.resolveUris(uris, mergeConfig.getEnabledSources(), Annotation.defaultAnnotations(), false);
+        EquivalentContent resolved = equivalentContentResolver.resolveUris(uris, mergeConfig, Annotation.defaultAnnotations(), false);
         ImmutableMap.Builder<String, Maybe<Identified>> result = ImmutableMap.builder();
         for (String uri : uris) {
             Set<Content> equivalents = resolved.get(uri);

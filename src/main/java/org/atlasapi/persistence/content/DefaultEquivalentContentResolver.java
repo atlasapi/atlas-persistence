@@ -3,6 +3,7 @@ package org.atlasapi.persistence.content;
 import java.util.List;
 import java.util.Set;
 
+import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -33,19 +34,19 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
     @Override
-    public EquivalentContent resolveUris(Iterable<String> uris, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations, boolean withAliases) {
+    public EquivalentContent resolveUris(Iterable<String> uris, ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations, boolean withAliases) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris, withAliases);
-        return filterAndResolveEntries(entries, uris, selectedSources);
+        return filterAndResolveEntries(entries, uris, appConfig.getEnabledSources());
     }
     
     @Override
-    public EquivalentContent resolveIds(Iterable<Long> ids, Set<Publisher> selectedSources, Set<Annotation> activeAnnotations) {
+    public EquivalentContent resolveIds(Iterable<Long> ids, ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIds(ids);
         Set<String> uris = Sets.newHashSet();
         for (LookupEntry entry : entries) {
             uris.add(entry.uri());
         }
-        return filterAndResolveEntries(entries, uris, selectedSources);
+        return filterAndResolveEntries(entries, uris, appConfig.getEnabledSources());
     }
 
     protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<String> uris, Set<Publisher> selectedSources) {

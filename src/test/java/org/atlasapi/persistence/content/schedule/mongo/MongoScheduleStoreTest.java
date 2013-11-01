@@ -428,7 +428,7 @@ public class MongoScheduleStoreTest {
         
         when(equivalentContentResolver.resolveUris(
                 (Iterable) argThat(hasItem(isIn(uris))), 
-                argThat(is(appConfig.get().getEnabledSources())), 
+                argThat(is(appConfig.get())), 
                 argThat(is(Annotation.defaultAnnotations())), 
                 eq(false)))
             .thenReturn(EquivalentContent.builder().build());
@@ -438,7 +438,7 @@ public class MongoScheduleStoreTest {
         verify(contentResolver, never()).findByCanonicalUris(any(Iterable.class));
         for (String uri : uris) {
             verify(equivalentContentResolver).resolveUris(argThat(hasItems(uri)), 
-                    argThat(is(appConfig.get().getEnabledSources())), 
+                    argThat(is(appConfig.get())), 
                     argThat(is(Annotation.defaultAnnotations())), 
                     eq(false));
         }
