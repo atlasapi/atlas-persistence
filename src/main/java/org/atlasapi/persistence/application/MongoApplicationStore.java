@@ -10,6 +10,7 @@ import static org.atlasapi.persistence.application.MongoApplicationTranslator.CO
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.NO_UPSERT;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 
+import java.util.Map;
 import org.atlasapi.application.Application;
 import org.atlasapi.application.SourceStatus.SourceState;
 import org.atlasapi.media.common.Id;
@@ -21,6 +22,7 @@ import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.ids.IdGenerator;
@@ -134,7 +136,29 @@ public class MongoApplicationStore extends AbstractApplicationStore implements A
          );
     }
 
+    @Override
+    @Deprecated
+    public Optional<Id> applicationIdForSlug(String slug) {
+        Optional<Application> application =  Optional.fromNullable(translator.fromDBObject(
+                applications.findOne(
+                        where().idEquals(slug).build())
+                )
+         );
+        if (application.isPresent()) {
+            return Optional.of(application.get().getId());
+        } else {
+            return Optional.absent();
+        }
+    }
     
-    
-  
+    @Override
+    @Deprecated
+    public Iterable<Id> applicationIdsForSlugs(Iterable<String> slugs) {
+        return Iterables.transform(slugs, new Function<String, Id>() {
+            @Override
+            public Id apply(String input) {
+                return applicationIdForSlug(input).get();
+            }
+        });
+    }
 }
