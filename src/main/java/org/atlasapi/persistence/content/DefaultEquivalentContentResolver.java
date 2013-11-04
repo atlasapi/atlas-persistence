@@ -85,12 +85,28 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         for (String uri : uris) {
             Set<LookupRef> equivRefs = uriToEquivs.get(uri);
             Iterable<Content> contents = equivContent(equivRefs, resolvedContent);
+            LookupEntry entry = entryIndex.get(uri);
+            Set<LookupRef> allRefs = equivRefs(contents, entry, appConfig);
             for (Content content : contents) {
-                content.setEquivalentTo(entryIndex.get(uri).equivalents());
+                content.setEquivalentTo(allRefs);
             }
             equivalentContent.putEquivalents(uri, contents);
         }
         return equivalentContent.build();
+    }
+
+    private Set<LookupRef> equivRefs(Iterable<Content> contents, LookupEntry entry,
+            ApplicationConfiguration appConfig) {
+        Iterable<LookupRef> enabled = Iterables.transform(contents, LookupRef.FROM_DESCRIBED);
+        Set<LookupRef> disabled = removeEnabledSources(entry.equivalents(), appConfig);
+        return Sets.union(ImmutableSet.copyOf(enabled), disabled);
+    }
+
+    private Set<LookupRef> removeEnabledSources(Set<LookupRef> equivalents,
+            ApplicationConfiguration conf) {
+        Predicate<Publisher> isDisabled = Predicates.not(Predicates.in(conf.getEnabledSources()));
+        return ImmutableSet.copyOf(Iterables.filter(equivalents, 
+            MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, isDisabled)));
     }
 
     private SetMultimap<String, LookupRef> byUri(SetMultimap<LookupRef, LookupRef> subjsToEquivs) {
