@@ -30,6 +30,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String AVAILABLE_ON = "availableOn";
 	public static final String HIGH_DEFINITION = "highDefinition";
 	public static final String REGIONAL = "regional";
+	public static final String ADULT = "adult";
 	public static final String TIMESHIFT = "timeshift";
 	public static final String KEY = "key";
 	public static final String IMAGE = "image";
@@ -74,6 +75,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		TranslatorUtils.from(dbObject, PUBLISHER, model.getSource().key());
 		TranslatorUtils.from(dbObject, HIGH_DEFINITION, model.getHighDefinition());
 		TranslatorUtils.from(dbObject, REGIONAL, model.getRegional());
+		TranslatorUtils.from(dbObject, ADULT, model.getAdult());
 		TranslatorUtils.fromDuration(dbObject, TIMESHIFT, model.getTimeshift());
 		TranslatorUtils.from(dbObject, BROADCASTER, model.getBroadcaster() != null ? model.getBroadcaster().key() : null);
 		if (model.getAvailableFrom() != null) {
@@ -119,6 +121,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		model.setKey((String) dbObject.get(KEY));
 		model.setHighDefinition(TranslatorUtils.toBoolean(dbObject, HIGH_DEFINITION));
 		model.setRegional(TranslatorUtils.toBoolean(dbObject, REGIONAL));
+		model.setAdult(TranslatorUtils.toBoolean(dbObject, ADULT));
 		model.setTimeshift(TranslatorUtils.toDuration(dbObject, TIMESHIFT));
 		model.setAvailableFrom(Iterables.transform(TranslatorUtils.toSet(dbObject, AVAILABLE_ON), Publisher.FROM_KEY));
 		

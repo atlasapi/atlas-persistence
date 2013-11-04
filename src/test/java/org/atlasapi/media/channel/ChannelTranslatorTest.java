@@ -45,8 +45,8 @@ public class ChannelTranslatorTest {
             .withTitle("title")
             .withImage(image)
             .withMediaType(MediaType.AUDIO)
-            .withHighDefinition(false)
             .withHighDefinition(true)
+            .withAdult(false)
             .withTimeshift(Duration.standardSeconds(3600))
             .withAvailableFrom(ImmutableSet.of(Publisher.BBC))
             .withChannelNumber(channelNumber)
@@ -68,6 +68,7 @@ public class ChannelTranslatorTest {
         assertThat(decoded.getAvailableFrom(), is(equalTo(channel.getAvailableFrom())));
         assertThat(decoded.getHighDefinition(), is(equalTo(channel.getHighDefinition())));
         assertThat(decoded.getRegional(), is(equalTo(channel.getRegional())));
+        assertThat(decoded.getAdult(), is(equalTo(channel.getAdult())));
         assertThat(decoded.getTimeshift(), is(equalTo(channel.getTimeshift())));
         assertThat(decoded.getImages(), is(equalTo(channel.getImages())));
         assertThat(decoded.getParent(), is(equalTo(channel.getParent())));
