@@ -1,8 +1,10 @@
 package org.atlasapi.persistence.content;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 import java.util.Collection;
 import java.util.Map;
@@ -93,14 +95,15 @@ public class DefaultEquivalentContentResolverTest {
         Episode equiv = episode("equiv", 2, Publisher.BBC);
         Episode filtered = episode("filtered", 1, Publisher.PA);
         Episode filteredEquiv = episode("filteredEquiv", 3, Publisher.C4);
+        Episode invisible = episode("invisible", 5, Publisher.FIVE);
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
         ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4)
                 .copyWithPrecedence(ImmutableList.of(Publisher.PA, Publisher.BBC, Publisher.C4));
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
-        lookupResolver.store(entry(subject, ImmutableSet.of(equiv), 
-                equiv, filtered, filteredEquiv));
+        lookupResolver.store(entry(subject, ImmutableSet.of(equiv, invisible), 
+                equiv, filtered, filteredEquiv, invisible));
         lookupResolver.store(entry(filtered, ImmutableSet.of(filteredEquiv),
                 subject, equiv, filteredEquiv));
         contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered, filteredEquiv));
@@ -111,6 +114,9 @@ public class DefaultEquivalentContentResolverTest {
         assertNull(content.asMap().get(equiv.getCanonicalUri()));
         
         checkEquivContent(content, subject, equiv);
+        assertEquals(ImmutableSet.copyOf(subject.getEquivalentTo()),
+            ImmutableSet.copyOf(Iterables.transform(ImmutableList.of(subject, equiv, invisible), LookupRef.FROM_DESCRIBED))
+        );
     }
 
     @Test
