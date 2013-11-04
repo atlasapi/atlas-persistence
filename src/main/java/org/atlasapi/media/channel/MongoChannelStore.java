@@ -32,6 +32,7 @@ import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -76,7 +77,7 @@ public class MongoChannelStore implements ChannelStore {
     }
     
     private DBCursor getOrderedCursor(DBObject query) {
-        return collection.find(query).addSpecial("$orderby", new BasicDBObject(MongoConstants.ID, 1));
+        return collection.find(query).sort(new MongoSortBuilder().ascending(MongoConstants.ID).build());
     }
 
 	@Override
