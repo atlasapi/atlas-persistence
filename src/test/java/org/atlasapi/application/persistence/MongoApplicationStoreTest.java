@@ -112,12 +112,12 @@ public class MongoApplicationStoreTest {
                 .withTitle(oldTitle)
                 .withSources(sources)
                 .build();
-        
         Application created = store.createApplication(application);
-        store.updateApplication(created.copy().withTitle(newTitle).build());
+        store.updateApplication(created.copy().withTitle(newTitle).withRevoked(true).build());
         Optional<Application> retrieved = store.applicationFor(created.getId());
         assertEquals(newTitle, retrieved.get().getTitle());
-    }
+        assertTrue(retrieved.get().isRevoked());
+      }
     
     @Test
     public void testAddIdAndApiKey() {
