@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.intl.Country;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -166,10 +167,12 @@ public class ItemTranslator implements ModelTranslator<Item> {
         removeFieldsForHash(dbObject);
 
         if (log.isTraceEnabled()) {
+            log.trace("Logging hashes for item {}", dbObject.get(MongoConstants.ID));
             for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) dbObject.toMap()).entrySet()) {
                 log.trace("Key [{}], hashCode [{}], Value: [{}]", 
                         new Object[] { entry.getKey(), entry.getValue().hashCode(), entry.getValue() });
             }
+            log.trace("Done logging hashes for item {}", dbObject.get(MongoConstants.ID));
         }
         
         return String.valueOf(dbObject.hashCode());
