@@ -106,7 +106,7 @@ public class ItemTranslatorTest extends TestCase {
 		assertEquals(2, ts.size());
         DBObject t1 = (DBObject) ts.iterator().next();
         assertEquals(topic1.getTopic(), t1.get("topic"));
-        assertThat(topic1.getWeighting().doubleValue(), is(closeTo(((Float)t1.get("weighting")).doubleValue(), 0.0001)));
+        assertThat(topic1.getWeighting().doubleValue(), is(closeTo((Double)t1.get("weighting"), 0.0001)));
         assertEquals(topic1.isSupervised(), t1.get("supervised"));
         assertEquals(topic1.getRelationship().name(), t1.get("relationship"));
     }
