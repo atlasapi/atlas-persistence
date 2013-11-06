@@ -167,12 +167,15 @@ public class ItemTranslator implements ModelTranslator<Item> {
         removeFieldsForHash(dbObject);
 
         if (log.isTraceEnabled()) {
-            log.trace("Logging hashes for item {}", dbObject.get(MongoConstants.ID));
+            Object id = dbObject.get(MongoConstants.ID);
+            log.trace("Logging hashes for item {}", id);
+            
             for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) dbObject.toMap()).entrySet()) {
-                log.trace("Key [{}], hashCode [{}], Value: [{}]", 
-                        new Object[] { entry.getKey(), entry.getValue().hashCode(), entry.getValue() });
+                Integer hashCode = entry.getValue() != null ? entry.getValue().hashCode() : null;
+                log.trace("Item [{}]: Key [{}], hashCode [{}], Value: [{}]", 
+                        new Object[] { id, entry.getKey(), hashCode, entry.getValue() });
             }
-            log.trace("Done logging hashes for item {}", dbObject.get(MongoConstants.ID));
+            log.trace("Done logging hashes for item {}", id);
         }
         
         return String.valueOf(dbObject.hashCode());
