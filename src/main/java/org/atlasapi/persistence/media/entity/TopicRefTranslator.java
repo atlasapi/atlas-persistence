@@ -17,7 +17,7 @@ public class TopicRefTranslator {
 	public DBObject toDBObject(TopicRef contentTopic) {
 		  DBObject dbo = new BasicDBObject();
 		  TranslatorUtils.from(dbo, TOPIC_KEY, contentTopic.getTopic());
-		  TranslatorUtils.from(dbo, WEIGHTING_KEY, (Float)contentTopic.getWeighting());
+		  TranslatorUtils.from(dbo, WEIGHTING_KEY, contentTopic.getWeighting().doubleValue());
 		  TranslatorUtils.from(dbo, SUPERVISED_KEY, contentTopic.isSupervised());
 		  TranslatorUtils.from(dbo, RELATIONSHIP_KEY, contentTopic.getRelationship().name());
 		  TranslatorUtils.from(dbo, OFFSET_KEY, contentTopic.getOffset());
