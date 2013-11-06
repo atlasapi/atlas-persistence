@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.atlasapi.media.entity.EntityType;
@@ -16,6 +17,8 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -23,12 +26,15 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.intl.Country;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
+    
+    private static final Logger log = LoggerFactory.getLogger(ItemTranslator.class);
     
     public static final String SERIES_ID = "seriesId";
     public static final String CONTAINER_ID = "containerId";
@@ -155,10 +161,23 @@ public class ItemTranslator implements ModelTranslator<Item> {
         return generateHashByRemovingFieldsFromTheDbo(toDB(item));
     }
 
+    @SuppressWarnings("unchecked")
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
         // don't include the last-fetched/update time in the hash
         removeFieldsForHash(dbObject);
 
+        if (log.isTraceEnabled()) {
+            Object id = dbObject.get(MongoConstants.ID);
+            log.trace("Logging hashes for item {}", id);
+            
+            for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) dbObject.toMap()).entrySet()) {
+                Integer hashCode = entry.getValue() != null ? entry.getValue().hashCode() : null;
+                log.trace("Item [{}]: Key [{}], hashCode [{}], Value: [{}]", 
+                        new Object[] { id, entry.getKey(), hashCode, entry.getValue() });
+            }
+            log.trace("Done logging hashes for item {}", id);
+        }
+        
         return String.valueOf(dbObject.hashCode());
     }
 
@@ -169,6 +188,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         if (versions != null) {
             dbObject.put(VERSIONS_KEY, removeUpdateTimeFromVersions(versions));
         }
+        
     }
 
     @SuppressWarnings("unchecked")
