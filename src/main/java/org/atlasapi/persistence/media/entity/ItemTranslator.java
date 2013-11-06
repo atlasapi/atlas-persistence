@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.atlasapi.media.entity.EntityType;
@@ -16,6 +17,8 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -29,6 +32,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
+    
+    private static final Logger log = LoggerFactory.getLogger(ItemTranslator.class);
     
     public static final String SERIES_ID = "seriesId";
     public static final String CONTAINER_ID = "containerId";
@@ -155,10 +160,18 @@ public class ItemTranslator implements ModelTranslator<Item> {
         return generateHashByRemovingFieldsFromTheDbo(toDB(item));
     }
 
+    @SuppressWarnings("unchecked")
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
         // don't include the last-fetched/update time in the hash
         removeFieldsForHash(dbObject);
 
+        if (log.isTraceEnabled()) {
+            for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) dbObject.toMap()).entrySet()) {
+                log.trace("Key [{}], hashCode [{}], Value: [{}]", 
+                        new Object[] { entry.getKey(), entry.getValue().hashCode(), entry.getValue() });
+            }
+        }
+        
         return String.valueOf(dbObject.hashCode());
     }
 
@@ -169,6 +182,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         if (versions != null) {
             dbObject.put(VERSIONS_KEY, removeUpdateTimeFromVersions(versions));
         }
+        
     }
 
     @SuppressWarnings("unchecked")
