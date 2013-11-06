@@ -14,6 +14,7 @@ import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -161,23 +162,13 @@ public class VersionTranslator implements ModelTranslator<Version> {
 
 		@Override
 		public int compare(Broadcast a, Broadcast b) {
-			int broadcastTimeCmp = b.getTransmissionTime().compareTo(a.getTransmissionTime());
-			if (broadcastTimeCmp != 0) {
-				 return broadcastTimeCmp;
-			}
-			if (a.getBroadcastOn() != null && b.getBroadcastOn() != null) {
-				int channelCmp = a.getBroadcastOn().compareTo(b.getBroadcastOn());
-				if (channelCmp != 0) {
-					return channelCmp;
-				}
-			}
-			if (a.getSourceId() != null && b.getSourceId() != null) {
-				int idCmp = a.getSourceId().compareTo(b.getSourceId());
-				if (idCmp != 0) {
-					return idCmp;
-				}
-			}
-			return Ordering.arbitrary().compare(a, b);
+		    
+		    return ComparisonChain.start()
+		        .compare(a.getTransmissionTime(), b.getTransmissionTime(), Ordering.natural().nullsLast())
+		        .compare(a.getBroadcastOn(), b.getBroadcastOn(), Ordering.natural().nullsLast())
+		        .compare(a.getSourceId(), b.getSourceId(), Ordering.natural().nullsLast())
+		        .compare(a, b, Ordering.arbitrary())
+		        .result();
 		}
 	};
 
