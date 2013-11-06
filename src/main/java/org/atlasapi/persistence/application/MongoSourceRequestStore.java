@@ -8,10 +8,14 @@ import java.util.Set;
 import org.atlasapi.application.SourceRequest;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.util.Resolved;
+
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -60,5 +64,21 @@ public static final String SOURCE_REQUESTS_COLLECTION = "sourceReadRequests";
     public Optional<SourceRequest> sourceRequestFor(Id id) {
         return Optional.fromNullable(translator.fromDBObject(
                 this.sourceRequests.findOne(where().idEquals(id.longValue()).build())));
+    }
+    @Override
+    public Iterable<SourceRequest> sourceRequestsForApplicationIds(Iterable<Id> applicationIds) {
+        Iterable<Long> idLongs = Iterables.transform(applicationIds, Id.toLongValue());
+        return Iterables.transform(sourceRequests.find(where().longIdIn(idLongs).build())
+                , translatorFunction);
+    }
+    
+    @Override
+    public ListenableFuture<Resolved<SourceRequest>> resolveIds(Iterable<Id> ids) {
+        return Futures.immediateFuture(Resolved.valueOf(Iterables.transform(ids, new Function<Id, SourceRequest>() {
+
+            @Override
+            public SourceRequest apply(Id input) {
+                return sourceRequestFor(input).get();
+            }})));
     }
 }

@@ -3,11 +3,14 @@ package org.atlasapi.application.users;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
 
 import java.util.Set;
 
+import org.atlasapi.application.Application;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.application.LegacyApplicationStore;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,15 +29,23 @@ public class MongoUserStoreTest {
     @Before
     public void setup() {
         adminMongo = MongoTestHelper.anEmptyTestDatabase();
-        store = new MongoUserStore(adminMongo);
     }
     
     @Test
     public void testTranslator() {
-        
+      
         final Set<String> appSlugs = ImmutableSet.of("app1", "app2");
+        final Set<Id> appIds = ImmutableSet.of(Id.valueOf(5000), Id.valueOf(6000));
         final Set<Publisher> sources = ImmutableSet.of(Publisher.BBC, Publisher.YOUTUBE);
         final UserRef userRef = new UserRef(1234L, UserNamespace.TWITTER, "test");
+        
+        LegacyApplicationStore applicationStore = mock(LegacyApplicationStore.class);
+        when(applicationStore.applicationIdsForSlugs(appSlugs)).thenReturn(appIds);
+        when(applicationStore.applicationFor(Id.valueOf(5000))).thenReturn(
+                Optional.of(Application.builder().withSlug("app1").build()));
+        when(applicationStore.applicationFor(Id.valueOf(6000))).thenReturn(
+                Optional.of(Application.builder().withSlug("app2").build()));
+        store = new MongoUserStore(adminMongo, applicationStore);
         User user = User.builder()
                 .withId(Id.valueOf(5000L))
                 .withUserRef(userRef)
@@ -44,7 +55,7 @@ public class MongoUserStoreTest {
                 .withEmail("me@example.com")
                 .withWebsite("http://example.com")
                 .withProfileImage("http://example.com/image")
-                .withApplicationSlugs(appSlugs)
+                .withApplicationIds(appIds)
                 .withSources(sources)
                 .withRole(Role.ADMIN)
                 .withProfileComplete(true)
@@ -63,7 +74,7 @@ public class MongoUserStoreTest {
         assertEquals(found.get().getCompany(), "the company");
         assertEquals(found.get().getEmail(), "me@example.com");
         assertEquals(found.get().getProfileImage(), "http://example.com/image");
-        assertTrue(found.get().getApplicationSlugs().containsAll(appSlugs));
+        assertTrue(found.get().getApplicationIds().containsAll(appIds));
         assertTrue(found.get().getSources().containsAll(sources));
         assertEquals(found.get().getRole(), Role.ADMIN);
         assertTrue(found.get().isProfileComplete());

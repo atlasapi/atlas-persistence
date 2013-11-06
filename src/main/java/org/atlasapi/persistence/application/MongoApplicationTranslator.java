@@ -10,6 +10,7 @@ import com.mongodb.DBObject;
 
 public class MongoApplicationTranslator {
 
+    private static final String REVOKED_KEY = "revoked";
     public static final String SLUG_KEY = MongoConstants.ID;
     public static final String APPLICATION_ID_KEY = "aid";
     public static final String TITLE_KEY = "title";
@@ -34,12 +35,18 @@ public class MongoApplicationTranslator {
         TranslatorUtils.from(dbo,
                 CONFIG_KEY,
                 sourcesTranslator.toDBObject(application.getSources()));
+        TranslatorUtils.from(dbo, REVOKED_KEY, application.isRevoked());
         return dbo;
     }
 
     public Application fromDBObject(DBObject dbo) {
         if (dbo == null) {
             return null;
+        }
+        
+        boolean revoked = false;
+        if (dbo.containsField(REVOKED_KEY)) {
+            revoked = TranslatorUtils.toBoolean(dbo, REVOKED_KEY);
         }
 
         return Application.builder()
@@ -52,6 +59,7 @@ public class MongoApplicationTranslator {
                         CREDENTIALS_KEY)))
                 .withSources(sourcesTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo,
                         CONFIG_KEY)))
+                .withRevoked(revoked)
                 .build();
     }
 }

@@ -1,10 +1,17 @@
 package org.atlasapi.application.users;
 
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.application.LegacyApplicationStore;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.social.model.translator.UserRefTranslator;
@@ -25,9 +32,27 @@ public class UserTranslator {
     private static final String APPS_KEY = "apps";
     private static final String USER_REF_KEY = "userRef";
     private final UserRefTranslator userTranslator;
+    private final LegacyApplicationStore applicationStore;
+    
+    private final Function<Id, String> COVERT_APP_ID_TO_SLUGS = new Function<Id, String>() {
+       @Override
+        @Nullable
+        public String apply(@Nullable Id input) {
+            return applicationStore.applicationFor(input).get().getSlug();
+        }
+    };
 
-    public UserTranslator(UserRefTranslator userTranslator) {
+    public UserTranslator(UserRefTranslator userTranslator, LegacyApplicationStore applicationStore) {
         this.userTranslator = userTranslator;
+        this.applicationStore = applicationStore;
+    }
+    
+    private Iterable<String> getApplicationSlugs(User user) {
+        return Iterables.transform(user.getApplicationIds(), COVERT_APP_ID_TO_SLUGS);
+    }
+    
+    private Set<Id> getApplicationIds(Iterable<String> slugs) {
+        return Sets.newHashSet(applicationStore.applicationIdsForSlugs(slugs));
     }
     
     public DBObject toDBObject(User user) {
@@ -45,7 +70,7 @@ public class UserTranslator {
         TranslatorUtils.from(dbo, EMAIL_KEY, user.getEmail());
         TranslatorUtils.from(dbo, WEBSITE_KEY, user.getWebsite());
         TranslatorUtils.from(dbo, PROFILE_IMAGE_KEY, user.getProfileImage());
-        TranslatorUtils.from(dbo, APPS_KEY, user.getApplications());
+        TranslatorUtils.from(dbo, APPS_KEY, getApplicationSlugs(user));
         TranslatorUtils.from(dbo, MANAGES_KEY, Iterables.transform(user.getSources(), Publisher.TO_KEY));
         TranslatorUtils.from(dbo, ROLE_KEY, user.getRole().toString().toLowerCase());
         TranslatorUtils.from(dbo,  PROFILE_COMPLETE_KEY, user.isProfileComplete());
@@ -71,7 +96,7 @@ public class UserTranslator {
                 .withEmail(TranslatorUtils.toString(dbo, EMAIL_KEY))
                 .withWebsite(TranslatorUtils.toString(dbo, WEBSITE_KEY))
                 .withProfileImage(TranslatorUtils.toString(dbo, PROFILE_IMAGE_KEY))
-                .withApplicationSlugs(TranslatorUtils.toSet(dbo, APPS_KEY))
+                .withApplicationIds(getApplicationIds(TranslatorUtils.toSet(dbo, APPS_KEY)))
                 .withSources(ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toSet(dbo, MANAGES_KEY),Publisher.FROM_KEY)))
                 .withRole(Role.valueOf(TranslatorUtils.toString(dbo, ROLE_KEY).toUpperCase()))
                 .withProfileComplete(profileComplete)
