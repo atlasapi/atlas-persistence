@@ -34,7 +34,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.ReadPreference;
 
-public class MongoApplicationStore extends AbstractApplicationStore implements ApplicationStore {
+public class MongoApplicationStore extends AbstractApplicationStore implements LegacyApplicationStore {
 
     public static final String APPLICATION_COLLECTION = "applications";
     private static final int MONGODB_DUPLICATE_KEY_ERROR = 11000;

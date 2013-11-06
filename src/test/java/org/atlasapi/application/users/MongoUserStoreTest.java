@@ -10,7 +10,7 @@ import java.util.Set;
 import org.atlasapi.application.Application;
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.application.ApplicationStore;
+import org.atlasapi.persistence.application.LegacyApplicationStore;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,7 +39,7 @@ public class MongoUserStoreTest {
         final Set<Publisher> sources = ImmutableSet.of(Publisher.BBC, Publisher.YOUTUBE);
         final UserRef userRef = new UserRef(1234L, UserNamespace.TWITTER, "test");
         
-        ApplicationStore applicationStore = mock(ApplicationStore.class);
+        LegacyApplicationStore applicationStore = mock(LegacyApplicationStore.class);
         when(applicationStore.applicationIdsForSlugs(appSlugs)).thenReturn(appIds);
         when(applicationStore.applicationFor(Id.valueOf(5000))).thenReturn(
                 Optional.of(Application.builder().withSlug("app1").build()));

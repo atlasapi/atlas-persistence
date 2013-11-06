@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.application.ApplicationStore;
+import org.atlasapi.persistence.application.LegacyApplicationStore;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
@@ -32,7 +32,7 @@ public class UserTranslator {
     private static final String APPS_KEY = "apps";
     private static final String USER_REF_KEY = "userRef";
     private final UserRefTranslator userTranslator;
-    private final ApplicationStore applicationStore;
+    private final LegacyApplicationStore applicationStore;
     
     private final Function<Id, String> COVERT_APP_ID_TO_SLUGS = new Function<Id, String>() {
        @Override
@@ -42,7 +42,7 @@ public class UserTranslator {
         }
     };
 
-    public UserTranslator(UserRefTranslator userTranslator, ApplicationStore applicationStore) {
+    public UserTranslator(UserRefTranslator userTranslator, LegacyApplicationStore applicationStore) {
         this.userTranslator = userTranslator;
         this.applicationStore = applicationStore;
     }

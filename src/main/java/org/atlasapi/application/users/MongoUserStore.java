@@ -7,7 +7,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 import org.atlasapi.media.common.Id;
 import org.atlasapi.media.util.Resolved;
-import org.atlasapi.persistence.application.ApplicationStore;
+import org.atlasapi.persistence.application.LegacyApplicationStore;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -35,7 +35,7 @@ public class MongoUserStore implements UserStore {
         }
     };
 
-    public MongoUserStore(DatabasedMongo mongo, ApplicationStore applicationStore) {
+    public MongoUserStore(DatabasedMongo mongo, LegacyApplicationStore applicationStore) {
         this.users = mongo.collection("users");
         this.userRefTranslator = new UserRefTranslator();
         this.translator = new UserTranslator(userRefTranslator, applicationStore);
