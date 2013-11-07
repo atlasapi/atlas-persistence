@@ -87,9 +87,11 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             Set<LookupRef> equivRefs = uriToEquivs.get(uri);
             Iterable<Content> contents = equivContent(equivRefs, resolvedContent);
             LookupEntry entry = entryIndex.get(uri);
-            Set<LookupRef> allRefs = equivRefs(contents, entry, appConfig);
-            for (Content content : contents) {
-                content.setEquivalentTo(allRefs);
+            if (entry != null) {
+                Set<LookupRef> allRefs = equivRefs(contents, entry, appConfig);
+                for (Content content : contents) {
+                    content.setEquivalentTo(allRefs);
+                }
             }
             equivalentContent.putEquivalents(uri, contents);
         }
