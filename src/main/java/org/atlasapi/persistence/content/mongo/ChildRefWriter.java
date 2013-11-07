@@ -96,7 +96,7 @@ public class ChildRefWriter {
     }
 
     private void save(Container container, DBCollection collection) {
-        if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
+        if (!container.hashChanged(containerTranslator.hashCodeOf(container, true))) {
             log.debug("Container {} hash not changed. Not writing.", container.getCanonicalUri());
             return;
         }
@@ -157,7 +157,7 @@ public class ChildRefWriter {
         if (dbo == null) {
             return Maybe.nothing();
         }
-        return Maybe.<Container> fromPossibleNullValue(containerTranslator.fromDB(dbo));
+        return Maybe.<Container> fromPossibleNullValue(containerTranslator.fromDB(dbo, true));
     }
     
 }
