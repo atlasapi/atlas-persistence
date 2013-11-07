@@ -12,16 +12,20 @@ import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.SortKey;
 import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
 public class ContainerTranslator implements ModelTranslator<Container> {
 
+    private static final Logger log = LoggerFactory.getLogger(ContainerTranslator.class);
+    
 	public static final String CONTAINER_ID = "containerId";
     public static final String CHILDREN_KEY = "childRefs";
     private static final String SERIES_NUMBER_KEY = "seriesNumber";
@@ -32,6 +36,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
     private final ContentTranslator contentTranslator;
     private final ChildRefTranslator childRefTranslator;
     private final SeriesRefTranslator seriesRefTranslator;
+    private final DbObjectHashCodeDebugger dboHashCodeDebugger = new DbObjectHashCodeDebugger();
     
     private static final Ordering<ChildRef> CHILD_REF_OUTPUT_SORT = Ordering.from(new Comparator<ChildRef>() {
         
@@ -104,6 +109,9 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         contentTranslator.removeFieldsForHash(dbObject);
         dbObject.removeField(CHILDREN_KEY);
         dbObject.removeField(FULL_SERIES_KEY);
+        if (log.isTraceEnabled()) {
+            dboHashCodeDebugger.logHashCodes(dbObject, log);
+        }
         return String.valueOf(dbObject.hashCode());
     }
     
