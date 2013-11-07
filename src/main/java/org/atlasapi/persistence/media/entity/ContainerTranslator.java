@@ -11,7 +11,6 @@ import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.SortKey;
-import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,7 @@ import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
-public class ContainerTranslator implements ModelTranslator<Container> {
+public class ContainerTranslator {
 
     private static final Logger log = LoggerFactory.getLogger(ContainerTranslator.class);
     
@@ -60,7 +59,7 @@ public class ContainerTranslator implements ModelTranslator<Container> {
 
         if (dbObjects != null) {
             for (DBObject dbObject : dbObjects) {
-                containers.add(fromDB(dbObject));
+                containers.add(fromDB(dbObject, false));
             }
         }
 
@@ -68,12 +67,26 @@ public class ContainerTranslator implements ModelTranslator<Container> {
     }
 
     public Container fromDB(DBObject dbObject) {
-        return fromDBObject(dbObject, null);
+        return fromDBObject(dbObject, null, false);
+    }
+    
+    /**
+     * 
+     * @param dbObject
+     * @param includeChildrenInHashCode should references to children be included in hash calculations.
+     *              Generally this should be false, except where ChildRefs need to be maintained.
+     * @return
+     */
+    public Container fromDB(DBObject dbObject, boolean includeChildrenInHashCode) {
+        return fromDBObject(dbObject, null, includeChildrenInHashCode);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
     public Container fromDBObject(DBObject dbObject, Container entity) {
+        return fromDBObject(dbObject, entity, false);
+    }
+    
+    @SuppressWarnings("unchecked")
+    public Container fromDBObject(DBObject dbObject, Container entity, boolean includeChildrenInHashCode) {
         if (entity == null) {
             entity = (Container) DescribedTranslator.newModel(dbObject);
         }
@@ -101,14 +114,18 @@ public class ContainerTranslator implements ModelTranslator<Container> {
             ((Brand) entity).setSeriesRefs(series((Iterable<DBObject>) dbObject.get(FULL_SERIES_KEY)));
         }
         
-        entity.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
+        entity.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject, includeChildrenInHashCode));
         return entity;
     }
 
-    private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
+    private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject, boolean includeChildren) {
         contentTranslator.removeFieldsForHash(dbObject);
-        dbObject.removeField(CHILDREN_KEY);
-        dbObject.removeField(FULL_SERIES_KEY);
+        
+        if (!includeChildren) {
+            dbObject.removeField(CHILDREN_KEY);
+            dbObject.removeField(FULL_SERIES_KEY);
+        }
+        
         if (log.isTraceEnabled()) {
             dboHashCodeDebugger.logHashCodes(dbObject, log);
         }
@@ -116,7 +133,11 @@ public class ContainerTranslator implements ModelTranslator<Container> {
     }
     
     public String hashCodeOf(Container container) {
-        return generateHashByRemovingFieldsFromTheDbo(toDB(container));
+        return hashCodeOf(container, false);
+    }
+    
+    public String hashCodeOf(Container container, boolean includeChildren) {
+        return generateHashByRemovingFieldsFromTheDbo(toDBO(container, true), includeChildren);
     }
 
     private List<SeriesRef> series(Iterable<DBObject> seriesDbos) {
@@ -145,7 +166,6 @@ public class ContainerTranslator implements ModelTranslator<Container> {
         return dbObject;
     }
 
-    @Override
     public DBObject toDBObject(DBObject dbObject, Container entity) {
         dbObject = toDboNotIncludingContents(dbObject, entity);
         return dbObject;
