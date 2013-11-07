@@ -1,5 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.util.List;
 import java.util.Set;
 
@@ -102,7 +106,7 @@ public class ItemTranslatorTest extends TestCase {
 		assertEquals(2, ts.size());
         DBObject t1 = (DBObject) ts.iterator().next();
         assertEquals(topic1.getTopic(), t1.get("topic"));
-        assertEquals(topic1.getWeighting(), t1.get("weighting"));
+        assertThat(topic1.getWeighting().doubleValue(), is(closeTo((Double)t1.get("weighting"), 0.0001)));
         assertEquals(topic1.isSupervised(), t1.get("supervised"));
         assertEquals(topic1.getRelationship().name(), t1.get("relationship"));
     }
