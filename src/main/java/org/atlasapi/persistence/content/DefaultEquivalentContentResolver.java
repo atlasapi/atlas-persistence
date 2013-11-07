@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 import com.metabroadcast.common.base.MorePredicates;
 
 public class DefaultEquivalentContentResolver implements EquivalentContentResolver {
@@ -109,9 +110,9 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, isDisabled)));
     }
 
-    private SetMultimap<String, LookupRef> byUri(SetMultimap<LookupRef, LookupRef> subjsToEquivs) {
+    private SetMultimap<String, LookupRef> byUri(SetMultimap<LookupEntry, LookupRef> subjsToEquivs) {
         ImmutableSetMultimap.Builder<String, LookupRef> byUri = ImmutableSetMultimap.builder();
-        for (Entry<LookupRef, Collection<LookupRef>> subjToEquivs : subjsToEquivs.asMap().entrySet()) {
+        for (Entry<LookupEntry, Collection<LookupRef>> subjToEquivs : subjsToEquivs.asMap().entrySet()) {
             byUri.putAll(subjToEquivs.getKey().uri(), subjToEquivs.getValue());
         }
         return byUri.build();
@@ -126,12 +127,12 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
 
-    private SetMultimap<LookupRef, LookupRef> subjsToEquivs(Iterable<LookupEntry> resolved, ApplicationConfiguration appConfig) {
+    private SetMultimap<LookupEntry, LookupRef> subjsToEquivs(Iterable<LookupEntry> resolved, ApplicationConfiguration appConfig) {
         Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(appConfig.getEnabledSources()));
 
         SetMultimap<LookupRef, LookupRef> secondaryResolve = HashMultimap.create();
         
-        ImmutableSetMultimap.Builder<LookupRef, LookupRef> subjsToEquivs = ImmutableSetMultimap.builder();
+        ImmutableSetMultimap.Builder<LookupEntry, LookupRef> subjsToEquivs = ImmutableSetMultimap.builder();
         for (LookupEntry entry : resolved) {
             Set<LookupRef> selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter);
             if (appConfig.precedenceEnabled()) {
@@ -147,40 +148,45 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                     secondaryResolve.putAll(entry.lookupRef(), toRemove);
                 }
             }
-            subjsToEquivs.putAll(entry.lookupRef(), selectedEquivs);
+            subjsToEquivs.putAll(entry, selectedEquivs);
         }
         return secondaryResolve.isEmpty() ? subjsToEquivs.build()
                                           : resolveAndFilter(secondaryResolve, subjsToEquivs.build());
     }
 
-    private ImmutableSetMultimap<LookupRef, LookupRef> resolveAndFilter(
-            SetMultimap<LookupRef, LookupRef> secondaryResolve, ImmutableSetMultimap<LookupRef, LookupRef> subjsToEquivs) {
+    private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
+            SetMultimap<LookupRef, LookupRef> secondaryResolve, ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs) {
         
         Map<LookupRef,LookupEntry> entriesToRemove = Maps.uniqueIndex(
             lookupResolver.entriesForCanonicalUris(Iterables.transform(ImmutableSet.copyOf(secondaryResolve.values()), LookupRef.TO_URI)),
             LookupEntry.TO_SELF
         );
         
-        ImmutableSetMultimap.Builder<LookupRef, LookupRef> filtered
+        ImmutableSetMultimap.Builder<LookupEntry, LookupRef> filtered
             = ImmutableSetMultimap.builder();
         
-        for (Entry<LookupRef, Collection<LookupRef>> subjToEquivs : subjsToEquivs.asMap().entrySet()) {
+        for (Entry<LookupEntry, Collection<LookupRef>> subjToEquivs : subjsToEquivs.asMap().entrySet()) {
             Set<LookupRef> filteredEquivs = Sets.newHashSet(subjToEquivs.getValue());
-            Set<LookupRef> removalRefs = secondaryResolve.get(subjToEquivs.getKey());
+            Set<LookupRef> removalRefs = secondaryResolve.get(subjToEquivs.getKey().lookupRef());
             for (LookupRef equiv : subjToEquivs.getValue()) {
                 if (removalRefs.contains(equiv)) {
                     LookupEntry entryToRemove = entriesToRemove.get(equiv);
                     if (entryToRemove != null) {
-                        filteredEquivs.removeAll(Sets.union(entryToRemove.directEquivalents(), entryToRemove.explicitEquivalents()));
+                        filteredEquivs.removeAll(allAdjacents(entryToRemove));
                     }
                 }
             }
             //ensure we always get the thing we actually asked for.
-            filteredEquivs.add(subjToEquivs.getKey());
+            filteredEquivs.add(subjToEquivs.getKey().lookupRef());
+            filteredEquivs.addAll(Sets.difference(allAdjacents(subjToEquivs.getKey()), secondaryResolve.get(subjToEquivs.getKey().lookupRef())));
             filtered.putAll(subjToEquivs.getKey(), filteredEquivs);
         }
         
         return filtered.build();
+    }
+
+    private SetView<LookupRef> allAdjacents(LookupEntry entry) {
+        return Sets.union(entry.directEquivalents(), entry.explicitEquivalents());
     }
 
     private LookupRef lowestIdFromPrecedentSource(Set<LookupRef> selectedEquivs,
