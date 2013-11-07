@@ -18,6 +18,8 @@ import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.base.Maybe;
@@ -28,6 +30,8 @@ import com.mongodb.DBObject;
 
 public class ChildRefWriter {
 
+    private static final Logger log = LoggerFactory.getLogger(ChildRefWriter.class);
+    
     private final DBCollection containers;
     private final DBCollection programmeGroups;
     
@@ -81,7 +85,7 @@ public class ChildRefWriter {
                 List<SeriesRef> merged = mergeSeriesRefs(series.seriesRef(), brand.getSeriesRefs());
                 brand.setSeriesRefs(merged);
                 brand.setThisOrChildLastUpdated(laterOf(brand.getThisOrChildLastUpdated(), series.getThisOrChildLastUpdated()));
-                containers.save(containerTranslator.toDBO(container, true));
+                save(brand, containers);
                 series.setParent(brand);
             } else {
                 throw new IllegalStateException(String.format("Container %s for series child ref %s is not brand", containerUri, series.getCanonicalUri()));
@@ -89,6 +93,16 @@ public class ChildRefWriter {
         } else {
             throw new IllegalStateException(String.format("Container %s not found in %s for series child ref %s", containerUri, containers.getName(), series.getCanonicalUri()));
         }
+    }
+
+    private void save(Container container, DBCollection collection) {
+        if (!container.hashChanged(containerTranslator.hashCodeOf(container, true))) {
+            log.debug("Container {} hash not changed. Not writing.", container.getCanonicalUri());
+            return;
+        }
+        
+        log.debug("Container {} hash changed so writing to db", container.getCanonicalUri());
+        collection.save(containerTranslator.toDBO(container, true));
     }
 
     private DateTime laterOf(DateTime left, DateTime right) {
@@ -123,7 +137,7 @@ public class ChildRefWriter {
         List<ChildRef> merged = mergeChildRefs(ref, container.getChildRefs());
         container.setThisOrChildLastUpdated(laterOf(container.getThisOrChildLastUpdated(), ref.getUpdated()));
         container.setChildRefs(merged);
-        collection.save(containerTranslator.toDBO(container, true));
+        save(container, collection);
     }
 
     private List<ChildRef> mergeChildRefs(ChildRef newChildRef, Iterable<ChildRef> currentChildRefs) {
@@ -143,7 +157,7 @@ public class ChildRefWriter {
         if (dbo == null) {
             return Maybe.nothing();
         }
-        return Maybe.<Container> fromPossibleNullValue(containerTranslator.fromDB(dbo));
+        return Maybe.<Container> fromPossibleNullValue(containerTranslator.fromDB(dbo, true));
     }
     
 }
