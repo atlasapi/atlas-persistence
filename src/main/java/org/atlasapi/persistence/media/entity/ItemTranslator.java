@@ -15,6 +15,7 @@ import org.atlasapi.media.entity.Song;
 import org.atlasapi.media.entity.Subtitles;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator;
+    private final DbObjectHashCodeDebugger dboHashCodeDebugger = new DbObjectHashCodeDebugger();
     
     private final Function<DBObject, Subtitles> subtitlesFromDbo = new Function<DBObject, Subtitles>() {
         @Override
@@ -161,23 +163,12 @@ public class ItemTranslator implements ModelTranslator<Item> {
         return generateHashByRemovingFieldsFromTheDbo(toDB(item));
     }
 
-    @SuppressWarnings("unchecked")
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
         // don't include the last-fetched/update time in the hash
         removeFieldsForHash(dbObject);
-
         if (log.isTraceEnabled()) {
-            Object id = dbObject.get(MongoConstants.ID);
-            log.trace("Logging hashes for item {}", id);
-            
-            for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) dbObject.toMap()).entrySet()) {
-                Integer hashCode = entry.getValue() != null ? entry.getValue().hashCode() : null;
-                log.trace("Item [{}]: Key [{}], hashCode [{}], Value: [{}]", 
-                        new Object[] { id, entry.getKey(), hashCode, entry.getValue() });
-            }
-            log.trace("Done logging hashes for item {}", id);
+            dboHashCodeDebugger.logHashCodes(dbObject, log);
         }
-        
         return String.valueOf(dbObject.hashCode());
     }
 
