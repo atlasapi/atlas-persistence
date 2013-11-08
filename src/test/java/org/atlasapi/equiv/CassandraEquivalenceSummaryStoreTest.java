@@ -38,7 +38,7 @@ public class CassandraEquivalenceSummaryStoreTest {
     public void setup() {
         context = new AstyanaxContext.Builder()
             .forCluster(CLUSTER)
-            .forKeyspace("AtlasTest")
+            .forKeyspace("Atlas")
             .withAstyanaxConfiguration(
                 new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE)
             )
@@ -64,8 +64,11 @@ public class CassandraEquivalenceSummaryStoreTest {
     @Test
     public void testStoresAndResolvesSummaries() {
         
-        EquivalenceSummary summaryOne = summaryWithKey("one", null);
-        EquivalenceSummary summaryTwo = summaryWithKey("two", "parent");
+        ImmutableMap<Publisher, ContentRef> refs = ImmutableMap.<Publisher, ContentRef>of(
+            Publisher.BBC, new ContentRef("uri", Publisher.PA, "parent")
+        );
+        EquivalenceSummary summaryOne = new EquivalenceSummary("one", null, ImmutableSet.of("one"), refs);
+        EquivalenceSummary summaryTwo = new EquivalenceSummary("two", "parent", ImmutableSet.of("two"), refs);
         
         store.store(summaryOne);
         
@@ -81,13 +84,6 @@ public class CassandraEquivalenceSummaryStoreTest {
         assertThat(resolved.get("two").get(), is(equalTo(summaryTwo)));
         assertThat(resolved.get("one").get(), is(equalTo(summaryOne)));
         
-    }
-
-    private EquivalenceSummary summaryWithKey(String key, String parent) {
-        String subject = key;
-        Iterable<String> candidates = ImmutableSet.of(key);
-        ImmutableMap<Publisher, ContentRef> equivalents = ImmutableMap.of();
-        return new EquivalenceSummary(subject, parent, candidates, equivalents);
     }
 
 }
