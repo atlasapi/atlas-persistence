@@ -13,7 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.atlasapi.application.ApplicationConfiguration;
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
