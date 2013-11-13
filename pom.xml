@@ -92,6 +92,11 @@
             <artifactId>spring-jms</artifactId>
             <version>3.0.5.RELEASE</version>
         </dependency>
+        <dependency>
+          <groupId>com.google.code.gson</groupId>
+          <artifactId>gson</artifactId>
+          <version>2.2.4</version>
+        </dependency>
     </dependencies>
 
     <scm>

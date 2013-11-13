@@ -1,10 +1,8 @@
 package org.atlasapi.persistence.content;
 
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 
 import java.util.Collection;
 import java.util.Map;
@@ -181,6 +179,32 @@ public class DefaultEquivalentContentResolverTest {
         
         checkEquivContent(content, equiv, filtered, filteredEquiv);
         checkEquivContent(content, filteredEquiv, filtered);
+    }
+    
+    @Test
+    public void testSubjectAlwaysKeepsItsAdjacents() {
+        
+        Episode subject = episode("subject", 4, Publisher.PA);
+        Episode equiv = episode("equiv", 2, Publisher.BBC);
+        Episode filtered = episode("filtered", 1, Publisher.PA);
+        
+        Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
+        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4)
+                .copyWithPrecedence(ImmutableList.of(Publisher.PA, Publisher.BBC, Publisher.C4));
+        Set<Annotation> annotations = Annotation.defaultAnnotations();
+        
+        lookupResolver.store(entry(subject, ImmutableSet.of(equiv), 
+            equiv, filtered));
+        lookupResolver.store(entry(filtered, ImmutableSet.of(equiv),
+            subject, equiv));
+        contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered));
+        
+        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
+        
+        assertEquals(1, content.asMap().size());
+        assertNull(content.asMap().get(equiv.getCanonicalUri()));
+        
+        checkEquivContent(content, subject, equiv);
     }
 
     private ApplicationConfiguration configWithSources(Publisher... srcs) {

@@ -7,6 +7,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static org.atlasapi.persistence.media.entity.ContainerTranslator.CHILDREN_KEY;
 
 import java.util.List;
+import java.util.Set;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
@@ -22,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -31,7 +33,17 @@ import com.mongodb.DBObject;
 public class ChildRefWriter {
 
     private static final Logger log = LoggerFactory.getLogger(ChildRefWriter.class);
-    
+    private static final Set<String> IGNORED_BRANDS = ImmutableSet.<String>builder()
+            .add("http://pressassociation.com/brands/92259")
+            .add("http://pressassociation.com/brands/8964")
+            .add("http://pressassociation.com/brands/106136")
+            .add("http://pressassociation.com/brands/63390")
+            .add("http://pressassociation.com/brands/11792")
+            .add("http://pressassociation.com/brands/30992")
+            .add("http://pressassociation.com/brands/22259")
+            .add("http://pressassociation.com/brands/115043")
+            .build();
+            
     private final DBCollection containers;
     private final DBCollection programmeGroups;
     
@@ -46,6 +58,11 @@ public class ChildRefWriter {
 
     public void includeEpisodeInSeriesAndBrand(Episode episode) {
 
+        if (IGNORED_BRANDS.contains(episode.getContainer().getUri())) {
+            log.info("Not maintaing child refs for brand " + episode.getContainer().getUri());
+            return;
+        }
+        
         ChildRef childRef = episode.childRef();
 
         if (episode.getSeriesRef() == null) { // just ensure item in container.
@@ -101,7 +118,8 @@ public class ChildRefWriter {
             return;
         }
         
-        log.debug("Container {} hash changed so writing to db", container.getCanonicalUri());
+        log.debug("Container {} hash changed so writing to db. There are {} ChildRefs", 
+                container.getCanonicalUri(), container.getChildRefs().size());
         collection.save(containerTranslator.toDBO(container, true));
     }
 

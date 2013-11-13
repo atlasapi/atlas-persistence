@@ -1,16 +1,31 @@
 package org.atlasapi.equiv;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.cassandra.CassandraPersistenceException;
-import org.atlasapi.serialization.json.JsonFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.reflect.TypeToken;
 import com.metabroadcast.common.collect.ImmutableOptionalMap;
 import com.metabroadcast.common.collect.OptionalMap;
 import com.netflix.astyanax.AstyanaxContext;
@@ -29,6 +44,55 @@ import com.netflix.astyanax.serializers.StringSerializer;
 
 public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore {
 
+    private final class PublisherAdapter implements JsonSerializer<Publisher>, JsonDeserializer<Publisher> {
+
+        @Override
+        public JsonElement serialize(Publisher src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.key());
+        }
+        
+        @Override
+        public Publisher deserialize(JsonElement json, Type typeOfT,
+                JsonDeserializationContext context) throws JsonParseException {
+            return Publisher.fromKey(json.getAsString()).requireValue();
+        }
+        
+    }
+
+    private static final class EquivalenceSummaryDeserializer implements
+            JsonDeserializer<EquivalenceSummary> {
+
+        private static final TypeToken<Map<Publisher,ContentRef>> equivsTypeToken
+            = new TypeToken<Map<Publisher,ContentRef>>(){};
+        private static final TypeToken<List<String>> candidatesTypeToken
+            = new TypeToken<List<String>>(){};
+
+        @Override
+        public EquivalenceSummary deserialize(JsonElement json, Type typeOfT,
+                JsonDeserializationContext context) throws JsonParseException {
+            JsonObject obj = json.getAsJsonObject();
+            String subject = obj.get("subject").getAsString();
+            String parent = deserializeParent(obj.get("parent"));
+            List<String> candidates = deserializeCandidates(context, obj.get("candidates"));
+            Map<Publisher,ContentRef> equivalents = deserializeEquivalents(context, obj.get("equivalents"));
+            return new EquivalenceSummary(subject, parent, candidates, equivalents);
+        }
+
+        private String deserializeParent(JsonElement parent) {
+            return parent == null ? null : parent.getAsString();
+        }
+
+        private Map<Publisher, ContentRef> deserializeEquivalents(
+                JsonDeserializationContext context, JsonElement equivs) {
+            return context.deserialize(equivs, equivsTypeToken.getType());
+        }
+
+        private List<String> deserializeCandidates(JsonDeserializationContext context,
+                JsonElement candidates) {
+            return context.deserialize(candidates, candidatesTypeToken.getType());
+        }
+    }
+
     private static final String SUMMARY_CF_NAME = "EquivalenceSummaries";
     private static final String SUMMARY_COL = "summary";
     private static final String PARENT_COL = "parent";
@@ -38,9 +102,12 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
                     StringSerializer.get(), 
                     StringSerializer.get()
             );
-
-    private final ObjectMapper mapper = JsonFactory.makeJsonMapper();
     
+    private final Gson gson = new GsonBuilder()
+        .registerTypeAdapter(EquivalenceSummary.class, new EquivalenceSummaryDeserializer())
+        .registerTypeAdapter(Publisher.class, new PublisherAdapter())
+        .create();
+
     private final Keyspace keyspace;
     private final int requestTimeout;
     
@@ -68,7 +135,7 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
     }
 
     private byte[] serialize(EquivalenceSummary summary) throws Exception {
-        return mapper.writeValueAsBytes(summary);
+        return gson.toJson(summary).getBytes();
     }
 
     @Override
@@ -106,7 +173,8 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
                 return null;
             }
             byte[] columnBytes = column.getByteArrayValue();
-            return mapper.readValue(columnBytes, EquivalenceSummary.class);
+            InputStreamReader reader = new InputStreamReader(new ByteArrayInputStream(columnBytes));
+            return gson.fromJson(reader, EquivalenceSummary.class);
         } catch (Exception e) {
             throw new CassandraPersistenceException(row.getKey(), e);
         }

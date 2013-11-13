@@ -33,6 +33,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String CERTIFICATES_KEY = "certificates";
     private static final String LANGUAGES_KEY = "languages";
     private static final String YEAR_KEY = "year";
+    private static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
@@ -65,6 +66,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeLanguages(dbObject, entity);
         decodeCertificates(dbObject, entity); 
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
+        entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
         
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, PEOPLE);
         if (list != null && ! list.isEmpty()) {
@@ -161,6 +163,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeLanguages(dbObject, entity);
         encodeCertificates(dbObject, entity.getCertificates());
         TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
+        TranslatorUtils.from(dbObject, GENERIC_DESCRIPTION_KEY, entity.getGenericDescription());
         
         if (! entity.people().isEmpty()) {
             BasicDBList list = new BasicDBList();
