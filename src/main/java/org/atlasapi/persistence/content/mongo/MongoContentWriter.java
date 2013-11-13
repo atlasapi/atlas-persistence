@@ -140,7 +140,8 @@ public class MongoContentWriter implements ContentWriter {
             return;
         } 
         
-        log.debug("Container {} hash changed so writing to db", container.getCanonicalUri());
+        log.debug("Container {} hash changed so writing to db. There are {} ChildRefs", 
+                container.getCanonicalUri(), container.getChildRefs().size());
 
         
         if (container instanceof Brand || isTopLevelSeries(container)) {
