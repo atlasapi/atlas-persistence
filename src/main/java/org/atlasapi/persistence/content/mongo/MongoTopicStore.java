@@ -6,8 +6,8 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.persistence.media.entity.TopicTranslator.NAMESPACE;
-import static org.atlasapi.persistence.media.entity.TopicTranslator.VALUE;
 import static org.atlasapi.persistence.media.entity.TopicTranslator.PUBLISHER;
+import static org.atlasapi.persistence.media.entity.TopicTranslator.VALUE;
 
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Publisher;
@@ -90,5 +90,8 @@ public class MongoTopicStore implements TopicStore, TopicQueryResolver {
         DBObject dbQuery = queryBuilder.buildQuery(query);
         return transform(collection.find(dbQuery));
     }
-    
+
+    public Iterable<Topic> all() {
+        return transform(collection.find());
+    }
 }

@@ -191,4 +191,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 translator.FROM_DBO);
     }
 
+    public Iterable<LookupEntry> all() {
+        return Iterables.transform(lookup.find(), translator.FROM_DBO);
+    }
 }
