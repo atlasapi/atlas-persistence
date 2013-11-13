@@ -58,8 +58,15 @@ public class ChildRefWriter {
 
     public void includeEpisodeInSeriesAndBrand(Episode episode) {
 
+        if (Boolean.TRUE.equals(episode.getGenericDescription())
+                && episode.getEpisodeNumber() == null
+                && episode.getSeriesNumber() == null) {
+            log.debug("Not including episode " + episode.getCanonicalUri() + "in series and brand.");
+            return;
+        }
+        
         if (IGNORED_BRANDS.contains(episode.getContainer().getUri())) {
-            log.info("Not maintaing child refs for brand " + episode.getContainer().getUri());
+            log.debug("Not maintaining child refs for brand " + episode.getContainer().getUri());
             return;
         }
         
