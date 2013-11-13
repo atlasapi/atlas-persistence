@@ -139,7 +139,8 @@ public class MongoContentWriter implements ContentWriter {
             return;
         } 
         
-        log.debug("Container {} hash changed so writing to db", container.getCanonicalUri());
+        log.debug("Container {} hash changed so writing to db. There are {} ChildRefs", 
+                container.getCanonicalUri(), container.getChildRefs().size());
 
         DBObject containerDbo = containerTranslator.toDB(container);
 
