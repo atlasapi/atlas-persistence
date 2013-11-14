@@ -2,12 +2,14 @@ package org.atlasapi.persistence.output;
 
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
 import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Location;
@@ -23,6 +25,7 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -65,15 +68,15 @@ public class MongoAvailableItemsResolverTest {
         
         clock.jumpTo(dateTime(5));
         ApplicationConfiguration noPaConfig = ApplicationConfiguration.defaultConfiguration();
-        Set<String> uris = ImmutableSet.copyOf(resolver.availableItemsFor(primary, noPaConfig));
-        assertThat(uris.size(), is(1));
-        assertThat(uris, hasItems(p1.getCanonicalUri()));
+        Set<ChildRef> childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, noPaConfig));
+        ChildRef childRef = Iterables.getOnlyElement(childRefs);
+        assertEquals(p1.getCanonicalUri(), childRef.getUri());
 
         ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
             .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA);
-        uris = ImmutableSet.copyOf(resolver.availableItemsFor(primary, withPaConfig));
-        assertThat(uris.size(), is(2));
-        assertThat(uris, hasItems(p1.getCanonicalUri(), p2.getCanonicalUri()));
+        childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, withPaConfig));
+        assertThat(childRefs.size(), is(2));
+        assertThat(Iterables.transform(childRefs, ChildRef.TO_URI), hasItems(p1.getCanonicalUri(), p2.getCanonicalUri()));
         
     }
 
