@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
@@ -92,26 +93,24 @@ public class MongoContentWriter implements ContentWriter {
         
         log.debug("Item {} hash changed so writing to db", item.getCanonicalUri());
         
-        DBObject itemDbo = itemTranslator.toDB(item);
-        
-		if (item instanceof Episode) {
+        if (item instanceof Episode) {
             if (item.getContainer() == null) {
                 throw new IllegalArgumentException(String.format("Episodes must have containers: Episode %s", item.getCanonicalUri()));
             }
 
             childRefWriter.includeEpisodeInSeriesAndBrand((Episode) item);
-            children.update(where.build(), itemDbo, UPSERT, SINGLE);
+            children.update(where.build(), itemTranslator.toDB(item), UPSERT, SINGLE);
 
             remove(item.getCanonicalUri(), topLevelItems);
 
         } else if (item.getContainer() != null) {
 
             childRefWriter.includeItemInTopLevelContainer(item);
-            children.update(where.build(), itemDbo, UPSERT, SINGLE);
+            children.update(where.build(), itemTranslator.toDB(item), UPSERT, SINGLE);
 
             remove(item.getCanonicalUri(), topLevelItems);
         } else {
-            topLevelItems.update(where.build(), itemDbo, UPSERT, SINGLE);
+            topLevelItems.update(where.build(), itemTranslator.toDB(item), UPSERT, SINGLE);
             
             //disabled for now. need to remove the childref from the brand/series if enabled
             //remove(item.getCanonicalUri(), children);
@@ -130,6 +129,8 @@ public class MongoContentWriter implements ContentWriter {
     @Override
     public void createOrUpdate(Container container) {
         checkNotNull(container);
+        checkArgument(container instanceof Brand || container instanceof Series,
+            "Not brand or series");
         
         setThisOrChildLastUpdated(container);
         container.setLastFetched(clock.now());
@@ -142,35 +143,36 @@ public class MongoContentWriter implements ContentWriter {
         log.debug("Container {} hash changed so writing to db. There are {} ChildRefs", 
                 container.getCanonicalUri(), container.getChildRefs().size());
 
-        DBObject containerDbo = containerTranslator.toDB(container);
-
-        if (container instanceof Series) {
-            
-            createOrUpdateContainer(container, programmeGroups, containerDbo);
-            
-            if(((Series) container).getParent() != null) {
-                Series series = (Series)container;
-                childRefWriter.includeSeriesInTopLevelContainer(series);
-                //this isn't a top-level series so ensure it's not in the container table.
-                containers.remove(where().idEquals(series.getCanonicalUri()).build());
-                return;
-            }
-            
-        }
         
-        createOrUpdateContainer(container, containers, containerDbo);
-        
-        // The series inside a brand cannot be top level items any more so we
-        // remove them as outer elements
-        if (container instanceof Brand) {
-            Brand brand = (Brand) container;
+        if (container instanceof Brand || isTopLevelSeries(container)) {
             
-            Set<String> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeriesRefs(), SeriesRef.TO_URI));
-            if (!urisToRemove.isEmpty()) {
-                containers.remove(where().idIn(urisToRemove).build());
+            DBObject containerDbo = containerTranslator.toDB(container);
+            createOrUpdateContainer(container, containers, containerDbo);
+            
+            // The series inside a brand cannot be top level items any more so we
+            // remove them as outer elements
+            if (container instanceof Brand) {
+                Brand brand = (Brand) container;
+                
+                Set<String> urisToRemove = Sets.newHashSet(Collections2.transform(brand.getSeriesRefs(), SeriesRef.TO_URI));
+                if (!urisToRemove.isEmpty()) {
+                    containers.remove(where().idIn(urisToRemove).build());
+                }
+            } else {
+                createOrUpdateContainer(container, programmeGroups, containerDbo);
             }
+        } else {
+            Series series = (Series)container;
+            childRefWriter.includeSeriesInTopLevelContainer(series);
+            createOrUpdateContainer(container, programmeGroups, containerTranslator.toDB(container));
+            //this isn't a top-level series so ensure it's not in the container table.
+            containers.remove(where().idEquals(series.getCanonicalUri()).build());
         }
 
+    }
+
+    private boolean isTopLevelSeries(Container container) {
+        return container instanceof Series && ((Series)container).getParent() == null;
     }
 
     private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
