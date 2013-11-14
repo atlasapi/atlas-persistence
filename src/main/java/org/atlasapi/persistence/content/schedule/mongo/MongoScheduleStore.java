@@ -11,7 +11,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import org.atlasapi.application.ApplicationConfiguration;
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
