@@ -7,13 +7,16 @@ import static com.metabroadcast.common.persistence.translator.TranslatorUtils.to
 
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -32,7 +35,9 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     private final String transmissionEndTimeKey = Joiner.on(".").join(versions, broadcasts, transmissionEndTime);
     private final String containerKey = "container";
     
-    private final DBObject fields = select().field(transmissionEndTimeKey).build();
+    private final DBObject fields = select().fields(ImmutableSet.of(IdentifiedTranslator.TYPE, 
+            IdentifiedTranslator.OPAQUE_ID, IdentifiedTranslator.LAST_UPDATED, transmissionEndTimeKey))
+            .build();
 
     private final DBCollection children;
     private final DBCollection topLevelItems;
@@ -49,27 +54,31 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     }
     
     @Override
-    public Iterable<String> upcomingItemsFor(Container container) {
+    public Iterable<ChildRef> upcomingItemsFor(Container container) {
         final DateTime now = clock.now();
-        return filterToUri(now, broadcastEndsForChildrenOf(container, now));
+        return filterToChildRef(now, broadcastEndsForChildrenOf(container, now));
     }
     
     @Override
-    public Iterable<String> upcomingItemsFor(Person person) {
+    public Iterable<ChildRef> upcomingItemsFor(Person person) {
         final DateTime now = clock.now();
-        return filterToUri(now, broadcastEndsForItemsOf(person, now));
+        return filterToChildRef(now, broadcastEndsForItemsOf(person, now));
     }
 
-    private Iterable<String> filterToUri(final DateTime now,
+    private Iterable<ChildRef> filterToChildRef(final DateTime now,
             Iterable<DBObject> broadcastEnds) {
-        return Iterables.filter(Iterables.transform(broadcastEnds, new Function<DBObject, String>() {
+        return Iterables.filter(Iterables.transform(broadcastEnds, new Function<DBObject, ChildRef>() {
 
             @Override
-            public String apply(DBObject input) {
+            public ChildRef apply(DBObject input) {
                 for (DBObject version : toDBObjectList(input, versions)) {
                     for (DBObject broadcast : toDBObjectList(version, broadcasts)) {
                             if (after(toDateTime(broadcast, transmissionEndTime), now)) {
-                                return TranslatorUtils.toString(input, MongoConstants.ID);
+                                String uri = TranslatorUtils.toString(input, MongoConstants.ID);
+                                Long aid = TranslatorUtils.toLong(input, IdentifiedTranslator.OPAQUE_ID);
+                                String type = TranslatorUtils.toString(input, IdentifiedTranslator.TYPE);
+                                DateTime lastUpdated = TranslatorUtils.toDateTime(input, IdentifiedTranslator.LAST_UPDATED);
+                                return new ChildRef(aid, uri, "", lastUpdated, EntityType.from(type));
                             }
                         }
                     }
