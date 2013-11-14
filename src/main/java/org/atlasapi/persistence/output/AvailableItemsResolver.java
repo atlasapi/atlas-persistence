@@ -1,7 +1,7 @@
 package org.atlasapi.persistence.output;
 
-import org.atlasapi.application.ApplicationConfiguration;
 import org.atlasapi.media.entity.ChildRef;
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Person;
 
