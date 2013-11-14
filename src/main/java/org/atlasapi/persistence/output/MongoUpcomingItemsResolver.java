@@ -10,11 +10,13 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -33,7 +35,9 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     private final String transmissionEndTimeKey = Joiner.on(".").join(versions, broadcasts, transmissionEndTime);
     private final String containerKey = "container";
     
-    private final DBObject fields = select().field(transmissionEndTimeKey).build();
+    private final DBObject fields = select().fields(ImmutableSet.of(IdentifiedTranslator.TYPE, 
+            IdentifiedTranslator.OPAQUE_ID, IdentifiedTranslator.LAST_UPDATED, transmissionEndTimeKey))
+            .build();
 
     private final DBCollection children;
     private final DBCollection topLevelItems;
@@ -71,11 +75,10 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
                     for (DBObject broadcast : toDBObjectList(version, broadcasts)) {
                             if (after(toDateTime(broadcast, transmissionEndTime), now)) {
                                 String uri = TranslatorUtils.toString(input, MongoConstants.ID);
-                                Long aid = TranslatorUtils.toLong(input, "aid");
-                                String type = TranslatorUtils.toString(input, null);
-                                String sortKey = TranslatorUtils.toString(input, "sortKey");
-                                DateTime lastUpdated = TranslatorUtils.toDateTime(input, "lastUpdated");
-                                return new ChildRef(aid, uri, sortKey, lastUpdated, EntityType.from(type));
+                                Long aid = TranslatorUtils.toLong(input, IdentifiedTranslator.OPAQUE_ID);
+                                String type = TranslatorUtils.toString(input, IdentifiedTranslator.TYPE);
+                                DateTime lastUpdated = TranslatorUtils.toDateTime(input, IdentifiedTranslator.LAST_UPDATED);
+                                return new ChildRef(aid, uri, "", lastUpdated, EntityType.from(type));
                             }
                         }
                     }
