@@ -19,6 +19,8 @@ public interface ChannelResolver {
 	
 	Iterable<Channel> all();
 	
+	Iterable<Channel> allChannels(ChannelQuery query);
+	
 	Maybe<Channel> forAlias(String alias);
 	
 	/**

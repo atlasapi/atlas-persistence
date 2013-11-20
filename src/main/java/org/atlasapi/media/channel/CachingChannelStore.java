@@ -94,6 +94,11 @@ public class CachingChannelStore implements ChannelStore {
     }
 
     @Override
+    public Iterable<Channel> allChannels(ChannelQuery query) {
+        return delegate.allChannels(query);
+    }
+
+    @Override
     public Maybe<Channel> forAlias(String alias) {
         for (Channel channel : channels.get()) {
             if (channel.getAliasUrls().contains(alias)) { 
