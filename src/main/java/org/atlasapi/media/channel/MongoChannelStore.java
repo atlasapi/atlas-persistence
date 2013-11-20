@@ -226,7 +226,7 @@ public class MongoChannelStore implements ChannelStore {
         if (query.getChannelGroups().isPresent()) {
             mongoQuery.longFieldIn(JOIN_ON_DOT.join(ChannelTranslator.NUMBERINGS, ChannelNumberingTranslator.CHANNEL_GROUP_KEY, MongoConstants.ID), query.getChannelGroups().get());
         }
-        return Iterables.transform(collection.find(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
+        return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
 
 }
