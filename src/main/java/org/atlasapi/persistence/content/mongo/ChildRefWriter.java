@@ -33,16 +33,6 @@ import com.mongodb.DBObject;
 public class ChildRefWriter {
 
     private static final Logger log = LoggerFactory.getLogger(ChildRefWriter.class);
-    private static final Set<String> IGNORED_BRANDS = ImmutableSet.<String>builder()
-            .add("http://pressassociation.com/brands/92259")
-            .add("http://pressassociation.com/brands/8964")
-            .add("http://pressassociation.com/brands/106136")
-            .add("http://pressassociation.com/brands/63390")
-            .add("http://pressassociation.com/brands/11792")
-            .add("http://pressassociation.com/brands/30992")
-            .add("http://pressassociation.com/brands/22259")
-            .add("http://pressassociation.com/brands/115043")
-            .build();
             
     private final DBCollection containers;
     private final DBCollection programmeGroups;
@@ -62,11 +52,6 @@ public class ChildRefWriter {
                 && episode.getEpisodeNumber() == null
                 && episode.getSeriesNumber() == null) {
             log.debug("Not including episode " + episode.getCanonicalUri() + "in series and brand.");
-            return;
-        }
-        
-        if (IGNORED_BRANDS.contains(episode.getContainer().getUri())) {
-            log.debug("Not maintaining child refs for brand " + episode.getContainer().getUri());
             return;
         }
         
