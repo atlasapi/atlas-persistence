@@ -99,14 +99,16 @@ public class MongoContentWriter implements ContentWriter {
             }
 
             childRefWriter.includeEpisodeInSeriesAndBrand((Episode) item);
-            children.update(where.build(), itemTranslator.toDB(item), UPSERT, SINGLE);
+            DBObject dbo = itemTranslator.toDB(item);
+            children.update(where.build(), checkContainerRefs(dbo), UPSERT, SINGLE);
 
             remove(item.getCanonicalUri(), topLevelItems);
 
         } else if (item.getContainer() != null) {
 
             childRefWriter.includeItemInTopLevelContainer(item);
-            children.update(where.build(), itemTranslator.toDB(item), UPSERT, SINGLE);
+            DBObject dbo = itemTranslator.toDB(item);
+            children.update(where.build(), checkContainerRefs(dbo), UPSERT, SINGLE);
 
             remove(item.getCanonicalUri(), topLevelItems);
         } else {
@@ -117,6 +119,20 @@ public class MongoContentWriter implements ContentWriter {
         }
 
         lookupStore.ensureLookup(item);
+    }
+
+    private DBObject checkContainerRefs(DBObject dbo) {
+        checkContainerIdRef(dbo, ItemTranslator.CONTAINER, ItemTranslator.CONTAINER_ID);
+        checkContainerIdRef(dbo, ItemTranslator.SERIES, ItemTranslator.SERIES_ID);
+        return dbo;
+    }
+
+    private void checkContainerIdRef(DBObject dbo, String uriField, String idField) {
+        if (dbo.containsField(uriField) && dbo.get(uriField) != null
+            && (!dbo.containsField(idField) || dbo.get(idField) == null)) {
+            log.warn("{} has {} {}, no id", new Object[]{
+                dbo.get(IdentifiedTranslator.ID), uriField, dbo.get(uriField)});
+        }
     }
 
     private void remove(String canonicalUri, DBCollection containingCollection) {
