@@ -7,7 +7,7 @@ import javax.jms.Message;
 import javax.jms.Session;
 
 import org.atlasapi.media.entity.Topic;
-import org.atlasapi.messaging.EntityUpdatedMessage;
+import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.serialization.json.JsonFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

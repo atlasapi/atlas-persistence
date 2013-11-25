@@ -14,7 +14,7 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
-import org.atlasapi.messaging.AtlasMessagingModule;
+import org.atlasapi.messaging.v3.AtlasMessagingModule;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
@@ -27,6 +27,7 @@ import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
+import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -48,6 +49,8 @@ import org.atlasapi.persistence.lookup.LookupWriter;
 import org.atlasapi.persistence.lookup.MessageQueueingLookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.MessageQueueingLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -127,24 +130,24 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoLookupEntryStore(db.collection("lookup"));
     }
     
-	private LookupWriter explicitLookupWriter() {
+    private LookupWriter explicitLookupWriter() {
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
         LookupWriter lookupWriter = TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
         return messagingLookupWriter(lookupWriter);
     }
-	
-	public @Bean LookupWriter generatedLookupWriter() {
-	    MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
-	    LookupWriter lookupWriter = TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
+
+    public @Bean LookupWriter generatedLookupWriter() {
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
+        LookupWriter lookupWriter = TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
         return messagingLookupWriter(lookupWriter);
-	}
-	
-	private MessageQueueingLookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
-	    return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
-	}
-	
-	public @Primary @Bean MongoScheduleStore scheduleStore() {
-	    try {
+    }
+
+    private MessageQueueingLookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
+        return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
+    }
+
+    public @Primary @Bean MongoScheduleStore scheduleStore() {
+        try {
             return new MongoScheduleStore(db, contentResolver(), channelResolver, equivContentResolver());
         } catch (Exception e) {
             throw new RuntimeException(e);
