@@ -1,7 +1,6 @@
 package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.atlasapi.media.entity.EntityType;
@@ -35,8 +34,11 @@ import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
     
+
     private static final Logger log = LoggerFactory.getLogger(ItemTranslator.class);
     
+    public static final String CONTAINER = "container";
+    public static final String SERIES = "series";
     public static final String SERIES_ID = "seriesId";
     public static final String CONTAINER_ID = "containerId";
     private static final String FILM_RELEASES_KEY = "releases";
@@ -113,8 +115,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
             item.setVersions(versions);
         }
         
-        if(dbObject.containsField("container")) {
-            String containerUri = TranslatorUtils.toString(dbObject, "container");
+        if(dbObject.containsField(CONTAINER)) {
+            String containerUri = TranslatorUtils.toString(dbObject, CONTAINER);
             Long containerId = TranslatorUtils.toLong(dbObject, CONTAINER_ID);
             item.setParentRef(new ParentRef(containerUri, containerId));
         }
@@ -122,8 +124,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
         if (item instanceof Episode) {
             Episode episode = (Episode) item;
             Long seriesId = TranslatorUtils.toLong(dbObject, SERIES_ID);
-            if (dbObject.containsField("series")) {
-                String seriesUri = TranslatorUtils.toString(dbObject, "series");
+            if (dbObject.containsField(SERIES)) {
+                String seriesUri = TranslatorUtils.toString(dbObject, SERIES);
                 episode.setSeriesRef(new ParentRef(seriesUri, seriesId));
             }
             episode.setPartNumber(TranslatorUtils.toInteger(dbObject, PART_NUMBER));
@@ -255,7 +257,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         }
 		
         if(entity.getContainer() != null) {
-            itemDbo.put("container", entity.getContainer().getUri());
+            itemDbo.put(CONTAINER, entity.getContainer().getUri());
             itemDbo.put(CONTAINER_ID, entity.getContainer().getId());
         }
 
@@ -264,7 +266,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			
 			if(episode.getSeriesRef() != null) {
 			    itemDbo.put(SERIES_ID, episode.getSeriesRef().getId());
-			    itemDbo.put("series", episode.getSeriesRef().getUri());
+			    itemDbo.put(SERIES, episode.getSeriesRef().getUri());
 			}
 			
 			TranslatorUtils.from(itemDbo, PART_NUMBER, episode.getPartNumber());

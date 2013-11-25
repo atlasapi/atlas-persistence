@@ -42,7 +42,7 @@ public class MongoChannelStore implements ChannelStore {
 
     public static final String COLLECTION = "channels";
 	private static final ChannelTranslator translator = new ChannelTranslator();
-	private static final Joiner JOIN_ON_DOT = Joiner.on('.');
+    private static final String NUMBERING_CHANNEL_GROUP_ID = Joiner.on('.').join(ChannelTranslator.NUMBERINGS, ChannelNumberingTranslator.CHANNEL_GROUP_KEY, MongoConstants.ID);
 	
 	private final DBCollection collection;
 
@@ -224,7 +224,7 @@ public class MongoChannelStore implements ChannelStore {
             mongoQuery.fieldEquals(ChannelTranslator.AVAILABLE_ON, query.getAvailableFrom().get().key());
         }
         if (query.getChannelGroups().isPresent()) {
-            mongoQuery.longFieldIn(JOIN_ON_DOT.join(ChannelTranslator.NUMBERINGS, ChannelNumberingTranslator.CHANNEL_GROUP_KEY, MongoConstants.ID), query.getChannelGroups().get());
+            mongoQuery.longFieldIn(NUMBERING_CHANNEL_GROUP_ID, query.getChannelGroups().get());
         }
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
