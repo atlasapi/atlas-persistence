@@ -1,6 +1,6 @@
-package org.atlasapi.messaging;
+package org.atlasapi.messaging.v3;
 
-import org.atlasapi.messaging.worker.Worker;
+import org.atlasapi.messaging.worker.v3.Worker;
 
 /**
  * Message signaling the beginning of a messages replay.

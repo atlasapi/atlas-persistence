@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.nullValue;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.AtlasMessagingModule;
+import org.atlasapi.messaging.v3.AtlasMessagingModule;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;

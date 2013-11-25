@@ -1,4 +1,4 @@
-package org.atlasapi.messaging;
+package org.atlasapi.messaging.v3;
 
 /**
  */

@@ -1,6 +1,6 @@
-package org.atlasapi.messaging;
+package org.atlasapi.messaging.v3;
 
-import org.atlasapi.messaging.worker.Worker;
+import org.atlasapi.messaging.worker.v3.Worker;
 
 /**
  * Base interface for messages to be dispatched to {@link org.atlasapi.persistence.messaging.worker.Worker}s.

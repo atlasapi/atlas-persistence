@@ -1,6 +1,6 @@
-package org.atlasapi.messaging;
+package org.atlasapi.messaging.v3;
 
-import org.atlasapi.messaging.worker.Worker;
+import org.atlasapi.messaging.worker.v3.Worker;
 
 /**
  * Message signaling that a given entity has been created or updated.

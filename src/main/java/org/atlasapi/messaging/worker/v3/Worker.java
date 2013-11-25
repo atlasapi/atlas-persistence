@@ -1,9 +1,9 @@
-package org.atlasapi.messaging.worker;
+package org.atlasapi.messaging.worker.v3;
 
-import org.atlasapi.messaging.BeginReplayMessage;
-import org.atlasapi.messaging.EndReplayMessage;
-import org.atlasapi.messaging.EntityUpdatedMessage;
-import org.atlasapi.messaging.ReplayMessage;
+import org.atlasapi.messaging.v3.BeginReplayMessage;
+import org.atlasapi.messaging.v3.EndReplayMessage;
+import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+import org.atlasapi.messaging.v3.ReplayMessage;
 
 /**
  * Base interface for workers that need to process {@link org.org.atlasapi.messaging.messaging.Message}s.

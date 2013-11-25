@@ -9,7 +9,7 @@ import javax.jms.Session;
 
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.EntityUpdatedMessage;
+import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.serialization.json.JsonFactory;
 import org.slf4j.Logger;
