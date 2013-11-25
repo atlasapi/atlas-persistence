@@ -180,7 +180,9 @@ public class MongoContentWriter implements ContentWriter {
         } else {
             Series series = (Series)container;
             childRefWriter.includeSeriesInTopLevelContainer(series);
-            createOrUpdateContainer(container, programmeGroups, containerTranslator.toDB(container));
+            DBObject dbo = containerTranslator.toDB(container);
+            checkContainerIdRef(dbo, ContainerTranslator.CONTAINER, ContainerTranslator.CONTAINER_ID);
+            createOrUpdateContainer(container, programmeGroups, dbo);
             //this isn't a top-level series so ensure it's not in the container table.
             containers.remove(where().idEquals(series.getCanonicalUri()).build());
         }
