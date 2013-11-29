@@ -185,6 +185,7 @@ public class DefaultEquivalentContentResolverTest {
     public void testSubjectAlwaysKeepsItsAdjacents() {
         
         Episode subject = episode("subject", 4, Publisher.PA);
+        Episode disabled = episode("disabled", 5, Publisher.FIVE);
         Episode equiv = episode("equiv", 2, Publisher.BBC);
         Episode filtered = episode("filtered", 1, Publisher.PA);
         
@@ -193,11 +194,11 @@ public class DefaultEquivalentContentResolverTest {
                 .copyWithPrecedence(ImmutableList.of(Publisher.PA, Publisher.BBC, Publisher.C4));
         Set<Annotation> annotations = Annotation.defaultAnnotations();
         
-        lookupResolver.store(entry(subject, ImmutableSet.of(equiv), 
-            equiv, filtered));
+        lookupResolver.store(entry(subject, ImmutableSet.of(equiv, disabled), 
+            equiv, filtered, disabled));
         lookupResolver.store(entry(filtered, ImmutableSet.of(equiv),
-            subject, equiv));
-        contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered));
+            subject, equiv, disabled));
+        contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered,disabled));
         
         EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
         

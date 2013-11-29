@@ -153,11 +153,11 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             subjsToEquivs.putAll(entry, selectedEquivs);
         }
         return secondaryResolve.isEmpty() ? subjsToEquivs.build()
-                                          : resolveAndFilter(secondaryResolve, subjsToEquivs.build());
+                                          : resolveAndFilter(secondaryResolve, subjsToEquivs.build(), sourceFilter);
     }
 
     private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
-            SetMultimap<LookupRef, LookupRef> secondaryResolve, ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs) {
+            SetMultimap<LookupRef, LookupRef> secondaryResolve, ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs, Predicate<LookupRef> sourceFilter) {
         
         Map<LookupRef,LookupEntry> entriesToRemove = Maps.uniqueIndex(
             lookupResolver.entriesForCanonicalUris(Iterables.transform(ImmutableSet.copyOf(secondaryResolve.values()), LookupRef.TO_URI)),
@@ -170,6 +170,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         for (Entry<LookupEntry, Collection<LookupRef>> subjToEquivs : subjsToEquivs.asMap().entrySet()) {
             Set<LookupRef> filteredEquivs = Sets.newHashSet(subjToEquivs.getValue());
             Set<LookupRef> removalRefs = secondaryResolve.get(subjToEquivs.getKey().lookupRef());
+            //remove all the adjacent of the refs to remove. 
             for (LookupRef equiv : subjToEquivs.getValue()) {
                 if (removalRefs.contains(equiv)) {
                     LookupEntry entryToRemove = entriesToRemove.get(equiv);
@@ -180,7 +181,11 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             }
             //ensure we always get the thing we actually asked for.
             filteredEquivs.add(subjToEquivs.getKey().lookupRef());
-            filteredEquivs.addAll(Sets.difference(allAdjacents(subjToEquivs.getKey()), secondaryResolve.get(subjToEquivs.getKey().lookupRef())));
+            //and its exclusive enabled adjacent.
+            filteredEquivs.addAll(Sets.difference(
+                Sets.filter(allAdjacents(subjToEquivs.getKey()), sourceFilter), 
+                secondaryResolve.get(subjToEquivs.getKey().lookupRef())
+            ));
             filtered.putAll(subjToEquivs.getKey(), filteredEquivs);
         }
         
