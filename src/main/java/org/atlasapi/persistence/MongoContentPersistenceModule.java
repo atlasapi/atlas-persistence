@@ -14,6 +14,7 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.messaging.v3.AtlasMessagingModule;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
@@ -25,6 +26,7 @@ import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
+import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -44,9 +46,12 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.MessageQueueingLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
+import org.atlasapi.persistence.topic.MessageQueueingTopicWriter;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
@@ -54,6 +59,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -62,17 +68,18 @@ import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 
 @Configuration
+@Import(AtlasMessagingModule.class)
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     private @Autowired Mongo mongo;
     private @Autowired DatabasedMongo db;
     private @Autowired AdapterLog log;
+    private @Autowired AtlasMessagingModule messagingModule;
     
     private final Parameter processingConfig = Configurer.get("processing.config");
     
@@ -80,10 +87,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     public MongoContentPersistenceModule() {}
     
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AdapterLog log) {
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AtlasMessagingModule messagingModule, AdapterLog log) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
+        this.messagingModule = messagingModule;
     }
     
     private @Autowired ChannelResolver channelResolver;
@@ -99,9 +107,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     public @Primary @Bean ContentWriter contentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
-        contentWriter = new EquivalenceWritingContentWriter(contentWriter,
-            new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary())
-        );
+        contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+        contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
         if (Boolean.valueOf(generateIds)) {
             contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
         }
@@ -120,7 +127,26 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoLookupEntryStore(db.collection("lookup"));
     }
     
-    public @Primary @Bean MongoScheduleStore scheduleStore() {
+    private LookupWriter explicitLookupWriter() {
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
+        LookupWriter lookupWriter = TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
+        return messagingLookupWriter(lookupWriter);
+    }
+
+    public @Bean
+    LookupWriter generatedLookupWriter() {
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"));
+        LookupWriter lookupWriter = TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
+        return messagingLookupWriter(lookupWriter);
+    }
+
+    private MessageQueueingLookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
+        return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
+    }
+
+    public @Primary
+    @Bean
+    MongoScheduleStore scheduleStore() {
         try {
             return new MongoScheduleStore(db, contentResolver(), channelResolver, equivContentResolver());
         } catch (Exception e) {
@@ -155,7 +181,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     public @Primary @Bean TopicStore topicStore() {
-        return new TopicCreatingTopicResolver(new MongoTopicStore(db), new MongoSequentialIdGenerator(db, "topic"));
+        return new TopicCreatingTopicResolver(
+                new MessageQueueingTopicWriter(messagingModule.topicChanges(), new MongoTopicStore(db)),
+                new MongoSequentialIdGenerator(db, "topic"));
     }
 
     public @Primary @Bean TopicQueryResolver topicQueryResolver() {

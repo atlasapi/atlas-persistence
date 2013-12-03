@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.nullValue;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.messaging.v3.AtlasMessagingModule;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
@@ -25,14 +26,17 @@ import com.mongodb.Mongo;
 
 public class MongoContentPersistenceIntegrationTest {
 
-        private final Mongo mongo = MongoTestHelper.anEmptyMongo();
-        private final DatabasedMongo db = new DatabasedMongo(mongo, "atlas");
-        private final MongoLoggingAdapter adapterLog = new MongoLoggingAdapter(db);
-    
+    private final Mongo mongo = MongoTestHelper.anEmptyMongo();
+    private final DatabasedMongo db = new DatabasedMongo(mongo, "atlas");
+    private final MongoLoggingAdapter adapterLog = new MongoLoggingAdapter(db);
+    private final AtlasMessagingModule messagingModule = new AtlasMessagingModule(
+        "vm://localhost", "content", "topic", "equiv"
+    );
+
     @Test
     public void test() {
         
-        MongoContentPersistenceModule module = new MongoContentPersistenceModule(mongo, db, adapterLog);
+        MongoContentPersistenceModule module = new MongoContentPersistenceModule(mongo, db, messagingModule, adapterLog);
         
         ContentWriter contentWriter = module.contentWriter();
         ContentResolver contentResolver = module.contentResolver();
