@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jms.connection.CachingConnectionFactory;
 import org.springframework.jms.core.JmsTemplate;
 
@@ -15,23 +16,26 @@ public class AtlasMessagingModule {
     
     @Value("${messaging.broker.url}")
     private String brokerUrl;
+    @Value("${messaging.system}")
+    private String messagingSystem;
     @Value("${messaging.destination.content.changes}")
-    private String contentChangesDestination;
+    private String contentChanges;
     @Value("${messaging.destination.topics.changes}")
-    private String topicChangesDestination;
+    private String topicChanges;
     @Value("${messaging.destination.equiv.changes}")
-    private String equivChangesDestination;
+    private String equivChanges;
     
-    
-    public AtlasMessagingModule(String brokerUrl, String contentChangesDestination,
-            String topicChangesDestination, String equivChangesDestination) {
+    public AtlasMessagingModule(String brokerUrl, String messagingSystem) {
         this.brokerUrl = brokerUrl;
-        this.contentChangesDestination = contentChangesDestination;
-        this.topicChangesDestination = topicChangesDestination;
-        this.equivChangesDestination = equivChangesDestination;
+        this.messagingSystem = messagingSystem;
     }
 
     public AtlasMessagingModule() { }
+    
+    @Bean @Primary
+    public QueueFactory queueHelper() {
+        return new QueueFactory(activemqConnectionFactory(), messagingSystem);
+    }
     
     @Bean
     @Lazy(true)
@@ -44,28 +48,19 @@ public class AtlasMessagingModule {
     @Bean
     @Lazy(true)
     public JmsTemplate contentChanges() {
-        JmsTemplate jmsTemplate = new JmsTemplate(activemqConnectionFactory());
-        jmsTemplate.setPubSubDomain(true);
-        jmsTemplate.setDefaultDestinationName(contentChangesDestination);
-        return jmsTemplate;
+        return queueHelper().makeVirtualTopicProducer(contentChanges);
     }
     
     @Bean
     @Lazy(true)
     public JmsTemplate topicChanges() {
-        JmsTemplate jmsTemplate = new JmsTemplate(activemqConnectionFactory());
-        jmsTemplate.setPubSubDomain(true);
-        jmsTemplate.setDefaultDestinationName(topicChangesDestination);
-        return jmsTemplate;
+        return queueHelper().makeVirtualTopicProducer(topicChanges);
     }
 
     @Bean
     @Lazy(true)
     public JmsTemplate equivChanges() {
-        JmsTemplate jmsTemplate = new JmsTemplate(activemqConnectionFactory());
-        jmsTemplate.setPubSubDomain(true);
-        jmsTemplate.setDefaultDestinationName(equivChangesDestination);
-        return jmsTemplate;
+        return queueHelper().makeVirtualTopicProducer(equivChanges);
     }
     
 }
