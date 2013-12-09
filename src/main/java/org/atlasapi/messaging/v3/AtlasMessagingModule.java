@@ -62,5 +62,9 @@ public class AtlasMessagingModule {
     public JmsTemplate equivChanges() {
         return queueHelper().makeVirtualTopicProducer(equivChanges);
     }
+
+    public JmsTemplate equivAssertions() {
+        return null;
+    }
     
 }

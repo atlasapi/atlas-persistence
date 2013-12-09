@@ -3,8 +3,10 @@ package org.atlasapi.messaging.worker.v3;
 import java.io.IOException;
 
 import org.atlasapi.messaging.v3.BeginReplayMessage;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage.AdjacentRef;
 import org.atlasapi.messaging.v3.EndReplayMessage;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage;
 import org.atlasapi.messaging.v3.Message;
 import org.atlasapi.messaging.v3.ReplayMessage;
 import org.atlasapi.serialization.json.JsonFactory;
@@ -33,6 +35,10 @@ public abstract class AbstractWorker implements Worker {
             context.setMixInAnnotations(BeginReplayMessage.class, AbstractMessageConfiguration.class);
             context.setMixInAnnotations(ReplayMessage.class, ReplayMessageConfiguration.class);
             context.setMixInAnnotations(EndReplayMessage.class, AbstractMessageConfiguration.class);
+            context.setMixInAnnotations(ContentEquivalenceAssertionMessage.class, 
+                ContentEquivalenceAssertionMessageConfiguration.class);
+            context.setMixInAnnotations(AdjacentRef.class, 
+                    AdjacentRefConfiguration.class);
         }
     }
 
@@ -62,6 +68,10 @@ public abstract class AbstractWorker implements Worker {
 
     @Override
     public void process(ReplayMessage message) {
+    }
+    
+    @Override
+    public void process(ContentEquivalenceAssertionMessage message) {
     }
     
 }
