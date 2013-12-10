@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.atlasapi.application.SourceStatus;
+import org.atlasapi.application.v3.SourceStatus;
 import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
