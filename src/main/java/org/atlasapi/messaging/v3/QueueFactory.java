@@ -70,5 +70,14 @@ public final class QueueFactory {
         jmsTemplate.setDefaultDestinationName(destination);
         return jmsTemplate;
     }
+
+    public DefaultMessageListenerContainer noopContainer() {
+        DefaultMessageListenerContainer container = new DefaultMessageListenerContainer();
+
+        container.setConnectionFactory(cf);
+        container.setDestinationName("do.not.write.to.this.queue");
+
+        return container;
+    }
     
 }
