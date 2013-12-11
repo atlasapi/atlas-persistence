@@ -10,6 +10,7 @@ import org.atlasapi.messaging.v3.ReplayMessage;
 import org.atlasapi.serialization.json.JsonFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 
 /**
@@ -18,8 +19,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * dispatching.
  */
 public abstract class AbstractWorker implements Worker {
+    
+    public class MessagingModule extends SimpleModule {
 
-    private final ObjectMapper mapper = JsonFactory.makeJsonMapper();
+        public MessagingModule() {
+            super("Messaging Module", new com.fasterxml.jackson.core.Version(0, 0, 1, null, null, null));
+        }
+
+        @Override
+        public void setupModule(SetupContext context) {
+            super.setupModule(context);
+            context.setMixInAnnotations(EntityUpdatedMessage.class, AbstractMessageConfiguration.class);
+            context.setMixInAnnotations(BeginReplayMessage.class, AbstractMessageConfiguration.class);
+            context.setMixInAnnotations(ReplayMessage.class, ReplayMessageConfiguration.class);
+            context.setMixInAnnotations(EndReplayMessage.class, AbstractMessageConfiguration.class);
+        }
+    }
+
+    private final ObjectMapper mapper = JsonFactory.makeJsonMapper()
+            .registerModule(new MessagingModule());
 
     public void onMessage(String message) {
         try {
