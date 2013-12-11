@@ -30,7 +30,7 @@ public class MongoContentPersistenceIntegrationTest {
     private final DatabasedMongo db = new DatabasedMongo(mongo, "atlas");
     private final MongoLoggingAdapter adapterLog = new MongoLoggingAdapter(db);
     private final AtlasMessagingModule messagingModule = new AtlasMessagingModule(
-        "vm://localhost", "content", "topic", "equiv"
+        "vm://localhost", "Atlas.Owl.Test"
     );
 
     @Test
