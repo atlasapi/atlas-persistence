@@ -3,6 +3,7 @@ package org.atlasapi.persistence;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 import org.atlasapi.media.entity.Identified;
@@ -52,7 +53,8 @@ public class MongoContentPersistenceIntegrationTest {
         Iterable<LookupEntry> entries = lookupStore.entriesForCanonicalUris(ImmutableSet.of(item.getCanonicalUri()));
         LookupEntry entry = Iterables.getOnlyElement(entries);
         Long id = entry.id();
-        assertThat(id, is(nullValue()));
+        assertThat(id, is(not(nullValue())));
+        assertThat(id, is(item.getId()));
 
         Maybe<Identified> maybeContent = knownTypeContentResolver.findByLookupRefs(ImmutableSet.of(entry.lookupRef())).get(uri);
         assertThat((Item) maybeContent.requireValue(), is(equalTo(item)));

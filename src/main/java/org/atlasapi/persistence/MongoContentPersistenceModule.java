@@ -95,6 +95,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.db = db;
         this.log = log;
         this.messagingModule = messagingModule;
+        this.generateIds = "true";
     }
     
     private @Autowired ChannelResolver channelResolver;
