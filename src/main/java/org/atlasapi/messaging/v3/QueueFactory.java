@@ -1,5 +1,8 @@
 package org.atlasapi.messaging.v3;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import javax.jms.ConnectionFactory;
 
 import org.atlasapi.messaging.worker.v3.Worker;
@@ -9,6 +12,8 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.jms.listener.adapter.MessageListenerAdapter;
 
+import com.google.common.base.Strings;
+
 public final class QueueFactory {
 
     private static final Logger log = LoggerFactory.getLogger(QueueFactory.class);
@@ -17,7 +22,8 @@ public final class QueueFactory {
     private final ConnectionFactory cf;
 
     public QueueFactory(ConnectionFactory cf, String system) {
-        this.cf = cf;
+        this.cf = checkNotNull(cf);
+        checkArgument(!Strings.isNullOrEmpty(system));
         this.system = system;
     }
 

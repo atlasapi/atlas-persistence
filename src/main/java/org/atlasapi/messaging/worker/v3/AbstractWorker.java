@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
  */
 public abstract class AbstractWorker implements Worker {
     
-    public class MessagingModule extends SimpleModule {
+    public static class MessagingModule extends SimpleModule {
 
         public MessagingModule() {
             super("Messaging Module", new com.fasterxml.jackson.core.Version(0, 0, 1, null, null, null));

@@ -79,7 +79,7 @@ public class MessageQueueingContentWriter implements ContentWriter {
         return new EntityUpdatedMessage(
                 UUID.randomUUID().toString(),
                 clock.now().getMillis(),
-                content.getCanonicalUri(),
+                content.getId().toString(),
                 content.getClass().getSimpleName().toLowerCase(),
                 content.getPublisher().key());
     }

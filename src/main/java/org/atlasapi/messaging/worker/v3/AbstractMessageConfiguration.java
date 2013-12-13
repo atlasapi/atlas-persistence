@@ -3,8 +3,6 @@ package org.atlasapi.messaging.worker.v3;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- */
 public abstract class AbstractMessageConfiguration {
 
     @JsonCreator
