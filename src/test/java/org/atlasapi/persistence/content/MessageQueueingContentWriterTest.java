@@ -27,6 +27,7 @@ public class MessageQueueingContentWriterTest {
     public void testEnqueuesMessageWhenContentChanges() throws Exception {
         
         Episode episode = new Episode("uri","curie",Publisher.METABROADCAST);
+        episode.setId(54321L);
         episode.setReadHash(null);
         
         writer.createOrUpdate(episode);
@@ -42,7 +43,7 @@ public class MessageQueueingContentWriterTest {
         Session session = mock(Session.class);
         creator.createMessage(session);
         
-        verify(session).createTextMessage(contains("uri"));
+        verify(session).createTextMessage(contains("54321"));
         
     }
 
