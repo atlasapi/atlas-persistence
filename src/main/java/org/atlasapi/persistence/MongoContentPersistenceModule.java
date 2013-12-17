@@ -27,7 +27,6 @@ import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
-import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -49,8 +48,6 @@ import org.atlasapi.persistence.lookup.LookupWriter;
 import org.atlasapi.persistence.lookup.MessageQueueingLookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.atlasapi.persistence.lookup.LookupWriter;
-import org.atlasapi.persistence.lookup.MessageQueueingLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -87,6 +84,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private final Parameter processingConfig = Configurer.get("processing.config");
     
     private @Value("${ids.generate}") String generateIds;
+    private @Value("${messaging.enabled}") String messagingEnabled;
     
     public MongoContentPersistenceModule() {}
     
@@ -112,7 +110,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public @Primary @Bean ContentWriter contentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
-        contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
+        if (Boolean.valueOf(messagingEnabled)) {
+            contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
+        }
         if (Boolean.valueOf(generateIds)) {
             contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
         }
@@ -143,8 +143,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return messagingLookupWriter(lookupWriter);
     }
 
-    private MessageQueueingLookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
-        return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
+    private LookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
+        if (Boolean.valueOf(messagingEnabled)) {
+            return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
+        }
+        return lookupWriter;
     }
 
     public @Primary @Bean MongoScheduleStore scheduleStore() {
@@ -182,9 +185,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     public @Primary @Bean TopicStore topicStore() {
-        return new TopicCreatingTopicResolver(
-                new MessageQueueingTopicWriter(messagingModule.topicChanges(), new MongoTopicStore(db)),
-                new MongoSequentialIdGenerator(db, "topic"));
+        TopicStore store = new MongoTopicStore(db);
+        if (Boolean.valueOf(messagingEnabled)) {
+            store = new MessageQueueingTopicWriter(messagingModule.topicChanges(), store);
+        }
+        return new TopicCreatingTopicResolver(store, new MongoSequentialIdGenerator(db, "topic"));
     }
 
     public @Primary @Bean TopicQueryResolver topicQueryResolver() {
