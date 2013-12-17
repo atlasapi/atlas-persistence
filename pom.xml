@@ -106,17 +106,17 @@
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-client</artifactId>
-            <version>${amq.version}</version>
+            <version>5.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-broker</artifactId>
-            <version>${amq.version}</version>
+            <version>5.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-kahadb-store</artifactId>
-            <version>${amq.version}</version>
+            <version>5.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -157,6 +157,5 @@
         <atlas.version>${project.version}</atlas.version>
         <common.version>1.0-SNAPSHOT</common.version>
         <spring.version>3.0.5.RELEASE</spring.version>
-        <amq.version>5.9.0</amq.version>
     </properties>
 </project>
