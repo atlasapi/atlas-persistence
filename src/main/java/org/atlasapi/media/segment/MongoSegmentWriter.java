@@ -27,7 +27,7 @@ public class MongoSegmentWriter implements SegmentWriter {
     }
 
     private void write(DBObject dbo) {
-        collection.update(MongoBuilders.where().idEquals(String.valueOf(dbo.get(ID))).build(), dbo, UPSERT, SINGLE);
+        collection.save(dbo);
     }
 
 }
