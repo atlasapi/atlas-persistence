@@ -19,10 +19,12 @@ public final class QueueFactory {
     private static final Logger log = LoggerFactory.getLogger(QueueFactory.class);
     
     private final String system;
-    private final ConnectionFactory cf;
+    private final ConnectionFactory producerCf;
+    private final ConnectionFactory consumerCf;
 
-    public QueueFactory(ConnectionFactory cf, String system) {
-        this.cf = checkNotNull(cf);
+    public QueueFactory(ConnectionFactory producerCf, ConnectionFactory consumerCf, String system) {
+        this.producerCf = checkNotNull(producerCf);
+        this.consumerCf = checkNotNull(consumerCf);
         checkArgument(!Strings.isNullOrEmpty(system));
         this.system = system;
     }
@@ -53,7 +55,7 @@ public final class QueueFactory {
         DefaultMessageListenerContainer container = new DefaultMessageListenerContainer();
 
         adapter.setDefaultListenerMethod("onMessage");
-        container.setConnectionFactory(cf);
+        container.setConnectionFactory(consumerCf);
         container.setDestinationName(destination);
         container.setConcurrentConsumers(consumers);
         container.setMaxConcurrentConsumers(maxConsumers);
@@ -65,7 +67,7 @@ public final class QueueFactory {
     public JmsTemplate makeVirtualTopicProducer(String producerName) {
         String destination = this.virtualTopicProducer(producerName);
         log.info("Writing {}", destination);
-        JmsTemplate jmsTemplate = new JmsTemplate(cf);
+        JmsTemplate jmsTemplate = new JmsTemplate(producerCf);
         jmsTemplate.setPubSubDomain(true);
         jmsTemplate.setDefaultDestinationName(destination);
         return jmsTemplate;
@@ -74,7 +76,7 @@ public final class QueueFactory {
     public DefaultMessageListenerContainer noopContainer() {
         DefaultMessageListenerContainer container = new DefaultMessageListenerContainer();
 
-        container.setConnectionFactory(cf);
+        container.setConnectionFactory(consumerCf);
         container.setDestinationName("do.not.write.to.this.queue");
 
         return container;
