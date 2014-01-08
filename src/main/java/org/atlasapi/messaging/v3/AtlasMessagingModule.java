@@ -36,15 +36,22 @@ public class AtlasMessagingModule {
     
     @Bean @Primary
     public QueueFactory queueHelper() {
-        return new QueueFactory(activemqConnectionFactory(), messagingSystem);
+        return new QueueFactory(producerFactory(), consumerFactory(), messagingSystem);
     }
     
     @Bean
     @Lazy(true)
-    public ConnectionFactory activemqConnectionFactory() {
-        ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(brokerUrl);
-        activeMQConnectionFactory.setProducerWindowSize(Integer.parseInt(producerWindowSize));
-        CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(activeMQConnectionFactory);
+    public ConnectionFactory consumerFactory() {
+        ConnectionFactory cf = new ActiveMQConnectionFactory(brokerUrl);
+        return cf;
+    }
+    
+    @Bean
+    @Lazy(true)
+    public ConnectionFactory producerFactory() {
+        ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory(brokerUrl);
+        cf.setProducerWindowSize(Integer.parseInt(producerWindowSize));
+        ConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(cf);
         return cachingConnectionFactory;
     }
     
