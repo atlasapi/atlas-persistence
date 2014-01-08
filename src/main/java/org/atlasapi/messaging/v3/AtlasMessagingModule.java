@@ -16,6 +16,8 @@ public class AtlasMessagingModule {
     
     @Value("${messaging.broker.url}")
     private String brokerUrl;
+    @Value("${messaging.producer.window.size}")
+    private String producerWindowSize;
     @Value("${messaging.system}")
     private String messagingSystem;
     @Value("${messaging.destination.content.changes}")
@@ -41,6 +43,7 @@ public class AtlasMessagingModule {
     @Lazy(true)
     public ConnectionFactory activemqConnectionFactory() {
         ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(brokerUrl);
+        activeMQConnectionFactory.setProducerWindowSize(Integer.parseInt(producerWindowSize));
         CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(activeMQConnectionFactory);
         return cachingConnectionFactory;
     }
