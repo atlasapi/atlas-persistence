@@ -34,12 +34,14 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String LANGUAGES_KEY = "languages";
     private static final String YEAR_KEY = "year";
     private static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
+    private static final String SIMILAR_CONTENT_KEY = "similarContent";
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
     private final TopicRefTranslator contentTopicTranslator;
     private final ContentGroupRefTranslator contentGroupRefTranslator;
     private final CrewMemberTranslator crewMemberTranslator;
+    private final ChildRefTranslator childRefTranslator;
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
         this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec));
@@ -53,6 +55,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.contentTopicTranslator = new TopicRefTranslator();
         this.contentGroupRefTranslator = new ContentGroupRefTranslator();
         this.crewMemberTranslator = new CrewMemberTranslator();
+        this.childRefTranslator = new ChildRefTranslator();
     }
 
     @Override
@@ -67,6 +70,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeCertificates(dbObject, entity); 
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
+        entity.setSimilarContent(childRefTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, SIMILAR_CONTENT_KEY)));
         
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, PEOPLE);
         if (list != null && ! list.isEmpty()) {
@@ -165,6 +169,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
         TranslatorUtils.from(dbObject, GENERIC_DESCRIPTION_KEY, entity.getGenericDescription());
         
+        TranslatorUtils.from(dbObject, SIMILAR_CONTENT_KEY, childRefTranslator.toDBList(entity.getSimilarContent()));
         if (! entity.people().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (CrewMember person: entity.people()) {
