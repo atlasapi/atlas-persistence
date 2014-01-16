@@ -3,7 +3,9 @@ package org.atlasapi.persistence.output;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
 
@@ -22,6 +24,7 @@ import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.joda.time.DateTime;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -42,18 +45,17 @@ public class MongoAvailableItemsResolverTest {
         = new MongoAvailableItemsResolver(mongo, lookupStore, clock);
     private final ContentWriter writer = new MongoContentWriter(mongo, lookupStore, clock);
     
-    @Test
-    public void testResolvesChildrenOfEquivalentBrandsAsTheItemsOfThePrimaryBrand() {
-        
-        Brand primary = new Brand("primary", "primary", Publisher.BBC);
-        Brand equivalent = new Brand("equivalent", "equivalent", Publisher.PA);
-        
-        Episode p1 = episode("p1", primary, location("p1l1", dateTime(0), dateTime(10)));
-        Episode p2 = episode("p2", primary);
-        
-        Episode e1 = episode("e1", equivalent, location("e1l1", dateTime(0), dateTime(10)));
-        Episode e2 = episode("e2", equivalent, location("e2l2", dateTime(0), dateTime(10)));
-        
+    private final Brand primary = new Brand("primary", "primary", Publisher.BBC);
+    private final Brand equivalent = new Brand("equivalent", "equivalent", Publisher.PA);
+    
+    private final Episode p1 = episode("p1", primary, location("p1l1", dateTime(0), dateTime(10)));
+    private final Episode p2 = episode("p2", primary);
+    
+    private final Episode e1 = episode("e1", equivalent, location("e1l1", dateTime(0), dateTime(10)));
+    private final Episode e2 = episode("e2", equivalent, location("e2l2", dateTime(0), dateTime(10)));
+    
+    @Before
+    public void setUp() {
         writer.createOrUpdate(primary);
         writer.createOrUpdate(equivalent);
         writer.createOrUpdate(p1);
@@ -65,7 +67,11 @@ public class MongoAvailableItemsResolverTest {
         writeEquivalences(p2, e2);
         
         primary.setEquivalentTo(ImmutableSet.of(LookupRef.from(equivalent)));
-        
+        p2.setEquivalentTo(ImmutableSet.of(LookupRef.from(p1)));
+    }
+    
+    @Test
+    public void testResolvesChildrenOfEquivalentBrandsAsTheItemsOfThePrimaryBrand() {
         clock.jumpTo(dateTime(5));
         ApplicationConfiguration noPaConfig = ApplicationConfiguration.defaultConfiguration();
         Set<ChildRef> childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, noPaConfig));
@@ -78,6 +84,22 @@ public class MongoAvailableItemsResolverTest {
         assertThat(childRefs.size(), is(2));
         assertThat(Iterables.transform(childRefs, ChildRef.TO_URI), hasItems(p1.getCanonicalUri(), p2.getCanonicalUri()));
         
+    }
+    
+    @Test
+    public void testResolvesEquivalentItemsForAvailabilityCheck() {
+        clock.jumpTo(dateTime(5));
+        ApplicationConfiguration withPaAndBbcConfig = ApplicationConfiguration.defaultConfiguration()
+                .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA)
+                .enable(Publisher.BBC);
+        
+        assertTrue(resolver.isAvailable(p2, withPaAndBbcConfig));
+        
+        ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
+                .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA)
+                .disable(Publisher.BBC);
+            
+        assertFalse(resolver.isAvailable(p2, withPaConfig));
     }
 
     private void writeEquivalences(Episode a, Episode b) {

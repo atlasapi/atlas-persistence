@@ -15,6 +15,7 @@ import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
@@ -29,6 +30,7 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -124,6 +126,19 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
     }
     
     @Override
+    public boolean isAvailable(Item item, ApplicationConfiguration config) {
+        final DateTime now = clock.now();
+        DBObject query = where()
+                .idIn(FluentIterable.from(item.getEquivalentTo())
+                                    .filter(sourceFilter(config.getEnabledSources()))
+                                    .transform(LookupRef.TO_URI)
+                     )
+                .fieldAfter(availabilityEndKey, now)
+                .build();
+        return children.find(query,fields).hasNext() || topLevelItems.find(query,fields).hasNext();
+    }
+    
+    @Override
     /*
      * TODO: make this work better for Person from schedule-only sources.
      * 
@@ -173,8 +188,8 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
         return AVAILABILITY_START_ORDERING.immutableSortedCopy(childDbos);
     }
 
-    private Iterable<ChildRef> filterItems(final DateTime now, Iterable<DBObject> availbleItems) {
-        return Iterables.filter(Iterables.transform(availbleItems, new Function<DBObject, ChildRef>() {
+    private Iterable<ChildRef> filterItems(final DateTime now, Iterable<DBObject> availableItems) {
+        return Iterables.filter(Iterables.transform(availableItems, new Function<DBObject, ChildRef>() {
 
             @Override
             public ChildRef apply(DBObject input) {

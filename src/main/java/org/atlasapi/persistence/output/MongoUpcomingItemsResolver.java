@@ -5,19 +5,28 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDBObjectList;
 import static com.metabroadcast.common.persistence.translator.TranslatorUtils.toDateTime;
 
+import java.util.Collection;
+
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -57,6 +66,19 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     public Iterable<ChildRef> upcomingItemsFor(Container container) {
         final DateTime now = clock.now();
         return filterToChildRef(now, broadcastEndsForChildrenOf(container, now));
+    }
+    
+    @Override
+    public boolean hasUpcomingBroadcasts(Item item, ApplicationConfiguration config) {
+        final DateTime now = clock.now();
+        DBObject query = where()
+                .idIn(FluentIterable.from(item.getEquivalentTo())
+                                    .filter(sourceFilter(config.getEnabledSources()))
+                                    .transform(LookupRef.TO_URI)
+                     )
+                .fieldAfter(transmissionEndTime, now)
+                .build();
+        return children.find(query,fields).hasNext() || topLevelItems.find(query,fields).hasNext();
     }
     
     @Override
@@ -105,6 +127,10 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
             .fieldAfter(transmissionEndTimeKey, time)
             .build();
         return Iterables.concat(children.find(query,fields), topLevelItems.find(query,fields));
+    }
+    
+    private Predicate<LookupRef> sourceFilter(Collection<Publisher> sources) {
+        return MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(sources));
     }
     
 }
