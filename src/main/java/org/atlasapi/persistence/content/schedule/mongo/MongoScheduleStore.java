@@ -12,6 +12,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.atlasapi.application.v3.ApplicationConfiguration;
+import org.atlasapi.application.v3.SourceStatus;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
@@ -27,7 +28,6 @@ import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.output.Annotation;
-import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.ScheduleResolver;
@@ -67,13 +67,10 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private final DBCollection collection;
     private final ScheduleEntryTranslator translator;
 
-    private final ContentResolver resolver;
     private final EquivalentContentResolver equivalentContentResolver;
     private final ChannelResolver channelResolver;
 
-
-    public MongoScheduleStore(DatabasedMongo db, ContentResolver resolver, ChannelResolver channelResolver, EquivalentContentResolver equivalentContentResolver) {
-        this.resolver = resolver;
+    public MongoScheduleStore(DatabasedMongo db, ChannelResolver channelResolver, EquivalentContentResolver equivalentContentResolver) {
         this.equivalentContentResolver = equivalentContentResolver;
         collection = db.collection("schedule");
         this.channelResolver = channelResolver;
@@ -215,12 +212,20 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         }
         List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
 
-        Map<Channel, List<Item>> channelMap = resolveEntries(entries, channels, mergeConfig);
+        ApplicationConfiguration config = mergeConfig.or(configFor(publishers));
+        Map<Channel, List<Item>> channelMap = resolveEntries(entries, channels, config);
         return scheduleFrom(channelMap, interval);
     }
 
+    private ApplicationConfiguration configFor(Iterable<Publisher> publishers) {
+        ImmutableList<Publisher> sources = ImmutableList.copyOf(publishers);
+        return configWithEverythingDisabled
+            .copyWithPrecedence(sources)
+            .withSources(Maps.toMap(sources, Functions.constant(SourceStatus.AVAILABLE_ENABLED)));
+    }
+
     private Map<Channel, List<Item>> resolveEntries(Iterable<ScheduleEntry> entries,
-            Iterable<Channel> channels, Optional<ApplicationConfiguration> mergeConfig) {
+            Iterable<Channel> channels, ApplicationConfiguration mergeConfig) {
         Map<Channel, List<Item>> channelMap = createChannelMap(channels);
         // TODO this code inefficient, but in future we should avoid hydrating then items
         // unless explicitly requested
@@ -268,12 +273,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         }
     }
 
-    private Map<String, Maybe<Identified>> resolveItems(Iterable<Entry<Channel, ItemRefAndBroadcast>> refs, Optional<ApplicationConfiguration> mergeConfig) {
-        if (mergeConfig.isPresent() && mergeConfig.get().precedenceEnabled()) {
-            return findAndMerge(mergeConfig.get(), refs);
-        } else {
-            return resolver.findByCanonicalUris(uniqueUris(refs)).asMap();
-        }
+    private Map<String, Maybe<Identified>> resolveItems(Iterable<Entry<Channel, ItemRefAndBroadcast>> refs, ApplicationConfiguration mergeConfig) {
+        return findAndMerge(mergeConfig, refs);
     }
 
     private ImmutableSet<String> uniqueUris(Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
@@ -357,7 +358,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             iterations++;
         }
         
-        Map<Channel, List<Item>> channelMap = resolveEntries(entries.values(), channels, mergeConfig);
+        ApplicationConfiguration config = mergeConfig.or(configFor(publishers));
+        Map<Channel, List<Item>> channelMap = resolveEntries(entries.values(), channels, config);
         return scheduleFrom(channelMap, new Interval(from, end));
     }
 
@@ -458,6 +460,10 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private static final Function<Item, Interval> ITEM_TO_BROADCAST_INTERVAL = Functions.compose(TO_BROADCAST, ScheduleEntry.BROADCAST);
 
     private final OutputContentMerger merger = new OutputContentMerger();
+
+    private final ApplicationConfiguration configWithEverythingDisabled
+        = ApplicationConfiguration.defaultConfiguration()
+            .copyWithSourceStatuses(Maps.toMap(Publisher.all(), Functions.constant(SourceStatus.UNAVAILABLE)));
     
     private Iterable<Item> filterItems(Iterable<Item> items, final Interval interval) {
         final Predicate<Item> validBroadcast = MorePredicates.transformingPredicate(ITEM_TO_BROADCAST_INTERVAL, new ScheduleBroadcastFilter(interval));

@@ -26,6 +26,7 @@ import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
@@ -43,7 +44,6 @@ import org.atlasapi.persistence.channels.DummyChannelResolver;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
-import org.atlasapi.persistence.testing.StubContentResolver;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -51,18 +51,70 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MongoScheduleStoreTest {
+    
+    private static class StubEquivalentContentResolver implements EquivalentContentResolver {
+
+        private final Multimap<String, Content> content = HashMultimap.create();
+        
+        public StubEquivalentContentResolver respondsTo(Content...contents) {
+            ImmutableSet<Content> set = ImmutableSet.copyOf(contents);
+            for (Content content : contents) {
+                this.content.putAll(content.getCanonicalUri(), set);
+            }
+            return this;
+        }
+        
+        @Override
+        public EquivalentContent resolveUris(Iterable<String> uris,
+                ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations,
+                boolean withAliases) {
+            EquivalentContent.Builder builder = EquivalentContent.builder();
+            for (String uri : uris) {
+                builder.putEquivalents(uri, copy(content.get(uri)));
+            }
+            return builder.build();
+        }
+
+        private Iterable<Content> copy(Collection<Content> collection) {
+            return Iterables.transform(collection, new Function<Content, Content>() {
+                @Override
+                public Content apply(Content input) {
+                    return (Content) input.copy();
+                }
+            });
+        }
+
+        @Override
+        public EquivalentContent resolveIds(Iterable<Long> ids, ApplicationConfiguration appConfig,
+                Set<Annotation> activeAnnotations) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public EquivalentContent resolveAliases(Optional<String> namespace,
+                Iterable<String> values, ApplicationConfiguration appConfig,
+                Set<Annotation> activeAnnotations) {
+            throw new UnsupportedOperationException();
+        }
+        
+        
+        
+    }
 
     private MongoScheduleStore store;
     
@@ -94,8 +146,9 @@ public class MongoScheduleStoreTest {
     private long when = System.currentTimeMillis();
     
     private DatabasedMongo database;
-    
-    private StubContentResolver contentResolver;
+
+    private final StubEquivalentContentResolver contentResolver
+        = new StubEquivalentContentResolver();
     
     @Before
     public void setUp() throws Exception {
@@ -121,12 +174,15 @@ public class MongoScheduleStoreTest {
         
         when = System.currentTimeMillis();
 
-        contentResolver = new StubContentResolver().respondTo(item1).respondTo(item2).respondTo(item3);
+        contentResolver
+            .respondsTo(item1)
+            .respondsTo(item2)
+            .respondsTo(item3);
         
         ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
-        store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
+        store = new MongoScheduleStore(database, channelResolver, contentResolver);
     }
-    
+
     @After
     public void tearDown() {
         System.out.println("Completed in "+(System.currentTimeMillis()-when)+" millis");
@@ -214,7 +270,8 @@ public class MongoScheduleStoreTest {
         // Now replace the item being broadcast in the b2 slot
         
         Item item4 = itemWithBroadcast("item4", b2);
-        contentResolver = contentResolver.respondTo(item4);
+        contentResolver.respondsTo(item4);
+        
         List<ItemRefAndBroadcast> replacementItemAndBcast = Lists.newArrayList();
         replacementItemAndBcast.add(new ItemRefAndBroadcast(item4, b2));
         
@@ -339,15 +396,15 @@ public class MongoScheduleStoreTest {
         Item item3 = itemWithBroadcast(BBC_TWO, now, now.plusHours(5));
         Item item4 = itemWithBroadcast(BBC_TWO, now.plusHours(5), now.plusHours(10));
         
-        ContentResolver contentResolver = new StubContentResolver()
-            .respondTo(item1)
-            .respondTo(item2)
-            .respondTo(item3)
-            .respondTo(item4);
+        StubEquivalentContentResolver contentResolver = new StubEquivalentContentResolver()
+            .respondsTo(item1)
+            .respondsTo(item2)
+            .respondsTo(item3)
+            .respondsTo(item4);
         
         ImmutableSet<Channel> channels = ImmutableSet.of(BBC_ONE, BBC_TWO);
         ChannelResolver channelResolver = new DummyChannelResolver(channels);
-        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, contentResolver);
 
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
@@ -365,13 +422,13 @@ public class MongoScheduleStoreTest {
         Item item1 = itemWithBroadcast(BBC_ONE, now, now.plusHours(30));
         Item item2 = itemWithBroadcast(BBC_ONE, now.plusHours(30), now.plusHours(35));
         
-        ContentResolver contentResolver = new StubContentResolver()
-            .respondTo(item1)
-            .respondTo(item2);
+        StubEquivalentContentResolver contentResolver = new StubEquivalentContentResolver()
+            .respondsTo(item1)
+            .respondsTo(item2);
         
         ImmutableSet<Channel> channel = ImmutableSet.of(BBC_ONE);
         ChannelResolver channelResolver = new DummyChannelResolver(channel);
-        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, contentResolver);
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
@@ -386,13 +443,18 @@ public class MongoScheduleStoreTest {
         Item item1 = itemWithBroadcast(BBC_ONE, now, now.plusMinutes(30));
         Item item2 = itemWithBroadcast(BBC_ONE, now.plusMinutes(30), now.plusMinutes(60));
         
-        ContentResolver contentResolver = new StubContentResolver()
-            .respondTo(item1)
-            .respondTo(item2);
+        StubEquivalentContentResolver contentResolver = new StubEquivalentContentResolver()
+            .respondsTo(item1)
+            .respondsTo(item2);
+//        EquivalentContentResolver contentResolver = mock(EquivalentContentResolver.class);
+//        when(contentResolver.resolveUris(argThat(hasItems(item1.getCanonicalUri())), any(ApplicationConfiguration.class), anySetOf(Annotation.class), anyBoolean()))
+//            .thenReturn(equivContentFor(item1));
+//        when(contentResolver.resolveUris(argThat(hasItems(item2.getCanonicalUri())), any(ApplicationConfiguration.class), anySetOf(Annotation.class), anyBoolean()))
+//            .thenReturn(equivContentFor(item2));
         
         ImmutableSet<Channel> channel = ImmutableSet.of(BBC_ONE);
         ChannelResolver channelResolver = new DummyChannelResolver(channel);
-        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, mock(EquivalentContentResolver.class));
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, contentResolver);
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
@@ -415,7 +477,7 @@ public class MongoScheduleStoreTest {
         ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
         ContentResolver contentResolver = mock(ContentResolver.class);
         EquivalentContentResolver equivalentContentResolver = mock(EquivalentContentResolver.class);
-        MongoScheduleStore store = new MongoScheduleStore(database, contentResolver, channelResolver, equivalentContentResolver);
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, equivalentContentResolver);
 
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
