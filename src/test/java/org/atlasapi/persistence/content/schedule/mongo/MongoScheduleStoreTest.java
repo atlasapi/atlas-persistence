@@ -446,11 +446,6 @@ public class MongoScheduleStoreTest {
         StubEquivalentContentResolver contentResolver = new StubEquivalentContentResolver()
             .respondsTo(item1)
             .respondsTo(item2);
-//        EquivalentContentResolver contentResolver = mock(EquivalentContentResolver.class);
-//        when(contentResolver.resolveUris(argThat(hasItems(item1.getCanonicalUri())), any(ApplicationConfiguration.class), anySetOf(Annotation.class), anyBoolean()))
-//            .thenReturn(equivContentFor(item1));
-//        when(contentResolver.resolveUris(argThat(hasItems(item2.getCanonicalUri())), any(ApplicationConfiguration.class), anySetOf(Annotation.class), anyBoolean()))
-//            .thenReturn(equivContentFor(item2));
         
         ImmutableSet<Channel> channel = ImmutableSet.of(BBC_ONE);
         ChannelResolver channelResolver = new DummyChannelResolver(channel);
