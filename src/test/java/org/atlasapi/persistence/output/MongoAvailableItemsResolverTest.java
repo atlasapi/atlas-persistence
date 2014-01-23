@@ -3,9 +3,7 @@ package org.atlasapi.persistence.output;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
 
@@ -93,13 +91,13 @@ public class MongoAvailableItemsResolverTest {
                 .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA)
                 .enable(Publisher.BBC);
         
-        assertTrue(resolver.isAvailable(p2, withPaAndBbcConfig));
+        assertEquals(1, resolver.availableItemsByPublisherFor(p2, withPaAndBbcConfig).values().size());
         
         ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
                 .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA)
                 .disable(Publisher.BBC);
             
-        assertFalse(resolver.isAvailable(p2, withPaConfig));
+        assertEquals(0, resolver.availableItemsByPublisherFor(p2, withPaConfig).values().size());
     }
 
     private void writeEquivalences(Episode a, Episode b) {
