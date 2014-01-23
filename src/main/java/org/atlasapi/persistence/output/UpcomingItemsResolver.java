@@ -5,13 +5,18 @@ import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
+import org.atlasapi.media.entity.Publisher;
+
+import com.google.common.collect.Multimap;
 
 public interface UpcomingItemsResolver {
 
     Iterable<ChildRef> upcomingItemsFor(Container container);
     
     Iterable<ChildRef> upcomingItemsFor(Person person);
-
-    boolean hasUpcomingBroadcasts(Item item, ApplicationConfiguration config);
+    
+    Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Container container);
+    
+    Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Item container, ApplicationConfiguration config);
 
 }

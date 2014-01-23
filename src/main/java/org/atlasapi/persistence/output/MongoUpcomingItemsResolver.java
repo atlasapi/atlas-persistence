@@ -16,16 +16,19 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableMultimap.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
@@ -45,7 +48,8 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     private final String containerKey = "container";
     
     private final DBObject fields = select().fields(ImmutableSet.of(IdentifiedTranslator.TYPE, 
-            IdentifiedTranslator.OPAQUE_ID, IdentifiedTranslator.LAST_UPDATED, transmissionEndTimeKey))
+            IdentifiedTranslator.OPAQUE_ID, DescribedTranslator.PUBLISHER_KEY, 
+            IdentifiedTranslator.LAST_UPDATED, transmissionEndTimeKey))
             .build();
 
     private final DBCollection children;
@@ -64,12 +68,22 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     
     @Override
     public Iterable<ChildRef> upcomingItemsFor(Container container) {
+        return upcomingItemsByPublisherFor(container).values();
+    }
+    
+    @Override
+    public Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Container container) {
         final DateTime now = clock.now();
         return filterToChildRef(now, broadcastEndsForChildrenOf(container, now));
     }
     
     @Override
-    public boolean hasUpcomingBroadcasts(Item item, ApplicationConfiguration config) {
+    public Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Item item, ApplicationConfiguration config) {
+        final DateTime now = clock.now();
+        return filterToChildRef(now, broadcastEndsForEquivalentTo(item, config));
+    }
+    
+    private Iterable<DBObject> broadcastEndsForEquivalentTo(Item item, ApplicationConfiguration config) {
         final DateTime now = clock.now();
         DBObject query = where()
                 .idIn(FluentIterable.from(item.getEquivalentTo())
@@ -78,35 +92,35 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
                      )
                 .fieldAfter(transmissionEndTime, now)
                 .build();
-        return children.find(query,fields).hasNext() || topLevelItems.find(query,fields).hasNext();
+        return Iterables.concat(children.find(query,fields), topLevelItems.find(query,fields));
     }
     
     @Override
     public Iterable<ChildRef> upcomingItemsFor(Person person) {
         final DateTime now = clock.now();
-        return filterToChildRef(now, broadcastEndsForItemsOf(person, now));
+        return filterToChildRef(now, broadcastEndsForItemsOf(person, now)).values();
     }
 
-    private Iterable<ChildRef> filterToChildRef(final DateTime now,
+    private Multimap<Publisher, ChildRef> filterToChildRef(final DateTime now,
             Iterable<DBObject> broadcastEnds) {
-        return Iterables.filter(Iterables.transform(broadcastEnds, new Function<DBObject, ChildRef>() {
-
-            @Override
-            public ChildRef apply(DBObject input) {
-                for (DBObject version : toDBObjectList(input, versions)) {
-                    for (DBObject broadcast : toDBObjectList(version, broadcasts)) {
-                            if (after(toDateTime(broadcast, transmissionEndTime), now)) {
-                                String uri = TranslatorUtils.toString(input, MongoConstants.ID);
-                                Long aid = TranslatorUtils.toLong(input, IdentifiedTranslator.OPAQUE_ID);
-                                String type = TranslatorUtils.toString(input, IdentifiedTranslator.TYPE);
-                                DateTime lastUpdated = TranslatorUtils.toDateTime(input, IdentifiedTranslator.LAST_UPDATED);
-                                return new ChildRef(aid, uri, "", lastUpdated, EntityType.from(type));
-                            }
-                        }
+        
+        Builder<Publisher, ChildRef> builder = ImmutableMultimap.builder();
+        
+        for (DBObject dbo : broadcastEnds) {
+            for (DBObject version : toDBObjectList(dbo, versions)) {
+                for (DBObject broadcast : toDBObjectList(version, broadcasts)) {
+                    if (after(toDateTime(broadcast, transmissionEndTime), now)) {
+                        String uri = TranslatorUtils.toString(dbo, MongoConstants.ID);
+                        Long aid = TranslatorUtils.toLong(dbo, IdentifiedTranslator.OPAQUE_ID);
+                        String type = TranslatorUtils.toString(dbo, IdentifiedTranslator.TYPE);
+                        DateTime lastUpdated = TranslatorUtils.toDateTime(dbo, IdentifiedTranslator.LAST_UPDATED);
+                        Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(dbo, DescribedTranslator.PUBLISHER_KEY)).requireValue();
+                        builder.put(publisher, new ChildRef(aid, uri, "", lastUpdated, EntityType.from(type)));
                     }
-                return null;
+                }
             }
-        }),Predicates.notNull());
+        }
+        return builder.build();
     }
     
     private boolean after(DateTime dateTime, DateTime now) {
