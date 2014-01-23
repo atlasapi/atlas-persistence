@@ -53,6 +53,15 @@ public abstract class AbstractWorker implements Worker {
             throw new RuntimeException(ex.getMessage(), ex);
         }
     }
+    
+    public void onMessage(byte[] message) {
+        try {
+            Message event = mapper.readValue(message, Message.class);
+            event.dispatchTo(this);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex.getMessage(), ex);
+        }
+    }
 
     @Override
     public void process(EntityUpdatedMessage message) {
