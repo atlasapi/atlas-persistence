@@ -8,6 +8,7 @@ import static org.junit.Assert.assertThat;
 import java.util.Set;
 
 import org.atlasapi.application.v3.ApplicationConfiguration;
+import org.atlasapi.application.v3.SourceStatus;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Encoding;
@@ -89,15 +90,15 @@ public class MongoAvailableItemsResolverTest {
     public void testResolvesEquivalentItemsForAvailabilityCheck() {
         clock.jumpTo(dateTime(5));
         ApplicationConfiguration withPaAndBbcConfig = ApplicationConfiguration.defaultConfiguration()
-                .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA)
-                .enable(Publisher.BBC);
+                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED)
+                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
         
         assertEquals(1, resolver.availableItemsByPublisherFor(p2, withPaAndBbcConfig).values().size());
         
         ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
-                .request(Publisher.PA).approve(Publisher.PA).enable(Publisher.PA)
-                .disable(Publisher.BBC);
-            
+                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED)
+                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_DISABLED);
+        
         assertEquals(0, resolver.availableItemsByPublisherFor(p2, withPaConfig).values().size());
     }
 
