@@ -43,7 +43,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     @Override
     public EquivalentContent resolveUris(Iterable<String> uris, ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations, boolean withAliases) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris, withAliases);
-        return filterAndResolveEntries(entries, uris, appConfig);
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig);
     }
     
     @Override
@@ -53,7 +53,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         for (LookupEntry entry : entries) {
             uris.add(entry.uri());
         }
-        return filterAndResolveEntries(entries, uris, appConfig);
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig);
     }
     
     @Override
@@ -64,10 +64,10 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         for (LookupEntry entry : entries) {
             uris.add(entry.uri());
         }
-        return filterAndResolveEntries(entries, uris, appConfig); 
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig); 
     }
 
-    protected EquivalentContent filterAndResolveEntries(Iterable<LookupEntry> entries, Iterable<String> uris, ApplicationConfiguration appConfig) {
+    protected EquivalentContent filterAndResolveEntries(Set<LookupEntry> entries, Iterable<String> uris, ApplicationConfiguration appConfig) {
         if (Iterables.isEmpty(entries)) {
             return EquivalentContent.empty();
         }
