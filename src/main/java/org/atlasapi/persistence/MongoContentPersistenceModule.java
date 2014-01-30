@@ -155,7 +155,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     MongoScheduleStore scheduleStore() {
         try {
-            return new MongoScheduleStore(db, channelResolver, equivContentResolver());
+            return new MongoScheduleStore(db, channelResolver, contentResolver(), equivContentResolver());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

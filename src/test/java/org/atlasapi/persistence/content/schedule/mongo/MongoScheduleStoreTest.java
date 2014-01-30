@@ -44,6 +44,7 @@ import org.atlasapi.persistence.channels.DummyChannelResolver;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
+import org.atlasapi.persistence.testing.StubContentResolver;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -147,8 +148,10 @@ public class MongoScheduleStoreTest {
     
     private DatabasedMongo database;
 
-    private final StubEquivalentContentResolver contentResolver
+    private final StubEquivalentContentResolver equivContentResolver
         = new StubEquivalentContentResolver();
+
+    private StubContentResolver contentResolver = new StubContentResolver();
     
     @Before
     public void setUp() throws Exception {
@@ -174,13 +177,17 @@ public class MongoScheduleStoreTest {
         
         when = System.currentTimeMillis();
 
-        contentResolver
+        equivContentResolver
             .respondsTo(item1)
             .respondsTo(item2)
             .respondsTo(item3);
+        contentResolver
+            .respondTo(item1)
+            .respondTo(item2)
+            .respondTo(item3);
         
         ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
-        store = new MongoScheduleStore(database, channelResolver, contentResolver);
+        store = new MongoScheduleStore(database, channelResolver, contentResolver, equivContentResolver);
     }
 
     @After
@@ -270,7 +277,7 @@ public class MongoScheduleStoreTest {
         // Now replace the item being broadcast in the b2 slot
         
         Item item4 = itemWithBroadcast("item4", b2);
-        contentResolver.respondsTo(item4);
+        equivContentResolver.respondsTo(item4);
         
         List<ItemRefAndBroadcast> replacementItemAndBcast = Lists.newArrayList();
         replacementItemAndBcast.add(new ItemRefAndBroadcast(item4, b2));
@@ -404,7 +411,7 @@ public class MongoScheduleStoreTest {
         
         ImmutableSet<Channel> channels = ImmutableSet.of(BBC_ONE, BBC_TWO);
         ChannelResolver channelResolver = new DummyChannelResolver(channels);
-        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, contentResolver);
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, new StubContentResolver(), contentResolver);
 
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
@@ -428,7 +435,7 @@ public class MongoScheduleStoreTest {
         
         ImmutableSet<Channel> channel = ImmutableSet.of(BBC_ONE);
         ChannelResolver channelResolver = new DummyChannelResolver(channel);
-        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, contentResolver);
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, new StubContentResolver(), contentResolver);
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
@@ -449,7 +456,7 @@ public class MongoScheduleStoreTest {
         
         ImmutableSet<Channel> channel = ImmutableSet.of(BBC_ONE);
         ChannelResolver channelResolver = new DummyChannelResolver(channel);
-        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, contentResolver);
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, new StubContentResolver(), contentResolver);
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
@@ -472,7 +479,7 @@ public class MongoScheduleStoreTest {
         ChannelResolver channelResolver = new DummyChannelResolver(ImmutableList.of(BBC_ONE, BBC_TWO, Channel_4_HD, AL_JAZEERA_ENGLISH));
         ContentResolver contentResolver = mock(ContentResolver.class);
         EquivalentContentResolver equivalentContentResolver = mock(EquivalentContentResolver.class);
-        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, equivalentContentResolver);
+        MongoScheduleStore store = new MongoScheduleStore(database, channelResolver, contentResolver, equivalentContentResolver);
 
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
@@ -501,6 +508,15 @@ public class MongoScheduleStoreTest {
         }
     }
 
+    @Test
+    public void testResolvingUnmergedSchedule() {
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
+        
+        Schedule schedule = store.unmergedSchedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV));
+        assertSchedule(schedule);
+    }
+    
     private void checkCount(DateTime from, MongoScheduleStore store, Set<Channel> channels, int requestedCount, int expectedCount) {
         Schedule schedule = store.schedule(from, requestedCount, 
                 ImmutableSet.copyOf(channels), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
