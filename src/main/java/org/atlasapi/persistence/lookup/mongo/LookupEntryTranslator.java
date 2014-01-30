@@ -22,6 +22,7 @@ import com.mongodb.DBObject;
 
 public class LookupEntryTranslator {
 
+    private static final String EXPLICIT = "explicit";
     private static final String DIRECT = "direct";
     private static final String EQUIVS = "equivs";
     private static final String LAST_UPDATED = "updated";
@@ -53,7 +54,7 @@ public class LookupEntryTranslator {
         
         TranslatorUtils.from(dbo, ID, entry.uri());
         TranslatorUtils.from(dbo, OPAQUE_ID, entry.id());
-        TranslatorUtils.from(dbo, SELF, equivalentToDbo.apply(entry.lookupRef()));
+        TranslatorUtils.from(dbo, SELF, refToDbo.apply(entry.lookupRef()));
         
         Set<String> aliases = Sets.newHashSet(entry.uri());
         aliases.addAll(entry.aliasUrls());
@@ -61,25 +62,23 @@ public class LookupEntryTranslator {
         
         TranslatorUtils.from(dbo, IDS, aliasTranslator.toDBList(entry.aliases()));
         
-        BasicDBList directEquivDbos = new BasicDBList();
-        directEquivDbos.addAll(ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents(),equivalentToDbo)));
-        TranslatorUtils.from(dbo, DIRECT, directEquivDbos);
-        
-        BasicDBList equivDbos = new BasicDBList();
-        equivDbos.addAll(ImmutableSet.copyOf(Iterables.transform(entry.equivalents(), equivalentToDbo)));
-        TranslatorUtils.from(dbo, EQUIVS, equivDbos);
-        
-        BasicDBList explicitDbos = new BasicDBList();
-        explicitDbos.addAll(ImmutableSet.copyOf(Iterables.transform(entry.explicitEquivalents(),equivalentToDbo)));
-        TranslatorUtils.from(dbo, "explicit", explicitDbos);
+        translateRefsInToField(dbo, EQUIVS, entry.equivalents());
+        translateRefsInToField(dbo, DIRECT, entry.directEquivalents());
+        translateRefsInToField(dbo, EXPLICIT, entry.explicitEquivalents());
         
         TranslatorUtils.fromDateTime(dbo, FIRST_CREATED, entry.created());
         TranslatorUtils.fromDateTime(dbo, LAST_UPDATED, entry.updated());
         
         return dbo;
     }
+
+    private void translateRefsInToField(BasicDBObject dbo, String field, Set<LookupRef> refs) {
+        BasicDBList refDbos = new BasicDBList();
+        refDbos.addAll(ImmutableSet.copyOf(Iterables.transform(refs, refToDbo)));
+        TranslatorUtils.from(dbo, field, refDbos);
+    }
     
-    private static Function<LookupRef, DBObject> equivalentToDbo = new Function<LookupRef, DBObject>() {
+    private static Function<LookupRef, DBObject> refToDbo = new Function<LookupRef, DBObject>() {
         @Override
         public DBObject apply(LookupRef input) {
             return lookupRefTranslator.toDBObject(null, input);
@@ -100,17 +99,21 @@ public class LookupEntryTranslator {
         Set<Alias> aliases = aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbo, IDS));
         
         LookupRef self = lookupRefTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo, SELF), null);
-        Set<LookupRef> equivs = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, EQUIVS), equivalentFromDbo));
+        Set<LookupRef> equivs = translateRefs(dbo, EQUIVS);
+        Set<LookupRef> directEquivalents = translateRefs(dbo, DIRECT);
+        Set<LookupRef> explicitEquivalents = translateRefs(dbo, EXPLICIT);
+        
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
-        
-        Set<LookupRef> directEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, DIRECT), equivalentFromDbo));
-        Set<LookupRef> explicitEquivalents = ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, "explicit"), equivalentFromDbo));
         
         return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
     }
 
-    private static final Function<DBObject, LookupRef> equivalentFromDbo = new Function<DBObject, LookupRef>() {
+    private ImmutableSet<LookupRef> translateRefs(DBObject dbo, String field) {
+        return ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, field), refFromDbo));
+    }
+
+    private static final Function<DBObject, LookupRef> refFromDbo = new Function<DBObject, LookupRef>() {
         @Override
         public LookupRef apply(DBObject input) {
             return lookupRefTranslator.fromDBObject(input, null);
