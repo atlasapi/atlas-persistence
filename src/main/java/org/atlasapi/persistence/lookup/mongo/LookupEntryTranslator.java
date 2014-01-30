@@ -99,9 +99,9 @@ public class LookupEntryTranslator {
         Set<Alias> aliases = aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbo, IDS));
         
         LookupRef self = lookupRefTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo, SELF), null);
-        Set<LookupRef> equivs = translateRefs(dbo, EQUIVS);
-        Set<LookupRef> directEquivalents = translateRefs(dbo, DIRECT);
-        Set<LookupRef> explicitEquivalents = translateRefs(dbo, EXPLICIT);
+        Set<LookupRef> equivs = translateRefs(self, dbo, EQUIVS);
+        Set<LookupRef> directEquivalents = translateRefs(self, dbo, DIRECT);
+        Set<LookupRef> explicitEquivalents = translateRefs(self, dbo, EXPLICIT);
         
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
@@ -109,8 +109,11 @@ public class LookupEntryTranslator {
         return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
     }
 
-    private ImmutableSet<LookupRef> translateRefs(DBObject dbo, String field) {
-        return ImmutableSet.copyOf(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, field), refFromDbo));
+    private ImmutableSet<LookupRef> translateRefs(LookupRef seflRef, DBObject dbo, String field) {
+        return ImmutableSet.<LookupRef>builder()
+            .add(seflRef)
+            .addAll(Iterables.transform(TranslatorUtils.toDBObjectList(dbo, field), refFromDbo))
+            .build();
     }
 
     private static final Function<DBObject, LookupRef> refFromDbo = new Function<DBObject, LookupRef>() {
