@@ -60,7 +60,7 @@ public class SimilarContentRefTranslator {
 
             @Override
             public SimilarContentRef apply(DBObject dbo) {
-                TranslatorUtils.toString(dbo, URI_KEY);
+                String uri = TranslatorUtils.toString(dbo, URI_KEY);
                 EntityType type = EntityType.from((String) dbo.get(ENTITY_TYPE_KEY));
                 Long id = (Long) dbo.get(ID_KEY);
                 int score = 0;
@@ -69,6 +69,7 @@ public class SimilarContentRefTranslator {
                                         .withId(id)
                                         .withEntityType(type)
                                         .withScore(score)
+                                        .withUri(uri)
                                         .withPublishersWithAvailableContent(publishersFrom(dbo, 
                                                             PUBLISHERS_WITH_AVAILABLE_CONTENT_KEY))
                                         .withPublishersWithUpcomingContent(publishersFrom(dbo, 
