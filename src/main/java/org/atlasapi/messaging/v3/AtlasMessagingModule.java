@@ -3,6 +3,7 @@ package org.atlasapi.messaging.v3;
 import javax.jms.ConnectionFactory;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,11 +45,11 @@ public class AtlasMessagingModule {
         return cf;
     }
     
-    private ConnectionFactory producerFactory() {
+    private PooledConnectionFactory producerFactory() {
         ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory(brokerUrl);
         cf.setProducerWindowSize(Integer.parseInt(producerWindowSize));
-        ConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(cf);
-        return cachingConnectionFactory;
+        PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory(cf);
+        return pooledConnectionFactory;
     }
     
     @Bean
