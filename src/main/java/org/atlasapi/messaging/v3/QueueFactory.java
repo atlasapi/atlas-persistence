@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.jms.ConnectionFactory;
 
+import org.apache.activemq.pool.PooledConnectionFactory;
 import org.atlasapi.messaging.worker.v3.Worker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ public final class QueueFactory {
     private final ConnectionFactory producerCf;
     private final ConnectionFactory consumerCf;
 
-    public QueueFactory(ConnectionFactory producerCf, ConnectionFactory consumerCf, String system) {
+    public QueueFactory(PooledConnectionFactory producerCf, ConnectionFactory consumerCf, String system) {
         this.producerCf = checkNotNull(producerCf);
         this.consumerCf = checkNotNull(consumerCf);
         checkArgument(!Strings.isNullOrEmpty(system));
