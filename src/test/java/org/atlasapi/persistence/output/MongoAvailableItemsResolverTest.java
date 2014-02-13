@@ -73,6 +73,7 @@ public class MongoAvailableItemsResolverTest {
         assertEquals(p1.getCanonicalUri(), childRef.getUri());
 
         ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
+                .agreeLicense(Publisher.PA)
                 .enable(Publisher.PA);
         childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, withPaConfig));
         assertThat(childRefs.size(), is(2));
