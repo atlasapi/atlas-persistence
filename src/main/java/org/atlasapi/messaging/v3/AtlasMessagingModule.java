@@ -37,21 +37,12 @@ public class AtlasMessagingModule {
     
     @Bean @Primary
     public QueueFactory queueHelper() {
-        return new QueueFactory(producerFactory(), consumerFactory(), messagingSystem);
-    }
-    
-    private ConnectionFactory consumerFactory() {
-        ConnectionFactory cf = new ActiveMQConnectionFactory(brokerUrl);
-        return cf;
-    }
-    
-    private PooledConnectionFactory producerFactory() {
         ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory(brokerUrl);
         cf.setProducerWindowSize(Integer.parseInt(producerWindowSize));
         PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory(cf);
-        return pooledConnectionFactory;
+        return new QueueFactory(pooledConnectionFactory, cf, messagingSystem);
     }
-    
+
     @Bean
     @Lazy(true)
     public JmsTemplate contentChanges() {
@@ -63,15 +54,11 @@ public class AtlasMessagingModule {
     public JmsTemplate topicChanges() {
         return queueHelper().makeVirtualTopicProducer(topicChanges);
     }
-
-    @Bean
-    @Lazy(true)
-    public JmsTemplate equivChanges() {
-        return queueHelper().makeVirtualTopicProducer(equivChanges);
-    }
-
-    public JmsTemplate equivAssertions() {
-        return null;
-    }
+//
+//    @Bean //Phasing out
+//    @Lazy(true)
+//    public JmsTemplate equivChanges() {
+//        return queueHelper().makeVirtualTopicProducer(equivChanges);
+//    }
     
 }
