@@ -144,9 +144,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     private LookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
-        if (Boolean.valueOf(messagingEnabled)) {
-            return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
-        }
+//        if (Boolean.valueOf(messagingEnabled)) {
+//            return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
+//        }
         return lookupWriter;
     }
 
