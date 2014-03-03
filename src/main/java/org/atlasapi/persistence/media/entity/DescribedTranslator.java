@@ -1,11 +1,13 @@
 package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
+import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
+import org.atlasapi.media.entity.LocalisedDescription;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.RelatedLink;
@@ -15,6 +17,7 @@ import org.atlasapi.persistence.ModelTranslator;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -43,15 +46,18 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String LONG_DESC_KEY = "longDescription";
     public static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
     private static final String LINKS_KEY = "links";
+    private static final String LOCALISED_DESCRIPTIONS_KEY = "localisedDescriptions";
 	
 	private final IdentifiedTranslator descriptionTranslator;
     private final ImageTranslator imageTranslator;
     private final RelatedLinkTranslator relatedLinkTranslator;
+    private final LocalisedDescriptionTranslator localisedDescriptionTranslator;
 
 	public DescribedTranslator(IdentifiedTranslator descriptionTranslator, ImageTranslator imageTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
 		this.imageTranslator = imageTranslator;
         this.relatedLinkTranslator = new RelatedLinkTranslator();
+        this.localisedDescriptionTranslator = new LocalisedDescriptionTranslator(new LocaleTranslator());
 	}
 	
 	@Override
@@ -110,10 +116,25 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		if (dbObject.containsField(ACTIVELY_PUBLISHED_KEY)) {
 		    entity.setActivelyPublished(TranslatorUtils.toBoolean(dbObject, ACTIVELY_PUBLISHED_KEY));
 		}
+		
+		if (dbObject.containsField(LOCALISED_DESCRIPTIONS_KEY)) {
+            entity.setLocalisedDescriptions(extractLocalisedDescriptions(dbObject));
+		}
 
 		return entity;
 	}
 	
+    private Set<LocalisedDescription> extractLocalisedDescriptions(DBObject dbObject) {
+        ImmutableSet.Builder<LocalisedDescription> localisedDescriptions = ImmutableSet.builder();
+        List<DBObject> localisedDescriptionsDBO = TranslatorUtils.toDBObjectList(dbObject, LOCALISED_DESCRIPTIONS_KEY);
+        
+        for (DBObject localisedDescriptionDBO : localisedDescriptionsDBO) {
+            localisedDescriptions.add(localisedDescriptionTranslator.fromDBObject(localisedDescriptionDBO, new LocalisedDescription()));
+        }
+        
+        return localisedDescriptions.build();
+    }
+
     @SuppressWarnings("unchecked")
     private void decodeRelatedLinks(DBObject dbObject, Described entity) {
         if (dbObject.containsField(LINKS_KEY)) {
@@ -178,9 +199,21 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.from(dbObject, PRESENTATION_CHANNEL_KEY, entity.getPresentationChannel());
         TranslatorUtils.from(dbObject, ACTIVELY_PUBLISHED_KEY, entity.isActivelyPublished());
         
+        dbObject.put(LOCALISED_DESCRIPTIONS_KEY, toDBObjects(entity.getLocalisedDescriptions()));
+        
         return dbObject;
 	}
     
+    private List<DBObject> toDBObjects(Set<LocalisedDescription> localisedDescriptions) {
+        List<DBObject> dbObjects = Lists.newArrayList();
+        
+        for (LocalisedDescription localisedDescription: localisedDescriptions) {
+            dbObjects.add(localisedDescriptionTranslator.toDBObject(new BasicDBObject(), localisedDescription));
+        }
+        
+        return dbObjects;
+    }
+
     private void encodeRelatedLinks(DBObject dbObject, Described entity) {
         if (!entity.getRelatedLinks().isEmpty()) {
             BasicDBList values = new BasicDBList(); 
