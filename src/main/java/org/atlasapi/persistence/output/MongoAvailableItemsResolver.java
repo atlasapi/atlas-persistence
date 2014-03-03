@@ -15,22 +15,26 @@ import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.DateTime;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -97,7 +101,7 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
     
     private final DBObject fields = select().fields(ImmutableSet.of(IdentifiedTranslator.TYPE, 
             IdentifiedTranslator.OPAQUE_ID, IdentifiedTranslator.LAST_UPDATED, 
-            availabilityStartKey, availabilityEndKey)).build();
+            DescribedTranslator.PUBLISHER_KEY, availabilityStartKey, availabilityEndKey)).build();
 
     private final LookupEntryStore entryStore;
     private final DBCollection children;
@@ -119,8 +123,26 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
     
     @Override
     public Iterable<ChildRef> availableItemsFor(Container container, ApplicationConfiguration config) {
+        return switchEquivs(availableItemsByPublisherFor(container, config).values(), container.getPublisher());
+    }
+    
+    @Override
+    public Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Item item, ApplicationConfiguration config) {
         final DateTime now = clock.now();
-        return switchEquivs(filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(container, config, now))), container.getPublisher());
+        DBObject query = where()
+                .idIn(FluentIterable.from(item.getEquivalentTo())
+                                    .filter(sourceFilter(config.getEnabledSources()))
+                                    .transform(LookupRef.TO_URI)
+                     )
+                .fieldAfter(availabilityEndKey, now)
+                .build();
+        return filterItems(now, Iterables.concat(children.find(query,fields), topLevelItems.find(query,fields)));
+    }
+    
+    @Override
+    public Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Container container, ApplicationConfiguration config) {
+        final DateTime now = clock.now();
+        return filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(container, config, now)));
     }
     
     @Override
@@ -137,7 +159,7 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
      */
     public Iterable<ChildRef> availableItemsFor(Person person, ApplicationConfiguration config) {
         final DateTime now = clock.now();
-        return switchEquivs(filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(person, now))), person.getPublisher());
+        return switchEquivs(filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(person, now))).values(), person.getPublisher());
     }
 
     //switch URIs of available items to URIs of the containers source via their lookup refs.
@@ -173,28 +195,30 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
         return AVAILABILITY_START_ORDERING.immutableSortedCopy(childDbos);
     }
 
-    private Iterable<ChildRef> filterItems(final DateTime now, Iterable<DBObject> availbleItems) {
-        return Iterables.filter(Iterables.transform(availbleItems, new Function<DBObject, ChildRef>() {
-
-            @Override
-            public ChildRef apply(DBObject input) {
-                for (DBObject version : toDBObjectList(input, versions)) {
-                    for (DBObject encoding : toDBObjectList(version, encodings)) {
-                        for (DBObject location : toDBObjectList(encoding, locations)) {
-                            DBObject policy = toDBObject(location, MongoAvailableItemsResolver.policy);
-                            if (policy != null && before(toDateTime(policy, availabilityStart), now) && after(toDateTime(policy, availabilityEnd), now)) {
-                                String uri = TranslatorUtils.toString(input, MongoConstants.ID);
-                                Long aid = TranslatorUtils.toLong(input, IdentifiedTranslator.OPAQUE_ID);
-                                String type = TranslatorUtils.toString(input, IdentifiedTranslator.TYPE);
-                                DateTime lastUpdated = TranslatorUtils.toDateTime(input, IdentifiedTranslator.LAST_UPDATED);
-                                return new ChildRef(aid, uri, "", lastUpdated, EntityType.from(type));
-                            }
+    private Multimap<Publisher, ChildRef> filterItems(final DateTime now, Iterable<DBObject> availableItems) {
+        
+        ImmutableMultimap.Builder<Publisher, ChildRef> itemMap = ImmutableMultimap.builder();
+        for (DBObject availableItem : availableItems) {
+            for (DBObject version : toDBObjectList(availableItem, versions)) {
+                for (DBObject encoding : toDBObjectList(version, encodings)) {
+                    for (DBObject location : toDBObjectList(encoding, locations)) {
+                        DBObject policy = toDBObject(location, MongoAvailableItemsResolver.policy);
+                        if (policy != null && before(toDateTime(policy, availabilityStart), now) && after(toDateTime(policy, availabilityEnd), now)) {
+                            String uri = TranslatorUtils.toString(availableItem, MongoConstants.ID);
+                            Long aid = TranslatorUtils.toLong(availableItem, IdentifiedTranslator.OPAQUE_ID);
+                            String type = TranslatorUtils.toString(availableItem, IdentifiedTranslator.TYPE);
+                            DateTime lastUpdated = TranslatorUtils.toDateTime(availableItem, IdentifiedTranslator.LAST_UPDATED);
+                            Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(availableItem, 
+                                                                    DescribedTranslator.PUBLISHER_KEY)
+                                                                   ).requireValue();
+                            itemMap.put(publisher, 
+                                        new ChildRef(aid, uri, "", lastUpdated, EntityType.from(type)));
                         }
                     }
                 }
-                return null;
             }
-        }),Predicates.notNull());
+        }
+        return itemMap.build();
     }
     
     private static boolean before(DateTime dateTime, DateTime now) {
