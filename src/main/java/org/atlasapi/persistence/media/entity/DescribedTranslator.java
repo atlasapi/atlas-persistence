@@ -3,11 +3,14 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
-import org.atlasapi.media.entity.LocalisedDescription;
+import org.atlasapi.media.entity.LocalizedDescription;
+import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.RelatedLink;
@@ -46,18 +49,22 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String LONG_DESC_KEY = "longDescription";
     public static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
     private static final String LINKS_KEY = "links";
-    private static final String LOCALISED_DESCRIPTIONS_KEY = "localisedDescriptions";
+    private static final String LOCALIZED_DESCRIPTIONS_KEY = "descriptions";
+    private static final String LOCALIZED_TITLES_KEY = "titles";
 	
 	private final IdentifiedTranslator descriptionTranslator;
     private final ImageTranslator imageTranslator;
     private final RelatedLinkTranslator relatedLinkTranslator;
-    private final LocalisedDescriptionTranslator localisedDescriptionTranslator;
+    private final LocalizedDescriptionTranslator localizedDescriptionTranslator;
+    private final LocalizedTitleTranslator localizedTitleTranslator;
 
 	public DescribedTranslator(IdentifiedTranslator descriptionTranslator, ImageTranslator imageTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
 		this.imageTranslator = imageTranslator;
         this.relatedLinkTranslator = new RelatedLinkTranslator();
-        this.localisedDescriptionTranslator = new LocalisedDescriptionTranslator(new LocaleTranslator());
+        this.localizedDescriptionTranslator = new LocalizedDescriptionTranslator();
+        this.localizedTitleTranslator = new LocalizedTitleTranslator();
+        
 	}
 	
 	@Override
@@ -117,22 +124,36 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		    entity.setActivelyPublished(TranslatorUtils.toBoolean(dbObject, ACTIVELY_PUBLISHED_KEY));
 		}
 		
-		if (dbObject.containsField(LOCALISED_DESCRIPTIONS_KEY)) {
-            entity.setLocalisedDescriptions(extractLocalisedDescriptions(dbObject));
-		}
+        decodeLocalizedDescriptions(dbObject, entity);
+		decodeLocalizedTitles(dbObject, entity);
 
 		return entity;
 	}
 	
-    private Set<LocalisedDescription> extractLocalisedDescriptions(DBObject dbObject) {
-        ImmutableSet.Builder<LocalisedDescription> localisedDescriptions = ImmutableSet.builder();
-        List<DBObject> localisedDescriptionsDBO = TranslatorUtils.toDBObjectList(dbObject, LOCALISED_DESCRIPTIONS_KEY);
-        
-        for (DBObject localisedDescriptionDBO : localisedDescriptionsDBO) {
-            localisedDescriptions.add(localisedDescriptionTranslator.fromDBObject(localisedDescriptionDBO, new LocalisedDescription()));
+    private void decodeLocalizedTitles(DBObject dbObject, Described entity) {
+        if (dbObject.containsField(LOCALIZED_TITLES_KEY)) {
+            List<DBObject> localisedTitlesDBO = TranslatorUtils.toDBObjectList(dbObject, LOCALIZED_TITLES_KEY);
+            
+            entity.setLocalizedTitles(Iterables.transform(localisedTitlesDBO, new Function<DBObject, LocalizedTitle>() {
+                @Override
+                public LocalizedTitle apply(DBObject input) {
+                    return localizedTitleTranslator.fromDBObject(input, new LocalizedTitle());
+                }
+            }));
         }
-        
-        return localisedDescriptions.build();
+    }
+
+    private void decodeLocalizedDescriptions(DBObject dbObject, Described entity) {
+        if (dbObject.containsField(LOCALIZED_DESCRIPTIONS_KEY)) {
+            List<DBObject> localisedDescriptionsDBO = TranslatorUtils.toDBObjectList(dbObject, LOCALIZED_DESCRIPTIONS_KEY);
+            
+            entity.setLocalizedDescriptions(Iterables.transform(localisedDescriptionsDBO, new Function<DBObject, LocalizedDescription>() {
+                @Override
+                public LocalizedDescription apply(DBObject input) {
+                    return localizedDescriptionTranslator.fromDBObject(input, new LocalizedDescription());
+                }
+            }));
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -199,21 +220,36 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.from(dbObject, PRESENTATION_CHANNEL_KEY, entity.getPresentationChannel());
         TranslatorUtils.from(dbObject, ACTIVELY_PUBLISHED_KEY, entity.isActivelyPublished());
         
-        dbObject.put(LOCALISED_DESCRIPTIONS_KEY, toDBObjects(entity.getLocalisedDescriptions()));
+        encodeLocalizedDescriptions(entity, dbObject);
+        encodeLocalizedTitles(entity, dbObject);
         
         return dbObject;
 	}
     
-    private List<DBObject> toDBObjects(Set<LocalisedDescription> localisedDescriptions) {
-        List<DBObject> dbObjects = Lists.newArrayList();
-        
-        for (LocalisedDescription localisedDescription: localisedDescriptions) {
-            dbObjects.add(localisedDescriptionTranslator.toDBObject(new BasicDBObject(), localisedDescription));
-        }
-        
-        return dbObjects;
+    private void encodeLocalizedTitles(Described entity, DBObject dbObject) {
+        Iterable<DBObject> localizedTitles = Iterables.transform(entity.getLocalizedTitles(),
+                new Function<LocalizedTitle, DBObject>() {
+                    @Override
+                    public DBObject apply(LocalizedTitle input) {
+                        return localizedTitleTranslator.toDBObject(new BasicDBObject(), input);
+                    }
+                });
+
+        dbObject.put(LOCALIZED_TITLES_KEY, localizedTitles);
     }
 
+    private void encodeLocalizedDescriptions(Described entity, DBObject dbObject) {
+        Iterable<DBObject> localizedDescriptions = Iterables.transform(entity.getLocalizedDescriptions(),
+                new Function<LocalizedDescription, DBObject>() {
+                    @Override
+                    public DBObject apply(LocalizedDescription input) {
+                        return localizedDescriptionTranslator.toDBObject(new BasicDBObject(), input);
+                    }
+                });
+
+        dbObject.put(LOCALIZED_DESCRIPTIONS_KEY, localizedDescriptions);
+    }
+    
     private void encodeRelatedLinks(DBObject dbObject, Described entity) {
         if (!entity.getRelatedLinks().isEmpty()) {
             BasicDBList values = new BasicDBList(); 
