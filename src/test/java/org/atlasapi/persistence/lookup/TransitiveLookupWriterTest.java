@@ -427,7 +427,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntry equivEntry = LookupEntry.lookupEntryFrom(equiv);
         
         bigEntry = bigEntry.copyWithEquivalents(Iterables.transform(
-            ContiguousSet.create(Range.closedOpen(0, 200), DiscreteDomain.integers()), 
+            ContiguousSet.create(Range.closedOpen(0, 1499), DiscreteDomain.integers()), 
             new Function<Integer, LookupRef>() {
                 @Override
                 public LookupRef apply(Integer input) {

@@ -1,11 +1,14 @@
 package org.atlasapi.persistence.media.entity;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
+import org.atlasapi.media.entity.LocalizedDescription;
+import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.RelatedLink;
@@ -13,8 +16,10 @@ import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Ordering;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -43,15 +48,62 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String LONG_DESC_KEY = "longDescription";
     public static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
     private static final String LINKS_KEY = "links";
+    protected static final String LOCALIZED_DESCRIPTIONS_KEY = "descriptions";
+    protected static final String LOCALIZED_TITLES_KEY = "titles";
+    
+    public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
+            Ordering.from(new Comparator<LocalizedDescription>() {
+
+                @Override
+                public int compare(LocalizedDescription o1, LocalizedDescription o2) {
+                    return ComparisonChain.start()
+                            .compare(o1.getLanguageTag(),
+                                    o2.getLanguageTag(),
+                                    Ordering.natural().nullsFirst())
+                            .compare(o1.getDescription(),
+                                    o2.getDescription(),
+                                    Ordering.natural().nullsFirst())
+                            .compare(o1.getLongDescription(),
+                                    o2.getLongDescription(),
+                                    Ordering.natural().nullsFirst())
+                            .compare(o1.getMediumDescription(),
+                                    o2.getMediumDescription(),
+                                    Ordering.natural().nullsFirst())
+                            .compare(o1.getShortDescription(),
+                                    o2.getShortDescription(),
+                                    Ordering.natural().nullsFirst())
+                            .result();
+                }
+            });
+
+    public static final Ordering<LocalizedTitle> LOCALIZED_TITLE_ORDERING =
+            Ordering.from(new Comparator<LocalizedTitle>() {
+
+                @Override
+                public int compare(LocalizedTitle o1, LocalizedTitle o2) {
+                    return ComparisonChain.start()
+                            .compare(o1.getLanguageTag(),
+                                    o2.getLanguageTag(),
+                                    Ordering.natural().nullsFirst())
+                            .compare(o1.getTitle(), o2.getTitle(), Ordering.natural().nullsFirst())
+                            .result();
+                }
+            });
+
 	
 	private final IdentifiedTranslator descriptionTranslator;
     private final ImageTranslator imageTranslator;
     private final RelatedLinkTranslator relatedLinkTranslator;
+    private final LocalizedDescriptionTranslator localizedDescriptionTranslator;
+    private final LocalizedTitleTranslator localizedTitleTranslator;
 
 	public DescribedTranslator(IdentifiedTranslator descriptionTranslator, ImageTranslator imageTranslator) {
 		this.descriptionTranslator = descriptionTranslator;
 		this.imageTranslator = imageTranslator;
         this.relatedLinkTranslator = new RelatedLinkTranslator();
+        this.localizedDescriptionTranslator = new LocalizedDescriptionTranslator();
+        this.localizedTitleTranslator = new LocalizedTitleTranslator();
+        
 	}
 	
 	@Override
@@ -110,10 +162,42 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		if (dbObject.containsField(ACTIVELY_PUBLISHED_KEY)) {
 		    entity.setActivelyPublished(TranslatorUtils.toBoolean(dbObject, ACTIVELY_PUBLISHED_KEY));
 		}
+		
+        decodeLocalizedDescriptions(dbObject, entity);
+        decodeLocalizedTitles(dbObject, entity);
 
 		return entity;
 	}
 	
+    private void decodeLocalizedTitles(DBObject dbObject, Described entity) {
+        List<DBObject> localisedTitlesDBO = TranslatorUtils.toDBObjectList(dbObject,
+                LOCALIZED_TITLES_KEY);
+
+        entity.setLocalizedTitles(Iterables.transform(localisedTitlesDBO,
+                new Function<DBObject, LocalizedTitle>() {
+
+                    @Override
+                    public LocalizedTitle apply(DBObject input) {
+                        return localizedTitleTranslator.fromDBObject(input, new LocalizedTitle());
+                    }
+                }));
+    }
+
+    private void decodeLocalizedDescriptions(DBObject dbObject, Described entity) {
+        List<DBObject> localisedDescriptionsDBO = TranslatorUtils.toDBObjectList(dbObject,
+                LOCALIZED_DESCRIPTIONS_KEY);
+
+        entity.setLocalizedDescriptions(Iterables.transform(localisedDescriptionsDBO,
+                new Function<DBObject, LocalizedDescription>() {
+
+                    @Override
+                    public LocalizedDescription apply(DBObject input) {
+                        return localizedDescriptionTranslator.fromDBObject(input,
+                                new LocalizedDescription());
+                    }
+                }));
+    }
+
     @SuppressWarnings("unchecked")
     private void decodeRelatedLinks(DBObject dbObject, Described entity) {
         if (dbObject.containsField(LINKS_KEY)) {
@@ -178,8 +262,36 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.from(dbObject, PRESENTATION_CHANNEL_KEY, entity.getPresentationChannel());
         TranslatorUtils.from(dbObject, ACTIVELY_PUBLISHED_KEY, entity.isActivelyPublished());
         
+        encodeLocalizedDescriptions(entity, dbObject);
+        encodeLocalizedTitles(entity, dbObject);
+        
         return dbObject;
 	}
+    
+    private void encodeLocalizedTitles(Described entity, DBObject dbObject) {
+        List<LocalizedTitle> sortedTitles = LOCALIZED_TITLE_ORDERING.sortedCopy(entity.getLocalizedTitles());
+        
+        BasicDBList dbTitles = new BasicDBList();
+        
+        for (LocalizedTitle localizedTitle: sortedTitles) {
+            dbTitles.add(localizedTitleTranslator.toDBObject(new BasicDBObject(), localizedTitle));
+        }
+
+        dbObject.put(LOCALIZED_TITLES_KEY, dbTitles);
+    }
+
+    private void encodeLocalizedDescriptions(Described entity, DBObject dbObject) {
+        List<LocalizedDescription> sortedDescriptions = LOCALIZED_DESCRIPTION_ORDERING.sortedCopy(entity.getLocalizedDescriptions());
+
+        BasicDBList dbDescriptions = new BasicDBList();
+
+        for (LocalizedDescription localizedDescriptions : sortedDescriptions) {
+            dbDescriptions.add(localizedDescriptionTranslator.toDBObject(new BasicDBObject(),
+                    localizedDescriptions));
+        }
+
+        dbObject.put(LOCALIZED_DESCRIPTIONS_KEY, dbDescriptions);
+    }
     
     private void encodeRelatedLinks(DBObject dbObject, Described entity) {
         if (!entity.getRelatedLinks().isEmpty()) {
@@ -205,4 +317,5 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         dbObject.removeField(LAST_FETCHED_KEY);
         dbObject.removeField(THIS_OR_CHILD_LAST_UPDATED_KEY);
     }
+    
 }
