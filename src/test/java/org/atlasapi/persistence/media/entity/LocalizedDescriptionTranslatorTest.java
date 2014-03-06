@@ -5,12 +5,12 @@ import static org.atlasapi.persistence.media.entity.LocalizedDescriptionTranslat
 import static org.atlasapi.persistence.media.entity.LocalizedDescriptionTranslator.LONG_DESCRIPTION;
 import static org.atlasapi.persistence.media.entity.LocalizedDescriptionTranslator.MEDIUM_DESCRIPTION_KEY;
 import static org.atlasapi.persistence.media.entity.LocalizedDescriptionTranslator.SHORT_DESCRIPTION_KEY;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Locale;
 
 import org.atlasapi.media.entity.LocalizedDescription;
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.mongodb.BasicDBObject;
@@ -40,11 +40,11 @@ public class LocalizedDescriptionTranslatorTest {
         assertTrue(dbo.containsField(MEDIUM_DESCRIPTION_KEY));
         assertTrue(dbo.containsField(LONG_DESCRIPTION));
         
-        Assert.assertEquals(desc.getLanguageTag(), dbo.get(LANGUAGE_KEY));
-        Assert.assertEquals(desc.getDescription(), dbo.get(DESCRIPTION_KEY));
-        Assert.assertEquals(desc.getShortDescription(), dbo.get(SHORT_DESCRIPTION_KEY));
-        Assert.assertEquals(desc.getMediumDescription(), dbo.get(MEDIUM_DESCRIPTION_KEY));
-        Assert.assertEquals(desc.getLongDescription(), dbo.get(LONG_DESCRIPTION));
+        assertEquals(desc.getLanguageTag(), dbo.get(LANGUAGE_KEY));
+        assertEquals(desc.getDescription(), dbo.get(DESCRIPTION_KEY));
+        assertEquals(desc.getShortDescription(), dbo.get(SHORT_DESCRIPTION_KEY));
+        assertEquals(desc.getMediumDescription(), dbo.get(MEDIUM_DESCRIPTION_KEY));
+        assertEquals(desc.getLongDescription(), dbo.get(LONG_DESCRIPTION));
     }
     
 }
