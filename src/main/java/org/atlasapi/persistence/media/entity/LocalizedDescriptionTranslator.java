@@ -9,11 +9,11 @@ import com.mongodb.DBObject;
 
 public class LocalizedDescriptionTranslator implements ModelTranslator<LocalizedDescription> {
 
-    private static final String LANGUAGE_KEY = "language";
-    private static final String DESCRIPTION_KEY = "description";
-    private static final String SHORT_DESCRIPTION_KEY = "shortDescription";
-    private static final String MEDIUM_DESCRIPTION_KEY = "mediumDescription";
-    private static final String LONG_DESCRIPTION = "longDescription";
+    protected static final String LANGUAGE_KEY = "language";
+    protected static final String DESCRIPTION_KEY = "description";
+    protected static final String SHORT_DESCRIPTION_KEY = "shortDescription";
+    protected static final String MEDIUM_DESCRIPTION_KEY = "mediumDescription";
+    protected static final String LONG_DESCRIPTION = "longDescription";
     
     @Override
     public DBObject toDBObject(DBObject dbObject, LocalizedDescription model) {

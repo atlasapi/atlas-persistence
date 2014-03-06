@@ -1,15 +1,20 @@
 package org.atlasapi.persistence.media.entity;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LocalizedDescription;
+import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.RelatedLink;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,6 +24,7 @@ import org.mockito.stubbing.Answer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -41,7 +47,20 @@ public class DescribedTranslatorTest {
         list.add(ImmutableMap.of("url", "http://example.com/", "type", "unknown"));
         list.add(ImmutableMap.of("url", "http://another.com/", "type", "unknown"));
         
-        Map<String, Object> m = ImmutableMap.of("links", (Object)list);
+        BasicDBList descriptionsList = new BasicDBList();
+        descriptionsList.add(ImmutableMap.of("language", "en-GB", "shortDescription", "Desc 1", "description", "Desc 1"));
+        descriptionsList.add(ImmutableMap.of("language", "en-US", "shortDescription", "Desc 2", "mediumDescription", "Desc 2 Medium", "description", "Desc 2 Medium"));
+
+        BasicDBList titlesList = new BasicDBList();
+        titlesList.add(ImmutableMap.of("language", "en-GB", "title", "Title 1"));
+        titlesList.add(ImmutableMap.of("language", "en-US", "title", "Title 2"));
+        titlesList.add(ImmutableMap.of("language", "it", "title", "Titolo 3"));
+        
+        Map<String, Object> m = ImmutableMap.of("links", (Object) list,
+                "descriptions",
+                (Object) descriptionsList,
+                "titles",
+                (Object) titlesList);
                 
         DBObject dbo = new BasicDBObject(m);
         int hashCodeFromDbo = dbo.hashCode();
@@ -52,6 +71,10 @@ public class DescribedTranslatorTest {
                 RelatedLink.unknownTypeLink("http://example.com/").build(),
                 RelatedLink.unknownTypeLink("http://another.com/").build()
                 ));
+        
+        content.setLocalizedDescriptions(localizedDescriptions());
+        content.setLocalizedTitles(localizedTitles());
+        
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
         
         BasicDBObject dboFromContent = new BasicDBObject();
@@ -68,4 +91,69 @@ public class DescribedTranslatorTest {
         assertEquals(dbo, dboFromContent);
         assertEquals(hashCodeFromContent, hashCodeFromDbo);
     }
+    
+    @Test
+    public void testLocalizedDescriptionsAndTitlesTranslation() {
+        Content content = new Item();
+        
+        content.setLocalizedDescriptions(localizedDescriptions());
+        content.setLocalizedTitles(localizedTitles());
+        
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        
+        BasicDBObject dboFromContent = new BasicDBObject();
+        translator.toDBObject(dboFromContent, content);       
+        
+        assertTrue(dboFromContent.containsField(DescribedTranslator.LOCALIZED_DESCRIPTIONS_KEY));
+        assertTrue(dboFromContent.containsField(DescribedTranslator.LOCALIZED_TITLES_KEY));
+        
+        BasicDBList dboDescriptions = (BasicDBList) dboFromContent.get(DescribedTranslator.LOCALIZED_DESCRIPTIONS_KEY);
+        assertEquals(localizedDescriptions().size(), dboDescriptions.size());
+        
+        BasicDBList dboTitles = (BasicDBList) dboFromContent.get(DescribedTranslator.LOCALIZED_TITLES_KEY);
+        assertEquals(localizedTitles().size(), dboTitles.size());    
+    }
+    
+    private Set<LocalizedDescription> localizedDescriptions() {
+        Set<LocalizedDescription> localizedDescriptions = Sets.newHashSet();
+        
+        LocalizedDescription desc1 = new LocalizedDescription();
+        desc1.setLocale(new Locale("en", "GB"));
+        desc1.setDescription("Desc 1");
+        desc1.setShortDescription("Desc 1");
+        
+        LocalizedDescription desc2 = new LocalizedDescription();
+        desc2.setLocale(new Locale("en", "US"));
+        desc2.setDescription("Desc 2 Medium");
+        desc2.setShortDescription("Desc 2");
+        desc2.setMediumDescription("Desc 2 Medium");
+        
+        localizedDescriptions.add(desc1);
+        localizedDescriptions.add(desc2);
+        
+        return localizedDescriptions;
+    }
+    
+    private Set<LocalizedTitle> localizedTitles() {
+        Set<LocalizedTitle> localizedTitles = Sets.newHashSet();
+
+        LocalizedTitle title1 = new LocalizedTitle();
+        title1.setLocale(new Locale("en", "GB"));
+        title1.setTitle("Title 1");
+        
+        LocalizedTitle title2 = new LocalizedTitle();
+        title2.setLocale(new Locale("en", "US"));
+        title2.setTitle("Title 2");
+
+        LocalizedTitle title3 = new LocalizedTitle();
+        title3.setLocale(new Locale("it"));
+        title3.setTitle("Titolo 3");
+        
+        localizedTitles.add(title1);
+        localizedTitles.add(title2);
+        localizedTitles.add(title3);
+        
+        return localizedTitles;        
+    }
+    
 }

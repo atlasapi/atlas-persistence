@@ -9,8 +9,8 @@ import com.mongodb.DBObject;
 
 public class LocalizedTitleTranslator implements ModelTranslator<LocalizedTitle> {
 
-    private static final String LANGUAGE_KEY = "language";
-    private static final String TITLE_KEY = "title";
+    protected static final String LANGUAGE_KEY = "language";
+    protected static final String TITLE_KEY = "title";
     
     @Override
     public DBObject toDBObject(DBObject dbObject, LocalizedTitle model) {
