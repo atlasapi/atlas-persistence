@@ -3,6 +3,7 @@ package org.atlasapi.messaging.v3;
 import javax.jms.ConnectionFactory;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,21 +37,12 @@ public class AtlasMessagingModule {
     
     @Bean @Primary
     public QueueFactory queueHelper() {
-        return new QueueFactory(producerFactory(), consumerFactory(), messagingSystem);
-    }
-    
-    private ConnectionFactory consumerFactory() {
-        ConnectionFactory cf = new ActiveMQConnectionFactory(brokerUrl);
-        return cf;
-    }
-    
-    private ConnectionFactory producerFactory() {
         ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory(brokerUrl);
         cf.setProducerWindowSize(Integer.parseInt(producerWindowSize));
-        ConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(cf);
-        return cachingConnectionFactory;
+        PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory(cf);
+        return new QueueFactory(pooledConnectionFactory, cf, messagingSystem);
     }
-    
+
     @Bean
     @Lazy(true)
     public JmsTemplate contentChanges() {
@@ -62,15 +54,11 @@ public class AtlasMessagingModule {
     public JmsTemplate topicChanges() {
         return queueHelper().makeVirtualTopicProducer(topicChanges);
     }
-
-    @Bean
-    @Lazy(true)
-    public JmsTemplate equivChanges() {
-        return queueHelper().makeVirtualTopicProducer(equivChanges);
-    }
-
-    public JmsTemplate equivAssertions() {
-        return null;
-    }
+//
+//    @Bean //Phasing out
+//    @Lazy(true)
+//    public JmsTemplate equivChanges() {
+//        return queueHelper().makeVirtualTopicProducer(equivChanges);
+//    }
     
 }
