@@ -481,7 +481,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
     
     private List<Item> orderItems(Iterable<Item> items) {
-        return Ordering.from(ScheduleEntry.START_TIME_ITEM_COMPARATOR).immutableSortedCopy(items);
+        return Ordering.from(ScheduleEntry.START_TIME_AND_DURATION_ITEM_COMPARATOR).immutableSortedCopy(items);
     }
     
     private static final Function<Broadcast, Interval> TO_BROADCAST = new Function<Broadcast, Interval>() {
