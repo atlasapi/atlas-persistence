@@ -16,6 +16,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.RelatedLink;
+import org.atlasapi.media.entity.Review;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
@@ -112,6 +113,27 @@ public class DescribedTranslatorTest {
         
         BasicDBList dboTitles = (BasicDBList) dboFromContent.get(DescribedTranslator.LOCALIZED_TITLES_KEY);
         assertEquals(localizedTitles().size(), dboTitles.size());    
+    }
+    
+    @Test
+    public void testReviewsTranslation() {        
+        Content content = new Item();
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        
+        content.setReviews(ImmutableSet.of
+                (new Review(Locale.ENGLISH, "I am an English review."),
+                 new Review(Locale.FRENCH, "Je suis un examen en français.")     
+                ));
+        
+        BasicDBObject dbo = new BasicDBObject();
+        translator.toDBObject(dbo, content);
+        
+        assertEquals(2, ((BasicDBList)dbo.get(DescribedTranslator.REVIEWS_KEY)).size());
+        
+        Described fromDBO = translator.fromDBObject(dbo, new Item());
+        
+        assertEquals(content.getReviews(), fromDBO.getReviews());
+        
     }
     
     private Set<LocalizedDescription> localizedDescriptions() {
