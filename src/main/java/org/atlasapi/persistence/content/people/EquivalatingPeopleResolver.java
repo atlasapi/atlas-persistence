@@ -60,7 +60,7 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     public Iterable<Person> people(Iterable<Publisher> publishers, ApplicationConfiguration config, 
             Selection selection) {
         
-        Iterable<LookupEntry> entries = selection.apply(peopleLookupEntryStore.entriesForPublishers(publishers));
+        Iterable<LookupEntry> entries = peopleLookupEntryStore.entriesForPublishers(publishers, selection);
         Map<String, LookupEntry> entriesIndex = Maps.uniqueIndex(entries, Functions.compose(LookupRef.TO_URI, LookupEntry.TO_SELF));
         
         Map<String, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, config), Identified.TO_URI);
