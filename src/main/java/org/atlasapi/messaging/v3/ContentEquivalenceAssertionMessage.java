@@ -74,7 +74,7 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
         
         @Override
         public String toString() {
-            return String.format("%(%s,%s)", id, type, source);
+            return String.format("%s(%s,%s)", id, type, source);
         }
         
     }
