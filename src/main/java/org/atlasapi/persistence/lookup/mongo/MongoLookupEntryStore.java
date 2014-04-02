@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
@@ -43,6 +45,7 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
+import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -182,13 +185,20 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers) {
-        return Iterables.transform(
-                lookup.find(where().fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
-                                   .build())
-                      .setReadPreference(readPreference)
-                      .sort(sort().ascending(OPAQUE_ID).build()),
-                translator.FROM_DBO);
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, @Nullable Selection selection) {
+    	DBCursor find = lookup.find(where().fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY)).build())
+    	                        .setReadPreference(readPreference)
+    	                        .sort(sort().ascending(OPAQUE_ID).build());
+    	
+    	Iterable<DBObject> result;
+    	if (selection != null) {
+    		find.skip(selection.getOffset());
+    		result = Iterables.limit(find, selection.getLimit());
+    	} else {
+    	    result = find;
+    	}
+
+    	return Iterables.transform(result, translator.FROM_DBO);
     }
 
     public Iterable<LookupEntry> all() {
