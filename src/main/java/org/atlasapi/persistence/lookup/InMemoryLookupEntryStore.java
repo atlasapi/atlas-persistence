@@ -15,6 +15,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.metabroadcast.common.query.Selection;
 
 public class InMemoryLookupEntryStore implements LookupEntryStore {
 
@@ -84,7 +85,8 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers) {
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, Selection selection) {
         throw new UnsupportedOperationException();
     }
+
 }
