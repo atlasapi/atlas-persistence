@@ -17,6 +17,7 @@ import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.messaging.v3.AtlasMessagingModule;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
+import org.atlasapi.persistence.content.ContentPurger;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.DefaultEquivalentContentResolver;
@@ -30,7 +31,9 @@ import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
+import org.atlasapi.persistence.content.mongo.MongoContentPurger;
 import org.atlasapi.persistence.content.mongo.MongoContentResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentTables;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
@@ -233,5 +236,15 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     public @Bean PeopleQueryResolver peopleQueryResolver() {
         return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup")));
+    }
+    
+    public @Bean ContentPurger contentPurger() {
+        return new MongoContentPurger(contentLister(), 
+                contentResolver(), 
+                contentWriter(), 
+                new MongoContentTables(db), 
+                db.collection("lookup"), 
+                explicitLookupWriter(), 
+                generatedLookupWriter());
     }
 }
