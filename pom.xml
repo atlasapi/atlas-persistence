@@ -104,9 +104,9 @@
             <version>3.0.5.RELEASE</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.activemq</groupId>
-            <artifactId>activemq-pool</artifactId>
-            <version>${amq.version}</version>
+            <groupId>com.metabroadcast.common.queue</groupId>
+            <artifactId>common-queue</artifactId>
+            <version>${common.version}</version>
         </dependency>
     </dependencies>
 

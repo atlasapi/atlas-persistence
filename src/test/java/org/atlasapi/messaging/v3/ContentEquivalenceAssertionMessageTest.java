@@ -7,13 +7,12 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage.AdjacentRef;
-import org.atlasapi.messaging.worker.v3.AbstractWorker.MessagingModule;
-import org.atlasapi.serialization.json.JsonFactory;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.time.Timestamp;
 
 
 public class ContentEquivalenceAssertionMessageTest {
@@ -28,17 +27,17 @@ public class ContentEquivalenceAssertionMessageTest {
         );
         
         ContentEquivalenceAssertionMessage msg = new ContentEquivalenceAssertionMessage(
-                "1", 1L, "sid", "episode", "bbc.co.uk", adjacent, srcs);
-     
-        ObjectMapper mapper = JsonFactory.makeJsonMapper()
-            .registerModule(new MessagingModule());
+                "1", Timestamp.of(1), "sid", "episode", "bbc.co.uk", adjacent, srcs);
+
+        JacksonMessageSerializer<ContentEquivalenceAssertionMessage> serializer
+            = JacksonMessageSerializer.forType(ContentEquivalenceAssertionMessage.class);
         
-        String serialized = mapper.writeValueAsString(msg);
+        byte[] serialized = serializer.serialize(msg);
         
-        System.out.println(serialized);
+        System.out.println(new String(serialized, Charsets.UTF_8));
         
         ContentEquivalenceAssertionMessage deserialized 
-            = mapper.readValue(serialized, ContentEquivalenceAssertionMessage.class);
+            = serializer.deserialize(serialized);
         
         assertEquals(msg.getMessageId(), deserialized.getMessageId());
         assertEquals(msg.getTimestamp(), deserialized.getTimestamp());

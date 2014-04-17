@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.worker.v3.Worker;
 
 import com.google.common.base.Objects;
+import com.metabroadcast.common.time.Timestamp;
 
 /**
  * <p>
@@ -100,7 +100,7 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
      * @param sources
      *            - set of keys of sources for which this assertion is valid.
      */
-    public ContentEquivalenceAssertionMessage(String messageId, Long timestamp, String subjectId,
+    public ContentEquivalenceAssertionMessage(String messageId, Timestamp timestamp, String subjectId,
             String subjectType, String subjectSource, List<AdjacentRef> adjacent, Set<Publisher> sources) {
         super(messageId, timestamp, subjectId, subjectType, subjectSource);
         this.adjacent = adjacent;
@@ -113,11 +113,6 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
 
     public Set<Publisher> getSources() {
         return sources;
-    }
-
-    @Override
-    public void dispatchTo(Worker worker) {
-        worker.process(this);
     }
 
 }

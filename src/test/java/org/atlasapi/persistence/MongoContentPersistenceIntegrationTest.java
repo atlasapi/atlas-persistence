@@ -9,7 +9,8 @@ import static org.hamcrest.Matchers.nullValue;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.v3.AtlasMessagingModule;
+import org.atlasapi.messaging.v3.KafkaMessagingModule;
+import org.atlasapi.messaging.v3.MessagingModule;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
@@ -23,6 +24,12 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.queue.Message;
+import com.metabroadcast.common.queue.MessageConsumerFactory;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.queue.MessageSenderFactory;
+import com.metabroadcast.common.queue.MessageSerializer;
+import com.metabroadcast.common.queue.MessagingException;
 import com.mongodb.Mongo;
 
 public class MongoContentPersistenceIntegrationTest {
@@ -30,9 +37,34 @@ public class MongoContentPersistenceIntegrationTest {
     private final Mongo mongo = MongoTestHelper.anEmptyMongo();
     private final DatabasedMongo db = new DatabasedMongo(mongo, "atlas");
     private final MongoLoggingAdapter adapterLog = new MongoLoggingAdapter(db);
-    private final AtlasMessagingModule messagingModule = new AtlasMessagingModule(
-        "vm://localhost", "Atlas.Owl.Test"
-    );
+    private final MessagingModule messagingModule = new MessagingModule(){
+        @Override
+        public MessageSenderFactory messageSenderFactory() {
+            return new MessageSenderFactory() {
+                
+                @Override
+                public <M extends Message> MessageSender<M> makeMessageSender(String destination,
+                        MessageSerializer<? super M> serializer) {
+                    return new MessageSender<M>() {
+
+                        @Override
+                        public void close() throws Exception {
+                        }
+
+                        @Override
+                        public void sendMessage(M message)
+                                throws MessagingException {
+                        }
+                    };
+                }
+            };
+        }
+
+        @Override
+        public MessageConsumerFactory<?> messageConsumerFactory() {
+            return null;
+        }
+    };
 
     @Test
     public void test() {

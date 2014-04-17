@@ -1,16 +1,19 @@
 package org.atlasapi.messaging.v3;
 
+import com.metabroadcast.common.queue.Message;
+import com.metabroadcast.common.time.Timestamp;
+
 /**
  */
 public abstract class AbstractMessage implements Message {
 
     private final String messageId;
-    private final Long timestamp;
+    private final Timestamp timestamp;
     private final String entityId;
     private final String entityType;
     private final String entitySource;
 
-    public AbstractMessage(String messageId, Long timestamp, String entityId, String entityType, String entitySource) {
+    public AbstractMessage(String messageId, Timestamp timestamp, String entityId, String entityType, String entitySource) {
         this.messageId = messageId;
         this.timestamp = timestamp;
         this.entityId = entityId;
@@ -24,26 +27,22 @@ public abstract class AbstractMessage implements Message {
     }
 
     @Override
-    public Long getTimestamp() {
+    public Timestamp getTimestamp() {
         return timestamp;
     }
 
-    @Override
     public String getEntityId() {
         return entityId;
     }
 
-    @Override
     public String getEntityType() {
         return entityType;
     }
 
-    @Override
     public String getEntitySource() {
         return entitySource;
     }
 
-    @Override
     public boolean canCoalesce() {
         return false;
     }

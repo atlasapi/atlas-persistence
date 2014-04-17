@@ -14,7 +14,10 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
-import org.atlasapi.messaging.v3.AtlasMessagingModule;
+import org.atlasapi.messaging.v3.KafkaMessagingModule;
+import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+import org.atlasapi.messaging.v3.JacksonMessageSerializer;
+import org.atlasapi.messaging.v3.MessagingModule;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentPurger;
@@ -48,7 +51,6 @@ import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.LookupWriter;
-import org.atlasapi.persistence.lookup.MessageQueueingLookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
@@ -63,6 +65,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -70,28 +73,31 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
+import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.Mongo;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 
 @Configuration
-@Import(AtlasMessagingModule.class)
+@Import(KafkaMessagingModule.class)
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     private @Autowired Mongo mongo;
     private @Autowired DatabasedMongo db;
     private @Autowired AdapterLog log;
-    private @Autowired AtlasMessagingModule messagingModule;
+    private @Autowired MessagingModule messagingModule;
     
     private final Parameter processingConfig = Configurer.get("processing.config");
     
+    private @Value("${messaging.destination.content.changes}") String contentChanges;
+    private @Value("${messaging.destination.topics.changes}") String topicChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
     
     public MongoContentPersistenceModule() {}
     
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, AtlasMessagingModule messagingModule, AdapterLog log) {
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, AdapterLog log) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
@@ -99,6 +105,20 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.generateIds = "true";
     }
     
+    @Bean
+    @Lazy(true)
+    public MessageSender<EntityUpdatedMessage> contentChanges() {
+        return messagingModule.messageSenderFactory().makeMessageSender(contentChanges,
+                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
+    }
+    
+    @Bean
+    @Lazy(true)
+    public MessageSender<EntityUpdatedMessage> topicChanges() {
+        return messagingModule.messageSenderFactory().makeMessageSender(topicChanges,
+                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
+    }
+
     private @Autowired ChannelResolver channelResolver;
     
     public @Bean ContentGroupWriter contentGroupWriter() {
@@ -114,7 +134,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (Boolean.valueOf(messagingEnabled)) {
-            contentWriter = new MessageQueueingContentWriter(messagingModule.contentChanges(), contentWriter);
+            contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
         }
         if (Boolean.valueOf(generateIds)) {
             contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
@@ -190,7 +210,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public @Primary @Bean TopicStore topicStore() {
         TopicStore store = new MongoTopicStore(db);
         if (Boolean.valueOf(messagingEnabled)) {
-            store = new MessageQueueingTopicWriter(messagingModule.topicChanges(), store);
+            store = new MessageQueueingTopicWriter(topicChanges(), store);
         }
         return new TopicCreatingTopicResolver(store, new MongoSequentialIdGenerator(db, "topic"));
     }
