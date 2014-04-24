@@ -1,13 +1,13 @@
 package org.atlasapi.messaging.v3;
 
-import org.atlasapi.messaging.worker.v3.Worker;
+import com.metabroadcast.common.time.Timestamp;
 
 /**
  * Message signaling that a given entity has been created or updated.
  */
 public class EntityUpdatedMessage extends AbstractMessage {
 
-    public EntityUpdatedMessage(String messageId, Long timestamp, String entityId, String entityType, String entitySource) {
+    public EntityUpdatedMessage(String messageId, Timestamp timestamp, String entityId, String entityType, String entitySource) {
         super(messageId, timestamp, entityId, entityType, entitySource);
     }
 
@@ -16,8 +16,4 @@ public class EntityUpdatedMessage extends AbstractMessage {
         return true;
     }
 
-    @Override
-    public void dispatchTo(Worker worker) {
-        worker.process(this);
-    }
 }

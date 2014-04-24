@@ -1,49 +1,48 @@
 package org.atlasapi.persistence.content;
 
-import static org.mockito.Matchers.contains;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import javax.jms.Session;
-
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.jms.core.MessageCreator;
+
+import com.metabroadcast.common.queue.MessageSender;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MessageQueueingContentWriterTest {
 
-    private final JmsTemplate template = mock(JmsTemplate.class);
+    @SuppressWarnings("unchecked")
+    private final MessageSender<EntityUpdatedMessage> sender = 
+        (MessageSender<EntityUpdatedMessage>) mock(MessageSender.class);
     private final ContentWriter delegate = mock(ContentWriter.class);    
     private final MessageQueueingContentWriter writer 
-        = new MessageQueueingContentWriter(template, delegate);
+        = new MessageQueueingContentWriter(sender, delegate);
     
     @Test
     public void testEnqueuesMessageWhenContentChanges() throws Exception {
         
         Episode episode = new Episode("uri","curie",Publisher.METABROADCAST);
-        episode.setId(54321L);
+        episode.setId(1225L);
         episode.setReadHash(null);
         
         writer.createOrUpdate(episode);
         
         verify(delegate).createOrUpdate(episode);
         
-        ArgumentCaptor<MessageCreator> creatorCaptor = ArgumentCaptor.forClass(MessageCreator.class);
+        ArgumentCaptor<EntityUpdatedMessage> creatorCaptor = ArgumentCaptor.forClass(EntityUpdatedMessage.class);
         
-        verify(template).send(creatorCaptor.capture());
+        verify(sender).sendMessage(creatorCaptor.capture());
         
-        MessageCreator creator = creatorCaptor.getValue();
+        EntityUpdatedMessage message = creatorCaptor.getValue();
         
-        Session session = mock(Session.class);
-        creator.createMessage(session);
-        
-        verify(session).createTextMessage(contains("54321"));
+        assertThat(message.getEntityId(), is("cyp"));
         
     }
 

@@ -103,6 +103,11 @@
             <artifactId>spring-jms</artifactId>
             <version>3.0.5.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>com.metabroadcast.common.queue</groupId>
+            <artifactId>common-queue</artifactId>
+            <version>${common.version}</version>
+        </dependency>
     </dependencies>
 
     <scm>
