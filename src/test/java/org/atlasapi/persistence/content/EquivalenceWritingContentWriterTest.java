@@ -1,10 +1,13 @@
 package org.atlasapi.persistence.content;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.InMemoryLookupEntryStore;
 import org.atlasapi.persistence.lookup.LookupWriter;
@@ -75,8 +78,6 @@ public class EquivalenceWritingContentWriterTest {
         secondSubjectItem.setEquivalentTo(ImmutableSet.of(explicitEquiv.lookupRef()));
         
         contentWriter.createOrUpdate(secondSubjectItem);
-
-        verify(delegate).createOrUpdate(secondSubjectItem);
         
         LookupEntry second = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(secondSubjectItem.getCanonicalUri())));
         assertTrue(second.explicitEquivalents().contains(explicitEquiv.lookupRef()));
@@ -101,6 +102,13 @@ public class EquivalenceWritingContentWriterTest {
         assertTrue(explicit.equivalents().contains(subject.lookupRef()));
         assertTrue(explicit.equivalents().contains(secondSubject.lookupRef()));
         assertTrue(explicit.equivalents().contains(explicitEquiv.lookupRef()));
+        
+        secondSubjectItem.setEquivalentTo(ImmutableSet.<LookupRef>of());
+        contentWriter.createOrUpdate(secondSubjectItem);
+        verify(delegate, times(2)).createOrUpdate(secondSubjectItem);
+        
+        second = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(secondSubjectItem.getCanonicalUri())));
+        assertFalse(second.explicitEquivalents().contains(explicitEquiv.lookupRef()));
     }
 
 }
