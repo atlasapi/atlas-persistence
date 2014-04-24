@@ -5,8 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.List;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Publisher;
-
 import com.google.common.base.Objects;
 import com.metabroadcast.common.time.Timestamp;
 
@@ -31,17 +29,17 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
 
     public static class AdjacentRef {
         
-        private final Long id;
+        private final String id;
         private final String type;
-        private final Publisher source;
+        private final String source;
         
-        public AdjacentRef(Long id, String type, Publisher source) {
+        public AdjacentRef(String id, String type, String source) {
             this.id = checkNotNull(id);
             this.type = checkNotNull(type);
             this.source = checkNotNull(source);
         }
         
-        public Long getId() {
+        public String getId() {
             return id;
         }
         
@@ -49,7 +47,7 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
             return type;
         }
         
-        public Publisher getSource() {
+        public String getSource() {
             return source;
         }
 
@@ -80,7 +78,7 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
     }
     
     private List<AdjacentRef> adjacent;
-    private Set<Publisher> sources;
+    private Set<String> sources;
 
     /**
      * Creates a new EquivalenceAssertionMessage.
@@ -101,7 +99,7 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
      *            - set of keys of sources for which this assertion is valid.
      */
     public ContentEquivalenceAssertionMessage(String messageId, Timestamp timestamp, String subjectId,
-            String subjectType, String subjectSource, List<AdjacentRef> adjacent, Set<Publisher> sources) {
+            String subjectType, String subjectSource, List<AdjacentRef> adjacent, Set<String> sources) {
         super(messageId, timestamp, subjectId, subjectType, subjectSource);
         this.adjacent = adjacent;
         this.sources = sources;
@@ -111,7 +109,7 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
         return adjacent;
     }
 
-    public Set<Publisher> getSources() {
+    public Set<String> getSources() {
         return sources;
     }
 

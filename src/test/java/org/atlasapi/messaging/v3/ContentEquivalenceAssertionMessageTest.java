@@ -20,14 +20,14 @@ public class ContentEquivalenceAssertionMessageTest {
     @Test
     public void testDeSerialization() throws Exception {
         
-        Set<Publisher> srcs = Sets.newHashSet(Publisher.BBC, Publisher.ITV);
+        Set<String> srcs = Sets.newHashSet(Publisher.BBC.key(), Publisher.ITV.key());
         List<AdjacentRef> adjacent = Lists.newArrayList(
-            new AdjacentRef(2L, "episode", Publisher.PA),
-            new AdjacentRef(3L, "item", Publisher.ITV)
+            new AdjacentRef("cyp", "episode", Publisher.PA.key()),
+            new AdjacentRef("dms", "item", Publisher.ITV.key())
         );
         
         ContentEquivalenceAssertionMessage msg = new ContentEquivalenceAssertionMessage(
-                "1", Timestamp.of(1), "sid", "episode", "bbc.co.uk", adjacent, srcs);
+                "1", Timestamp.of(1), "cf2", "episode", "bbc.co.uk", adjacent, srcs);
 
         JacksonMessageSerializer<ContentEquivalenceAssertionMessage> serializer
             = JacksonMessageSerializer.forType(ContentEquivalenceAssertionMessage.class);

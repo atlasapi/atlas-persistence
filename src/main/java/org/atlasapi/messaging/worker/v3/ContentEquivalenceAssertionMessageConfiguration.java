@@ -21,7 +21,7 @@ public class ContentEquivalenceAssertionMessageConfiguration {
             @JsonProperty("entityType") String entityType,
             @JsonProperty("entitySource") String entitySource,
             @JsonProperty("adjacent") List<AdjacentRef> adjacent,
-            @JsonProperty("sources") Set<Publisher> sources) {
+            @JsonProperty("sources") Set<String> sources) {
         
     }
     
