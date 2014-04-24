@@ -156,21 +156,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     private LookupWriter explicitLookupWriter() {
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
-        LookupWriter lookupWriter = TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
-        return messagingLookupWriter(lookupWriter);
+        return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
     }
 
     public @Bean LookupWriter generatedLookupWriter() {
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
-        LookupWriter lookupWriter = TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
-        return messagingLookupWriter(lookupWriter);
-    }
-
-    private LookupWriter messagingLookupWriter(LookupWriter lookupWriter) {
-//        if (Boolean.valueOf(messagingEnabled)) {
-//            return new MessageQueueingLookupWriter(messagingModule.equivChanges(), lookupWriter);
-//        }
-        return lookupWriter;
+        return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
     }
 
     public @Primary @Bean MongoScheduleStore scheduleStore() {
