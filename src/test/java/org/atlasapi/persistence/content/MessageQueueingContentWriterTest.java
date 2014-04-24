@@ -29,7 +29,7 @@ public class MessageQueueingContentWriterTest {
     public void testEnqueuesMessageWhenContentChanges() throws Exception {
         
         Episode episode = new Episode("uri","curie",Publisher.METABROADCAST);
-        episode.setId(54321L);
+        episode.setId(1225L);
         episode.setReadHash(null);
         
         writer.createOrUpdate(episode);
@@ -42,7 +42,7 @@ public class MessageQueueingContentWriterTest {
         
         EntityUpdatedMessage message = creatorCaptor.getValue();
         
-        assertThat(message.getEntityId(), is(String.valueOf(episode.getId())));
+        assertThat(message.getEntityId(), is("cyp"));
         
     }
 

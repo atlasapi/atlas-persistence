@@ -1,5 +1,8 @@
 package org.atlasapi.persistence.content;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.math.BigInteger;
 import java.util.UUID;
 
 import org.atlasapi.media.entity.Container;
@@ -26,15 +29,17 @@ public class MessageQueueingContentWriter implements ContentWriter {
     private final SubstitutionTableNumberCodec idCodec = new SubstitutionTableNumberCodec();
     private final ItemTranslator itemTranslator = new ItemTranslator(idCodec);
     private final ContainerTranslator containerTranslator = new ContainerTranslator(idCodec);
+    
+    private final SubstitutionTableNumberCodec entityIdCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
 
     public MessageQueueingContentWriter(MessageSender<EntityUpdatedMessage> sender, ContentWriter delegate) {
         this(sender, delegate, new SystemClock());
     }
 
     public MessageQueueingContentWriter(MessageSender<EntityUpdatedMessage> sender, ContentWriter delegate, Timestamper clock) {
-        this.sender = sender;
-        this.delegate = delegate;
-        this.clock = clock;
+        this.sender = checkNotNull(sender);
+        this.delegate = checkNotNull(delegate);
+        this.clock = checkNotNull(clock);
     }
 
     @Override
@@ -69,7 +74,7 @@ public class MessageQueueingContentWriter implements ContentWriter {
         return new EntityUpdatedMessage(
                 UUID.randomUUID().toString(),
                 clock.timestamp(),
-                content.getId().toString(),
+                entityIdCodec.encode(BigInteger.valueOf(content.getId())),
                 content.getClass().getSimpleName().toLowerCase(),
                 content.getPublisher().key());
     }
