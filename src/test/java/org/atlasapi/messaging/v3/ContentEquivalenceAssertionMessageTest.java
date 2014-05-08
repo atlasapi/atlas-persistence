@@ -9,7 +9,6 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage.AdjacentRef;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.Timestamp;
@@ -33,8 +32,6 @@ public class ContentEquivalenceAssertionMessageTest {
             = JacksonMessageSerializer.forType(ContentEquivalenceAssertionMessage.class);
         
         byte[] serialized = serializer.serialize(msg);
-        
-        System.out.println(new String(serialized, Charsets.UTF_8));
         
         ContentEquivalenceAssertionMessage deserialized 
             = serializer.deserialize(serialized);
