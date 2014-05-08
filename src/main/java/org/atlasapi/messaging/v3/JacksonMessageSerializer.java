@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.IOException;
 
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage.AdjacentRef;
-import org.atlasapi.messaging.worker.v3.AbstractMessageConfiguration;
+import org.atlasapi.messaging.worker.v3.EntityUpdatedMessageConfiguration;
 import org.atlasapi.messaging.worker.v3.AdjacentRefConfiguration;
 import org.atlasapi.messaging.worker.v3.ContentEquivalenceAssertionMessageConfiguration;
 import org.atlasapi.serialization.json.JsonFactory;
@@ -34,7 +34,7 @@ public class JacksonMessageSerializer<M extends Message> implements MessageSeria
         @Override
         public void setupModule(SetupContext context) {
             super.setupModule(context);
-            context.setMixInAnnotations(EntityUpdatedMessage.class, AbstractMessageConfiguration.class);
+            context.setMixInAnnotations(EntityUpdatedMessage.class, EntityUpdatedMessageConfiguration.class);
             context.setMixInAnnotations(ContentEquivalenceAssertionMessage.class, 
                 ContentEquivalenceAssertionMessageConfiguration.class);
             context.setMixInAnnotations(AdjacentRef.class, 
