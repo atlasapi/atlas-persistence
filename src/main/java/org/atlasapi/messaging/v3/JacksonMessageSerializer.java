@@ -8,10 +8,13 @@ import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage.AdjacentRef;
 import org.atlasapi.messaging.worker.v3.EntityUpdatedMessageConfiguration;
 import org.atlasapi.messaging.worker.v3.AdjacentRefConfiguration;
 import org.atlasapi.messaging.worker.v3.ContentEquivalenceAssertionMessageConfiguration;
+import org.atlasapi.messaging.worker.v3.ScheduleUpdateMessageConfiguration;
 import org.atlasapi.serialization.json.JsonFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.base.Objects;
 import com.metabroadcast.common.queue.Message;
 import com.metabroadcast.common.queue.MessageDeserializationException;
@@ -40,11 +43,14 @@ public class JacksonMessageSerializer<M extends Message> implements MessageSeria
             context.setMixInAnnotations(AdjacentRef.class, 
                     AdjacentRefConfiguration.class);
             context.setMixInAnnotations(Timestamp.class, TimestampConfiguration.class);
+            context.setMixInAnnotations(ScheduleUpdateMessage.class, ScheduleUpdateMessageConfiguration.class);
         }
     }
     
     private final ObjectMapper mapper = JsonFactory.makeJsonMapper()
-            .registerModule(new MessagingModule());
+            .registerModule(new MessagingModule())
+            .registerModule(new GuavaModule())
+            .registerModule(new JodaModule());
     private final Class<? extends M> cls;
     
     public JacksonMessageSerializer(Class<? extends M> cls) {
