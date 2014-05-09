@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.metabroadcast.common.time.Timestamp;
 
-public abstract class AbstractMessageConfiguration {
+public abstract class EntityUpdatedMessageConfiguration {
 
     @JsonCreator
-    AbstractMessageConfiguration(
+    EntityUpdatedMessageConfiguration(
             @JsonProperty("messageId") String messageId,
             @JsonProperty("timestamp") Timestamp timestamp,
             @JsonProperty("entityId") String entityId,

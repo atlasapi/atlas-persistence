@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.base.Objects;
+import com.metabroadcast.common.queue.AbstractMessage;
 import com.metabroadcast.common.time.Timestamp;
 
 /**
@@ -76,7 +77,10 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
         }
         
     }
-    
+
+    private final String subjectId;
+    private final String subjectType;
+    private final String subjectSource;
     private List<AdjacentRef> adjacent;
     private Set<String> sources;
 
@@ -100,9 +104,24 @@ public class ContentEquivalenceAssertionMessage extends AbstractMessage {
      */
     public ContentEquivalenceAssertionMessage(String messageId, Timestamp timestamp, String subjectId,
             String subjectType, String subjectSource, List<AdjacentRef> adjacent, Set<String> sources) {
-        super(messageId, timestamp, subjectId, subjectType, subjectSource);
+        super(messageId, timestamp);
+        this.subjectId = subjectId;
+        this.subjectSource = subjectSource;
+        this.subjectType = subjectType;
         this.adjacent = adjacent;
         this.sources = sources;
+    }
+    
+    public String getEntityId() {
+        return subjectId;
+    }
+
+    public String getEntityType() {
+        return subjectType;
+    }
+
+    public String getEntitySource() {
+        return subjectSource;
     }
 
     public List<AdjacentRef> getAdjacent() {
