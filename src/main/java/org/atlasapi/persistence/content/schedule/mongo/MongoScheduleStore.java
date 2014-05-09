@@ -2,12 +2,14 @@ package org.atlasapi.persistence.content.schedule.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -27,6 +29,7 @@ import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
 import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.EquivalentContent;
@@ -38,6 +41,8 @@ import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Interval;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -59,7 +64,14 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.queue.MessagingException;
+import com.metabroadcast.common.time.SystemClock;
+import com.metabroadcast.common.time.Timestamp;
+import com.metabroadcast.common.time.Timestamper;
 import com.mongodb.DBCollection;
 
 public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
@@ -73,13 +85,19 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private final EquivalentContentResolver equivalentContentResolver;
     private final ChannelResolver channelResolver;
 
-    public MongoScheduleStore(DatabasedMongo db, ChannelResolver channelResolver, ContentResolver contentResolver, EquivalentContentResolver equivalentContentResolver) {
+    private final MessageSender<ScheduleUpdateMessage> messageSender;
+    private final Timestamper timestamper = new SystemClock();
+    private final NumberToShortStringCodec idCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    public MongoScheduleStore(DatabasedMongo db, ChannelResolver channelResolver, ContentResolver contentResolver, EquivalentContentResolver equivalentContentResolver, MessageSender<ScheduleUpdateMessage> messageSender) {
         this.channelResolver = channelResolver;
         this.contentResolver = contentResolver;
         this.equivalentContentResolver = equivalentContentResolver;
         collection = db.collection("schedule");
         this.scheduleEntryBuilder = new ScheduleEntryBuilder(channelResolver, Duration.standardDays(28));
         translator = new ScheduleEntryTranslator(channelResolver);
+        this.messageSender = messageSender;
     }
     
     @Override
@@ -107,18 +125,36 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
     @Override
     public void replaceScheduleBlock(Publisher publisher, Channel channel, Iterable<ItemRefAndBroadcast> itemsAndBroadcasts) {
-    	
-    	Interval interval = checkAndGetScheduleInterval(itemsAndBroadcasts, true, channel);
-    	Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(channel, publisher, interval);
-    	
-    	for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
-	    	scheduleEntryBuilder.toScheduleEntryFromBroadcast(channel, publisher, itemAndBroadcast, entries);
-    	}
-    	for(ScheduleEntry entry : entries.values()) {
-    		writeCompleteEntry(entry);
-    	}
+        
+        Interval interval = checkAndGetScheduleInterval(itemsAndBroadcasts, true, channel);
+        Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(channel, publisher, interval);
+        
+        for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
+            scheduleEntryBuilder.toScheduleEntryFromBroadcast(channel, publisher, itemAndBroadcast, entries);
+        }
+        for (ScheduleEntry entry : entries.values()) {
+            writeCompleteEntry(entry);
+        }
+        
+        sendUpdateMessage(publisher, channel, interval);
     }
     
+    private void sendUpdateMessage(Publisher publisher, Channel channel, Interval interval) {
+        String mid = UUID.randomUUID().toString();
+        Timestamp ts = timestamper.timestamp();
+        String src = publisher.key();
+        String cid = idCodec.encode(BigInteger.valueOf(channel.getId()));
+        DateTime start = interval.getStart();
+        DateTime end = interval.getEnd();
+        ScheduleUpdateMessage msg = new ScheduleUpdateMessage(mid, ts, src, cid , start, end);
+        try {
+            messageSender.sendMessage(msg);
+        } catch (MessagingException e) {
+            String errMsg = String.format("%s %s %s", src, cid, interval);
+            log.error(errMsg, e);
+        }
+    }
+
     private Interval checkAndGetScheduleInterval(Iterable<ItemRefAndBroadcast> itemsAndBroadcasts, boolean allowGaps, Channel expectedChannel)
     {
 		List<Broadcast> broadcasts = Lists.newArrayList();

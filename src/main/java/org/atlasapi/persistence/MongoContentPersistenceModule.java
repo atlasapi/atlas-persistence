@@ -18,6 +18,7 @@ import org.atlasapi.messaging.v3.KafkaMessagingModule;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.messaging.v3.JacksonMessageSerializer;
 import org.atlasapi.messaging.v3.MessagingModule;
+import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentPurger;
@@ -92,6 +93,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     private @Value("${messaging.destination.content.changes}") String contentChanges;
     private @Value("${messaging.destination.topics.changes}") String topicChanges;
+    private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
     
@@ -117,6 +119,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public MessageSender<EntityUpdatedMessage> topicChanges() {
         return messagingModule.messageSenderFactory().makeMessageSender(topicChanges,
                 JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
+    }
+
+    @Bean
+    @Lazy(true)
+    public MessageSender<ScheduleUpdateMessage> scheduleChanges() {
+        return messagingModule.messageSenderFactory().makeMessageSender(scheduleChanges,
+                JacksonMessageSerializer.forType(ScheduleUpdateMessage.class));
     }
 
     private @Autowired ChannelResolver channelResolver;
@@ -166,7 +175,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public @Primary @Bean MongoScheduleStore scheduleStore() {
         try {
-            return new MongoScheduleStore(db, channelResolver, contentResolver(), equivContentResolver());
+            return new MongoScheduleStore(db, channelResolver, contentResolver(), equivContentResolver(), scheduleChanges());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
