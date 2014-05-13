@@ -101,12 +101,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${mongo.auditDbName}") String auditDbName;
     public MongoContentPersistenceModule() {}
     
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, AdapterLog log) {
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
         this.messagingModule = messagingModule;
         this.generateIds = "true";
+        this.auditDbName = auditDbName;
     }
     
     @Bean

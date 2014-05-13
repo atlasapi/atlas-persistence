@@ -69,7 +69,7 @@ public class MongoContentPersistenceIntegrationTest {
     @Test
     public void test() {
         
-        MongoContentPersistenceModule module = new MongoContentPersistenceModule(mongo, db, messagingModule, adapterLog);
+        MongoContentPersistenceModule module = new MongoContentPersistenceModule(mongo, db, messagingModule, "atlas-audit", adapterLog);
         
         ContentWriter contentWriter = module.contentWriter();
         ContentResolver contentResolver = module.contentResolver();
