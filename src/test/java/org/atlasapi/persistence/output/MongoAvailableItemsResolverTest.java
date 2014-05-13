@@ -18,6 +18,8 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -42,7 +44,8 @@ public class MongoAvailableItemsResolverTest {
         = new MongoLookupEntryStore(mongo.collection("lookup"));
     private final MongoAvailableItemsResolver resolver
         = new MongoAvailableItemsResolver(mongo, lookupStore, clock);
-    private final ContentWriter writer = new MongoContentWriter(mongo, lookupStore, clock);
+    private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
+    private final ContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, clock);
     
     private final Brand primary = new Brand("primary", "primary", Publisher.BBC);
     private final Brand equivalent = new Brand("equivalent", "equivalent", Publisher.PA);

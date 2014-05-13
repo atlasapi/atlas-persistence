@@ -13,6 +13,8 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.testing.ComplexItemTestDataBuilder;
 import org.atlasapi.output.Annotation;
+import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.DefaultEquivalentContentResolver;
 import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
@@ -39,12 +41,14 @@ public class MongoContentPurgerTest {
     private MongoContentPurger mongoContentPurger;
     private DefaultEquivalentContentResolver contentResolver;
     private MongoLookupEntryStore entryStore;
+    private PersistenceAuditLog persistenceAuditLog;
     
     @Before
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
+        persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
         entryStore = new MongoLookupEntryStore(db.collection("lookup"));
-        contentWriter = new EquivalenceWritingContentWriter(new MongoContentWriter(db, entryStore, new SystemClock()),
+        contentWriter = new EquivalenceWritingContentWriter(new MongoContentWriter(db, entryStore, persistenceAuditLog, new SystemClock()),
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore));
         contentResolver = new DefaultEquivalentContentResolver(new MongoContentResolver(db, entryStore), entryStore);
         
