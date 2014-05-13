@@ -18,6 +18,8 @@ import org.atlasapi.messaging.v3.KafkaMessagingModule;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.messaging.v3.JacksonMessageSerializer;
 import org.atlasapi.messaging.v3.MessagingModule;
+import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentPurger;
@@ -94,7 +96,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.topics.changes}") String topicChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
-    
+    private @Value("${mongo.auditDbName}") String auditDbName;
     public MongoContentPersistenceModule() {}
     
     public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, AdapterLog log) {
@@ -131,7 +133,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Primary @Bean ContentWriter contentWriter() {
-        ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), new SystemClock());
+        ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), persistenceAuditLog(), new SystemClock());
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (Boolean.valueOf(messagingEnabled)) {
             contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
@@ -185,7 +187,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     public @Primary @Bean PersonStore personStore() {
         LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
-        PersonStore personStore = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), personLookupEntryStore);
+        PersonStore personStore = new MongoPersonStore(db, 
+                TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), 
+                personLookupEntryStore, 
+                persistenceAuditLog());
+        
         if (Boolean.valueOf(generateIds)) {
             //For now people occupy the same id space as content.
             personStore = new IdSettingPersonStore(personStore, new MongoSequentialIdGenerator(db, "content"));
@@ -257,5 +263,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
                 db.collection("lookup"), 
                 explicitLookupWriter(), 
                 generatedLookupWriter());
+    }
+    
+    public @Bean PersistenceAuditLog persistenceAuditLog() {
+        return new PerHourAndDayMongoPersistenceAuditLog(new DatabasedMongo(mongo, auditDbName));
     }
 }

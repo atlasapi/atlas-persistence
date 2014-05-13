@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.PeopleListerListener;
 import org.atlasapi.persistence.content.people.PersonStore;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
@@ -51,12 +52,15 @@ public class MongoPersonStore implements PersonStore {
     private final TransitiveLookupWriter equivalenceWriter;
     private final LookupEntryStore lookupEntryStore;
     private final ItemCrewRefUpdater itemCrewRefUpdater;
+    private final PersistenceAuditLog persistenceAuditLog;
 
-    public MongoPersonStore(DatabasedMongo db, TransitiveLookupWriter equivalenceWriter, LookupEntryStore lookupEntryStore) {
+    public MongoPersonStore(DatabasedMongo db, TransitiveLookupWriter equivalenceWriter, 
+            LookupEntryStore lookupEntryStore, PersistenceAuditLog persistenceAuditLog) {
         this.collection = db.collection("people");
         this.equivalenceWriter = equivalenceWriter;
         this.lookupEntryStore = lookupEntryStore;
         this.itemCrewRefUpdater = new ItemCrewRefUpdater(db, lookupEntryStore);
+        this.persistenceAuditLog = persistenceAuditLog;
     }
 
     @Override
@@ -95,6 +99,7 @@ public class MongoPersonStore implements PersonStore {
         person.setMediaType(null);
         
         DBObject idQuery = translator.idQuery(person.getCanonicalUri()).build();
+        persistenceAuditLog.logWrite(person);
         collection.update(idQuery, translator.toDBObject(null, person), true, false);
         lookupEntryStore.store(LookupEntry.lookupEntryFrom(person));
         writeEquivalences(person);
@@ -157,13 +162,4 @@ public class MongoPersonStore implements PersonStore {
 	    
 	}
 	
-	public static void main(String[] args) throws UnknownHostException {
-	    Mongo mongo = new Mongo(System.getProperty("mongo.host", "127.0.0.1"));
-        String dbName = System.getProperty("mongo.dbName", "atlas");
-        DatabasedMongo dbMongo = new DatabasedMongo(mongo, dbName);
-        LookupEntryStore entryStore = new MongoLookupEntryStore(dbMongo.collection("peopleLookup"));
-	    MongoPersonStore store = new MongoPersonStore(dbMongo, TransitiveLookupWriter.explicitTransitiveLookupWriter(new MongoLookupEntryStore(dbMongo.collection("peopleLookup"))), entryStore);
-	    store.createEquivalences();
-	    
-	}
 }
