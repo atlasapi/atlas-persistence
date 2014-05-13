@@ -18,6 +18,8 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.joda.time.DateTime;
@@ -41,6 +43,7 @@ public class MongoContentListerTest {
     private static final Brand c4Brand= new Brand("c4Brand1", "c4Brand1curie", Publisher.C4);
     
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+    private static final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
     
     private final MongoContentLister lister = new MongoContentLister(mongo);
     
@@ -73,7 +76,7 @@ public class MongoContentListerTest {
         bbcBrand.setTopicRefs(ImmutableSet.of(topic1, topic2));
         c4Brand.setTopicRefs(ImmutableSet.of(topic1, topic3));
         
-        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, new SystemClock());
+        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, new SystemClock());
         writer.createOrUpdate(bbcBrand);
         writer.createOrUpdate(c4Brand);
         writer.createOrUpdate(bbcItem1);

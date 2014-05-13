@@ -19,6 +19,8 @@ import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
+import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
@@ -46,7 +48,8 @@ public class MongoContentWriterTest {
         }
     };
     
-    private final MongoContentWriter contentWriter = new MongoContentWriter(mongo, lookupWriter, new SystemClock());
+    private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
+    private final MongoContentWriter contentWriter = new MongoContentWriter(mongo, lookupWriter, persistenceAuditLog, new SystemClock());
     
     private final DBCollection children = mongo.collection("children");
     private final DBCollection topLevelItems = mongo.collection("topLevelItems");

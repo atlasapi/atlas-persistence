@@ -14,6 +14,8 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.PeopleListerListener;
@@ -39,15 +41,18 @@ public class MongoPersonStoreTest {
     private MongoLookupEntryStore entryStore;
     private MongoContentWriter contentWriter;
     private ContentResolver contentResolver;
+    private PersistenceAuditLog persistenceAuditLog;
     
     private final String uri = "person1";
     
     @Before
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
+        persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
         entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
-        store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), entryStore);
-        contentWriter = new MongoContentWriter(db, entryStore, new SystemClock());
+        store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), 
+                entryStore, persistenceAuditLog);
+        contentWriter = new MongoContentWriter(db, entryStore, persistenceAuditLog, new SystemClock());
         contentResolver = new LookupResolvingContentResolver(new MongoContentResolver(db, entryStore), entryStore);
     }
     
