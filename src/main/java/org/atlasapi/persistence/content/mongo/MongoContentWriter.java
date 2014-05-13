@@ -21,6 +21,7 @@ import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -59,10 +60,15 @@ public class MongoContentWriter implements ContentWriter {
     private final DBCollection topLevelItems;
     private final DBCollection containers;
     private final DBCollection programmeGroups;
+    private final PersistenceAuditLog persistenceAuditLog;
 
-    public MongoContentWriter(DatabasedMongo mongo, NewLookupWriter lookupStore, Clock clock) {
-        this.lookupStore = lookupStore;
-        this.clock = clock;
+    public MongoContentWriter(DatabasedMongo mongo, NewLookupWriter lookupStore, 
+            PersistenceAuditLog persistenceAuditLog, 
+            Clock clock) {
+        
+        this.lookupStore = checkNotNull(lookupStore);
+        this.clock = checkNotNull(clock);
+        this.persistenceAuditLog = checkNotNull(persistenceAuditLog);
 
         MongoContentTables contentTables = new MongoContentTables(mongo);
         
@@ -88,9 +94,11 @@ public class MongoContentWriter implements ContentWriter {
 
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
             log.debug("Item {} hash not changed. Not writing.", item.getCanonicalUri());
+            persistenceAuditLog.logNoWrite(item);
         	return;
         } 
         
+        persistenceAuditLog.logWrite(item);
         log.debug("Item {} hash changed so writing to db", item.getCanonicalUri());
         
         if (item instanceof Episode) {
@@ -153,9 +161,11 @@ public class MongoContentWriter implements ContentWriter {
 
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             log.debug("Container {} hash not changed. Not writing.", container.getCanonicalUri());
+            persistenceAuditLog.logNoWrite(container);
             return;
         } 
         
+        persistenceAuditLog.logWrite(container);
         log.debug("Container {} hash changed so writing to db. There are {} ChildRefs", 
                 container.getCanonicalUri(), container.getChildRefs().size());
 
