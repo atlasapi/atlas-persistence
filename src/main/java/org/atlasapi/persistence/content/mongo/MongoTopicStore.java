@@ -12,6 +12,7 @@ import static org.atlasapi.persistence.media.entity.TopicTranslator.VALUE;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.media.entity.TopicTranslator;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
@@ -31,11 +32,13 @@ public class MongoTopicStore implements TopicStore, TopicQueryResolver {
     private final DBCollection collection;
     private final TopicTranslator translator;
     private final MongoDBQueryBuilder queryBuilder;
+    private final PersistenceAuditLog persistenceAuditLog;
 
-    public MongoTopicStore(DatabasedMongo mongo) {
+    public MongoTopicStore(DatabasedMongo mongo, PersistenceAuditLog persistenceAuditLog) {
         this.collection = mongo.collection("topics");
         this.translator = new TopicTranslator();
         this.queryBuilder = new MongoDBQueryBuilder();
+        this.persistenceAuditLog = checkNotNull(persistenceAuditLog);
     }
 
     @Override
@@ -43,7 +46,12 @@ public class MongoTopicStore implements TopicStore, TopicQueryResolver {
         checkNotNull(topic.getId(), "Can't persist topic with no ID");
 
         DBObject dbo = translator.toDBObject(topic);
-
+        if (!topic.hashChanged(translator.hashCodeOf(topic))) {
+            persistenceAuditLog.logNoWrite(topic);
+            return;
+        }
+        
+        persistenceAuditLog.logWrite(topic);
         collection.update(where().idEquals((Long)dbo.get(ID)).build(), dbo, UPSERT, SINGLE);
     }
 

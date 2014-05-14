@@ -2,6 +2,9 @@ package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
+import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.ModelTranslator;
@@ -11,12 +14,15 @@ import com.mongodb.DBObject;
 
 public class TopicTranslator implements ModelTranslator<Topic> {
 
+    private static final Logger log = LoggerFactory.getLogger(TopicTranslator.class);
+    
     public static final String VALUE = "value";
     public static final String NAMESPACE = "namespace";
     public static final String TOPIC_TYPE = "topicType";
     public static final String PUBLISHER = "publisher";
     
-    private DescribedTranslator describedTranslator;
+    private final DescribedTranslator describedTranslator;
+    private final DbObjectHashCodeDebugger dboHashCodeDebugger = new DbObjectHashCodeDebugger();
 
     public TopicTranslator() {
         this.describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true), new ImageTranslator());
@@ -63,8 +69,24 @@ public class TopicTranslator implements ModelTranslator<Topic> {
         model.setNamespace(TranslatorUtils.toString(dbObject, NAMESPACE));
         model.setValue(TranslatorUtils.toString(dbObject, VALUE));
         model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER)).valueOrNull());
-
+        model.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
         return model;
+    }
+    
+    public String hashCodeOf(Topic topic) {
+        return generateHashByRemovingFieldsFromTheDbo(toDBObject(topic));
+    }
+
+    private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
+        removeFieldsForHash(dbObject);
+        if (log.isTraceEnabled()) {
+            dboHashCodeDebugger.logHashCodes(dbObject, log);
+        }
+        return String.valueOf(dbObject.hashCode());
+    }
+
+    public void removeFieldsForHash(DBObject dbObject) {
+        describedTranslator.removeFieldsForHash(dbObject);
     }
  
 }
