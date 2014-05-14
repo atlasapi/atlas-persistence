@@ -134,7 +134,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired ChannelResolver channelResolver;
     
     public @Bean ContentGroupWriter contentGroupWriter() {
-        ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
+        ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, persistenceAuditLog(), new SystemClock());
         return contentGroupWriter;
     }
     
@@ -218,7 +218,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     public @Primary @Bean TopicStore topicStore() {
-        TopicStore store = new MongoTopicStore(db);
+        TopicStore store = new MongoTopicStore(db, persistenceAuditLog());
         if (Boolean.valueOf(messagingEnabled)) {
             store = new MessageQueueingTopicWriter(topicChanges(), store);
         }
@@ -226,7 +226,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     public @Primary @Bean TopicQueryResolver topicQueryResolver() {
-        return new MongoTopicStore(db);
+        return new MongoTopicStore(db, persistenceAuditLog());
     }
     
     public @Primary @Bean SegmentWriter segmentWriter() {

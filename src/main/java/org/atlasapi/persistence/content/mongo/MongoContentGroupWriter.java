@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.mongo;
 
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -18,12 +19,15 @@ public class MongoContentGroupWriter implements ContentGroupWriter {
     private final ContentGroupTranslator contentGroupTranslator;
     private final MongoSequentialIdGenerator idGenerator;
     private final DBCollection contentGroups;
+    private final PersistenceAuditLog persistenceAuditLog;
 
-    public MongoContentGroupWriter(DatabasedMongo mongo, Clock clock) {
+    public MongoContentGroupWriter(DatabasedMongo mongo, 
+            PersistenceAuditLog persistenceAuditLog, Clock clock) {
         MongoContentTables contentTables = new MongoContentTables(mongo);
         this.clock = clock;
         this.contentGroups = contentTables.collectionFor(ContentCategory.CONTENT_GROUP);
         this.contentGroupTranslator = new ContentGroupTranslator();
+        this.persistenceAuditLog = persistenceAuditLog;
         this.idGenerator = new MongoSequentialIdGenerator(mongo, ContentCategory.CONTENT_GROUP.tableName());
     }
 
@@ -34,10 +38,12 @@ public class MongoContentGroupWriter implements ContentGroupWriter {
         contentGroup.setLastFetched(clock.now());
 
         if (!contentGroup.hashChanged(contentGroupTranslator.hashCodeOf(contentGroup))) {
+            persistenceAuditLog.logNoWrite(contentGroup);
             return;
         } else {
             ensureId(contentGroup);
             contentGroup.setThisOrChildLastUpdated(clock.now());
+            persistenceAuditLog.logWrite(contentGroup);
             contentGroups.save(contentGroupTranslator.toDBObject(null, contentGroup));
         }
     }
