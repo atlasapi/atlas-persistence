@@ -42,7 +42,9 @@ import org.atlasapi.persistence.content.mongo.MongoContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentTables;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
+import org.atlasapi.persistence.content.mongo.MongoPlayerStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
+import org.atlasapi.persistence.content.mongo.MongoServiceStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
 import org.atlasapi.persistence.content.people.EquivalatingPeopleResolver;
 import org.atlasapi.persistence.content.people.IdSettingPersonStore;
@@ -57,6 +59,8 @@ import org.atlasapi.persistence.lookup.LookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.MessageQueueingTopicWriter;
@@ -225,6 +229,14 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new TopicCreatingTopicResolver(store, new MongoSequentialIdGenerator(db, "topic"));
     }
 
+    public @Bean ServiceResolver serviceResolver() {
+        return new MongoServiceStore(db);
+    }
+    
+    public @Bean PlayerResolver playerResolver() {
+        return new MongoPlayerStore(db);
+    }
+    
     public @Primary @Bean TopicQueryResolver topicQueryResolver() {
         return new MongoTopicStore(db, persistenceAuditLog());
     }
