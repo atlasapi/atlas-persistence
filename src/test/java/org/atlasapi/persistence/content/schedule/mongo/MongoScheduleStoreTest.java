@@ -249,6 +249,8 @@ public class MongoScheduleStoreTest {
     
     @Test
     public void shouldReplaceScheduleBlock() throws Exception {
+        Channel_4_HD.setId(1234L);
+        
         DateTime broadcast1Start = now.withMinuteOfHour(20);
         DateTime broadcast1End = broadcast1Start.plusMinutes(30);
         Broadcast b1 = new Broadcast(Channel_4_HD.getUri(), broadcast1Start, broadcast1End);

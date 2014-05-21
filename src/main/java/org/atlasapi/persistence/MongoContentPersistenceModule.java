@@ -42,7 +42,9 @@ import org.atlasapi.persistence.content.mongo.MongoContentResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentTables;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoPersonStore;
+import org.atlasapi.persistence.content.mongo.MongoPlayerStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
+import org.atlasapi.persistence.content.mongo.MongoServiceStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
 import org.atlasapi.persistence.content.people.EquivalatingPeopleResolver;
 import org.atlasapi.persistence.content.people.IdSettingPersonStore;
@@ -57,6 +59,8 @@ import org.atlasapi.persistence.lookup.LookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.atlasapi.persistence.shorturls.MongoShortUrlSaver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.MessageQueueingTopicWriter;
@@ -101,12 +105,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${mongo.auditDbName}") String auditDbName;
     public MongoContentPersistenceModule() {}
     
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, AdapterLog log) {
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
         this.messagingModule = messagingModule;
         this.generateIds = "true";
+        this.auditDbName = auditDbName;
     }
     
     @Bean
@@ -133,7 +138,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired ChannelResolver channelResolver;
     
     public @Bean ContentGroupWriter contentGroupWriter() {
-        ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, new SystemClock());
+        ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, persistenceAuditLog(), new SystemClock());
         return contentGroupWriter;
     }
     
@@ -214,15 +219,23 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     public @Primary @Bean TopicStore topicStore() {
-        TopicStore store = new MongoTopicStore(db);
+        TopicStore store = new MongoTopicStore(db, persistenceAuditLog());
         if (Boolean.valueOf(messagingEnabled)) {
             store = new MessageQueueingTopicWriter(topicChanges(), store);
         }
         return new TopicCreatingTopicResolver(store, new MongoSequentialIdGenerator(db, "topic"));
     }
 
+    public @Bean ServiceResolver serviceResolver() {
+        return new MongoServiceStore(db);
+    }
+    
+    public @Bean PlayerResolver playerResolver() {
+        return new MongoPlayerStore(db);
+    }
+    
     public @Primary @Bean TopicQueryResolver topicQueryResolver() {
-        return new MongoTopicStore(db);
+        return new MongoTopicStore(db, persistenceAuditLog());
     }
     
     public @Primary @Bean SegmentWriter segmentWriter() {
