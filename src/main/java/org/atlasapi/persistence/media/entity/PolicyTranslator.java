@@ -15,6 +15,9 @@ import com.mongodb.DBObject;
 
 public class PolicyTranslator implements ModelTranslator<Policy> {
 	
+    private static final String PLAYER_KEY = "player";
+    private static final String SERVICE_KEY = "service";
+   
 	@Override
     public Policy fromDBObject(DBObject dbObject, Policy entity) {
     	
@@ -45,6 +48,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         if (dbObject.containsField("network")) {
             entity.setNetwork(Network.fromKey(TranslatorUtils.toString(dbObject, "network")));
         }
+        
+        entity.setService(TranslatorUtils.toLong(dbObject, SERVICE_KEY));
+        entity.setPlayer(TranslatorUtils.toLong(dbObject, PLAYER_KEY));
         
         return entity;
     }
