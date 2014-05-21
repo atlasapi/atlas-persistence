@@ -8,7 +8,7 @@ public interface ChannelGroupResolver {
      
      Optional<ChannelGroup> channelGroupFor(Long id);
      
-     Iterable<ChannelGroup> channelGroupsFor(Iterable<Long> ids);
+     Iterable<ChannelGroup> channelGroupsFor(Iterable<? extends Long> ids);
      
      Iterable<ChannelGroup> channelGroups();
      
