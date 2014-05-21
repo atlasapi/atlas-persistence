@@ -29,7 +29,7 @@ public class MongoPlayerStore implements PlayerResolver {
     }
     @Override
     public Optional<Player> playerFor(long id) {
-        DBObject dbo = collection.findOne(where().idEquals(id));
+        DBObject dbo = collection.findOne(where().idEquals(id).build());
         if (dbo == null) {
             return Optional.absent();
         }

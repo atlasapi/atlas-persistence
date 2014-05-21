@@ -40,7 +40,7 @@ public class MongoServiceStore implements ServiceResolver {
     }
     @Override
     public Optional<Service> serviceFor(long id) {
-        DBObject dbo = collection.findOne(where().idEquals(id));
+        DBObject dbo = collection.findOne(where().idEquals(id).build());
         if (dbo == null) {
             return Optional.absent();
         }
