@@ -149,7 +149,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Primary @Bean ContentWriter contentWriter() {
-        ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), persistenceAuditLog(), new SystemClock());
+        ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), persistenceAuditLog(), 
+                playerResolver(), serviceResolver(), new SystemClock());
+        
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (Boolean.valueOf(messagingEnabled)) {
             contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
