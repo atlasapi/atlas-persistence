@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.util.Set;
 
@@ -24,9 +25,13 @@ import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -35,8 +40,11 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.TimeMachine;
 
-
+@RunWith( MockitoJUnitRunner.class )
 public class MongoAvailableItemsResolverTest {
+    
+    private static final ServiceResolver serviceResolver = mock(ServiceResolver.class);
+    private static final PlayerResolver playerResolver = mock(PlayerResolver.class);
     
     private final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     private final TimeMachine clock = new TimeMachine();
@@ -45,7 +53,8 @@ public class MongoAvailableItemsResolverTest {
     private final MongoAvailableItemsResolver resolver
         = new MongoAvailableItemsResolver(mongo, lookupStore, clock);
     private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
-    private final ContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, clock);
+    private final ContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, 
+            playerResolver, serviceResolver, clock);
     
     private final Brand primary = new Brand("primary", "primary", Publisher.BBC);
     private final Brand equivalent = new Brand("equivalent", "equivalent", Publisher.PA);

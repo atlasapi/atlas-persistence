@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content.mongo;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import java.util.Set;
 
@@ -21,8 +22,12 @@ import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -31,7 +36,7 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
 
-
+@RunWith( MockitoJUnitRunner.class )
 public class MongoContentPurgerTest {
 
     private static final String MB_ITEM_URI = "http://metabroadcast.com/programmes/item";
@@ -43,12 +48,18 @@ public class MongoContentPurgerTest {
     private MongoLookupEntryStore entryStore;
     private PersistenceAuditLog persistenceAuditLog;
     
+    private final ServiceResolver serviceResolver = mock(ServiceResolver.class);
+    private final PlayerResolver playerResolver = mock(PlayerResolver.class);
+ 
     @Before
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
         persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
         entryStore = new MongoLookupEntryStore(db.collection("lookup"));
-        contentWriter = new EquivalenceWritingContentWriter(new MongoContentWriter(db, entryStore, persistenceAuditLog, new SystemClock()),
+        contentWriter = new EquivalenceWritingContentWriter(
+                new MongoContentWriter(db, entryStore, persistenceAuditLog, 
+                                       playerResolver, serviceResolver, 
+                                       new SystemClock()),
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore));
         contentResolver = new DefaultEquivalentContentResolver(new MongoContentResolver(db, entryStore), entryStore);
         

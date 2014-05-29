@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.util.List;
 
@@ -22,8 +23,12 @@ import org.atlasapi.persistence.content.PeopleListerListener;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -34,6 +39,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.text.NumberPadder;
 import com.metabroadcast.common.time.SystemClock;
 
+@RunWith( MockitoJUnitRunner.class )
 public class MongoPersonStoreTest {
 
     private DatabasedMongo db;
@@ -42,6 +48,9 @@ public class MongoPersonStoreTest {
     private MongoContentWriter contentWriter;
     private ContentResolver contentResolver;
     private PersistenceAuditLog persistenceAuditLog;
+    
+    private final ServiceResolver serviceResolver = mock(ServiceResolver.class);
+    private final PlayerResolver playerResolver = mock(PlayerResolver.class);
     
     private final String uri = "person1";
     
@@ -52,7 +61,8 @@ public class MongoPersonStoreTest {
         entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
         store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), 
                 entryStore, persistenceAuditLog);
-        contentWriter = new MongoContentWriter(db, entryStore, persistenceAuditLog, new SystemClock());
+        contentWriter = new MongoContentWriter(db, entryStore, persistenceAuditLog, 
+                playerResolver, serviceResolver, new SystemClock());
         contentResolver = new LookupResolvingContentResolver(new MongoContentResolver(db, entryStore), entryStore);
     }
     

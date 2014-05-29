@@ -40,7 +40,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     }
 
     @Override
-    public Iterable<ChannelGroup> channelGroupsFor(Iterable<Long> ids) {
+    public Iterable<ChannelGroup> channelGroupsFor(Iterable<? extends Long> ids) {
         return transform(channelGroups.find(new BasicDBObject(MongoConstants.ID, new BasicDBObject(MongoConstants.IN,ids))));
     }
 

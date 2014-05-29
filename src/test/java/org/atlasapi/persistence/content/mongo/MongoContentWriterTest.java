@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
@@ -24,10 +25,14 @@ import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -38,6 +43,7 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 
+@RunWith( MockitoJUnitRunner.class )
 public class MongoContentWriterTest {
 
     private static DatabasedMongo mongo;
@@ -48,8 +54,13 @@ public class MongoContentWriterTest {
         }
     };
     
+    private final ServiceResolver serviceResolver = mock(ServiceResolver.class);
+    private final PlayerResolver playerResolver = mock(PlayerResolver.class);
+
+    
     private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
-    private final MongoContentWriter contentWriter = new MongoContentWriter(mongo, lookupWriter, persistenceAuditLog, new SystemClock());
+    private final MongoContentWriter contentWriter = new MongoContentWriter(mongo, lookupWriter, 
+                            persistenceAuditLog, playerResolver, serviceResolver, new SystemClock());
     
     private final DBCollection children = mongo.collection("children");
     private final DBCollection topLevelItems = mongo.collection("topLevelItems");
