@@ -177,28 +177,43 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	
 		DateTime currentEndTime = null;
 		
+		Broadcast previousBroadcast = null;
 		for(Broadcast b : broadcasts) {
 			
 			if(!expectedChannel.equals(channelResolver.fromUri(b.getBroadcastOn()).requireValue())) {
-				throw new IllegalArgumentException("All broadcasts must be on the same channel");
+				throw new IllegalArgumentException("All broadcasts must be on the same channel; "
+				                + scheduleDebugInfo(previousBroadcast, b));
 			}	
 			
 			if(allowGaps) {
 				if(currentEndTime != null && b.getTransmissionTime().isBefore(currentEndTime)) {
-					throw new IllegalArgumentException("Overlapping periods found in schedule");
+					throw new IllegalArgumentException("Overlapping periods found in schedule " 
+					            + scheduleDebugInfo(previousBroadcast, b));
 				}
 			}
 			else {
 				if(currentEndTime != null && !(currentEndTime.equals(b.getTransmissionTime()))) {
-					throw new IllegalArgumentException("Schedule is not contiguous");
+					throw new IllegalArgumentException("Schedule is not contiguous; " 
+				+ scheduleDebugInfo(previousBroadcast, b));
 				}
 			}
 			currentEndTime = b.getTransmissionEndTime();
+			previousBroadcast = b;
 		}
 		
 		return new Interval(broadcasts.get(0).getTransmissionTime(), currentEndTime);
     }
    
+    private String scheduleDebugInfo(Broadcast previous, Broadcast current) {
+        if (previous == null) {
+            return String.format("On first broadcast, ID %s, starts %s", current.getSourceId(), current.getTransmissionTime());
+        }
+        
+        return String.format("Last broadcast ID %s, ends %s; next broadcast ID %s, starts %s", 
+                previous.getSourceId(), previous.getTransmissionEndTime().toString(),
+                current.getSourceId(), current.getTransmissionTime().toString());
+    }
+    
 	private Map<String, ScheduleEntry> getAdjacentScheduleEntries(Channel channel,
 			Publisher publisher,
 			final Interval interval) {
