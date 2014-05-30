@@ -2,6 +2,9 @@ package org.atlasapi.persistence.content.mongo;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Iterables.transform;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
@@ -18,6 +21,7 @@ import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.Version;
@@ -28,11 +32,14 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -50,6 +57,8 @@ public class MongoContentWriter implements ContentWriter {
     
     private final Clock clock;
     private final NewLookupWriter lookupStore;
+    private final PlayerResolver playerResolver;
+    private final ServiceResolver serviceResolver;
 
     private final ItemTranslator itemTranslator;
     private final ContainerTranslator containerTranslator;
@@ -63,12 +72,14 @@ public class MongoContentWriter implements ContentWriter {
     private final PersistenceAuditLog persistenceAuditLog;
 
     public MongoContentWriter(DatabasedMongo mongo, NewLookupWriter lookupStore, 
-            PersistenceAuditLog persistenceAuditLog, 
-            Clock clock) {
+            PersistenceAuditLog persistenceAuditLog, PlayerResolver playerResolver,
+            ServiceResolver serviceResolver, Clock clock) {
         
         this.lookupStore = checkNotNull(lookupStore);
         this.clock = checkNotNull(clock);
         this.persistenceAuditLog = checkNotNull(persistenceAuditLog);
+        this.playerResolver = checkNotNull(playerResolver);
+        this.serviceResolver = checkNotNull(serviceResolver);
 
         MongoContentTables contentTables = new MongoContentTables(mongo);
         
@@ -97,6 +108,8 @@ public class MongoContentWriter implements ContentWriter {
             persistenceAuditLog.logNoWrite(item);
         	return;
         } 
+        
+        validateRefs(item);
         
         persistenceAuditLog.logWrite(item);
         log.debug("Item {} hash changed so writing to db", item.getCanonicalUri());
@@ -127,6 +140,32 @@ public class MongoContentWriter implements ContentWriter {
         }
 
         lookupStore.ensureLookup(item);
+    }
+    
+    private void validateRefs(Item item) {
+        for (Location location : allLocations(item)) {
+            
+            Policy policy = location.getPolicy();
+            if (policy != null) {
+                if (policy.getService() != null) {
+                    checkState(serviceResolver.serviceFor(policy.getService()).isPresent(), 
+                            "Service ID " + policy.getService() + " invalid");
+                }
+                if (policy.getPlayer() != null) {
+                    checkState(playerResolver.playerFor(policy.getPlayer()).isPresent(), 
+                            "Player ID " + policy.getPlayer() + " invalid");
+                }
+            }
+            ;
+        }
+    }
+
+    private Iterable<Location> allLocations(Item item) {
+        return concat(transform(allEncodings(item), Encoding.TO_LOCATIONS));
+    }
+
+    private Iterable<Encoding> allEncodings(Item item) {
+        return concat(transform(item.getVersions(), Version.TO_ENCODINGS));
     }
 
     private DBObject checkContainerRefs(DBObject dbo) {

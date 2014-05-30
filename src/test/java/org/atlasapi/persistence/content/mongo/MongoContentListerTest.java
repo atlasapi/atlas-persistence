@@ -9,6 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import java.util.List;
 
@@ -22,9 +23,13 @@ import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.atlasapi.persistence.player.PlayerResolver;
+import org.atlasapi.persistence.service.ServiceResolver;
 import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -33,6 +38,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
 
+@RunWith( MockitoJUnitRunner.class )
 public class MongoContentListerTest {
 
     private static final Item bbcItem1 = new Item("bbcItem1","bbcItem1curie",Publisher.BBC);
@@ -46,6 +52,9 @@ public class MongoContentListerTest {
     private static final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
     
     private final MongoContentLister lister = new MongoContentLister(mongo);
+
+    private static final ServiceResolver serviceResolver = mock(ServiceResolver.class);
+    private static final PlayerResolver playerResolver = mock(PlayerResolver.class);
     
     private static final DateTime tenthOfTheTenth = new DateTime(2011,10,10,00,00,00,000,DateTimeZones.UTC);
     private static final DateTime ELEVENTH_OF_THE_TENTH = new DateTime(2011,10,11,00,00,00,000,DateTimeZones.UTC);
@@ -76,7 +85,8 @@ public class MongoContentListerTest {
         bbcBrand.setTopicRefs(ImmutableSet.of(topic1, topic2));
         c4Brand.setTopicRefs(ImmutableSet.of(topic1, topic3));
         
-        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, new SystemClock());
+        MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, playerResolver, serviceResolver, 
+                new SystemClock());
         writer.createOrUpdate(bbcBrand);
         writer.createOrUpdate(c4Brand);
         writer.createOrUpdate(bbcItem1);
