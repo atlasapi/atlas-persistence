@@ -12,7 +12,7 @@ import com.mongodb.DBObject;
 
 public class ChannelNumberingTranslator {
     private static final String CHANNEL_NUMBER_KEY = "channelNumber";
-    private static final String CHANNEL_KEY = "channel";
+    public static final String CHANNEL_KEY = "channel";
     public static final String CHANNEL_GROUP_KEY = "channelGroup";
     private static final String START_DATE_KEY = "startDate";
     private static final String END_DATE_KEY = "endDate";

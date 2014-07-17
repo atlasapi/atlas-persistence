@@ -8,6 +8,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import java.util.Set;
 
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -24,6 +25,10 @@ import com.mongodb.DBObject;
 
 public class MongoChannelGroupStore implements ChannelGroupStore {
 
+    private static final String CHANNEL_GROUP_CHANNEL_NUMBERING_ID_KEY = 
+            ChannelGroupTranslator.CHANNEL_NUMBERINGS_KEY + "." + 
+            ChannelNumberingTranslator.CHANNEL_KEY + "." + MongoConstants.ID;
+    
     private DBCollection channelGroups;
     private static final String COLLECTION_NAME = "channelGroups";
     private MongoSequentialIdGenerator idGenerator;
@@ -37,6 +42,12 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     @Override
     public Optional<ChannelGroup> channelGroupFor(Long id) {
         return Optional.fromNullable(translator.fromDBObject(channelGroups.findOne(id), null));
+    }
+    
+    @Override
+    public Optional<ChannelGroup> channelGroupFor(String canonicalUri) {
+        return Optional.fromNullable(translator.fromDBObject(
+                channelGroups.findOne(where().fieldEquals(IdentifiedTranslator.CANONICAL_URL, canonicalUri).build()), null));
     }
 
     @Override
@@ -107,7 +118,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public Iterable<ChannelGroup> channelGroupsFor(Channel channel) {
-        return transform(channelGroups.find(where().fieldEquals(ChannelGroupTranslator.CHANNELS_KEY, channel.getId()).build()));
+        return transform(channelGroups.find(where().fieldEquals(CHANNEL_GROUP_CHANNEL_NUMBERING_ID_KEY, channel.getId()).build()));
     }
 
     @Override
