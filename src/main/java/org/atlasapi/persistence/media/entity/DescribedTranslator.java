@@ -6,6 +6,7 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
+import org.atlasapi.media.entity.AudienceStatistics;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
@@ -14,6 +15,7 @@ import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Rating;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Review;
 import org.atlasapi.media.entity.Specialization;
@@ -55,6 +57,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String LOCALIZED_DESCRIPTIONS_KEY = "descriptions";
     protected static final String LOCALIZED_TITLES_KEY = "titles";
     protected static final String REVIEWS_KEY = "reviews";
+    protected static final String RATINGS_KEY = "ratings";
+    protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
@@ -115,26 +119,30 @@ public class DescribedTranslator implements ModelTranslator<Described> {
             });
 
 	
-	private final IdentifiedTranslator descriptionTranslator;
+	private final IdentifiedTranslator identifiedTranslator;
     private final ImageTranslator imageTranslator;
     private final RelatedLinkTranslator relatedLinkTranslator;
     private final LocalizedDescriptionTranslator localizedDescriptionTranslator;
     private final LocalizedTitleTranslator localizedTitleTranslator;
     private final ReviewTranslator reviewTranslator;
+    private final AudienceStatisticsTranslator audienceStatisticsTranslator;
+    private final RatingsTranslator ratingsTranslator;
 
-	public DescribedTranslator(IdentifiedTranslator descriptionTranslator, ImageTranslator imageTranslator) {
-		this.descriptionTranslator = descriptionTranslator;
+	public DescribedTranslator(IdentifiedTranslator identifiedTranslator, ImageTranslator imageTranslator) {
+		this.identifiedTranslator = identifiedTranslator;
 		this.imageTranslator = imageTranslator;
         this.relatedLinkTranslator = new RelatedLinkTranslator();
         this.localizedDescriptionTranslator = new LocalizedDescriptionTranslator();
         this.localizedTitleTranslator = new LocalizedTitleTranslator();
         this.reviewTranslator = new ReviewTranslator();
+        this.ratingsTranslator = new RatingsTranslator();
+        this.audienceStatisticsTranslator = new AudienceStatisticsTranslator();
 	}
 	
 	@Override
 	public Described fromDBObject(DBObject dbObject, Described entity) {
 
-		descriptionTranslator.fromDBObject(dbObject, entity);
+		identifiedTranslator.fromDBObject(dbObject, entity);
 
         decodeRelatedLinks(dbObject, entity);
 		
@@ -188,9 +196,14 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		    entity.setActivelyPublished(TranslatorUtils.toBoolean(dbObject, ACTIVELY_PUBLISHED_KEY));
 		}
 		
+		if (dbObject.containsField(AUDIENCE_STATISTICS_KEY)) {
+		    entity.setAudienceStatistics(audienceStatisticsTranslator.fromDBObject((DBObject)dbObject.get(AUDIENCE_STATISTICS_KEY)));
+		}
+		
         decodeLocalizedDescriptions(dbObject, entity);
         decodeLocalizedTitles(dbObject, entity);
         decodeReviews(dbObject, entity);
+        decodeRatings(dbObject, entity, entity.getPublisher());
 
 		return entity;
 	}
@@ -248,13 +261,20 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         }).or(ImmutableSet.<Review>of()));
     }
     
+    private void decodeRatings(DBObject dbObject, Described entity, final Publisher publisher) {
+        entity.setRatings(
+                TranslatorUtils.toIterable(dbObject, RATINGS_KEY, ratingsTranslator.fromDbo(publisher))
+                .or(ImmutableSet.<Rating>of())
+                );
+    }
+    
     @Override
 	public DBObject toDBObject(DBObject dbObject, Described entity) {
 		 if (dbObject == null) {
             dbObject = new BasicDBObject();
          }
 		 
-	    descriptionTranslator.toDBObject(dbObject, entity);
+	    identifiedTranslator.toDBObject(dbObject, entity);
 
         encodeRelatedLinks(dbObject, entity);
 
@@ -298,6 +318,12 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         
         TranslatorUtils.from(dbObject, PRESENTATION_CHANNEL_KEY, entity.getPresentationChannel());
         TranslatorUtils.from(dbObject, ACTIVELY_PUBLISHED_KEY, entity.isActivelyPublished());
+        
+        if (entity.getAudienceStatistics() != null) {
+            DBObject audienceDbo = new BasicDBObject();
+            audienceStatisticsTranslator.toDBObject(audienceDbo, entity.getAudienceStatistics());
+            dbObject.put(AUDIENCE_STATISTICS_KEY, audienceDbo);
+        }
         
         encodeLocalizedDescriptions(entity, dbObject);
         encodeLocalizedTitles(entity, dbObject);
@@ -363,7 +389,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 	}
 
     public void removeFieldsForHash(DBObject dbObject) {
-        descriptionTranslator.removeFieldsForHash(dbObject);
+        identifiedTranslator.removeFieldsForHash(dbObject);
         dbObject.removeField(LAST_FETCHED_KEY);
         dbObject.removeField(THIS_OR_CHILD_LAST_UPDATED_KEY);
     }
