@@ -22,7 +22,7 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
     private static final String COUNTRIES_KEY = "countries";
     private static final String REGIONS_KEY = "regions";
     private static final String PLATFORM_KEY = "platform";
-    private static final String CHANNEL_NUMBERINGS_KEY = "channelNumberings";
+    public static final String CHANNEL_NUMBERINGS_KEY = "channelNumberings";
     public static final String CHANNELS_KEY = "channels";
     
     private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);

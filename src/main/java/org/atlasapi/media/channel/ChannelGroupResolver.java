@@ -6,6 +6,8 @@ public interface ChannelGroupResolver {
     
      Optional<ChannelGroup> fromAlias(String alias);
      
+     Optional<ChannelGroup> channelGroupFor(String canonicalUri);
+     
      Optional<ChannelGroup> channelGroupFor(Long id);
      
      Iterable<ChannelGroup> channelGroupsFor(Iterable<? extends Long> ids);

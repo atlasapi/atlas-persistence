@@ -328,6 +328,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         encodeLocalizedDescriptions(entity, dbObject);
         encodeLocalizedTitles(entity, dbObject);
         encodeReviews(dbObject, entity);
+        encodeRatings(dbObject, entity);
         
         return dbObject;
 	}
@@ -364,6 +365,17 @@ public class DescribedTranslator implements ModelTranslator<Described> {
                 values.add(relatedLinkTranslator.toDBObject(link));
             }
             dbObject.put(LINKS_KEY, values);
+        }
+    }
+    
+    private void encodeRatings(DBObject dbObject, Described entity) {
+        if (!entity.getRatings().isEmpty()) {
+            BasicDBList values = new BasicDBList(); 
+            for(Rating rating : entity.getRatings()) {
+                DBObject dbo = new BasicDBObject();
+                values.add(ratingsTranslator.toDBObject(dbo, rating));
+            }
+            dbObject.put(RATINGS_KEY, values);
         }
     }
     

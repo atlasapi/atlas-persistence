@@ -3,6 +3,8 @@ package org.atlasapi.persistence.content.mongo;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Iterables.transform;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
@@ -37,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -141,25 +142,29 @@ public class MongoContentWriter implements ContentWriter {
     }
     
     private void validateRefs(Item item) {
-        for (Location location : 
-                        Iterables.concat(Iterables.transform(
-                                Iterables.concat(Iterables.transform(
-                                                            item.getVersions(), 
-                                                            Version.TO_ENCODINGS)
-                                                 ), 
-                                Encoding.TO_LOCATIONS))) {
+        for (Location location : allLocations(item)) {
             
             Policy policy = location.getPolicy();
             if (policy != null) {
                 if (policy.getService() != null) {
-                    checkState(serviceResolver.serviceFor(policy.getService()).isPresent(), "Service ID invalid");
+                    checkState(serviceResolver.serviceFor(policy.getService()).isPresent(), 
+                            "Service ID " + policy.getService() + " invalid");
                 }
                 if (policy.getPlayer() != null) {
-                    checkState(playerResolver.playerFor(policy.getPlayer()).isPresent(), "Player ID invalid");
+                    checkState(playerResolver.playerFor(policy.getPlayer()).isPresent(), 
+                            "Player ID " + policy.getPlayer() + " invalid");
                 }
             }
             ;
         }
+    }
+
+    private Iterable<Location> allLocations(Item item) {
+        return concat(transform(allEncodings(item), Encoding.TO_LOCATIONS));
+    }
+
+    private Iterable<Encoding> allEncodings(Item item) {
+        return concat(transform(item.getVersions(), Version.TO_ENCODINGS));
     }
 
     private DBObject checkContainerRefs(DBObject dbo) {

@@ -36,7 +36,8 @@ class MongoPersistenceAuditLog implements PersistenceAuditLog {
 
     @Override
     public void logNoWrite(Described described) {
-        log(described, false);
+        // Removing counting of this temporarily, to reduce oplog load
+        // log(described, false);
     }
     
     private void log(Described described, boolean actualWrite) {
