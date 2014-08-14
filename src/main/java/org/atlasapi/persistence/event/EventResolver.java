@@ -8,9 +8,11 @@ import com.google.common.base.Optional;
 
 public interface EventResolver {
 
-    Optional<Event> person(String uri);
-    
     Optional<Event> fetch(Long id);
     
-    Iterable<Event> fetchByEventGroup(Topic event);
+    Optional<Event> fetch(String uri);
+    
+    Iterable<Event> fetchByEventGroup(Topic eventGroup);
+    
+    Iterable<Event> fetchAll();
 }

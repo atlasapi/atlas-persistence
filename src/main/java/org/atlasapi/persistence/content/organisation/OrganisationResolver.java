@@ -1,16 +1,16 @@
 package org.atlasapi.persistence.content.organisation;
 
 import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Person;
+import org.atlasapi.media.entity.Organisation;
 
 import com.google.common.base.Optional;
 
 
 public interface OrganisationResolver {
 
-    Optional<Person> person(String uri);
+    Optional<Organisation> organisation(String uri);
     
-    Optional<Person> person(Long id);
+    Optional<Organisation> organisation(Long id);
     
-    Iterable<Person> people(Iterable<LookupRef> lookupRefs);
+    Iterable<Organisation> organisations(Iterable<LookupRef> lookupRefs);
 }

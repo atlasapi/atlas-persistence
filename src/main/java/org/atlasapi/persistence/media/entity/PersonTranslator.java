@@ -7,6 +7,7 @@ import java.util.List;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.ModelTranslator;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
@@ -74,5 +75,14 @@ public class PersonTranslator implements ModelTranslator<Person> {
     
     public MongoQueryBuilder idQuery(String uri) {
         return where().idEquals(uri);
+    }
+    
+    public Function<Person, DBObject> translatePerson() {
+        return new Function<Person, DBObject>() {
+            @Override
+            public DBObject apply(Person input) {
+                return toDBObject(null, input);
+            }
+        };
     }
 }
