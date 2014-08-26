@@ -46,6 +46,9 @@ import org.atlasapi.persistence.content.mongo.MongoPlayerStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.atlasapi.persistence.content.mongo.MongoServiceStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
+import org.atlasapi.persistence.content.organisation.IdSettingOrganisationStore;
+import org.atlasapi.persistence.content.organisation.MongoOrganisationStore;
+import org.atlasapi.persistence.content.organisation.OrganisationStore;
 import org.atlasapi.persistence.content.people.EquivalatingPeopleResolver;
 import org.atlasapi.persistence.content.people.IdSettingPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
@@ -255,6 +258,21 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     public @Bean EventStore eventStore() {
         return new MongoEventStore(db);
+    }
+    
+    // not sure if this is right
+    public @Bean OrganisationStore organisationStore() {
+        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"));
+        OrganisationStore organisationStore = new MongoOrganisationStore(db, 
+                TransitiveLookupWriter.explicitTransitiveLookupWriter(organisationLookupEntryStore), 
+                organisationLookupEntryStore, 
+                persistenceAuditLog());
+        
+        if (Boolean.valueOf(generateIds)) {
+            //For now people occupy the same id space as content.
+            organisationStore = new IdSettingOrganisationStore(organisationStore, new MongoSequentialIdGenerator(db, "content"));
+        }
+        return organisationStore;
     }
         
     public @Primary @Bean ChannelStore channelStore() {
