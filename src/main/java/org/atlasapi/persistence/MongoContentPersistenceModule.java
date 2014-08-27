@@ -57,6 +57,7 @@ import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.event.EventStore;
+import org.atlasapi.persistence.event.IdSettingEventStore;
 import org.atlasapi.persistence.event.MongoEventStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
@@ -257,7 +258,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Bean EventStore eventStore() {
-        return new MongoEventStore(db);
+        return new IdSettingEventStore(new MongoEventStore(db), new MongoSequentialIdGenerator(db, "events"));
     }
     
     // not sure if this is right
