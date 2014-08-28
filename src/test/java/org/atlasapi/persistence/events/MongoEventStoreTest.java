@@ -7,6 +7,7 @@ import org.atlasapi.media.entity.Event;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.event.EventStore;
 import org.atlasapi.persistence.event.MongoEventStore;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import com.google.common.base.Optional;
@@ -76,5 +77,25 @@ public class MongoEventStoreTest {
         Iterable<Event> allEvents = store.fetchAll();
         
         assertEquals(ImmutableSet.of(event, event2), ImmutableSet.copyOf(allEvents));
+    }
+    
+    @Test
+    public void testFetchesEventsOrderedByStartDate() {
+        DateTime now = DateTime.now();
+        Event newer = createEvent(ImmutableList.<Topic>of());
+        newer.setStartTime(now.plusDays(2));
+        newer.setId(1234l);
+        
+        Event older = createEvent(ImmutableList.<Topic>of());
+        older.setStartTime(now);
+        older.setId(3948l);
+        
+        store.createOrUpdate(newer);
+        store.createOrUpdate(older);
+
+        Iterable<Event> allEvents = store.fetchAll();
+        
+        assertEquals(older, Iterables.getFirst(allEvents, null));
+        assertEquals(newer, Iterables.get(allEvents, 1));
     }
 }

@@ -13,7 +13,11 @@ import org.atlasapi.media.entity.Topic;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 
 
 public class MongoEventStore implements EventStore {
@@ -46,7 +50,7 @@ public class MongoEventStore implements EventStore {
     @Override
     public Iterable<Event> fetchByEventGroup(Topic eventGroup) {
         return Iterables.transform(
-                collection.find(where().fieldEquals(EVENT_GROUPS_KEY + "." + ID, eventGroup.getId()).build()), 
+                getOrderedCursor(where().fieldEquals(EVENT_GROUPS_KEY + "." + ID, eventGroup.getId()).build()), 
                 translator.translateDBObject()
         );
     }
@@ -54,8 +58,17 @@ public class MongoEventStore implements EventStore {
     @Override
     public Iterable<Event> fetchAll() {
         return Iterables.transform(
-                collection.find(), 
+                getOrderedCursor(new BasicDBObject()), 
                 translator.translateDBObject()
         );
+    }
+    
+    /**
+     * orders cursor results by start date, ascending
+     * @param query
+     * @return
+     */
+    private DBCursor getOrderedCursor(DBObject query) {
+        return collection.find(query).sort(new MongoSortBuilder().ascending(EventTranslator.START_TIME_KEY).build());
     }
 }
