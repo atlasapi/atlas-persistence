@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.atlasapi.media.entity.Event;
 import org.atlasapi.media.entity.Topic;
+import org.joda.time.DateTime;
 
 import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.IdGenerator;
@@ -33,15 +34,10 @@ public class IdSettingEventStore implements EventStore {
     public Optional<Event> fetch(String uri) {
         return delegate.fetch(uri);
     }
-
+    
     @Override
-    public Iterable<Event> fetchByEventGroup(Topic eventGroup) {
-        return delegate.fetchByEventGroup(eventGroup);
-    }
-
-    @Override
-    public Iterable<Event> fetchAll() {
-        return delegate.fetchAll();
+    public Iterable<Event> fetch(Optional<Topic> eventGroup, Optional<DateTime> from) {
+        return delegate.fetch(eventGroup, from);
     }
 
     private Event generateOrRestoreId(Event event) {

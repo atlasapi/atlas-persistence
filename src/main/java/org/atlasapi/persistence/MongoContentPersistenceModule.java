@@ -270,8 +270,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
                 persistenceAuditLog());
         
         if (Boolean.valueOf(generateIds)) {
-            //For now people occupy the same id space as content.
-            organisationStore = new IdSettingOrganisationStore(organisationStore, new MongoSequentialIdGenerator(db, "content"));
+            organisationStore = new IdSettingOrganisationStore(organisationStore, new MongoSequentialIdGenerator(db, "organisations"));
         }
         return organisationStore;
     }
