@@ -3,6 +3,7 @@ package org.atlasapi.persistence.event;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static org.atlasapi.persistence.event.EventTranslator.END_TIME_KEY;
 import static org.atlasapi.persistence.event.EventTranslator.EVENT_GROUPS_KEY;
 import static org.atlasapi.persistence.event.EventTranslator.START_TIME_KEY;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
@@ -56,7 +57,7 @@ public class MongoEventStore implements EventStore {
             query = query.fieldEquals(EVENT_GROUPS_KEY + "." + ID, eventGroup.get().getId());
         }
         if (from.isPresent()) {
-            query = query.fieldAfter(START_TIME_KEY, from.get());
+            query = query.fieldAfter(END_TIME_KEY, from.get());
         }
         
         return Iterables.transform(

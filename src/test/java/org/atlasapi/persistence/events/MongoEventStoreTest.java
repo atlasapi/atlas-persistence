@@ -68,11 +68,11 @@ public class MongoEventStoreTest {
         DateTime now = DateTime.now();
         
         Event pastEvent = createEvent(ImmutableList.<Topic>of());
-        pastEvent.setStartTime(now.minusDays(5));
+        pastEvent.setEndTime(now.minusDays(5));
         pastEvent.setId(1234l);
         
         Event futureEvent = createEvent(ImmutableList.<Topic>of());
-        futureEvent.setStartTime(now.plusDays(1));
+        futureEvent.setEndTime(now.plusDays(1));
         futureEvent.setId(34985l);
         
         store.createOrUpdate(pastEvent);
@@ -92,15 +92,15 @@ public class MongoEventStoreTest {
         notMatching.setId(43092l);
         
         Event matchingFuture = createEvent(ImmutableList.of(eventGroup));
-        matchingFuture.setStartTime(now.plusDays(1));
+        matchingFuture.setEndTime(now.plusDays(1));
         matchingFuture.setId(34985l);
         
         Event nonMatchingFuture = createEvent(ImmutableList.of(notMatching));
-        nonMatchingFuture.setStartTime(now.plusDays(1));
+        nonMatchingFuture.setEndTime(now.plusDays(1));
         nonMatchingFuture.setId(59839l);
         
         Event matchingPastEvent = createEvent(ImmutableList.of(eventGroup));
-        matchingPastEvent.setStartTime(now.minusDays(5));
+        matchingPastEvent.setEndTime(now.minusDays(5));
         matchingPastEvent.setId(1234l);
         
         store.createOrUpdate(matchingPastEvent);
