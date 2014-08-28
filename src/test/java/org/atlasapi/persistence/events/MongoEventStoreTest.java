@@ -7,6 +7,7 @@ import org.atlasapi.media.entity.Event;
 import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.event.EventStore;
 import org.atlasapi.persistence.event.MongoEventStore;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import com.google.common.base.Optional;
@@ -57,9 +58,58 @@ public class MongoEventStoreTest {
         store.createOrUpdate(event);
         store.createOrUpdate(event2);
         
-        Iterable<Event> fetched = store.fetchByEventGroup(eventGroup);
+        Iterable<Event> fetched = store.fetch(Optional.of(eventGroup), Optional.<DateTime>absent());
         
         assertEquals(event, Iterables.getOnlyElement(fetched));
+    }
+    
+    @Test
+    public void testFetchWithFromTimestamp() {
+        DateTime now = DateTime.now();
+        
+        Event pastEvent = createEvent(ImmutableList.<Topic>of());
+        pastEvent.setEndTime(now.minusDays(5));
+        pastEvent.setId(1234l);
+        
+        Event futureEvent = createEvent(ImmutableList.<Topic>of());
+        futureEvent.setEndTime(now.plusDays(1));
+        futureEvent.setId(34985l);
+        
+        store.createOrUpdate(pastEvent);
+        store.createOrUpdate(futureEvent);
+        
+        Iterable<Event> fetched = store.fetch(Optional.<Topic>absent(), Optional.of(now));
+        
+        assertEquals(futureEvent, Iterables.getOnlyElement(fetched));
+    }
+    
+    @Test
+    public void testFetchWithFromTimestampAndEventGroup() {
+        DateTime now = DateTime.now();
+        Topic eventGroup = EventTranslatorTest.createTopic("matching", "value");
+        Topic notMatching = EventTranslatorTest.createTopic("not matching", "value");
+        eventGroup.setId(349830l);
+        notMatching.setId(43092l);
+        
+        Event matchingFuture = createEvent(ImmutableList.of(eventGroup));
+        matchingFuture.setEndTime(now.plusDays(1));
+        matchingFuture.setId(34985l);
+        
+        Event nonMatchingFuture = createEvent(ImmutableList.of(notMatching));
+        nonMatchingFuture.setEndTime(now.plusDays(1));
+        nonMatchingFuture.setId(59839l);
+        
+        Event matchingPastEvent = createEvent(ImmutableList.of(eventGroup));
+        matchingPastEvent.setEndTime(now.minusDays(5));
+        matchingPastEvent.setId(1234l);
+        
+        store.createOrUpdate(matchingPastEvent);
+        store.createOrUpdate(nonMatchingFuture);
+        store.createOrUpdate(matchingFuture);
+        
+        Iterable<Event> fetched = store.fetch(Optional.of(eventGroup), Optional.of(now));
+        
+        assertEquals(matchingFuture, Iterables.getOnlyElement(fetched));
     }
     
     @Test
@@ -73,8 +123,28 @@ public class MongoEventStoreTest {
         store.createOrUpdate(event);
         store.createOrUpdate(event2);
 
-        Iterable<Event> allEvents = store.fetchAll();
+        Iterable<Event> allEvents = store.fetch(Optional.<Topic>absent(), Optional.<DateTime>absent());
         
         assertEquals(ImmutableSet.of(event, event2), ImmutableSet.copyOf(allEvents));
+    }
+    
+    @Test
+    public void testFetchesEventsOrderedByStartDate() {
+        DateTime now = DateTime.now();
+        Event newer = createEvent(ImmutableList.<Topic>of());
+        newer.setStartTime(now.plusDays(2));
+        newer.setId(1234l);
+        
+        Event older = createEvent(ImmutableList.<Topic>of());
+        older.setStartTime(now);
+        older.setId(3948l);
+        
+        store.createOrUpdate(newer);
+        store.createOrUpdate(older);
+
+        Iterable<Event> allEvents = store.fetch(Optional.<Topic>absent(), Optional.<DateTime>absent());
+        
+        assertEquals(older, Iterables.getFirst(allEvents, null));
+        assertEquals(newer, Iterables.get(allEvents, 1));
     }
 }
