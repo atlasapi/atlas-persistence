@@ -142,6 +142,45 @@ public class MongoChannelStoreWriteTest extends TestCase {
         assertThat(oldAndNewGroup.getChannelNumberings().size(), is(1));
         assertThat(newGroup.getChannelNumberings().size(), is(1));
     }
+    
+    @Test
+    public void testRemovalOfOldChannelGroups() {
+        ChannelGroup group1 = new Platform();
+        ChannelGroup group2 = new Platform();
+        Long group1Id = channelGroupStore.createOrUpdate(group1).getId();
+        Long group2Id = channelGroupStore.createOrUpdate(group2).getId();
+        
+        Channel channel = channel("channel", "key1", MediaType.VIDEO, null, "test/1");
+        
+        ChannelNumbering expiredNumbering = ChannelNumbering.builder()
+                .withChannel(channel)
+                .withChannelGroup(group1Id)
+                .withChannelNumber("1")
+                .build();
+        
+        ChannelNumbering currentNumbering = ChannelNumbering.builder()
+                .withChannel(channel)
+                .withChannelGroup(group2Id)
+                .withChannelNumber("2")
+                .build();
+        
+        channel.addChannelNumber(expiredNumbering);
+        channel.addChannelNumber(currentNumbering);
+        
+        channel = channelStore.createOrUpdate(channel);
+        
+        channel.setChannelNumbers(ImmutableSet.of(currentNumbering));
+        
+        channel = channelStore.createOrUpdate(channel);
+        
+        assertEquals(ImmutableSet.of(currentNumbering), ImmutableSet.copyOf(channel.getChannelNumbers()));
+        
+        group1 = channelGroupStore.channelGroupFor(group1Id).get();
+        group2 = channelGroupStore.channelGroupFor(group2Id).get();
+        
+        assertTrue(group1.getChannelNumberings().isEmpty());
+        assertEquals(ImmutableSet.of(currentNumbering), ImmutableSet.copyOf(group2.getChannelNumberings()));
+    }
 
     private Channel channel(String uri, String key, MediaType mediaType, Long parent, String... alias) {
         Channel channel = Channel.builder()
