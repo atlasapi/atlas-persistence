@@ -4,9 +4,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
-
-import org.atlasapi.media.entity.AudienceStatistics;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;

@@ -14,9 +14,9 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
-import org.atlasapi.messaging.v3.KafkaMessagingModule;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.messaging.v3.JacksonMessageSerializer;
+import org.atlasapi.messaging.v3.KafkaMessagingModule;
 import org.atlasapi.messaging.v3.MessagingModule;
 import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
 import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
@@ -46,6 +46,9 @@ import org.atlasapi.persistence.content.mongo.MongoPlayerStore;
 import org.atlasapi.persistence.content.mongo.MongoProductStore;
 import org.atlasapi.persistence.content.mongo.MongoServiceStore;
 import org.atlasapi.persistence.content.mongo.MongoTopicStore;
+import org.atlasapi.persistence.content.organisation.IdSettingOrganisationStore;
+import org.atlasapi.persistence.content.organisation.MongoOrganisationStore;
+import org.atlasapi.persistence.content.organisation.OrganisationStore;
 import org.atlasapi.persistence.content.people.EquivalatingPeopleResolver;
 import org.atlasapi.persistence.content.people.IdSettingPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
@@ -53,6 +56,9 @@ import org.atlasapi.persistence.content.people.PersonStore;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
+import org.atlasapi.persistence.event.EventStore;
+import org.atlasapi.persistence.event.IdSettingEventStore;
+import org.atlasapi.persistence.event.MongoEventStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.LookupWriter;
@@ -251,6 +257,24 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public @Primary @Bean SegmentResolver segmentResolver() {
         return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
+    }
+    
+    public @Bean EventStore eventStore() {
+        return new IdSettingEventStore(new MongoEventStore(db), new MongoSequentialIdGenerator(db, "events"));
+    }
+    
+    // not sure if this is right
+    public @Bean OrganisationStore organisationStore() {
+        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"));
+        OrganisationStore organisationStore = new MongoOrganisationStore(db, 
+                TransitiveLookupWriter.explicitTransitiveLookupWriter(organisationLookupEntryStore), 
+                organisationLookupEntryStore, 
+                persistenceAuditLog());
+        
+        if (Boolean.valueOf(generateIds)) {
+            organisationStore = new IdSettingOrganisationStore(organisationStore, new MongoSequentialIdGenerator(db, "organisations"));
+        }
+        return organisationStore;
     }
         
     public @Primary @Bean ChannelStore channelStore() {

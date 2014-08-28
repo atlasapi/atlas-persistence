@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.List;
 
 import org.atlasapi.media.entity.ChildRef;
+import org.atlasapi.media.entity.Organisation;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -42,6 +43,16 @@ public class ItemCrewRefUpdater {
             setRefInContent(person.getCanonicalUri(), person.getId(), content);
         }
     }
+    
+    public void updateCrewRefInItems(Organisation organisation) {
+        if (organisation.getCanonicalUri() == null || organisation.getId() == null) {
+            return;
+        }
+        for (ChildRef content : organisation.getContents()) {
+            setRefInContent(organisation.getCanonicalUri(), organisation.getId(), content);
+        }
+    }
+
 
     private void setRefInContent(String personUri, Long personId, ChildRef content) {
         DBCollection coll = collectionFor(content);

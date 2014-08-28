@@ -2,7 +2,6 @@ package org.atlasapi.persistence.content.mongo;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
-import java.net.UnknownHostException;
 import java.util.List;
 
 import org.atlasapi.media.entity.ContentGroup;
@@ -16,7 +15,6 @@ import org.atlasapi.persistence.content.people.PersonStore;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.joda.time.DateTime;
@@ -36,7 +34,6 @@ import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
-import com.mongodb.Mongo;
 
 public class MongoPersonStore implements PersonStore {
     

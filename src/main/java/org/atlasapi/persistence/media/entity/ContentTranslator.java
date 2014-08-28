@@ -8,16 +8,19 @@ import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.ContentGroupRef;
 import org.atlasapi.media.entity.CrewMember;
+import org.atlasapi.media.entity.EventRef;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -35,6 +38,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String YEAR_KEY = "year";
     private static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
     private static final String SIMILAR_CONTENT_KEY = "similar";
+    private static final String EVENTS_KEY = "events";
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
@@ -80,6 +84,16 @@ public class ContentTranslator implements ModelTranslator<Content> {
                     entity.addPerson(crewMember);
                 }
             }
+        }
+        
+        Optional<Iterable<EventRef>> events = TranslatorUtils.toIterable(dbObject, EVENTS_KEY, new Function<DBObject, EventRef>() {
+            @Override
+            public EventRef apply(DBObject input) {
+                return new EventRef(TranslatorUtils.toLong(input, MongoConstants.ID));
+            }
+        });
+        if (events.isPresent()) {
+            entity.setEventRefs(events.get());
         }
 
         return entity;
@@ -177,6 +191,15 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
             dbObject.put(PEOPLE, list);
         }
+        
+        TranslatorUtils.fromIterable(dbObject, EVENTS_KEY, entity.events(), new Function<EventRef, DBObject>() {
+            @Override
+            public DBObject apply(EventRef input) {
+                DBObject dbo = new BasicDBObject();
+                TranslatorUtils.from(dbo, MongoConstants.ID, input.id());
+                return dbo;
+            }
+        });
 
         return dbObject;
     }
