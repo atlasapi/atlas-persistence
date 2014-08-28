@@ -58,9 +58,58 @@ public class MongoEventStoreTest {
         store.createOrUpdate(event);
         store.createOrUpdate(event2);
         
-        Iterable<Event> fetched = store.fetchByEventGroup(eventGroup);
+        Iterable<Event> fetched = store.fetch(Optional.of(eventGroup), Optional.<DateTime>absent());
         
         assertEquals(event, Iterables.getOnlyElement(fetched));
+    }
+    
+    @Test
+    public void testFetchWithFromTimestamp() {
+        DateTime now = DateTime.now();
+        
+        Event pastEvent = createEvent(ImmutableList.<Topic>of());
+        pastEvent.setStartTime(now.minusDays(5));
+        pastEvent.setId(1234l);
+        
+        Event futureEvent = createEvent(ImmutableList.<Topic>of());
+        futureEvent.setStartTime(now.plusDays(1));
+        futureEvent.setId(34985l);
+        
+        store.createOrUpdate(pastEvent);
+        store.createOrUpdate(futureEvent);
+        
+        Iterable<Event> fetched = store.fetch(Optional.<Topic>absent(), Optional.of(now));
+        
+        assertEquals(futureEvent, Iterables.getOnlyElement(fetched));
+    }
+    
+    @Test
+    public void testFetchWithFromTimestampAndEventGroup() {
+        DateTime now = DateTime.now();
+        Topic eventGroup = EventTranslatorTest.createTopic("matching", "value");
+        Topic notMatching = EventTranslatorTest.createTopic("not matching", "value");
+        eventGroup.setId(349830l);
+        notMatching.setId(43092l);
+        
+        Event matchingFuture = createEvent(ImmutableList.of(eventGroup));
+        matchingFuture.setStartTime(now.plusDays(1));
+        matchingFuture.setId(34985l);
+        
+        Event nonMatchingFuture = createEvent(ImmutableList.of(notMatching));
+        nonMatchingFuture.setStartTime(now.plusDays(1));
+        nonMatchingFuture.setId(59839l);
+        
+        Event matchingPastEvent = createEvent(ImmutableList.of(eventGroup));
+        matchingPastEvent.setStartTime(now.minusDays(5));
+        matchingPastEvent.setId(1234l);
+        
+        store.createOrUpdate(matchingPastEvent);
+        store.createOrUpdate(nonMatchingFuture);
+        store.createOrUpdate(matchingFuture);
+        
+        Iterable<Event> fetched = store.fetch(Optional.of(eventGroup), Optional.of(now));
+        
+        assertEquals(matchingFuture, Iterables.getOnlyElement(fetched));
     }
     
     @Test
@@ -74,7 +123,7 @@ public class MongoEventStoreTest {
         store.createOrUpdate(event);
         store.createOrUpdate(event2);
 
-        Iterable<Event> allEvents = store.fetchAll();
+        Iterable<Event> allEvents = store.fetch(Optional.<Topic>absent(), Optional.<DateTime>absent());
         
         assertEquals(ImmutableSet.of(event, event2), ImmutableSet.copyOf(allEvents));
     }
@@ -93,7 +142,7 @@ public class MongoEventStoreTest {
         store.createOrUpdate(newer);
         store.createOrUpdate(older);
 
-        Iterable<Event> allEvents = store.fetchAll();
+        Iterable<Event> allEvents = store.fetch(Optional.<Topic>absent(), Optional.<DateTime>absent());
         
         assertEquals(older, Iterables.getFirst(allEvents, null));
         assertEquals(newer, Iterables.get(allEvents, 1));
