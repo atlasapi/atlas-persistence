@@ -15,6 +15,8 @@ public class BroadcastTranslator  {
     private static final String PREMIER_KEY = "premier";
     private static final String TRANSMISSION_END_TIME_KEY = "transmissionEndTime";
 	private static final String TRANSMISSION_TIME_KEY = "transmissionTime";
+    private static final String ACTUAL_TRANSMISSION_TIME_KEY = "actualTransmissionTime";
+    private static final String ACTUAL_TRANSMISSION_END_TIME_KEY = "actualTransmissionEndTime";
 	private static final String REPEAT_KEY = "repeat";
 	private static final String SUBTITLED_KEY = "subtitled";
 	private static final String SIGNED_KEY = "signed";
@@ -37,6 +39,8 @@ public class BroadcastTranslator  {
         
         Broadcast broadcast = new Broadcast(broadcastOn, transmissionTime, Duration.standardSeconds(duration), activelyPublished).withId(id);
         
+        broadcast.setActualTransmissionTime(TranslatorUtils.toDateTime(dbObject, ACTUAL_TRANSMISSION_TIME_KEY));
+        broadcast.setActualTransmissionEndTime(TranslatorUtils.toDateTime(dbObject, ACTUAL_TRANSMISSION_END_TIME_KEY));
         broadcast.setScheduleDate(TranslatorUtils.toLocalDate(dbObject, "scheduleDate"));
         broadcast.setAliasUrls(TranslatorUtils.toSet(dbObject, IdentifiedTranslator.ALIASES));
         broadcast.setAliases(aliasTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, IdentifiedTranslator.IDS)));
@@ -63,6 +67,8 @@ public class BroadcastTranslator  {
         TranslatorUtils.fromLocalDate(dbObject, "scheduleDate", entity.getScheduleDate());
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_TIME_KEY, entity.getTransmissionTime());
         TranslatorUtils.fromDateTime(dbObject, TRANSMISSION_END_TIME_KEY, entity.getTransmissionEndTime());
+        TranslatorUtils.fromDateTime(dbObject, ACTUAL_TRANSMISSION_TIME_KEY, entity.getActualTransmissionTime());
+        TranslatorUtils.fromDateTime(dbObject, ACTUAL_TRANSMISSION_END_TIME_KEY, entity.getActualTransmissionEndTime());
         TranslatorUtils.fromSet(dbObject, entity.getAliasUrls(), IdentifiedTranslator.ALIASES);
         TranslatorUtils.from(dbObject, IdentifiedTranslator.IDS, aliasTranslator.toDBList(entity.getAliases()));
         TranslatorUtils.fromDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED, entity.getLastUpdated());
