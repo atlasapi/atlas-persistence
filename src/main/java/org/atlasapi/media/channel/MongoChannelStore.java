@@ -19,6 +19,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -93,10 +94,12 @@ public class MongoChannelStore implements ChannelStore {
 	@Override
 	public Channel createOrUpdate(Channel channel) {
 	    checkNotNull(channel);
+	    Maybe<Channel> existing = Maybe.nothing();
+	    
 	    if (channel.getId() == null) {
 	        channel.setId(codec.decode(idGenerator.generate()).longValue());
 	    } else {
-	        Maybe<Channel> existing = fromId(channel.getId());
+	        existing = fromId(channel.getId());
 	        Preconditions.checkState(existing.hasValue(), "Channel not found to update");
 	        
 	        maintainParentLinks(channel, existing.requireValue());
@@ -104,29 +107,68 @@ public class MongoChannelStore implements ChannelStore {
 
         ensureParentReference(channel);
 
-        addNumberingsToChannelGroups(channel);
+        updateNumberingsOnChannelGroups(channel, existing);
 
         collection.update(new BasicDBObject(MongoConstants.ID, channel.getId()), translator.toDBObject(null, channel), UPSERT, SINGLE);
         
         return channel;
 	}
 
-    private void addNumberingsToChannelGroups(Channel channel) {
-        Multimap<Long, ChannelNumbering> channelGroupMapping = ArrayListMultimap.create();
-        for (ChannelNumbering numbering : channel.getChannelNumbers()) {
-            numbering.setChannel(channel.getId());
-            channelGroupMapping.put(numbering.getChannelGroup(), numbering);
+    private void updateNumberingsOnChannelGroups(Channel channel, Maybe<Channel> existingRecord) {
+        if (existingRecord.hasValue()) {
+            removeLinks(channel.getChannelNumbers(), existingRecord.requireValue().getChannelNumbers());
         }
         
-        for (Long channelGroupId : channelGroupMapping.keySet()){
+        Multimap<Long, ChannelNumbering> newChannelGroupMapping = ArrayListMultimap.create();
+        for (ChannelNumbering numbering : channel.getChannelNumbers()) {
+            numbering.setChannel(channel.getId());
+            newChannelGroupMapping.put(numbering.getChannelGroup(), numbering);
+        }
+        
+        for (Long channelGroupId : newChannelGroupMapping.keySet()){
             Optional<ChannelGroup> maybeGroup = channelGroupResolver.channelGroupFor(channelGroupId);
             Preconditions.checkState(maybeGroup.isPresent(), String.format("ChannelGroup with id %s not found for channel with id %s", channelGroupId, channel.getId()));
             ChannelGroup group = maybeGroup.get();
-            for (ChannelNumbering numbering : channelGroupMapping.get(channelGroupId)) {
+            for (ChannelNumbering numbering : newChannelGroupMapping.get(channelGroupId)) {
                 group.addChannelNumbering(numbering);
             }
             channelGroupWriter.createOrUpdate(group);
         }
+    }
+
+    /**
+     * Given a set of the new and existing ChannelNumberings, determines those numberings not in the new set,
+     * and removes them from their channel group. 
+     * @param newNumbers
+     * @param existingNumbers
+     */
+    private void removeLinks(final Set<ChannelNumbering> newNumbers,
+            Set<ChannelNumbering> existingNumbers) {
+        SetView<ChannelNumbering> expiredNumberings = Sets.difference(existingNumbers, newNumbers);
+        
+        for (ChannelNumbering expired : expiredNumberings) {
+            removeNumbering(expired);
+        }
+    }
+
+    /**
+     * Resolves the ChannelGroup for a given numbering, removes all numberings on that group with a channel matching
+     * that of the provided numbering, then writes the group.
+     * @param expired
+     */
+    private void removeNumbering(final ChannelNumbering expired) {
+        Optional<ChannelGroup> resolved = channelGroupResolver.channelGroupFor(expired.getChannelGroup());
+        if (!resolved.isPresent()) {
+            log.error("Tried to remove numbering {} from non-existent channel group {}", expired, expired.getChannelGroup());
+        }
+        Iterable<ChannelNumbering> nonExpired = Iterables.filter(resolved.get().getChannelNumberings(), new Predicate<ChannelNumbering>() {
+            @Override
+            public boolean apply(ChannelNumbering input) {
+                return !input.getChannel().equals(expired.getChannel());
+            }
+        });
+        resolved.get().setChannelNumberings(nonExpired);
+        channelGroupWriter.createOrUpdate(resolved.get());
     }
 
     private void ensureParentReference(Channel channel) {
