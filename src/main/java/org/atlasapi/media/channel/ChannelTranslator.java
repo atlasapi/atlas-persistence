@@ -42,6 +42,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String NUMBERINGS = "numberings";
 	public static final String START_DATE = "startDate";
 	public static final String END_DATE = "endDate";
+	public static final String GENRES_KEY = "genres";
 	
 
 	private ModelTranslator<Identified> identifiedTranslator;
@@ -91,6 +92,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		}
 		TranslatorUtils.fromLocalDate(dbObject, START_DATE, model.getStartDate());
 		TranslatorUtils.fromLocalDate(dbObject, END_DATE, model.getEndDate());
+		TranslatorUtils.fromSet(dbObject, model.getGenres(), GENRES_KEY);
 		
 		return dbObject;
 	}
@@ -132,6 +134,9 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		model.setChannelNumbers(channelNumberingTranslator.toChannelNumberingSet(dbObject, NUMBERINGS));
 		model.setStartDate(TranslatorUtils.toLocalDate(dbObject, START_DATE));
 		model.setEndDate(TranslatorUtils.toLocalDate(dbObject, END_DATE));
+		if (dbObject.containsField(GENRES_KEY)) {
+		    model.setGenres(TranslatorUtils.toSet(dbObject, GENRES_KEY));
+		}
 		
 		return (Channel) identifiedTranslator.fromDBObject(dbObject, model);
 	}

@@ -1,5 +1,7 @@
 package org.atlasapi.media.channel;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Set;
 
 import org.atlasapi.media.entity.MediaType;
@@ -15,17 +17,20 @@ public class ChannelQuery {
     private final Optional<MediaType> mediaType;
     private final Optional<Publisher> availableFrom;
     private final Optional<Set<Long>> channelGroups;
+    private final Optional<Set<String>> genres;
     
     public static Builder builder() {
         return new Builder();
     }
     
     private ChannelQuery(Optional<Publisher> broadcaster, Optional<MediaType> mediaType, 
-            Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups) {
-                this.broadcaster = broadcaster;
-                this.mediaType = mediaType;
-                this.availableFrom = availableFrom;
-                this.channelGroups = channelGroups;
+            Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups,
+            Optional<Set<String>> genres) {
+                this.broadcaster = checkNotNull(broadcaster);
+                this.mediaType = checkNotNull(mediaType);
+                this.availableFrom = checkNotNull(availableFrom);
+                this.channelGroups = checkNotNull(channelGroups);
+                this.genres = checkNotNull(genres);
     }
     
     public Optional<Publisher> getBroadcaster() {
@@ -44,6 +49,10 @@ public class ChannelQuery {
         return channelGroups;
     }
     
+    public Optional<Set<String>> getGenres() {
+        return genres;
+    }
+    
     @Override
     public String toString() {
         return Objects.toStringHelper(ChannelQuery.class)
@@ -51,12 +60,13 @@ public class ChannelQuery {
                 .add("mediaType", mediaType)
                 .add("availableFrom", availableFrom)
                 .add("channelGroups", channelGroups)
+                .add("genres", genres)
                 .toString();
     }
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(broadcaster, mediaType, availableFrom, channelGroups);
+        return Objects.hashCode(broadcaster, mediaType, availableFrom, channelGroups, genres);
     }
     
     @Override
@@ -69,7 +79,8 @@ public class ChannelQuery {
             return broadcaster.equals(other.broadcaster)
                     && mediaType.equals(other.mediaType)
                     && availableFrom.equals(other.availableFrom)
-                    && channelGroups.equals(other.channelGroups);
+                    && channelGroups.equals(other.channelGroups)
+                    && genres.equals(other.genres);
         }
         
         return false;
@@ -81,11 +92,12 @@ public class ChannelQuery {
         private Optional<MediaType> mediaType = Optional.absent();
         private Optional<Publisher> availableFrom = Optional.absent();
         private Optional<Set<Long>> channelGroups = Optional.absent();
+        private Optional<Set<String>> genres = Optional.absent();
         
         private Builder() {}
         
         public ChannelQuery build() {
-            return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups);
+            return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres);
         }
 
         
@@ -106,6 +118,11 @@ public class ChannelQuery {
         
         public Builder withChannelGroups(Set<Long> channelGroups) {
             this.channelGroups = Optional.fromNullable(channelGroups);
+            return this;
+        }
+        
+        public Builder withGenres(Set<String> genres) {
+            this.genres = Optional.fromNullable(genres);
             return this;
         }
     }
