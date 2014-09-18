@@ -4,7 +4,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
+import static org.atlasapi.media.channel.ChannelTranslator.AVAILABLE_ON;
+import static org.atlasapi.media.channel.ChannelTranslator.BROADCASTER;
 import static org.atlasapi.media.channel.ChannelTranslator.KEY;
+import static org.atlasapi.media.channel.ChannelTranslator.MEDIA_TYPE;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
 
 import java.util.Map;
@@ -257,16 +260,19 @@ public class MongoChannelStore implements ChannelStore {
     public Iterable<Channel> allChannels(ChannelQuery query) {
         MongoQueryBuilder mongoQuery = new MongoQueryBuilder();
         if (query.getBroadcaster().isPresent()) {
-            mongoQuery.fieldEquals(ChannelTranslator.BROADCASTER, query.getBroadcaster().get().key());
+            mongoQuery.fieldEquals(BROADCASTER, query.getBroadcaster().get().key());
         }
         if (query.getMediaType().isPresent()) {
-            mongoQuery.fieldEquals(ChannelTranslator.MEDIA_TYPE, query.getMediaType().get().name());
+            mongoQuery.fieldEquals(MEDIA_TYPE, query.getMediaType().get().name());
         }
         if (query.getAvailableFrom().isPresent()) {
-            mongoQuery.fieldEquals(ChannelTranslator.AVAILABLE_ON, query.getAvailableFrom().get().key());
+            mongoQuery.fieldEquals(AVAILABLE_ON, query.getAvailableFrom().get().key());
         }
         if (query.getChannelGroups().isPresent()) {
             mongoQuery.longFieldIn(NUMBERING_CHANNEL_GROUP_ID, query.getChannelGroups().get());
+        }
+        if (query.getGenres().isPresent()) {
+            mongoQuery.fieldIn(ChannelTranslator.GENRES_KEY, query.getGenres().get());
         }
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
