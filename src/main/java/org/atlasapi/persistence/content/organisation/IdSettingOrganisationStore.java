@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Organisation;
+import org.atlasapi.media.entity.Topic;
 
 import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.IdGenerator;
@@ -52,6 +53,11 @@ public class IdSettingOrganisationStore implements OrganisationStore {
             organisation.setId(idGenerator.generateRaw());
         }
         return organisation;
+    }
+
+    @Override
+    public Iterable<Organisation> fetch(Optional<Topic> eventGroup) {
+        return delegate.fetch(eventGroup);
     }
 
 }

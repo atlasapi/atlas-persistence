@@ -2,11 +2,14 @@ package org.atlasapi.persistence.content.organisation;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.ID;
+import static org.atlasapi.persistence.media.entity.OrganisationTranslator.EVENT_GROUPS_KEY;
 
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Organisation;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Topic;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.mongo.ItemCrewRefUpdater;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
@@ -23,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBCollection;
@@ -104,6 +108,18 @@ public class MongoOrganisationStore implements OrganisationStore {
     public Iterable<Organisation> organisations(Iterable<LookupRef> lookupRefs) {
         DBCursor found = collection.find(where().idIn(Iterables.transform(lookupRefs, LookupRef.TO_URI)).build());
         return translator.fromDBObjects(found);
+    }
+
+    @Override
+    public Iterable<Organisation> fetch(Optional<Topic> eventGroup) {
+        MongoQueryBuilder query = where();
+        if (eventGroup.isPresent()) {
+            query = query.fieldEquals(EVENT_GROUPS_KEY + "." + ID, eventGroup.get().getId());
+        }
+        return Iterables.transform(
+                collection.find(query.build()),
+                translator.translateFromDBObject()
+        );
     }
 
 }
