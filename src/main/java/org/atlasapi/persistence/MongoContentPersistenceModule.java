@@ -6,6 +6,7 @@ import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
+import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.product.IdSettingProductStore;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
@@ -111,7 +112,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
-    private @Value("${mongo.auditDbName}") String auditDbName;
+    private @Value("${mongo.audit.dbname}") String auditDbName;
+    private @Value("${mongo.audit.enabled}") boolean auditEnabled;
     public MongoContentPersistenceModule() {}
     
     public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log) {
@@ -314,6 +316,21 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Bean PersistenceAuditLog persistenceAuditLog() {
-        return new PerHourAndDayMongoPersistenceAuditLog(new DatabasedMongo(mongo, auditDbName));
+        if (auditEnabled) {
+            return new PerHourAndDayMongoPersistenceAuditLog(new DatabasedMongo(mongo, auditDbName));
+        } else {
+            return new PersistenceAuditLog() {
+                
+                @Override
+                public void logWrite(Described described) {
+                    // NOOP
+                }
+                
+                @Override
+                public void logNoWrite(Described described) {
+                    // NOOP
+                }
+            };
+        }
     }
 }
