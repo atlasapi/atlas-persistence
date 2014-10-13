@@ -99,6 +99,7 @@ import com.mongodb.WriteConcern;
 @Import(KafkaMessagingModule.class)
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
+    private @Autowired ReadPreference readPreference;
     private @Autowired Mongo mongo;
     private @Autowired DatabasedMongo db;
     private @Autowired AdapterLog log;
@@ -179,7 +180,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Primary @Bean MongoLookupEntryStore lookupStore() {
-        return new MongoLookupEntryStore(db.collection("lookup"));
+        return new MongoLookupEntryStore(db.collection("lookup"), readPreference);
     }
     
     private LookupWriter explicitLookupWriter() {
@@ -189,7 +190,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public @Bean
     LookupWriter generatedLookupWriter() {
-        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"));
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
         return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
     }
 
@@ -212,7 +213,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Primary @Bean PersonStore personStore() {
-        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
+        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), readPreference);
         PersonStore personStore = new MongoPersonStore(db, 
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), 
                 personLookupEntryStore, 
@@ -267,7 +268,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     // not sure if this is right
     public @Bean OrganisationStore organisationStore() {
-        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"));
+        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"), readPreference);
         OrganisationStore organisationStore = new MongoOrganisationStore(db, 
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(organisationLookupEntryStore), 
                 organisationLookupEntryStore, 
@@ -304,7 +305,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Bean PeopleQueryResolver peopleQueryResolver() {
-        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup")));
+        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup"), readPreference));
     }
     
     public @Bean ContentPurger contentPurger() {
