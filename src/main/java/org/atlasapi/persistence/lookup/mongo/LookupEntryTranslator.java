@@ -108,6 +108,15 @@ public class LookupEntryTranslator {
         
         return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
     }
+    
+    public DBObject removeFieldsForHash(DBObject dbo) {
+        if (dbo == null) {
+            return null;
+        }
+        dbo.removeField(LAST_UPDATED);
+        dbo.removeField(FIRST_CREATED);
+        return dbo;
+    }
 
     private ImmutableSet<LookupRef> translateRefs(LookupRef seflRef, DBObject dbo, String field) {
         return ImmutableSet.<LookupRef>builder()
