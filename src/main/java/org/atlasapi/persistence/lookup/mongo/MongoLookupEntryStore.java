@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.lookup.mongo;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.filter;
@@ -33,6 +34,8 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -54,17 +57,17 @@ import com.mongodb.ReadPreference;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
+    
     private static final Parameter processingConfig = Configurer.get("processing.config");
     private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
-    private DBCollection lookup;
-    private LookupEntryTranslator translator;
-    private final ReadPreference readPreference;
-
-    public MongoLookupEntryStore(DBCollection lookup) {
-        this(lookup, defaultReadPreference());
-    }
     
+    private final Logger log;
+    private final DBCollection lookup;
+    private final LookupEntryTranslator translator;
+    private final ReadPreference readPreference;
+    private final LookupEntryHasher lookupEntryHasher;
+
     private static ReadPreference defaultReadPreference() { 
         if(processingConfig == null || !processingConfig.toBoolean()) {
             return ReadPreference.secondaryPreferred();
@@ -73,15 +76,35 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         }
     }
     
+    public MongoLookupEntryStore(DBCollection lookup) {
+        this(lookup, defaultReadPreference());
+    }
+    
     public MongoLookupEntryStore(DBCollection lookup, ReadPreference readPreference) {
-        this.lookup = lookup;
-        this.readPreference = readPreference;
+        this(lookup, readPreference, LoggerFactory.getLogger(MongoLookupEntryStore.class));
+    }
+    public MongoLookupEntryStore(DBCollection lookup, ReadPreference readPreference, Logger log) {
+        this.lookup = checkNotNull(lookup);
+        this.readPreference = checkNotNull(readPreference);
         this.translator = new LookupEntryTranslator();
+        this.lookupEntryHasher = new LookupEntryHasher(translator);
+        this.log = checkNotNull(log);
     }
     
     @Override
     public void store(LookupEntry entry) {
-        lookup.update(MongoBuilders.where().idEquals(entry.uri()).build(), translator.toDbo(entry), UPSERT, SINGLE);
+        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, entry.uri()), null, readPreference));
+        store(entry, existing);
+    }
+    
+    private void store(LookupEntry newEntry, @Nullable LookupEntry existingEntry) {
+        if (existingEntry != null 
+                && lookupEntryHasher.writeHashFor(newEntry) == lookupEntryHasher.writeHashFor(existingEntry)) {
+            log.debug("Hash code not changed for URI {}; skipping write", newEntry.uri());
+            return;
+        }
+        log.debug("New entry or hash code changed for URI {}; writing", newEntry.uri());
+        lookup.update(MongoBuilders.where().idEquals(newEntry.uri()).build(), translator.toDbo(newEntry), UPSERT, SINGLE);
     }
     
     @Override
@@ -109,13 +132,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         // Since most content will already have a lookup entry we read first to avoid locking the database
         LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, content.getCanonicalUri()), null, readPreference));
         if (existing == null) {
-            store(newEntry);
+            store(newEntry, existing);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
             updateEntry(content, newEntry, existing);
         } else if (!newEntry.aliasUrls().equals(existing.aliasUrls())) {
-            store(merge(content, newEntry, existing));
+            store(merge(content, newEntry, existing), existing);
         } else if (!newEntry.aliases().equals(existing.aliases())) {
-            store(merge(content, newEntry, existing));
+            store(merge(content, newEntry, existing), existing);
         } 
     }
 
@@ -123,14 +146,14 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         LookupEntry merged = merge(content, newEntry, existing);
         LookupRef ref = merged.lookupRef();
 
-        store(merged);
+        store(merged, existing);
         
         for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_URI))) {
             if(entry.directEquivalents().contains(ref)) {
                 entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
             }
             entry = entry.copyWithEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build());
-            store(entry);
+            store(entry, existing);
         }
     }
 
