@@ -9,6 +9,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 import java.util.Map;
 
@@ -25,6 +29,10 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.slf4j.Logger;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -32,22 +40,32 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.ReadPreference;
 
+@RunWith( MockitoJUnitRunner.class )
 public class MongoLookupEntryStoreTest {
 
     private static DatabasedMongo mongo;
     private static MongoLookupEntryStore entryStore;
+    private static Logger log = mock(Logger.class);
+    private static DBCollection collection; 
     
     @BeforeClass
     public static void setUp() {
         mongo = MongoTestHelper.anEmptyTestDatabase();
-        entryStore = new MongoLookupEntryStore(mongo.collection("lookup"));
+        collection = mongo.collection("lookup");
+        entryStore = new MongoLookupEntryStore(collection, 
+                ReadPreference.primary(), log);
     }
     
     @After 
     public void clear() {
         mongo.collection("lookup").remove(new BasicDBObject());
+        reset(log);
     }
     
     @Test
@@ -306,5 +324,48 @@ public class MongoLookupEntryStoreTest {
         assertThat(idsForCanonicalUris.get(testItemOne.getCanonicalUri()), is(testItemOne.getId()));
         assertThat(idsForCanonicalUris.get(testItemTwo.getCanonicalUri()), is(testItemTwo.getId()));
         assertThat(idsForCanonicalUris.size(), is(2));
+    }
+    
+    @Test
+    // This isn't an ideal way of asserting the correct behaviour, but as
+    // a DbCollection isn't an interface, we can't mock it out. 
+    //
+    // I decided to add a marker field to confirm that a second save() is
+    // not performed. This is slightly fragile as if we change the 
+    // implementation in future to do an update() then we'd not catch a
+    // rogue save, so I decided to also check the log messages. String checking
+    // is obviously quite fragile but solves the case of a future change to
+    // using update()
+    public void testNoWriteIfEntrySame() {
+        String uri = "testItemOneUri";
+        Item testItemOne = new Item(uri, "testItem1Curie", Publisher.BBC);
+        testItemOne.setId(1L);
+        
+        entryStore.store(LookupEntry.lookupEntryFrom(testItemOne));
+        
+        String MARKER_FIELD = "not_updated";
+        String MARKER_VALUE = "x";
+        collection.update(
+                new MongoQueryBuilder().idEquals(uri).build(), 
+                new MongoUpdateBuilder().setField(MARKER_FIELD, MARKER_VALUE).build()
+        );
+        
+        entryStore.store(LookupEntry.lookupEntryFrom(testItemOne));
+        
+        ArgumentCaptor<String> arg1captor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> arg2captor = ArgumentCaptor.forClass(String.class);
+        
+        verify(log, atLeastOnce()).debug(arg1captor.capture(), arg2captor.capture());
+        
+        assertEquals(
+                MARKER_VALUE,
+                collection.findOne(new MongoQueryBuilder().idEquals(uri).build()).get(MARKER_FIELD)
+        );
+        
+        assertEquals(
+                ImmutableList.of("New entry or hash code changed for URI {}; writing", 
+                                 "Hash code not changed for URI {}; skipping write"), 
+                arg1captor.getAllValues()
+        );
     }
 }
