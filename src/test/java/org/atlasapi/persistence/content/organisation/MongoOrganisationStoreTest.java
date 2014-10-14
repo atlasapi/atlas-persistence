@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.mongodb.ReadPreference;
 
 
 public class MongoOrganisationStoreTest {
@@ -37,7 +38,7 @@ public class MongoOrganisationStoreTest {
         public void setUp() {
             db = MongoTestHelper.anEmptyTestDatabase();
             persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
-            entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
+            entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), ReadPreference.primary());
             store = new MongoOrganisationStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), 
                     entryStore, persistenceAuditLog);
         }
