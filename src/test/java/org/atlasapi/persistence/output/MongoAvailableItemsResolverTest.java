@@ -39,6 +39,7 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.TimeMachine;
+import com.mongodb.ReadPreference;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MongoAvailableItemsResolverTest {
@@ -49,7 +50,7 @@ public class MongoAvailableItemsResolverTest {
     private final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     private final TimeMachine clock = new TimeMachine();
     private final MongoLookupEntryStore lookupStore
-        = new MongoLookupEntryStore(mongo.collection("lookup"));
+        = new MongoLookupEntryStore(mongo.collection("lookup"), ReadPreference.primary());
     private final MongoAvailableItemsResolver resolver
         = new MongoAvailableItemsResolver(mongo, lookupStore, clock);
     private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);

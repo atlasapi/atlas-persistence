@@ -6,8 +6,8 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
@@ -46,8 +46,6 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.metabroadcast.common.properties.Configurer;
-import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -57,8 +55,6 @@ import com.mongodb.ReadPreference;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
-    
-    private static final Parameter processingConfig = Configurer.get("processing.config");
     private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
     
@@ -68,21 +64,10 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     private final ReadPreference readPreference;
     private final LookupEntryHasher lookupEntryHasher;
 
-    private static ReadPreference defaultReadPreference() { 
-        if(processingConfig == null || !processingConfig.toBoolean()) {
-            return ReadPreference.secondaryPreferred();
-        } else {
-            return ReadPreference.primary();
-        }
-    }
-    
-    public MongoLookupEntryStore(DBCollection lookup) {
-        this(lookup, defaultReadPreference());
-    }
-    
     public MongoLookupEntryStore(DBCollection lookup, ReadPreference readPreference) {
         this(lookup, readPreference, LoggerFactory.getLogger(MongoLookupEntryStore.class));
     }
+
     public MongoLookupEntryStore(DBCollection lookup, ReadPreference readPreference, Logger log) {
         this.lookup = checkNotNull(lookup);
         this.readPreference = checkNotNull(readPreference);
@@ -93,7 +78,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     
     @Override
     public void store(LookupEntry entry) {
-        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, entry.uri()), null, readPreference));
+        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, entry.uri()), null, ReadPreference.primary()));
         store(entry, existing);
     }
     
@@ -130,7 +115,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public void ensureLookup(Content content) {
         LookupEntry newEntry = lookupEntryFrom(content);
         // Since most content will already have a lookup entry we read first to avoid locking the database
-        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, content.getCanonicalUri()), null, readPreference));
+        LookupEntry existing = translator.fromDbo(lookup.findOne(new BasicDBObject(MongoConstants.ID, content.getCanonicalUri()), null, ReadPreference.primary()));
         if (existing == null) {
             store(newEntry, existing);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {

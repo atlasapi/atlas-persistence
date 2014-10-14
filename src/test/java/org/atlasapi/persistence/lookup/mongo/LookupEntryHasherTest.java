@@ -32,7 +32,7 @@ public class LookupEntryHasherTest {
         long id = 1;
         Publisher publisher = Publisher.METABROADCAST;
 
-        return new LookupEntry("http://example.org", 1L,
+        return new LookupEntry(uri, id,
                 new LookupRef(uri, id, publisher, ContentCategory.TOP_LEVEL_ITEM),
                 ImmutableSet.<String>of(),
                 ImmutableSet.<Alias>of(),

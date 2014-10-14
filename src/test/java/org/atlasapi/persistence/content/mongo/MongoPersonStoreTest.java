@@ -38,6 +38,7 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.text.NumberPadder;
 import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.ReadPreference;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MongoPersonStoreTest {
@@ -58,7 +59,7 @@ public class MongoPersonStoreTest {
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
         persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
-        entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"));
+        entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), ReadPreference.primary());
         store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), 
                 entryStore, persistenceAuditLog);
         contentWriter = new MongoContentWriter(db, entryStore, persistenceAuditLog, 
