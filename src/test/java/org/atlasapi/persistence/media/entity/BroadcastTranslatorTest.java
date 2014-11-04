@@ -3,6 +3,7 @@ package org.atlasapi.persistence.media.entity;
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Alias;
+import org.atlasapi.media.entity.BlackoutRestriction;
 import org.atlasapi.media.entity.Broadcast;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
@@ -16,9 +17,11 @@ public class BroadcastTranslatorTest extends TestCase {
     
     public void testFromBroadcast() {
 		Broadcast broadcast = new Broadcast("on", clock.now(), Duration.standardSeconds(1));
-        
+        broadcast.setBlackoutRestriction(new BlackoutRestriction(true));
+		
         DBObject dbObject = brt.toDBObject(broadcast);
         assertEquals(broadcast.getBroadcastDuration(), dbObject.get("broadcastDuration"));
+        assertEquals(((DBObject)dbObject.get("blackoutRestriction")).get("all"), true);
     }
     
     public void testToBroadcast() {
@@ -26,6 +29,7 @@ public class BroadcastTranslatorTest extends TestCase {
         broadcast.setScheduleDate(new LocalDate(2010, 3, 20));
         broadcast.addAliasUrl("some alias");
         broadcast.addAlias(new Alias("some alias NS", "some alias value"));
+        broadcast.setBlackoutRestriction(new BlackoutRestriction(true));
         
         DBObject dbObject = brt.toDBObject(broadcast);
         Broadcast b = brt.fromDBObject(dbObject);
@@ -36,5 +40,17 @@ public class BroadcastTranslatorTest extends TestCase {
         assertEquals(broadcast.getScheduleDate(), b.getScheduleDate());
         assertFalse(b.getAliasUrls().isEmpty());
         assertFalse(b.getAliases().isEmpty());
+        assertTrue(b.getBlackoutRestriction().getAll());
+    }
+    
+    public void testBlackoutRestrictionNotSetIfAbsent() {
+        Broadcast broadcast = new Broadcast("on", clock.now(), Duration.standardSeconds(1));
+        
+        DBObject dbObject = brt.toDBObject(broadcast);
+        assertEquals(broadcast.getBroadcastDuration(), dbObject.get("broadcastDuration"));
+        assertFalse(dbObject.containsField("blackoutRestriction"));
+        
+        Broadcast b = brt.fromDBObject(dbObject);
+        assertNull(b.getBlackoutRestriction());
     }
 }
