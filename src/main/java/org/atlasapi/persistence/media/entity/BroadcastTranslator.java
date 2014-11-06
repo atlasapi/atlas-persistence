@@ -25,8 +25,10 @@ public class BroadcastTranslator  {
 	private static final String WIDESCREEN_KEY = "widescreen";
 	private static final String SURROUND_KEY = "surround";
 	private static final String LIVE_KEY = "live";
+	private static final String BLACKOUT_RESTRICTION_KEY = "blackoutRestriction";
 	
 	private final AliasTranslator aliasTranslator = new AliasTranslator();
+	private final BlackoutRestrictionTranslator blackoutTranslator = new BlackoutRestrictionTranslator();
     
     public Broadcast fromDBObject(DBObject dbObject) {
         
@@ -56,6 +58,7 @@ public class BroadcastTranslator  {
         broadcast.setPremiere(TranslatorUtils.toBoolean(dbObject, PREMIER_KEY));
         broadcast.setNewSeries(TranslatorUtils.toBoolean(dbObject, NEW_SERIES_KEY));
         broadcast.setNewEpisode(TranslatorUtils.toBoolean(dbObject, NEW_EPISODE_KEY));
+        broadcast.setBlackoutRestriction(blackoutTranslator.fromDbObject((DBObject) dbObject.get(BLACKOUT_RESTRICTION_KEY)));
         
         return broadcast;
     }
@@ -85,6 +88,8 @@ public class BroadcastTranslator  {
         TranslatorUtils.from(dbObject, PREMIER_KEY, entity.getPremiere());
         TranslatorUtils.from(dbObject, NEW_SERIES_KEY, entity.getNewSeries());
         TranslatorUtils.from(dbObject, NEW_EPISODE_KEY, entity.getNewEpisode());
+        TranslatorUtils.from(dbObject, BLACKOUT_RESTRICTION_KEY, blackoutTranslator.toDbObject(entity.getBlackoutRestriction()));
+        
         return dbObject;
     }
 
