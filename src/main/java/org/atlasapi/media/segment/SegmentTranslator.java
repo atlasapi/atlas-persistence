@@ -22,9 +22,8 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
     private static final String DURATION_KEY = "duration";
     
     private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator();
-    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
     private final NumberToShortStringCodec idCodec;
-    
+
     public SegmentTranslator(NumberToShortStringCodec idCodec) {
         this.idCodec = idCodec;
     }
@@ -39,7 +38,7 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
 
         //Switch the _id field from the source id to the atlas id.
         String uri = (String) dbo.get(IdentifiedTranslator.ID);
-        TranslatorUtils.from(dbo, IdentifiedTranslator.ID, idCodec.decode(model.getIdentifier()).longValue());
+        TranslatorUtils.from(dbo, IdentifiedTranslator.ID, model.getId());
         TranslatorUtils.from(dbo, SOURCE_ID_KEY, uri);
 
         if (model.getPublisher() != null) {
@@ -67,8 +66,6 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
             model = new Segment();
         }
         
-        model.setIdentifier(idCodec.encode(BigInteger.valueOf(TranslatorUtils.toLong(dbo, IdentifiedTranslator.ID))));
-
         //Switch source id field to _id field for parent translator.
         TranslatorUtils.from(dbo, IdentifiedTranslator.ID, TranslatorUtils.toString(dbo, SOURCE_ID_KEY));
         

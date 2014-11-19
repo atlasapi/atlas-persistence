@@ -20,12 +20,11 @@ public class IdSettingSegmentWriter implements SegmentWriter {
         Maybe<Segment> possibleExistingSegment = resolver.resolveForSource(segment.getPublisher(), segment.getCanonicalUri());
         
         if(possibleExistingSegment.hasValue()) {
-            segment.setIdentifier(possibleExistingSegment.requireValue().getIdentifier());
+            segment.setId(possibleExistingSegment.requireValue().getId());
         } else {
-            segment.setIdentifier(generator.generate());
+            segment.setId(generator.generateRaw());
         }
 
         return delegate.write(segment);
     }
-
 }
