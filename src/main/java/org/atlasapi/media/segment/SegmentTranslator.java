@@ -47,7 +47,7 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         }
 
         if (model.getDescription() != null) {
-            TranslatorUtils.from(dbo, DESCRIPTION_KEY, descriptionTranslator.toDBObject(model.getDescription()));
+            TranslatorUtils.from(dbo, DESCRIPTION_KEY, model.getDescription());
         }
 
         if (model.getType() != null) {
@@ -80,7 +80,7 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         }
         model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbo, PUBLISHER_KEY)).valueOrNull());
         model.setType(SegmentType.fromString(TranslatorUtils.toString(dbo, TYPE_KEY)).valueOrNull());
-        model.setDescription(descriptionTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo, DESCRIPTION_KEY)));
+        model.setDescription(TranslatorUtils.toString(dbo, DESCRIPTION_KEY));
         
         return model;
     }
