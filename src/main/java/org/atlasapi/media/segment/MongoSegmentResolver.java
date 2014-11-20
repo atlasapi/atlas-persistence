@@ -59,12 +59,7 @@ public class MongoSegmentResolver implements SegmentResolver {
 
     private BasicDBList decode(Iterable<SegmentRef> identifiers) {
         BasicDBList list = new BasicDBList();
-        list.addAll(ImmutableList.copyOf(Iterables.transform(identifiers, Functions.compose(new Function<String, Long>() {
-            @Override
-            public Long apply(String input) {
-                return idCodec.decode(input).longValue();
-            }
-        }, SegmentRef.TO_ID))));
+        list.addAll(ImmutableList.copyOf(Iterables.transform(identifiers,SegmentRef.TO_ID)));
         return list;
     }
 
