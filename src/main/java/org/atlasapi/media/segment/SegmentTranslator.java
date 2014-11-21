@@ -21,7 +21,7 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
     private static final String TYPE_KEY = "type";
     private static final String DURATION_KEY = "duration";
     
-    private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator();
+    private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
     private final NumberToShortStringCodec idCodec;
 
     public SegmentTranslator(NumberToShortStringCodec idCodec) {
