@@ -54,7 +54,7 @@ public class SegmentEventTranslator implements ModelTranslator<SegmentEvent> {
 
         identifiedTranslator.fromDBObject(dbo, model);
 
-        model.setSegment(new SegmentRef(TranslatorUtils.toString(dbo, SEGMENT_KEY)));
+        model.setSegment(new SegmentRef(TranslatorUtils.toLong(dbo, SEGMENT_KEY)));
         model.setDescription(descriptionTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo, DESCRIPTION_KEY)));
         model.setPosition(TranslatorUtils.toInteger(dbo, POSITION_KEY));
         model.setIsChapter(TranslatorUtils.toBoolean(dbo, CHAPTER_KEY));
