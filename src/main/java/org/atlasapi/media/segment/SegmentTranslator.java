@@ -36,11 +36,6 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         
         identifiedTranslator.toDBObject(dbo, model);
 
-        //Switch the _id field from the source id to the atlas id.
-//        String uri = (String) dbo.get(IdentifiedTranslator.CANONICAL_URL);
-//        TranslatorUtils.from(dbo, IdentifiedTranslator.ID, model.getId());
-//        TranslatorUtils.from(dbo, SOURCE_ID_KEY, uri);
-
         if (model.getPublisher() != null) {
             TranslatorUtils.from(dbo, PUBLISHER_KEY, model.getPublisher().key());
         }
@@ -65,9 +60,6 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         if (model == null) {
             model = new Segment();
         }
-        
-        //Switch source id field to _id field for parent translator.
-        //TranslatorUtils.from(dbo, IdentifiedTranslator.ID, TranslatorUtils.toString(dbo, SOURCE_ID_KEY));
         
         identifiedTranslator.fromDBObject(dbo, model);
 
