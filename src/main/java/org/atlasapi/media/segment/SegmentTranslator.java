@@ -21,10 +21,9 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
     private static final String TYPE_KEY = "type";
     private static final String DURATION_KEY = "duration";
     
-    private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator();
-    private final DescriptionTranslator descriptionTranslator = new DescriptionTranslator();
+    private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
     private final NumberToShortStringCodec idCodec;
-    
+
     public SegmentTranslator(NumberToShortStringCodec idCodec) {
         this.idCodec = idCodec;
     }
@@ -37,17 +36,12 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         
         identifiedTranslator.toDBObject(dbo, model);
 
-        //Switch the _id field from the source id to the atlas id.
-        String uri = (String) dbo.get(IdentifiedTranslator.ID);
-        TranslatorUtils.from(dbo, IdentifiedTranslator.ID, idCodec.decode(model.getIdentifier()).longValue());
-        TranslatorUtils.from(dbo, SOURCE_ID_KEY, uri);
-
         if (model.getPublisher() != null) {
             TranslatorUtils.from(dbo, PUBLISHER_KEY, model.getPublisher().key());
         }
 
         if (model.getDescription() != null) {
-            TranslatorUtils.from(dbo, DESCRIPTION_KEY, descriptionTranslator.toDBObject(model.getDescription()));
+            TranslatorUtils.from(dbo, DESCRIPTION_KEY, model.getDescription());
         }
 
         if (model.getType() != null) {
@@ -67,11 +61,6 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
             model = new Segment();
         }
         
-        model.setIdentifier(idCodec.encode(BigInteger.valueOf(TranslatorUtils.toLong(dbo, IdentifiedTranslator.ID))));
-
-        //Switch source id field to _id field for parent translator.
-        TranslatorUtils.from(dbo, IdentifiedTranslator.ID, TranslatorUtils.toString(dbo, SOURCE_ID_KEY));
-        
         identifiedTranslator.fromDBObject(dbo, model);
 
         final Long rawDuration = TranslatorUtils.toLong(dbo, DURATION_KEY);
@@ -80,7 +69,7 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         }
         model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbo, PUBLISHER_KEY)).valueOrNull());
         model.setType(SegmentType.fromString(TranslatorUtils.toString(dbo, TYPE_KEY)).valueOrNull());
-        model.setDescription(descriptionTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo, DESCRIPTION_KEY)));
+        model.setDescription(TranslatorUtils.toString(dbo, DESCRIPTION_KEY));
         
         return model;
     }

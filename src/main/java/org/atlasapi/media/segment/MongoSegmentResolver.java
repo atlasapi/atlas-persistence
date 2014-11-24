@@ -8,6 +8,7 @@ import static org.atlasapi.media.segment.SegmentTranslator.SOURCE_ID_KEY;
 
 import java.util.Map;
 
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import org.atlasapi.media.entity.Publisher;
 
 import com.google.common.base.Function;
@@ -59,18 +60,13 @@ public class MongoSegmentResolver implements SegmentResolver {
 
     private BasicDBList decode(Iterable<SegmentRef> identifiers) {
         BasicDBList list = new BasicDBList();
-        list.addAll(ImmutableList.copyOf(Iterables.transform(identifiers, Functions.compose(new Function<String, Long>() {
-            @Override
-            public Long apply(String input) {
-                return idCodec.decode(input).longValue();
-            }
-        }, SegmentRef.TO_ID))));
+        list.addAll(ImmutableList.copyOf(Iterables.transform(identifiers,SegmentRef.TO_ID)));
         return list;
     }
 
     @Override
-    public Maybe<Segment> resolveForSource(Publisher source, String sourceId) {
-        DBObject dbo = segments.findOne(where().fieldEquals(PUBLISHER_KEY, source.key()).fieldEquals(SOURCE_ID_KEY, sourceId).build());
+    public Maybe<Segment> resolveForSource(Publisher source, String id) {
+        DBObject dbo = segments.findOne(where().fieldEquals(PUBLISHER_KEY, source.key()).fieldEquals(MongoConstants.ID, id).build());
         if (dbo == null) {
             return Maybe.nothing();
         }

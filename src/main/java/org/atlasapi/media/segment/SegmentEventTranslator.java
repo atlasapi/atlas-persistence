@@ -35,7 +35,7 @@ public class SegmentEventTranslator implements ModelTranslator<SegmentEvent> {
 
         identifiedTranslator.toDBObject(dbo, model);
 
-        TranslatorUtils.from(dbo, SEGMENT_KEY, idCodec.decode(model.getSegment().identifier()).longValue());
+        TranslatorUtils.from(dbo, SEGMENT_KEY, model.getSegment().identifier());
         TranslatorUtils.from(dbo, DESCRIPTION_KEY, descriptionTranslator.toDBObject(model.getDescription()));
         TranslatorUtils.from(dbo, POSITION_KEY, model.getPosition());
         if (model.getOffset() != null) {
@@ -54,7 +54,7 @@ public class SegmentEventTranslator implements ModelTranslator<SegmentEvent> {
 
         identifiedTranslator.fromDBObject(dbo, model);
 
-        model.setSegment(new SegmentRef(idCodec.encode(BigInteger.valueOf(TranslatorUtils.toLong(dbo, SEGMENT_KEY)))));
+        model.setSegment(new SegmentRef(TranslatorUtils.toLong(dbo, SEGMENT_KEY)));
         model.setDescription(descriptionTranslator.fromDBObject(TranslatorUtils.toDBObject(dbo, DESCRIPTION_KEY)));
         model.setPosition(TranslatorUtils.toInteger(dbo, POSITION_KEY));
         model.setIsChapter(TranslatorUtils.toBoolean(dbo, CHAPTER_KEY));
