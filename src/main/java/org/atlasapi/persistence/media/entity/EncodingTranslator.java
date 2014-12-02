@@ -17,7 +17,8 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
 	
     static final String LOCATIONS_KEY = "availableAt";
     private static final String AUDIO_DESCRIBED_KEY = "audioDescribed";
-    
+    private static final String SIGNED_KEY = "signed";
+
     private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
     private final LocationTranslator locationTranslator = new LocationTranslator();
 
@@ -57,6 +58,10 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
 
         if (dbObject.get(AUDIO_DESCRIBED_KEY) != null) {
             entity.setAudioDescribed((Boolean) dbObject.get(AUDIO_DESCRIBED_KEY));
+        }
+
+        if (dbObject.get(SIGNED_KEY) != null) {
+            entity.setSigned((Boolean) dbObject.get(SIGNED_KEY));
         }
         
         List<DBObject> list = (List<DBObject>) dbObject.get(LOCATIONS_KEY);
@@ -132,7 +137,8 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "videoProgressiveScan", entity.getVideoProgressiveScan());
         TranslatorUtils.from(dbObject, "videoVerticalSize", entity.getVideoVerticalSize());
         TranslatorUtils.from(dbObject, AUDIO_DESCRIBED_KEY, entity.getAudioDescribed());
-        
+        TranslatorUtils.from(dbObject, SIGNED_KEY, entity.getSigned());
+
         if (! entity.getAvailableAt().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (Location location: entity.getAvailableAt()) {
