@@ -118,6 +118,12 @@ public class MongoChannelStore implements ChannelStore {
 	}
 
     private void updateNumberingsOnChannelGroups(Channel channel, Maybe<Channel> existingRecord) {
+        
+        if (existingRecord.hasValue()
+                && channel.getChannelNumbers().equals(existingRecord.requireValue().getChannelNumbers())) {
+            return;
+        }
+        
         if (existingRecord.hasValue()) {
             removeLinks(channel.getChannelNumbers(), existingRecord.requireValue().getChannelNumbers());
         }
