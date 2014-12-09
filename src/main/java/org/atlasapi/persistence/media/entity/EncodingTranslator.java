@@ -57,11 +57,11 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         entity.setVideoVerticalSize((Integer) dbObject.get("videoVerticalSize"));
 
         if (dbObject.get(AUDIO_DESCRIBED_KEY) != null) {
-            entity.setAudioDescribed((Boolean) dbObject.get(AUDIO_DESCRIBED_KEY));
+            entity.setAudioDescribed(TranslatorUtils.toBoolean(dbObject, AUDIO_DESCRIBED_KEY));
         }
 
         if (dbObject.get(SIGNED_KEY) != null) {
-            entity.setSigned((Boolean) dbObject.get(SIGNED_KEY));
+            entity.setSigned(TranslatorUtils.toBoolean(dbObject, SIGNED_KEY));
         }
         
         List<DBObject> list = (List<DBObject>) dbObject.get(LOCATIONS_KEY);
