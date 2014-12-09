@@ -21,12 +21,16 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setAudioBitRate(1);
         encoding.setContainsAdvertising(true);
         encoding.setVideoFrameRate(1.0F);
+        encoding.setAudioDescribed(true);
+        encoding.setSigned(true);
         
         DBObject dbObject = ent.toDBObject(null, encoding);
         
         assertEquals(encoding.getAudioBitRate(), dbObject.get("audioBitRate"));
         assertEquals(encoding.getContainsAdvertising(), dbObject.get("containsAdvertising"));
         assertEquals(encoding.getVideoFrameRate(), dbObject.get("videoFrameRate"));
+        assertEquals(encoding.getAudioDescribed(), dbObject.get("audioDescribed"));
+        assertEquals(encoding.getSigned(), dbObject.get("signed"));
     }
     
     public void testToEncoding() throws Exception {
@@ -54,6 +58,8 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setVideoHorizontalSize(1);
         encoding.setVideoProgressiveScan(true);
         encoding.setVideoVerticalSize(2);
+        encoding.setAudioDescribed(true);
+        encoding.setSigned(true);
         
         Location location = new Location();
         location.setCanonicalUri("uri");
@@ -87,7 +93,9 @@ public class EncodingTranslatorTest extends TestCase {
         assertEquals(encoding.getVideoHorizontalSize(), enc.getVideoHorizontalSize());
         assertEquals(encoding.getVideoProgressiveScan(), enc.getVideoProgressiveScan());
         assertEquals(encoding.getVideoVerticalSize(), enc.getVideoVerticalSize());
-        
+        assertEquals(encoding.getAudioDescribed(), enc.getAudioDescribed());
+        assertEquals(encoding.getSigned(), enc.getSigned());
+
         Location l = enc.getAvailableAt().iterator().next();
         assertEquals(location.getCanonicalUri(), l.getCanonicalUri());
         assertEquals(location.getUri(), l.getUri());
