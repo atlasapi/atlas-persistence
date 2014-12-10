@@ -58,6 +58,14 @@ public class ManualScheduleRebuildModule {
         
         scheduler.schedule(c4Repopulator, c4ScheduleRepopulatorScheduled ? RepetitionRules.every(Duration.standardHours(1)).withOffset(Duration.standardMinutes(30)) : RepetitionRules.NEVER);
         
+        ScheduledTask c4PmlsdRepopulator = 
+                new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.C4_PMLSD, Publisher.C4_PMLSD_P06))
+                .withName("C4 PMLSD Mongo Schedule repopulator");
+        
+        // This is a one-off schedule population, future schedule populations will done
+        // through the adapter
+        scheduler.schedule(c4PmlsdRepopulator, RepetitionRules.NEVER);
+        
         ScheduledTask reduxRepopulator = 
                 new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC_REDUX), Duration.standardDays(30*365))
         .withName("Redux Mongo Schedule repopulator");
