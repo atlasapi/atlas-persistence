@@ -71,7 +71,9 @@ public class ChildRefWriter {
         Maybe<Container> maybeSeries = getContainer(seriesUri, programmeGroups);
 
         if (maybeBrand.isNothing() || maybeSeries.isNothing()) {
-            throw new IllegalStateException(String.format("Container or series not found for episode %s", episode.getCanonicalUri()));
+            throw new IllegalStateException(
+                    String.format("Container %s or series %s not found for episode %s", 
+                                  brandUri, seriesUri, episode.getCanonicalUri()));
         }
 
         episode.setContainer(maybeBrand.requireValue());

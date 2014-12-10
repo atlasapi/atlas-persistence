@@ -3,8 +3,11 @@ package org.atlasapi.media.segment;
 import java.math.BigInteger;
 
 import org.atlasapi.media.SegmentType;
+import org.atlasapi.media.entity.Description;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+import org.atlasapi.persistence.media.entity.ImageTranslator;
 import org.joda.time.Duration;
 
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
@@ -20,8 +23,8 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
     private static final String DESCRIPTION_KEY = "description";
     private static final String TYPE_KEY = "type";
     private static final String DURATION_KEY = "duration";
-    
-    private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
+
+    private final DescribedTranslator describedTranslator = new DescribedTranslator(new IdentifiedTranslator(true), new ImageTranslator());
     private final NumberToShortStringCodec idCodec;
 
     public SegmentTranslator(NumberToShortStringCodec idCodec) {
@@ -33,8 +36,8 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         if (dbo == null) {
             dbo = new BasicDBObject();
         }
-        
-        identifiedTranslator.toDBObject(dbo, model);
+
+        describedTranslator.toDBObject(dbo, model);
 
         if (model.getPublisher() != null) {
             TranslatorUtils.from(dbo, PUBLISHER_KEY, model.getPublisher().key());
@@ -61,7 +64,7 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
             model = new Segment();
         }
         
-        identifiedTranslator.fromDBObject(dbo, model);
+        describedTranslator.fromDBObject(dbo, model);
 
         final Long rawDuration = TranslatorUtils.toLong(dbo, DURATION_KEY);
         if (rawDuration != null) {
@@ -69,8 +72,11 @@ public class SegmentTranslator implements ModelTranslator<Segment> {
         }
         model.setPublisher(Publisher.fromKey(TranslatorUtils.toString(dbo, PUBLISHER_KEY)).valueOrNull());
         model.setType(SegmentType.fromString(TranslatorUtils.toString(dbo, TYPE_KEY)).valueOrNull());
-        model.setDescription(TranslatorUtils.toString(dbo, DESCRIPTION_KEY));
-        
+
+        if (dbo.get(DESCRIPTION_KEY) instanceof String) {
+            model.setDescription(TranslatorUtils.toString(dbo, DESCRIPTION_KEY));
+        }
+
         return model;
     }
     
