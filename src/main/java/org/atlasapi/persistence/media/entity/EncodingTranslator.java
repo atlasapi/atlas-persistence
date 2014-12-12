@@ -156,7 +156,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
 
         @Override
         public int compare(Location left, Location right) {
-            ComparisonChain chain = ComparisonChain.start().
+            ComparisonChain chain = ComparisonChain.start()
                     .compare(left.getCanonicalUri(), right.getCanonicalUri(), Ordering.natural().nullsLast())
                     .compare(left.getUri(), right.getUri(), Ordering.natural().nullsLast());
             
