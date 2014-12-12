@@ -7,6 +7,7 @@ import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.ReleaseDate;
 import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
@@ -333,10 +334,11 @@ public class ItemTranslator implements ModelTranslator<Item> {
         @Override
         public int compare(Version left, Version right) {
             return ComparisonChain.start()
-                    .compare(left.getCanonicalUri(), right.getCanonicalUri())
-                    .compare(left.getCurie(), right.getCurie())
+                    .compare(left.getCanonicalUri(), right.getCanonicalUri(), Ordering.natural().nullsLast())
+                    .compare(left.getCurie(), right.getCurie(), Ordering.natural().nullsLast())
                     .result();
         }
         
     };
+    
 }

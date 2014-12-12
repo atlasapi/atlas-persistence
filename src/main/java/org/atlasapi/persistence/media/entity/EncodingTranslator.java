@@ -156,13 +156,13 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
 
         @Override
         public int compare(Location left, Location right) {
-            ComparisonChain chain = ComparisonChain.start()
-                    .compare(left.getCanonicalUri(), right.getCanonicalUri())
-                    .compare(left.getUri(), right.getUri());
+            ComparisonChain chain = ComparisonChain.start().
+                    .compare(left.getCanonicalUri(), right.getCanonicalUri(), Ordering.natural().nullsLast())
+                    .compare(left.getUri(), right.getUri(), Ordering.natural().nullsLast());
             
             if (left.getPolicy() != null && right.getPolicy() != null) {
-                chain.compare(left.getPolicy().getPlatform(), right.getPolicy().getPlatform())
-                     .compare(left.getPolicy().getAvailabilityStart(), right.getPolicy().getAvailabilityStart());
+                chain.compare(left.getPolicy().getPlatform(), right.getPolicy().getPlatform(), Ordering.natural().nullsLast())
+                     .compare(left.getPolicy().getAvailabilityStart(), right.getPolicy().getAvailabilityStart(), Ordering.natural().nullsLast());
             }
             return chain.result();
         }
