@@ -7,6 +7,8 @@ import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.persistence.ModelTranslator;
 
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -129,7 +131,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         
         if (! entity.getAvailableAt().isEmpty()) {
             BasicDBList list = new BasicDBList();
-            for (Location location: entity.getAvailableAt()) {
+            for (Location location: LOCATION_ORDERING.immutableSortedCopy(entity.getAvailableAt())) {
                 list.add(locationTranslator.toDBObject(null, location));
             }
             dbObject.put(LOCATIONS_KEY, list);
@@ -137,5 +139,22 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         
         return dbObject;
     }
+	
+    private static final Ordering<Location> LOCATION_ORDERING = new Ordering<Location>() {
+
+        @Override
+        public int compare(Location left, Location right) {
+            ComparisonChain chain = ComparisonChain.start()
+                    .compare(left.getCanonicalUri(), right.getCanonicalUri())
+                    .compare(left.getUri(), right.getUri());
+            
+            if (left.getPolicy() != null && right.getPolicy() != null) {
+                chain.compare(left.getPolicy().getPlatform(), right.getPolicy().getPlatform())
+                     .compare(left.getPolicy().getAvailabilityStart(), right.getPolicy().getAvailabilityStart());
+            }
+            return chain.result();
+        }
+        
+    };
 
 }
