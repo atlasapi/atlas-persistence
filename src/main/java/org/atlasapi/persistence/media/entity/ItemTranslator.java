@@ -21,7 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
@@ -242,7 +244,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
         if (! entity.getVersions().isEmpty()) {
             BasicDBList list = new BasicDBList();
-            for (Version version: entity.getVersions()) {
+            for (Version version: VERSION_ORDERING.immutableSortedCopy(entity.getVersions())) {
                 if (version == null) {
                     throw new IllegalArgumentException("Cannot save item with null version: " + entity.getCanonicalUri());
                 }
@@ -325,4 +327,16 @@ public class ItemTranslator implements ModelTranslator<Item> {
             dbo.put(FILM_SUBTITLES_KEY, values);
         }
     }
+    
+    private static final Ordering<Version> VERSION_ORDERING = new Ordering<Version>() {
+
+        @Override
+        public int compare(Version left, Version right) {
+            return ComparisonChain.start()
+                    .compare(left.getCanonicalUri(), right.getCanonicalUri())
+                    .compare(left.getCurie(), right.getCurie())
+                    .result();
+        }
+        
+    };
 }
