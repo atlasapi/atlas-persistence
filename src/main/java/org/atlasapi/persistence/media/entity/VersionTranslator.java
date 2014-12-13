@@ -129,7 +129,7 @@ public class VersionTranslator implements ModelTranslator<Version> {
         
         if (! entity.getManifestedAs().isEmpty()) {
             BasicDBList list = new BasicDBList();
-            for (Encoding encoding: entity.getManifestedAs()) {
+            for (Encoding encoding: ENCODING_PERSISTENCE_ORDERING.immutableSortedCopy(entity.getManifestedAs())) {
                 if (encoding != null) {
                     list.add(encodingTranslator.toDBObject(null, encoding));
                 }
@@ -170,6 +170,24 @@ public class VersionTranslator implements ModelTranslator<Version> {
 		        .compare(a, b, Ordering.arbitrary())
 		        .result();
 		}
+	};
+	
+	private static final Ordering<Encoding> ENCODING_PERSISTENCE_ORDERING = new Ordering<Encoding>() {
+
+        @Override
+        public int compare(Encoding left, Encoding right) {
+            return ComparisonChain.start()
+                    .compare(left.getCanonicalUri(), right.getCanonicalUri(), Ordering.natural().nullsLast())
+                    .compare(left.getSigned(), right.getSigned(), Ordering.natural().nullsLast())
+                    .compare(left.getVideoBitRate(), right.getVideoBitRate(), Ordering.natural().nullsLast())
+                    .compare(left.getVideoHorizontalSize(), right.getVideoHorizontalSize(), Ordering.natural().nullsLast())
+                    .compare(left.getVideoVerticalSize(), right.getVideoVerticalSize(), Ordering.natural().nullsLast())
+                    .compare(left.getAudioDescribed(), right.getAudioDescribed(), Ordering.natural().nullsLast())
+                    .compare(left.getDataContainerFormat(), right.getDataContainerFormat(), Ordering.natural().nullsLast())
+                    .compare(left.getHasDOG(), right.getHasDOG(), Ordering.natural().nullsLast())
+                    .result();
+        }
+	    
 	};
 
 }
