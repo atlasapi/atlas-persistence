@@ -235,7 +235,7 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
 
     private boolean itemsEqual(Item prevItem, Item item) {
         return contentEqual(prevItem, item)
-                && listsEqualNotCaringOrder(item.getPeople(), prevItem.getPeople())
+                && Objects.equal(item.getPeople(), prevItem.getPeople())
                 && Objects.equal(item.getBlackAndWhite(), prevItem.getBlackAndWhite())
                 && Objects.equal(item.getContainer(), prevItem.getContainer())
                 && Objects.equal(item.getCountriesOfOrigin(), prevItem.getCountriesOfOrigin())
