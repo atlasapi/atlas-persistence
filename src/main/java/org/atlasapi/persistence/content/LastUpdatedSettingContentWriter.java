@@ -14,6 +14,7 @@ import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -22,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -67,19 +69,18 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
         DateTime now = clock.now();
         if(previously.hasValue() && previously.requireValue() instanceof Item) {
             Item prevItem = (Item) previously.requireValue();
-            if(!itemsEqual(prevItem, item)){
+            if(itemsEqual(prevItem, item) && prevItem.getLastUpdated() != null) {
+                item.setLastUpdated(prevItem.getLastUpdated());
+            } else {
                 item.setLastUpdated(now);
             }
             setUpdatedVersions(prevItem.getVersions(), item.getVersions(), now);
             setUpdatedClips(prevItem.getClips(), item.getClips(), now);
         }
         else {
+            item.setLastUpdated(now);
             setUpdatedVersions(Sets.<Version>newHashSet(), item.getVersions(), now);
             setUpdatedClips(Lists.<Clip>newArrayList(), item.getClips(), now);
-        }
-
-        if(item.getLastUpdated() == null  || previously.isNothing()) {
-            item.setLastUpdated(clock.now());
         }
 
         writer.createOrUpdate(item);
@@ -107,10 +108,14 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
 
     private void setUpdatedVersions(Set<Version> prevVersions, Set<Version> versions, DateTime now) {
 
+        Map<String, Version> prevVersionsMap = prevVersionsMap(prevVersions);
         Map<String, Broadcast> prevBroadcasts = previousBroadcasts(prevVersions);
         Map<String, Location> prevLocations = previousLocations(prevVersions);
 
         for (Version version : versions) {
+            Version prevVersion = prevVersionsMap.get(version.getCanonicalUri());
+            setLastUpdatedTime(version, prevVersion, now);
+
             for (Broadcast broadcast : version.getBroadcasts()) {
                 Broadcast prevBroadcast = prevBroadcasts.get(broadcast.getSourceId());
                 if(prevBroadcast == null || !equal(prevBroadcast, broadcast)) {
@@ -132,7 +137,53 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
         }
     }
 
+    private void setLastUpdatedTime(Version version, Version prevVersion, DateTime now) {
+        if (prevVersion != null && equal(prevVersion, version) && prevVersion.getLastUpdated() != null) {
+                version.setLastUpdated(prevVersion.getLastUpdated());
+        } else {
+                version.setLastUpdated(now);
+        }
+    }
+
+    private Map<String, Version> prevVersionsMap(Set<Version> prevVersions) {
+        return Maps.uniqueIndex(Iterables.filter(prevVersions,
+                HAS_CANONICAL_URI), TO_CANONICAL_URI);
+    }
+
+    private boolean equal(Version prevVersion, Version version) {
+        return identifiedEqual(prevVersion, version)
+                && equal(prevVersion.getRestriction(), version.getRestriction())
+                && Objects.equal(prevVersion.getDuration(), version.getDuration())
+                && Objects.equal(prevVersion.getProvider(), version.getProvider())
+                && Objects.equal(prevVersion.getPublishedDuration(), version.getPublishedDuration())
+                && Objects.equal(prevVersion.getRestriction(), version.getRestriction())
+                && Objects.equal(prevVersion.is3d(), version.is3d());
+    }
+
+    private boolean equal(Restriction prevRestriction, Restriction restriction) {
+        if (prevRestriction == restriction) {
+            return true;
+        }
+
+        if (prevRestriction == null || restriction == null) {
+            return false;
+        }
+
+        return identifiedEqual(prevRestriction, restriction)
+                && Objects.equal(prevRestriction.isRestricted(), restriction.isRestricted())
+                && Objects.equal(prevRestriction.getMessage(), restriction.getMessage())
+                && Objects.equal(prevRestriction.getMinimumAge(), restriction.getMinimumAge());
+    }
+
     private boolean equal(Location prevLocation, Location location) {
+        if (prevLocation == location) {
+            return true;
+        }
+
+        if (prevLocation == null || location == null) {
+            return false;
+        }
+
         return equal(prevLocation.getPolicy(), location.getPolicy())
                 && Objects.equal(prevLocation.getAvailable(), location.getAvailable())
                 && Objects.equal(prevLocation.getEmbedCode(), location.getEmbedCode())
@@ -147,6 +198,14 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
     }
 
     private boolean equal(Policy prevPolicy, Policy policy) {
+        if (prevPolicy == policy) {
+            return true;
+        }
+
+        if (prevPolicy == null || policy == null) {
+            return false;
+        }
+
         return Objects.equal(prevPolicy.getAvailabilityStart().toDateTime(DateTimeZone.UTC),
                 policy.getAvailabilityStart().toDateTime(DateTimeZone.UTC))
                 && Objects.equal(prevPolicy.getAvailabilityEnd().toDateTime(DateTimeZone.UTC), policy.getAvailabilityEnd().toDateTime(
@@ -191,6 +250,14 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
     }
 
     private boolean equal(Broadcast prevBroadcast, Broadcast broadcast) {
+        if (prevBroadcast == broadcast) {
+            return true;
+        }
+
+        if (prevBroadcast == null || broadcast == null) {
+            return false;
+        }
+
         return Objects.equal(prevBroadcast.getTransmissionTime().toDateTime(DateTimeZone.UTC),broadcast.getTransmissionTime().toDateTime(
                 DateTimeZone.UTC))
                 && Objects.equal(prevBroadcast.getTransmissionEndTime().toDateTime(DateTimeZone.UTC), broadcast.getTransmissionEndTime().toDateTime(
@@ -244,6 +311,14 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
     }
 
     private <T> boolean listsEqualNotCaringOrder(List<T> list1, List<T> list2) {
+        if (list1 == null && list2 == null) {
+            return true;
+        }
+
+        if (list1 == null || list2 == null) {
+            return false;
+        }
+
         if (list1.size() != list2.size()) {
             return false;
         }
@@ -272,6 +347,14 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
     }
 
     private boolean equal(Image image, Image prevImage) {
+        if (image == prevImage) {
+            return true;
+        }
+
+        if (image == null || prevImage == null) {
+            return false;
+        }
+
         return image.equals(prevImage)
                 && Objects.equal(image.getAspectRatio(), prevImage.getAspectRatio())
                 && Objects.equal(image.getAvailabilityEnd().toDateTime(DateTimeZone.UTC),
@@ -294,17 +377,30 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
         return contentEqual(prevContainer, container);
     }
 
+    private boolean identifiedEqual(Identified previous, Identified current) {
+        if (previous == current) {
+            return true;
+        }
+
+        if (previous == null || current == null) {
+            return false;
+        }
+
+        return Objects.equal(previous.getAliases(), current.getAliases())
+                && Objects.equal(previous.getAllUris(), current.getAllUris())
+                && Objects.equal(previous.getAliasUrls(), current.getAliasUrls())
+                && Objects.equal(previous.getCurie(), current.getCurie());
+    }
+
     private boolean contentEqual(Content prevContent, Content content) {
-        return imagesEquals(prevContent.getImages(), content.getImages())
+        return identifiedEqual(prevContent, content)
+                && imagesEquals(prevContent.getImages(), content.getImages())
                 && listsEqualNotCaringOrder(prevContent.getTopicRefs(), content.getTopicRefs())
-                && Objects.equal(prevContent.getAliasUrls(), content.getAliasUrls())
                 && Objects.equal(prevContent.getTitle(), content.getTitle())
                 && Objects.equal(prevContent.getDescription(), content.getDescription())
                 && Objects.equal(prevContent.getGenres(), content.getGenres())
                 && Objects.equal(prevContent.getImage(), content.getImage())
                 && Objects.equal(prevContent.getThumbnail(), content.getThumbnail())
-                && Objects.equal(prevContent.getAliases(), content.getAliases())
-                && Objects.equal(prevContent.getAllUris(), content.getAllUris())
                 && Objects.equal(prevContent.getCertificates(), content.getCertificates())
                 && Objects.equal(prevContent.getContentGroupRefs(), content.getContentGroupRefs())
                 && Objects.equal(prevContent.getKeyPhrases(), content.getKeyPhrases())
@@ -313,7 +409,6 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
                 && Objects.equal(prevContent.getMediaType(), content.getMediaType())
                 && Objects.equal(prevContent.getMediumDescription(), content.getMediumDescription())
                 && Objects.equal(prevContent.getPresentationChannel(), content.getPresentationChannel())
-                && Objects.equal(prevContent.getPrimaryImage(), content.getPrimaryImage())
                 && Objects.equal(prevContent.getPublisher(), content.getPublisher())
                 && Objects.equal(prevContent.getRelatedLinks(), content.getRelatedLinks())
                 && Objects.equal(prevContent.getReviews(), content.getReviews())
@@ -325,6 +420,14 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
     }
 
     private boolean imagesEquals(Set<Image> prevImages, Set<Image> images) {
+        if (prevImages == images) {
+            return true;
+        }
+
+        if (prevImages == null || images == null) {
+            return false;
+        }
+
         if (prevImages.size() != images.size()) {
             return false;
         }
