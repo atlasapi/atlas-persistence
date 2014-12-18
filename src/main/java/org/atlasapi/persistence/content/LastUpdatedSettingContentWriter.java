@@ -206,14 +206,11 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
             return false;
         }
 
-        return Objects.equal(prevPolicy.getAvailabilityStart().toDateTime(DateTimeZone.UTC),
-                policy.getAvailabilityStart().toDateTime(DateTimeZone.UTC))
-                && Objects.equal(prevPolicy.getAvailabilityEnd().toDateTime(DateTimeZone.UTC), policy.getAvailabilityEnd().toDateTime(
-                DateTimeZone.UTC))
+        return datesEqual(prevPolicy.getAvailabilityStart(), policy.getAvailabilityStart())
+                && datesEqual(prevPolicy.getAvailabilityEnd(), policy.getAvailabilityEnd())
                 && Objects.equal(prevPolicy.getAvailableCountries(), policy.getAvailableCountries())
                 && Objects.equal(prevPolicy.getActualAvailabilityStart(), policy.getActualAvailabilityStart())
-                && Objects.equal(prevPolicy.getDrmPlayableFrom().toDateTime(DateTimeZone.UTC), policy.getDrmPlayableFrom().toDateTime(
-                DateTimeZone.UTC))
+                && datesEqual(prevPolicy.getDrmPlayableFrom(), policy.getDrmPlayableFrom())
                 && Objects.equal(prevPolicy.getNetwork(), policy.getNetwork())
                 && Objects.equal(prevPolicy.getPlatform(), policy.getPlatform())
                 && Objects.equal(prevPolicy.getPlayer(), policy.getPlayer())
@@ -258,10 +255,8 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
             return false;
         }
 
-        return Objects.equal(prevBroadcast.getTransmissionTime().toDateTime(DateTimeZone.UTC),broadcast.getTransmissionTime().toDateTime(
-                DateTimeZone.UTC))
-                && Objects.equal(prevBroadcast.getTransmissionEndTime().toDateTime(DateTimeZone.UTC), broadcast.getTransmissionEndTime().toDateTime(
-                DateTimeZone.UTC))
+        return datesEqual(prevBroadcast.getTransmissionTime(), broadcast.getTransmissionTime())
+                && datesEqual(prevBroadcast.getTransmissionEndTime(), broadcast.getTransmissionEndTime())
                 && Objects.equal(prevBroadcast.getBroadcastDuration(), broadcast.getBroadcastDuration())
                 && Objects.equal(prevBroadcast.isActivelyPublished(), broadcast.isActivelyPublished())
                 && Objects.equal(prevBroadcast.getAudioDescribed(), broadcast.getAudioDescribed())
@@ -357,10 +352,8 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
 
         return image.equals(prevImage)
                 && Objects.equal(image.getAspectRatio(), prevImage.getAspectRatio())
-                && Objects.equal(image.getAvailabilityEnd().toDateTime(DateTimeZone.UTC),
-                prevImage.getAvailabilityEnd().toDateTime(DateTimeZone.UTC))
-                && Objects.equal(image.getAvailabilityStart().toDateTime(DateTimeZone.UTC),
-                prevImage.getAvailabilityStart().toDateTime(DateTimeZone.UTC))
+                && datesEqual(image.getAvailabilityEnd(), prevImage.getAvailabilityEnd())
+                && datesEqual(image.getAvailabilityStart(), prevImage.getAvailabilityStart())
                 && Objects.equal(image.getColor(), prevImage.getColor())
                 && Objects.equal(image.getHeight(), prevImage.getHeight())
                 && Objects.equal(image.getMimeType(), prevImage.getMimeType())
@@ -449,6 +442,19 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
         }
 
         return false;
+    }
+
+    private boolean datesEqual(DateTime dateTime1, DateTime dateTime2) {
+        if (dateTime1 == dateTime2) {
+            return true;
+        }
+
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.toDateTime(DateTimeZone.UTC)
+                .equals(dateTime2.toDateTime(DateTimeZone.UTC));
     }
 
 }
