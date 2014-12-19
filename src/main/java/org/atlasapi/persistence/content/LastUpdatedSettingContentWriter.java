@@ -21,9 +21,9 @@ import org.joda.time.DateTimeZone;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -36,15 +36,22 @@ import com.metabroadcast.common.time.SystemClock;
 
 public class LastUpdatedSettingContentWriter implements ContentWriter {
 
-    private final Predicate<Identified> HAS_CANONICAL_URI = new Predicate<Identified>() {
+    private static final Predicate<Identified> HAS_CANONICAL_URI = new Predicate<Identified>() {
         @Override public boolean apply(Identified input) {
             return !Strings.isNullOrEmpty(input.getCanonicalUri());
         }
     };
 
-    private final Function<Identified, String> TO_CANONICAL_URI = new Function<Identified, String>() {
+    private static final Function<Identified, String> TO_CANONICAL_URI = new Function<Identified, String>() {
         @Override public String apply(Identified input) {
             return input.getCanonicalUri();
+        }
+    };
+
+    private static final Function<Encoding, EncodingKey> TO_ENCODING_KEY = new Function<Encoding, EncodingKey>() {
+        @Override
+        public EncodingKey apply(Encoding input) {
+            return new EncodingKey(input.getVideoHorizontalSize(), input.getVideoHorizontalSize());
         }
     };
 
@@ -110,7 +117,6 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
 
         Map<String, Version> prevVersionsMap = prevVersionsMap(prevVersions);
         Map<String, Broadcast> prevBroadcasts = previousBroadcasts(prevVersions);
-        Map<String, Location> prevLocations = previousLocations(prevVersions);
 
         for (Version version : versions) {
             Version prevVersion = prevVersionsMap.get(version.getCanonicalUri());
@@ -124,17 +130,57 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
                     broadcast.setLastUpdated(prevBroadcast.getLastUpdated());
                 }
             }
+
+            ImmutableMap<EncodingKey, Encoding> prevEncodings = Maps.uniqueIndex(
+                    prevVersion.getManifestedAs(),
+                    TO_ENCODING_KEY);
+
             for (Encoding encoding : version.getManifestedAs()) {
-                for (Location location : encoding.getAvailableAt()) {
-                    Location prevLocation = prevLocations.get(location.getUri());
-                    if(prevLocation == null || !equal(prevLocation, location)) {
-                        location.setLastUpdated(now);
-                    } else {
-                        location.setLastUpdated(prevLocation.getLastUpdated());
-                    }
-                }
+                Encoding prevEncoding = prevEncodings.get(keyFor(encoding));
+                setLastUpdatedTime(encoding, prevEncoding, now);
+
+                Set<Location> prevLocations = prevEncoding.getAvailableAt();
+                setLocationsLastUpdatedTime(prevLocations, encoding.getAvailableAt(), now);
             }
         }
+    }
+
+    private void setLocationsLastUpdatedTime(Set<Location> prevLocations,
+            Set<Location> locations, DateTime now) {
+        for (Location location : locations) {
+            Optional<Location> prevLocation = Iterables.tryFind(prevLocations, isEqualTo(location));
+
+            if(prevLocation.isPresent() && prevLocation.get().getLastUpdated() != null) {
+                location.setLastUpdated(prevLocation.get().getLastUpdated());
+            } else {
+                location.setLastUpdated(now);
+            }
+        }
+    }
+
+    private Predicate<Location> isEqualTo(final Location location) {
+        return new Predicate<Location>() {
+            @Override
+            public boolean apply(Location input) {
+                return equal(input, location);
+            }
+        };
+    }
+
+    private void setLastUpdatedTime(Encoding encoding, Encoding prevEncoding, DateTime now) {
+        if (prevEncoding != null && equal(encoding, prevEncoding) && prevEncoding.getLastUpdated() != null) {
+            encoding.setLastUpdated(prevEncoding.getLastUpdated());
+        } else {
+            encoding.setLastUpdated(now);
+        }
+    }
+
+    private boolean equal(Encoding encoding, Encoding prevEncoding) {
+        return false;
+    }
+
+    private EncodingKey keyFor(Encoding encoding) {
+        return TO_ENCODING_KEY.apply(encoding);
     }
 
     private void setLastUpdatedTime(Version version, Version prevVersion, DateTime now) {
@@ -220,30 +266,6 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
                 && Objects.equal(prevPolicy.getAliases(), policy.getAliases())
                 && Objects.equal(prevPolicy.getAliasUrls(), policy.getAliasUrls())
                 ;
-    }
-
-    private Map<String, Location> previousLocations(Set<Version> prevVersions) {
-        return Maps.uniqueIndex(Iterables.concat(Iterables.transform(Iterables.concat(Iterables.transform(
-                prevVersions,
-                new Function<Version, Iterable<Encoding>>() {
-
-                    @Override
-                    public Iterable<Encoding> apply(Version input) {
-                        return input.getManifestedAs();
-                    }
-                })), new Function<Encoding, Iterable<Location>>() {
-
-            @Override
-            public Iterable<Location> apply(Encoding input) {
-                return input.getAvailableAt();
-            }
-        })), new Function<Location, String>() {
-
-            @Override
-            public String apply(Location input) {
-                return input.getUri();
-            }
-        });
     }
 
     private boolean equal(Broadcast prevBroadcast, Broadcast broadcast) {
@@ -455,6 +477,43 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
 
         return dateTime1.toDateTime(DateTimeZone.UTC)
                 .equals(dateTime2.toDateTime(DateTimeZone.UTC));
+    }
+
+    private static class EncodingKey {
+
+        private final int horizontalSize;
+        private final int verticalSize;
+
+        private EncodingKey(int horizontalSize, int verticalSize) {
+            this.horizontalSize = horizontalSize;
+            this.verticalSize = verticalSize;
+        }
+
+        public int getHorizontalSize() {
+            return horizontalSize;
+        }
+
+        public int getVerticalSize() {
+            return verticalSize;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof EncodingKey)) {
+                return false;
+            }
+
+            EncodingKey that = (EncodingKey) other;
+
+            return this.horizontalSize == that.horizontalSize
+                    && this.verticalSize == that.verticalSize;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(horizontalSize, verticalSize);
+        }
+
     }
 
 }
