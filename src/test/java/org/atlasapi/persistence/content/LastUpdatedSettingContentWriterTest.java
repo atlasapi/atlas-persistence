@@ -151,9 +151,8 @@ public class LastUpdatedSettingContentWriterTest {
 
     private Set<Encoding> encodings() {
         return ImmutableSet.of(
-                encoding(ENCODING_1_URI),
-                encoding(ENCODING_2_URI),
-                encoding(ENCODING_3_URI)
+                encoding(ENCODING_1_URI, true),
+                encoding(ENCODING_2_URI, false)
         );
     }
 
@@ -175,11 +174,13 @@ public class LastUpdatedSettingContentWriterTest {
         return broadcast;
     }
 
-    private Encoding encoding(String canonicalUri) {
+    private Encoding encoding(String canonicalUri, boolean isHd) {
         Encoding encoding = new Encoding();
 
         encoding.setAudioBitRate(101010);
         encoding.setSigned(true);
+        encoding.setVideoHorizontalSize(isHd ? 1200 : 640);
+        encoding.setVideoVerticalSize(isHd ? 900 : 480);
 
         return encoding;
     }
