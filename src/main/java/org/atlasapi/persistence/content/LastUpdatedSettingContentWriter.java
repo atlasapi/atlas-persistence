@@ -48,6 +48,13 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
         }
     };
 
+    private static final Predicate<Encoding> HAS_VIDEO_SIZE_SET = new Predicate<Encoding>() {
+        @Override
+        public boolean apply(Encoding input) {
+            return input.getVideoHorizontalSize() != null && input.getVideoVerticalSize() != null;
+        }
+    };
+
     private static final Function<Encoding, EncodingKey> TO_ENCODING_KEY = new Function<Encoding, EncodingKey>() {
         @Override
         public EncodingKey apply(Encoding input) {
@@ -124,15 +131,15 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
 
             for (Broadcast broadcast : version.getBroadcasts()) {
                 Broadcast prevBroadcast = prevBroadcasts.get(broadcast.getSourceId());
-                if(prevBroadcast == null || !equal(prevBroadcast, broadcast)) {
-                    broadcast.setLastUpdated(now);
-                } else {
+                if(prevBroadcast != null && equal(prevBroadcast, broadcast) && prevBroadcast.getLastUpdated() != null) {
                     broadcast.setLastUpdated(prevBroadcast.getLastUpdated());
+                } else {
+                    broadcast.setLastUpdated(now);
                 }
             }
 
-            ImmutableMap<EncodingKey, Encoding> prevEncodings = Maps.uniqueIndex(
-                    prevVersion.getManifestedAs(),
+            ImmutableMap<EncodingKey, Encoding> prevEncodings = Maps.uniqueIndex(Iterables.filter(
+                    prevVersion.getManifestedAs(), HAS_VIDEO_SIZE_SET),
                     TO_ENCODING_KEY);
 
             for (Encoding encoding : version.getManifestedAs()) {
@@ -176,7 +183,26 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
     }
 
     private boolean equal(Encoding encoding, Encoding prevEncoding) {
-        return false;
+        return identifiedEqual(encoding, prevEncoding)
+                && Objects.equal(encoding.getAdvertisingDuration(), prevEncoding.getAdvertisingDuration())
+                && Objects.equal(encoding.getAudioBitRate(), prevEncoding.getAudioBitRate())
+                && Objects.equal(encoding.getAudioChannels(), prevEncoding.getAudioChannels())
+                && Objects.equal(encoding.getAudioCoding(), prevEncoding.getAudioCoding())
+                && Objects.equal(encoding.getAudioDescribed(), prevEncoding.getAudioDescribed())
+                && Objects.equal(encoding.getBitRate(), prevEncoding.getBitRate())
+                && Objects.equal(encoding.getContainsAdvertising(), prevEncoding.getContainsAdvertising())
+                && Objects.equal(encoding.getDataContainerFormat(), prevEncoding.getDataContainerFormat())
+                && Objects.equal(encoding.getDataSize(), prevEncoding.getDataSize())
+                && Objects.equal(encoding.getDistributor(), prevEncoding.getDistributor())
+                && Objects.equal(encoding.getHasDOG(), prevEncoding.getHasDOG())
+                && Objects.equal(encoding.getSigned(), prevEncoding.getSigned())
+                && Objects.equal(encoding.getSource(), prevEncoding.getSource())
+                && Objects.equal(encoding.getVideoAspectRatio(), prevEncoding.getVideoAspectRatio())
+                && Objects.equal(encoding.getVideoBitRate(), prevEncoding.getVideoBitRate())
+                && Objects.equal(encoding.getVideoCoding(), prevEncoding.getVideoCoding())
+                && Objects.equal(encoding.getVideoFrameRate(), prevEncoding.getVideoFrameRate())
+                && Objects.equal(encoding.getVideoProgressiveScan(), prevEncoding.getVideoProgressiveScan())
+                && Objects.equal(encoding.getVideoVerticalSize(), prevEncoding.getVideoVerticalSize());
     }
 
     private EncodingKey keyFor(Encoding encoding) {
