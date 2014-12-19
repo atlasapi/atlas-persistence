@@ -142,35 +142,54 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
                 }
             }
 
-            Map<EncodingKey, Encoding> prevEncodings = getPreviousEncodings(prevVersion);
+            Set<Encoding> prevEncodings = getPreviousEncodings(prevVersion);
 
             for (Encoding encoding : version.getManifestedAs()) {
-                if (encoding.getVideoVerticalSize() == null || encoding.getVideoHorizontalSize() == null) {
-                    LOG.warn("Encoding for version {} has null size", version.getCanonicalUri());
-                }
-                Encoding prevEncoding = prevEncodings.get(keyFor(encoding));
-                setLastUpdatedTime(encoding, prevEncoding, now);
+                Optional<Encoding> prevEncoding = Iterables.tryFind(prevEncodings,
+                        isEqualTo(encoding));
 
-                Set<Location> prevLocations = prevEncoding.getAvailableAt();
-                setLocationsLastUpdatedTime(prevLocations, encoding.getAvailableAt(), now);
+                setLastUpdatedTime(encoding, prevEncoding, now);
+                setLocationsLastUpdatedTime(prevEncoding, encoding.getAvailableAt(), now);
             }
         }
     }
 
-    private Map<EncodingKey, Encoding> getPreviousEncodings(
-            Version prevVersion) {
-
-        if (prevVersion != null) {
-            return Maps.uniqueIndex(Iterables.filter(
-                            prevVersion.getManifestedAs(), HAS_VIDEO_SIZE_SET),
-                    TO_ENCODING_KEY);
+    private void setLastUpdatedTime(Encoding encoding,
+            Optional<Encoding> prevEncoding, DateTime now) {
+        if (prevEncoding.isPresent() && prevEncoding.get().getLastUpdated() != null) {
+            encoding.setLastUpdated(prevEncoding.get().getLastUpdated());
+        } else {
+            encoding.setLastUpdated(now);
         }
-
-        return Maps.newHashMap();
     }
 
-    private void setLocationsLastUpdatedTime(Set<Location> prevLocations,
+    private Set<Encoding> getPreviousEncodings(Version prevVersion) {
+        if (prevVersion != null) {
+            return prevVersion.getManifestedAs();
+        }
+
+        return Sets.newHashSet();
+    }
+
+    private void setLocationsLastUpdatedTime(Optional<Encoding> prevEncoding,
             Set<Location> locations, DateTime now) {
+
+        if (prevEncoding.isPresent()) {
+            setLastUpdatedTimeComparingWithPreviousLocations(locations, prevEncoding.get().getAvailableAt(), now);
+        } else {
+            setLastUpdatedTimeToNow(locations, now);
+        }
+
+    }
+
+    private void setLastUpdatedTimeToNow(Set<Location> locations, DateTime now) {
+        for (Location location : locations) {
+            location.setLastUpdated(now);
+        }
+    }
+
+    private void setLastUpdatedTimeComparingWithPreviousLocations(Set<Location> locations,
+            Set<Location> prevLocations, DateTime now) {
         for (Location location : locations) {
             Optional<Location> prevLocation = Iterables.tryFind(prevLocations, isEqualTo(location));
 
@@ -182,6 +201,15 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
         }
     }
 
+    private Predicate<Encoding> isEqualTo(final Encoding encoding) {
+        return new Predicate<Encoding>() {
+            @Override
+            public boolean apply(Encoding input) {
+                return equal(input, encoding);
+            }
+        };
+    }
+
     private Predicate<Location> isEqualTo(final Location location) {
         return new Predicate<Location>() {
             @Override
@@ -189,14 +217,6 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
                 return equal(input, location);
             }
         };
-    }
-
-    private void setLastUpdatedTime(Encoding encoding, Encoding prevEncoding, DateTime now) {
-        if (prevEncoding != null && equal(encoding, prevEncoding) && prevEncoding.getLastUpdated() != null) {
-            encoding.setLastUpdated(prevEncoding.getLastUpdated());
-        } else {
-            encoding.setLastUpdated(now);
-        }
     }
 
     private boolean equal(Encoding encoding, Encoding prevEncoding) {
@@ -298,7 +318,8 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
         return datesEqual(prevPolicy.getAvailabilityStart(), policy.getAvailabilityStart())
                 && datesEqual(prevPolicy.getAvailabilityEnd(), policy.getAvailabilityEnd())
                 && Objects.equal(prevPolicy.getAvailableCountries(), policy.getAvailableCountries())
-                && Objects.equal(prevPolicy.getActualAvailabilityStart(), policy.getActualAvailabilityStart())
+                && Objects.equal(prevPolicy.getActualAvailabilityStart(),
+                policy.getActualAvailabilityStart())
                 && datesEqual(prevPolicy.getDrmPlayableFrom(), policy.getDrmPlayableFrom())
                 && Objects.equal(prevPolicy.getNetwork(), policy.getNetwork())
                 && Objects.equal(prevPolicy.getPlatform(), policy.getPlatform())
