@@ -18,6 +18,8 @@ import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
@@ -35,6 +37,8 @@ import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.SystemClock;
 
 public class LastUpdatedSettingContentWriter implements ContentWriter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LastUpdatedSettingContentWriter.class);
 
     private static final Predicate<Identified> HAS_CANONICAL_URI = new Predicate<Identified>() {
         @Override public boolean apply(Identified input) {
@@ -58,7 +62,7 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
     private static final Function<Encoding, EncodingKey> TO_ENCODING_KEY = new Function<Encoding, EncodingKey>() {
         @Override
         public EncodingKey apply(Encoding input) {
-            return new EncodingKey(input.getVideoHorizontalSize(), input.getVideoHorizontalSize());
+            return new EncodingKey(input.getVideoHorizontalSize(), input.getVideoVerticalSize());
         }
     };
 
@@ -138,11 +142,12 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
                 }
             }
 
-            ImmutableMap<EncodingKey, Encoding> prevEncodings = Maps.uniqueIndex(Iterables.filter(
-                    prevVersion.getManifestedAs(), HAS_VIDEO_SIZE_SET),
-                    TO_ENCODING_KEY);
+            Map<EncodingKey, Encoding> prevEncodings = getPreviousEncodings(prevVersion);
 
             for (Encoding encoding : version.getManifestedAs()) {
+                if (encoding.getVideoVerticalSize() == null || encoding.getVideoHorizontalSize() == null) {
+                    LOG.warn("Encoding for version {} has null size", version.getCanonicalUri());
+                }
                 Encoding prevEncoding = prevEncodings.get(keyFor(encoding));
                 setLastUpdatedTime(encoding, prevEncoding, now);
 
@@ -150,6 +155,18 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
                 setLocationsLastUpdatedTime(prevLocations, encoding.getAvailableAt(), now);
             }
         }
+    }
+
+    private Map<EncodingKey, Encoding> getPreviousEncodings(
+            Version prevVersion) {
+
+        if (prevVersion != null) {
+            return Maps.uniqueIndex(Iterables.filter(
+                            prevVersion.getManifestedAs(), HAS_VIDEO_SIZE_SET),
+                    TO_ENCODING_KEY);
+        }
+
+        return Maps.newHashMap();
     }
 
     private void setLocationsLastUpdatedTime(Set<Location> prevLocations,
