@@ -343,6 +343,8 @@ public class LastUpdatedSettingContentWriter implements ContentWriter {
 
         return datesEqual(prevBroadcast.getTransmissionTime(), broadcast.getTransmissionTime())
                 && datesEqual(prevBroadcast.getTransmissionEndTime(), broadcast.getTransmissionEndTime())
+                && datesEqual(prevBroadcast.getActualTransmissionTime(), broadcast.getActualTransmissionTime())
+                && datesEqual(prevBroadcast.getActualTransmissionEndTime(), broadcast.getActualTransmissionEndTime())
                 && Objects.equal(prevBroadcast.getBroadcastDuration(), broadcast.getBroadcastDuration())
                 && Objects.equal(prevBroadcast.isActivelyPublished(), broadcast.isActivelyPublished())
                 && Objects.equal(prevBroadcast.getAudioDescribed(), broadcast.getAudioDescribed())
