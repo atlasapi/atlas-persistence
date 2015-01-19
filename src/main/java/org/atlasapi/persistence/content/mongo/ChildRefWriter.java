@@ -7,7 +7,6 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static org.atlasapi.persistence.media.entity.ContainerTranslator.CHILDREN_KEY;
 
 import java.util.List;
-import java.util.Set;
 
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
@@ -22,8 +21,8 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -66,22 +65,36 @@ public class ChildRefWriter {
         // either are missing, change nothing and error out.
         String brandUri = episode.getContainer().getUri();
         String seriesUri = episode.getSeriesRef().getUri();
-
-        Maybe<Container> maybeBrand = getContainer(brandUri, containers);
-        Maybe<Container> maybeSeries = getContainer(seriesUri, programmeGroups);
-
-        if (maybeBrand.isNothing() || maybeSeries.isNothing()) {
-            throw new IllegalStateException(
-                    String.format("Container %s or series %s not found for episode %s", 
-                                  brandUri, seriesUri, episode.getCanonicalUri()));
-        }
-
-        episode.setContainer(maybeBrand.requireValue());
-        episode.setSeries((Series)maybeSeries.requireValue());
         
-        addChildRef(childRef, containers, maybeBrand.requireValue());
-        addChildRef(childRef, programmeGroups, maybeSeries.requireValue());
+        if (Objects.equal(brandUri, seriesUri)) {
+            Maybe<Container> maybeSeries = getContainer(seriesUri, programmeGroups);
+            
+            if (maybeSeries.isNothing()) {
+                throw new IllegalStateException(
+                        String.format("Series %s not found for episode %s", 
+                                      seriesUri, episode.getCanonicalUri()));
+            }
 
+            episode.setContainer(maybeSeries.requireValue());
+            episode.setSeries((Series) maybeSeries.requireValue());
+            
+            addChildRef(childRef, programmeGroups, maybeSeries.requireValue());
+        } else {
+            Maybe<Container> maybeBrand = getContainer(brandUri, containers);
+            Maybe<Container> maybeSeries = getContainer(seriesUri, programmeGroups);
+
+            if (maybeBrand.isNothing() || maybeSeries.isNothing()) {
+                throw new IllegalStateException(
+                        String.format("Container %s or series %s not found for episode %s", 
+                                      brandUri, seriesUri, episode.getCanonicalUri()));
+            }
+
+            episode.setContainer(maybeBrand.requireValue());
+            episode.setSeries((Series)maybeSeries.requireValue());
+            
+            addChildRef(childRef, containers, maybeBrand.requireValue());
+            addChildRef(childRef, programmeGroups, maybeSeries.requireValue());
+        }
     }
 
     public void includeSeriesInTopLevelContainer(Series series) {
