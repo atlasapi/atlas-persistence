@@ -208,9 +208,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
-        return new QueuingItemsPeopleWriter(new QueuingPersonWriter(personStore(), log), log);
+        return new QueuingItemsPeopleWriter(personWriter(), log);
     }
-    
+
+    public @Primary @Bean QueuingPersonWriter personWriter() {
+        return new QueuingPersonWriter(personStore(), log);
+    }
+
     public @Primary @Bean PersonStore personStore() {
         LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), readPreference);
         PersonStore personStore = new MongoPersonStore(db, 
