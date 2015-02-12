@@ -1,10 +1,11 @@
 package org.atlasapi.persistence.audit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Function;
@@ -31,7 +32,12 @@ class MongoPersistenceAuditLog implements PersistenceAuditLog {
     
     @Override
     public void logWrite(Described described) {
-        log(described, true);
+        log(described, described.getPublisher(), true);
+    }
+    
+    @Override
+    public void logWrite(LookupEntry lookupEntry) {
+        log(lookupEntry, lookupEntry.lookupRef().publisher(), true);
     }
 
     @Override
@@ -40,24 +46,34 @@ class MongoPersistenceAuditLog implements PersistenceAuditLog {
         // log(described, false);
     }
     
-    private void log(Described described, boolean actualWrite) {
+    @Override
+    public void logNoWrite(LookupEntry lookupEntry) {
+        //log(lookupEntry, true);
+    }
+    
+    private void log(Object object, Publisher publisher, boolean actualWrite) {
+        log(publisher, 
+            groupByKey(object.getClass().getSimpleName().toLowerCase(), actualWrite));
+    }
+    
+    private void log(Publisher publisher, String key) {
         this.collection.update(
                 where()
-                    .fieldEquals(PUBLISHER_KEY, described.getPublisher().key())
+                    .fieldEquals(PUBLISHER_KEY, publisher.key())
                     .fieldEquals(BUCKET_KEY, documentKey.apply(clock.now()))
                     .build(), 
                 new MongoUpdateBuilder()
-                    .incField(groupByKey(described, actualWrite), 1)
+                    .incField(key, 1)
                     .build(),
                 true,
                 false);
     }
     
-    private String groupByKey(Described described, boolean actualWrite) {
+    private String groupByKey(String type, boolean actualWrite) {
         
         return String.format("%s.%s",
                     actualWrite ? "write" : "noWrite",
-                    described.getClass().getSimpleName().toLowerCase()
+                    type
                 );
     }
 

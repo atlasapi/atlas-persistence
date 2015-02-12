@@ -3,6 +3,7 @@ package org.atlasapi.persistence.audit;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -51,6 +52,21 @@ public class PerHourAndDayMongoPersistenceAuditLog implements PersistenceAuditLo
             log.logNoWrite(described);
         }
     }
+    
+    @Override
+    public void logWrite(LookupEntry lookupEntry) {
+        for (MongoPersistenceAuditLog log : auditLogs) {
+            log.logWrite(lookupEntry);
+        }
+    }
+
+    @Override
+    public void logNoWrite(LookupEntry lookupEntry) {
+        for (MongoPersistenceAuditLog log : auditLogs) {
+            log.logNoWrite(lookupEntry);
+        }
+    }
+
 
     
     private static final DateTimeFormatter perDayFormatter = DateTimeFormat.forPattern("YYYY-MM-dd");
