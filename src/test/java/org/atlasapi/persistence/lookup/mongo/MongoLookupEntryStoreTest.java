@@ -24,6 +24,7 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
+import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.After;
@@ -58,8 +59,12 @@ public class MongoLookupEntryStoreTest {
     public static void setUp() {
         mongo = MongoTestHelper.anEmptyTestDatabase();
         collection = mongo.collection("lookup");
-        entryStore = new MongoLookupEntryStore(collection, 
-                ReadPreference.primary(), log);
+        entryStore = new MongoLookupEntryStore(
+                            collection, 
+                            ReadPreference.primary(), 
+                            new NoLoggingPersistenceAuditLog(), 
+                            log
+                         );
     }
     
     @After 

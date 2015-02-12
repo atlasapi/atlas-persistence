@@ -19,6 +19,7 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentWriter;
@@ -50,7 +51,8 @@ public class MongoAvailableItemsResolverTest {
     private final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     private final TimeMachine clock = new TimeMachine();
     private final MongoLookupEntryStore lookupStore
-        = new MongoLookupEntryStore(mongo.collection("lookup"), ReadPreference.primary());
+        = new MongoLookupEntryStore(mongo.collection("lookup"), 
+                new NoLoggingPersistenceAuditLog(), ReadPreference.primary());
     private final MongoAvailableItemsResolver resolver
         = new MongoAvailableItemsResolver(mongo, lookupStore, clock);
     private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);

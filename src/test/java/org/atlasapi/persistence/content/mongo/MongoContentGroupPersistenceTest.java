@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content.mongo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -11,36 +12,25 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBCollection;
+
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.SortKey;
+import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
 
 import static org.junit.Assert.*;
 
 public class MongoContentGroupPersistenceTest {
 
     private static DatabasedMongo MONGO = MongoTestHelper.anEmptyTestDatabase();
-    //
     private final DBCollection table = new MongoContentTables(MONGO).collectionFor(ContentCategory.CONTENT_GROUP);
-    //
-    private final PersistenceAuditLog persistenceAuditLog = new PersistenceAuditLog() {
-        
-        @Override
-        public void logWrite(Described described) {
-            
-        }
-        
-        @Override
-        public void logNoWrite(Described described) {
-            
-        }
-    };
     
-    private final MongoContentGroupWriter writer = new MongoContentGroupWriter(MONGO, persistenceAuditLog, new SystemClock());
+    private final MongoContentGroupWriter writer = new MongoContentGroupWriter(MONGO, new NoLoggingPersistenceAuditLog(), new SystemClock());
     private final MongoContentGroupResolver resolver = new MongoContentGroupResolver(MONGO);
 
     @After
