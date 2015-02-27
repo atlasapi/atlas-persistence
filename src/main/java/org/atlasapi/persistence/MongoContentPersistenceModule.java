@@ -20,6 +20,7 @@ import org.atlasapi.messaging.v3.JacksonMessageSerializer;
 import org.atlasapi.messaging.v3.KafkaMessagingModule;
 import org.atlasapi.messaging.v3.MessagingModule;
 import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
+import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentGroupResolver;
@@ -64,6 +65,7 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.LookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.player.PlayerResolver;
@@ -117,13 +119,15 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
     public MongoContentPersistenceModule() {}
     
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log) {
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
+    		ReadPreference readPreference) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
         this.messagingModule = messagingModule;
         this.generateIds = "true";
         this.auditDbName = auditDbName;
+        this.readPreference = readPreference;
     }
     
     @Bean
@@ -181,17 +185,20 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Primary @Bean MongoLookupEntryStore lookupStore() {
-        return new MongoLookupEntryStore(db.collection("lookup"), readPreference);
+        return new MongoLookupEntryStore(db.collection("lookup"), 
+                persistenceAuditLog(), readPreference);
     }
     
     private LookupWriter explicitLookupWriter() {
-        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), 
+                persistenceAuditLog(), ReadPreference.primary());
         return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
     }
 
     public @Bean
     LookupWriter generatedLookupWriter() {
-        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), ReadPreference.primary());
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), 
+                persistenceAuditLog(), ReadPreference.primary());
         return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
     }
 
@@ -216,7 +223,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     public @Primary @Bean PersonStore personStore() {
-        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), readPreference);
+        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), 
+                persistenceAuditLog(), readPreference);
         PersonStore personStore = new MongoPersonStore(db, 
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore), 
                 personLookupEntryStore, 
@@ -271,7 +279,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     
     // not sure if this is right
     public @Bean OrganisationStore organisationStore() {
-        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"), readPreference);
+        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"), 
+                persistenceAuditLog(), readPreference);
         OrganisationStore organisationStore = new MongoOrganisationStore(db, 
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(organisationLookupEntryStore), 
                 organisationLookupEntryStore, 
@@ -308,7 +317,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Bean PeopleQueryResolver peopleQueryResolver() {
-        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup"), readPreference));
+        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup"), 
+                persistenceAuditLog(), readPreference));
     }
     
     public @Bean ContentPurger contentPurger() {
@@ -325,18 +335,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         if (auditEnabled) {
             return new PerHourAndDayMongoPersistenceAuditLog(new DatabasedMongo(mongo, auditDbName));
         } else {
-            return new PersistenceAuditLog() {
-                
-                @Override
-                public void logWrite(Described described) {
-                    // NOOP
-                }
-                
-                @Override
-                public void logNoWrite(Described described) {
-                    // NOOP
-                }
-            };
+            return new NoLoggingPersistenceAuditLog();
         }
     }
 }

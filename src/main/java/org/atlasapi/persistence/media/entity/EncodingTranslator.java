@@ -162,9 +162,6 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
             
             if (left.getPolicy() != null && right.getPolicy() != null) {
                 chain.compare(left.getPolicy().getPlatform(), right.getPolicy().getPlatform(), Ordering.natural().nullsLast())
-                     .compare(left.getPolicy().getNetwork(), right.getPolicy().getNetwork(), Ordering.natural().nullsLast())
-                     .compare(left.getPolicy().getService(), right.getPolicy().getService(), Ordering.natural().nullsLast())
-                     .compare(left.getPolicy().getPlayer(), right.getPolicy().getPlayer(), Ordering.natural().nullsLast())
                      .compare(left.getPolicy().getAvailabilityStart(), right.getPolicy().getAvailabilityStart(), Ordering.natural().nullsLast());
             }
             return chain.result();

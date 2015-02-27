@@ -31,6 +31,7 @@ import com.metabroadcast.common.queue.MessageSenderFactory;
 import com.metabroadcast.common.queue.MessageSerializer;
 import com.metabroadcast.common.queue.MessagingException;
 import com.mongodb.Mongo;
+import com.mongodb.ReadPreference;
 
 public class MongoContentPersistenceIntegrationTest {
 
@@ -69,7 +70,7 @@ public class MongoContentPersistenceIntegrationTest {
     @Test
     public void test() {
         
-        MongoContentPersistenceModule module = new MongoContentPersistenceModule(mongo, db, messagingModule, "atlas-audit", adapterLog);
+        MongoContentPersistenceModule module = new MongoContentPersistenceModule(mongo, db, messagingModule, "atlas-audit", adapterLog, ReadPreference.PRIMARY);
         
         ContentWriter contentWriter = module.contentWriter();
         ContentResolver contentResolver = module.contentResolver();

@@ -15,6 +15,7 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentResolver;
@@ -59,7 +60,8 @@ public class MongoPersonStoreTest {
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
         persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
-        entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), ReadPreference.primary());
+        entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), 
+                new NoLoggingPersistenceAuditLog(), ReadPreference.primary());
         store = new MongoPersonStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), 
                 entryStore, persistenceAuditLog);
         contentWriter = new MongoContentWriter(db, entryStore, persistenceAuditLog, 
