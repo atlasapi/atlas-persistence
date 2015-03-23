@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.ContentGroupRef;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.EventRef;
 import org.atlasapi.media.entity.KeyPhrase;
+import org.atlasapi.media.entity.TermsOfUse;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.ModelTranslator;
 
@@ -26,6 +27,8 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class ContentTranslator implements ModelTranslator<Content> {
 
     public static final String PEOPLE = "people";
@@ -39,6 +42,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
     private static final String SIMILAR_CONTENT_KEY = "similar";
     private static final String EVENTS_KEY = "events";
+    private static final String TERMS_OF_USE_KEY = "termsOfUse";
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
@@ -46,6 +50,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final ContentGroupRefTranslator contentGroupRefTranslator;
     private final CrewMemberTranslator crewMemberTranslator;
     private final SimilarContentRefTranslator similarContentRefTranslator;
+    private final ModelTranslator<TermsOfUse> termsOfUseTranslator;
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
         this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec));
@@ -53,13 +58,14 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     //TODO: why not use collaborators interface here? ModelTranslator<Described> etc...
     public ContentTranslator(DescribedTranslator describedTranslator, ClipTranslator clipTranslator) {
-        this.describedTranslator = describedTranslator;
-        this.clipTranslator = clipTranslator;
+        this.describedTranslator = checkNotNull(describedTranslator);
+        this.clipTranslator = checkNotNull(clipTranslator);
         this.keyPhraseTranslator = new KeyPhraseTranslator();
         this.contentTopicTranslator = new TopicRefTranslator();
         this.contentGroupRefTranslator = new ContentGroupRefTranslator();
         this.crewMemberTranslator = new CrewMemberTranslator();
         this.similarContentRefTranslator = new SimilarContentRefTranslator();
+        this.termsOfUseTranslator = new TermsOfUseTranslator();
     }
 
     @Override
@@ -71,7 +77,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeTopics(dbObject, entity);
         decodeContentGroups(dbObject, entity);
         decodeLanguages(dbObject, entity);
-        decodeCertificates(dbObject, entity); 
+        decodeCertificates(dbObject, entity);
+        decodeTermsOfUse(dbObject, entity);
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
         entity.setSimilarContent(similarContentRefTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, SIMILAR_CONTENT_KEY)));
@@ -97,6 +104,20 @@ public class ContentTranslator implements ModelTranslator<Content> {
         }
 
         return entity;
+    }
+
+    private void decodeTermsOfUse(DBObject dbObject, Content entity) {
+        if (dbObject.containsField(TERMS_OF_USE_KEY)) {
+            entity.setTermsOfUse(
+                    termsOfUseTranslator.fromDBObject(
+                            TranslatorUtils.toDBObject(
+                                    dbObject,
+                                    TERMS_OF_USE_KEY
+                            ),
+                            null
+                    )
+            );
+        }
     }
 
     protected void decodeLanguages(DBObject dbObject, Content entity) {
@@ -180,6 +201,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeContentGroups(dbObject, entity);
         encodeLanguages(dbObject, entity);
         encodeCertificates(dbObject, entity.getCertificates());
+        encodeTermsOfUse(dbObject, entity.getTermsOfUse());
         TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
         TranslatorUtils.from(dbObject, GENERIC_DESCRIPTION_KEY, entity.getGenericDescription());
         
@@ -202,6 +224,14 @@ public class ContentTranslator implements ModelTranslator<Content> {
         });
 
         return dbObject;
+    }
+
+    private void encodeTermsOfUse(DBObject dbObject, TermsOfUse termsOfUse) {
+        if(termsOfUse != null) {
+            DBObject termsOfUseDbo = new BasicDBObject();
+            termsOfUseTranslator.toDBObject(termsOfUseDbo, termsOfUse);
+            dbObject.put(TERMS_OF_USE_KEY, termsOfUseDbo);
+        }
     }
 
     protected void encodeLanguages(DBObject dbObject, Content entity) {
