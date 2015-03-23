@@ -1,10 +1,18 @@
 package org.atlasapi.persistence.media.entity;
 
 import static org.atlasapi.persistence.events.EventTranslatorTest.createEvent;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.isNotNull;
+import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Event;
 import org.atlasapi.media.entity.EventRef;
@@ -49,7 +57,37 @@ public class ContentTranslatorTest {
         
         assertEquals(event.id(), translatedEvent.id());
     }
-    
+
+    @Test
+    public void testTranslateFromDboContentWithNullTermsOfUse() {
+        DBObject dbObject = mock(DBObject.class);
+        when(dbObject.get(MongoConstants.ID)).thenReturn("1");
+        when(dbObject.get("description")).thenReturn("description");
+        when(dbObject.get("termsOfUse")).thenReturn(null);
+        Content content = translator.fromDBObject(dbObject, new Item());
+
+        assertThat(content.getDescription(), is("description"));
+    }
+
+    @Test
+    public void testTranslateFromDboContentWithTermsOfUse() {
+        DBObject dbObject = mock(DBObject.class);
+        DBObject termsOfUseDbo = mock(DBObject.class);
+        when(termsOfUseDbo.containsField("text")).thenReturn(true);
+        when(termsOfUseDbo.get("text")).thenReturn("ToU text");
+
+        when(dbObject.get(MongoConstants.ID)).thenReturn("1");
+        when(dbObject.get("description")).thenReturn("description");
+        when(dbObject.containsField("termsOfUse")).thenReturn(true);
+        when(dbObject.get("termsOfUse")).thenReturn(termsOfUseDbo);
+
+        Content content = translator.fromDBObject(dbObject, new Item());
+
+        assertThat(content.getDescription(), is("description"));
+        assertThat(content.getTermsOfUse().getText(), is("ToU text"));
+    }
+
+
     private Content createContentWithEventRefs(Iterable<EventRef> events) {
         Content content = new Item();
         content.setDescription("some content");
