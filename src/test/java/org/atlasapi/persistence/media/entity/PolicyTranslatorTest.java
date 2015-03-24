@@ -28,16 +28,13 @@ public class PolicyTranslatorTest extends TestCase {
     @Test
     public void testTranslateFromDboContentWithTermsOfUse() {
         DBObject dbObject = mock(DBObject.class);
-        DBObject termsOfUseDbo = mock(DBObject.class);
-        when(termsOfUseDbo.containsField("text")).thenReturn(true);
-        when(termsOfUseDbo.get("text")).thenReturn("ToU text");
 
         when(dbObject.get(MongoConstants.ID)).thenReturn("1");
         when(dbObject.containsField("termsOfUse")).thenReturn(true);
-        when(dbObject.get("termsOfUse")).thenReturn(termsOfUseDbo);
+        when(dbObject.get("termsOfUse")).thenReturn("ToU text");
 
         Policy policy = translator.fromDBObject(dbObject, new Policy());
 
-        assertThat(policy.getTermsOfUse().getText(), is("ToU text"));
+        assertThat(policy.getTermsOfUse(), is("ToU text"));
     }
 }
