@@ -2,13 +2,10 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.Currency;
 
-import com.mongodb.BasicDBObject;
-import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Policy.Network;
 import org.atlasapi.media.entity.Policy.Platform;
 import org.atlasapi.media.entity.Policy.RevenueContract;
-import org.atlasapi.media.entity.TermsOfUse;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.currency.Price;
@@ -21,8 +18,6 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
     private static final String PLAYER_KEY = "player";
     private static final String SERVICE_KEY = "service";
     private static final String TERMS_OF_USE_KEY = "termsOfUse";
-
-    private final TermsOfUseTranslator termsOfUseTranslator = new TermsOfUseTranslator();
 
     @Override
     public Policy fromDBObject(DBObject dbObject, Policy entity) {
@@ -57,8 +52,7 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         
         entity.setService(TranslatorUtils.toLong(dbObject, SERVICE_KEY));
         entity.setPlayer(TranslatorUtils.toLong(dbObject, PLAYER_KEY));
-        decodeTermsOfUse(dbObject, entity);
-        
+        entity.setTermsOfUse(TranslatorUtils.toString(dbObject, TERMS_OF_USE_KEY));
         return entity;
     }
 
@@ -93,30 +87,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         if (entity.getPlayer() != null) {
             TranslatorUtils.from(dbObject, PLAYER_KEY, entity.getPlayer());
         }
-        encodeTermsOfUse(dbObject, entity.getTermsOfUse());
-
+        if(entity.getTermsOfUse() != null) {
+            TranslatorUtils.from(dbObject, TERMS_OF_USE_KEY, entity.getTermsOfUse());
+        }
         return dbObject;
-    }
-
-    private void decodeTermsOfUse(DBObject dbObject, Policy entity) {
-        if (dbObject.containsField(TERMS_OF_USE_KEY)) {
-            entity.setTermsOfUse(
-                    termsOfUseTranslator.fromDBObject(
-                            TranslatorUtils.toDBObject(
-                                    dbObject,
-                                    TERMS_OF_USE_KEY
-                            ),
-                            null
-                    )
-            );
-        }
-    }
-
-    private void encodeTermsOfUse(DBObject dbObject, TermsOfUse termsOfUse) {
-        if(termsOfUse != null) {
-            DBObject termsOfUseDbo = new BasicDBObject();
-            termsOfUseTranslator.toDBObject(termsOfUseDbo, termsOfUse);
-            dbObject.put(TERMS_OF_USE_KEY, termsOfUseDbo);
-        }
     }
 }

@@ -10,7 +10,6 @@ import org.atlasapi.media.entity.ContentGroupRef;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.EventRef;
 import org.atlasapi.media.entity.KeyPhrase;
-import org.atlasapi.media.entity.TermsOfUse;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.ModelTranslator;
 
