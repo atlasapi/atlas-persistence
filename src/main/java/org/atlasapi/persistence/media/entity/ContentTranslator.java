@@ -42,7 +42,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
     private static final String SIMILAR_CONTENT_KEY = "similar";
     private static final String EVENTS_KEY = "events";
-    private static final String TERMS_OF_USE_KEY = "termsOfUse";
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
@@ -50,7 +49,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final ContentGroupRefTranslator contentGroupRefTranslator;
     private final CrewMemberTranslator crewMemberTranslator;
     private final SimilarContentRefTranslator similarContentRefTranslator;
-    private final ModelTranslator<TermsOfUse> termsOfUseTranslator;
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
         this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec));
@@ -65,7 +63,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.contentGroupRefTranslator = new ContentGroupRefTranslator();
         this.crewMemberTranslator = new CrewMemberTranslator();
         this.similarContentRefTranslator = new SimilarContentRefTranslator();
-        this.termsOfUseTranslator = new TermsOfUseTranslator();
     }
 
     @Override
@@ -78,7 +75,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeContentGroups(dbObject, entity);
         decodeLanguages(dbObject, entity);
         decodeCertificates(dbObject, entity);
-        decodeTermsOfUse(dbObject, entity);
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
         entity.setSimilarContent(similarContentRefTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, SIMILAR_CONTENT_KEY)));
@@ -104,20 +100,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         }
 
         return entity;
-    }
-
-    private void decodeTermsOfUse(DBObject dbObject, Content entity) {
-        if (dbObject.containsField(TERMS_OF_USE_KEY)) {
-            entity.setTermsOfUse(
-                    termsOfUseTranslator.fromDBObject(
-                            TranslatorUtils.toDBObject(
-                                    dbObject,
-                                    TERMS_OF_USE_KEY
-                            ),
-                            null
-                    )
-            );
-        }
     }
 
     protected void decodeLanguages(DBObject dbObject, Content entity) {
@@ -201,7 +183,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeContentGroups(dbObject, entity);
         encodeLanguages(dbObject, entity);
         encodeCertificates(dbObject, entity.getCertificates());
-        encodeTermsOfUse(dbObject, entity.getTermsOfUse());
         TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
         TranslatorUtils.from(dbObject, GENERIC_DESCRIPTION_KEY, entity.getGenericDescription());
         
@@ -226,13 +207,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         return dbObject;
     }
 
-    private void encodeTermsOfUse(DBObject dbObject, TermsOfUse termsOfUse) {
-        if(termsOfUse != null) {
-            DBObject termsOfUseDbo = new BasicDBObject();
-            termsOfUseTranslator.toDBObject(termsOfUseDbo, termsOfUse);
-            dbObject.put(TERMS_OF_USE_KEY, termsOfUseDbo);
-        }
-    }
 
     protected void encodeLanguages(DBObject dbObject, Content entity) {
         if (!entity.getLanguages().isEmpty()) {

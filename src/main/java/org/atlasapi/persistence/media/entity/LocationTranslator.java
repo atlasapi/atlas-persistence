@@ -16,7 +16,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
     
     private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 	private final PolicyTranslator policyTranslator = new PolicyTranslator();
-    
+
     @Override
     public Location fromDBObject(DBObject dbObject, Location entity) {
        
