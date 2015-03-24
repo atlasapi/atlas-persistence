@@ -61,8 +61,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
 
 	private final ContentTranslator contentTranslator;
     private final VersionTranslator versionTranslator;
+
     private final DbObjectHashCodeDebugger dboHashCodeDebugger = new DbObjectHashCodeDebugger();
-    
+
     private final Function<DBObject, Subtitles> subtitlesFromDbo = new Function<DBObject, Subtitles>() {
         @Override
         public Subtitles apply(DBObject input) {
@@ -78,7 +79,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
             return new ReleaseDate(date, country, type);
         }
     };
-    
+
     ItemTranslator(ContentTranslator contentTranslator, NumberToShortStringCodec idCodec) {
 		this.contentTranslator = contentTranslator;
 		this.versionTranslator = new VersionTranslator(idCodec);
