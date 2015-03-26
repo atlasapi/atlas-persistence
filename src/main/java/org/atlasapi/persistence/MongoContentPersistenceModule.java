@@ -242,7 +242,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     public @Primary @Bean MongoContentLister contentLister() {
-        return new MongoContentLister(db);
+        return new MongoContentLister(db, knownTypeContentResolver());
     }
 
     public @Primary @Bean TopicStore topicStore() {

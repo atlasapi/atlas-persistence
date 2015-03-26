@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.mongo;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
@@ -15,11 +16,14 @@ import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.topic.TopicContentLister;
 import org.joda.time.DateTime;
@@ -31,12 +35,15 @@ import com.google.common.base.Strings;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.Bytes;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
@@ -49,12 +56,14 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     private final ItemTranslator itemTranslator;
 
     private final MongoContentTables contentTables;
+    private final KnownTypeContentResolver contentResolver;
 
-    public MongoContentLister(DatabasedMongo mongo) {
+    public MongoContentLister(DatabasedMongo mongo, KnownTypeContentResolver contentResolver) {
         this.contentTables = new MongoContentTables(mongo);
         SubstitutionTableNumberCodec idCodec = new SubstitutionTableNumberCodec();
         this.containerTranslator = new ContainerTranslator(idCodec);
         this.itemTranslator = new ItemTranslator(idCodec);
+        this.contentResolver = checkNotNull(contentResolver);
     }
     
     @Override
@@ -77,7 +86,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return Iterators.concat(Iterators.transform(publishers.iterator(), new Function<Publisher, Iterator<Content>>() {
             @Override
             public Iterator<Content> apply(final Publisher publisher) {
-                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder() {
+                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
                     
                     public DBObject queryForCategory(ContentCategory category) {
                         MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key());
@@ -94,6 +103,11 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                                 .batchSize(100)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
                                 .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+                    }
+
+                    @Override
+                    public Function<DBObject, Content> translatorFor(ContentCategory contentCategory) {
+                        return toContentFunction(contentCategory);
                     }
 
                 });
@@ -124,7 +138,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     
     @Override
     public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {
-        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
+        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<Content>() {
             @Override
             public DBCursor cursorFor(ContentCategory category) {
                 return contentTables.collectionFor(category)
@@ -133,24 +147,29 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                             .batchSize(100)
                             .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
             }
+
+            @Override
+            public Function<DBObject, Content> translatorFor(ContentCategory contentCategory) {
+                return toContentFunction(contentCategory);
+            }
         });
     }
 
-    private Iterator<Content> contentIterator(final List<ContentCategory> tables, final ListingCursorBuilder cursorBuilder) {
-        return new AbstractIterator<Content>() {
+    private <T> Iterator<T> contentIterator(final List<ContentCategory> tables, final ListingCursorBuilder<T> cursorBuilder) {
+        return new AbstractIterator<T>() {
 
             private final Iterator<ContentCategory> tablesIt = tables.iterator();
             private Iterator<DBObject> currentResults = Iterators.emptyIterator();
-            private Function<DBObject, ? extends Content> currentTranslator;
+            private Function<DBObject, T> currentTranslator;
             
             @Override
-            protected Content computeNext() {
+            protected T computeNext() {
                 while (!currentResults.hasNext()) {
                     if (!tablesIt.hasNext()) {
                         return endOfData();
                     }
                     ContentCategory table = tablesIt.next();
-                    currentTranslator = TRANSLATORS.get(table);
+                    currentTranslator = cursorBuilder.translatorFor(table);
                     if (currentTranslator == null) {
                        log.error("No translator found for content category " + table.toString()); 
                     }
@@ -181,21 +200,61 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             TOP_LEVEL_ITEM, TO_ITEM, 
             CONTAINER, TO_CONTAINER);
 
-    private interface ListingCursorBuilder {
+    private interface ListingCursorBuilder<T> {
         
         DBCursor cursorFor(ContentCategory category);
+        Function<DBObject, T> translatorFor(ContentCategory contentCategory);
         
     }
     
     @Override
     //TODO: enable use of contentQuery?
     public Iterator<Content> contentForTopic(final Long topicId, ContentQuery contentQuery) {
-        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder() {
+        Iterator<LookupRef> allCanonicalUris = contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<LookupRef>() {
             @Override
             public DBCursor cursorFor(ContentCategory category) {
-                return contentTables.collectionFor(category).find(where().fieldEquals("topics.topic", topicId).build()).sort(sort().ascending(ID).build());
+                return contentTables.collectionFor(category).find(
+                        where().fieldEquals("topics.topic", topicId).build(),
+                        BasicDBObjectBuilder.start()
+                                            .add(IdentifiedTranslator.PUBLISHER, 1)
+                                            .add(IdentifiedTranslator.OPAQUE_ID, 1)
+                                            .add(MongoConstants.ID, 1)
+                                            .get()
+                        ).sort(sort().ascending(ID).build());
+            }
+
+            @Override
+            public Function<DBObject, LookupRef> translatorFor(ContentCategory contentCategory) {
+                return toLookupRef(contentCategory);
             }
         });
+        Iterable<LookupRef> selectionToResolve = contentQuery.getSelection().applyTo(allCanonicalUris);
+        
+        return Iterables
+                .filter(
+                        contentResolver.findByLookupRefs(selectionToResolve).getAllResolvedResults(), 
+                        Content.class
+                       ).iterator();
     }
 
+    private Function<DBObject, LookupRef> toLookupRef(final ContentCategory category) {
+        return new Function<DBObject, LookupRef>() {
+    
+            @Override
+            public LookupRef apply(DBObject input) {
+                String uri = TranslatorUtils.toString(input, MongoConstants.ID);
+                Long id = (Long) input.get(IdentifiedTranslator.OPAQUE_ID);
+                String publisherKey = (String) input.get(IdentifiedTranslator.PUBLISHER);
+                Publisher publisher = null;
+                if (publisherKey != null) {
+                    publisher = Publisher.fromKey(publisherKey).valueOrDefault(null);
+                }
+                return new LookupRef(uri, id, publisher, category);
+            }
+        };
+    }
+    
+    private Function<DBObject, Content> toContentFunction(ContentCategory category) {
+        return (Function<DBObject, Content>) TRANSLATORS.get(category);
+    }
 }
