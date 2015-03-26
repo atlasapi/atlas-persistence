@@ -26,6 +26,8 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class ContentTranslator implements ModelTranslator<Content> {
 
     public static final String PEOPLE = "people";
@@ -53,8 +55,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     //TODO: why not use collaborators interface here? ModelTranslator<Described> etc...
     public ContentTranslator(DescribedTranslator describedTranslator, ClipTranslator clipTranslator) {
-        this.describedTranslator = describedTranslator;
-        this.clipTranslator = clipTranslator;
+        this.describedTranslator = checkNotNull(describedTranslator);
+        this.clipTranslator = checkNotNull(clipTranslator);
         this.keyPhraseTranslator = new KeyPhraseTranslator();
         this.contentTopicTranslator = new TopicRefTranslator();
         this.contentGroupRefTranslator = new ContentGroupRefTranslator();
@@ -71,7 +73,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeTopics(dbObject, entity);
         decodeContentGroups(dbObject, entity);
         decodeLanguages(dbObject, entity);
-        decodeCertificates(dbObject, entity); 
+        decodeCertificates(dbObject, entity);
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
         entity.setSimilarContent(similarContentRefTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, SIMILAR_CONTENT_KEY)));
@@ -203,6 +205,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
         return dbObject;
     }
+
 
     protected void encodeLanguages(DBObject dbObject, Content entity) {
         if (!entity.getLanguages().isEmpty()) {

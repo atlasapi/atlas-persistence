@@ -22,7 +22,7 @@ public class ContentTranslatorTest {
 
     private NumberToShortStringCodec idCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
     private final ContentTranslator translator = new ContentTranslator(idCodec);
-    
+
     @Test
     public void testEventTranslation() {
         Event event = createEvent(ImmutableList.<Topic>of());
@@ -49,7 +49,7 @@ public class ContentTranslatorTest {
         
         assertEquals(event.id(), translatedEvent.id());
     }
-    
+
     private Content createContentWithEventRefs(Iterable<EventRef> events) {
         Content content = new Item();
         content.setDescription("some content");

@@ -14,11 +14,12 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
 public class PolicyTranslator implements ModelTranslator<Policy> {
-	
+
     private static final String PLAYER_KEY = "player";
     private static final String SERVICE_KEY = "service";
-   
-	@Override
+    private static final String TERMS_OF_USE_KEY = "termsOfUse";
+
+    @Override
     public Policy fromDBObject(DBObject dbObject, Policy entity) {
     	
         if (entity == null) {
@@ -51,7 +52,7 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         
         entity.setService(TranslatorUtils.toLong(dbObject, SERVICE_KEY));
         entity.setPlayer(TranslatorUtils.toLong(dbObject, PLAYER_KEY));
-        
+        entity.setTermsOfUse(TranslatorUtils.toString(dbObject, TERMS_OF_USE_KEY));
         return entity;
     }
 
@@ -85,6 +86,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         }
         if (entity.getPlayer() != null) {
             TranslatorUtils.from(dbObject, PLAYER_KEY, entity.getPlayer());
+        }
+        if(entity.getTermsOfUse() != null) {
+            TranslatorUtils.from(dbObject, TERMS_OF_USE_KEY, entity.getTermsOfUse());
         }
         return dbObject;
     }
