@@ -52,6 +52,10 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 
     private static final Logger log = LoggerFactory.getLogger(MongoContentLister.class);
     
+    private static final Long NULL_ID = null;
+    private static final Publisher NULL_PUBLISHER = null;
+    
+
     private final ContainerTranslator containerTranslator;
     private final ItemTranslator itemTranslator;
 
@@ -135,7 +139,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
     
     private static final List<ContentCategory> BRAND_SERIES_AND_ITEMS_TABLES = ImmutableList.of(CONTAINER, PROGRAMME_GROUP, TOP_LEVEL_ITEM, CHILD_ITEM);
-    
+
     @Override
     public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {
         return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<Content>() {
@@ -215,11 +219,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public DBCursor cursorFor(ContentCategory category) {
                 return contentTables.collectionFor(category).find(
                         where().fieldEquals("topics.topic", topicId).build(),
-                        BasicDBObjectBuilder.start()
-                                            .add(IdentifiedTranslator.PUBLISHER, 1)
-                                            .add(IdentifiedTranslator.OPAQUE_ID, 1)
-                                            .add(MongoConstants.ID, 1)
-                                            .get()
+                        BasicDBObjectBuilder.start(MongoConstants.ID, 1).get()
                         ).sort(sort().ascending(ID).build());
             }
 
@@ -243,13 +243,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             @Override
             public LookupRef apply(DBObject input) {
                 String uri = TranslatorUtils.toString(input, MongoConstants.ID);
-                Long id = (Long) input.get(IdentifiedTranslator.OPAQUE_ID);
-                String publisherKey = (String) input.get(IdentifiedTranslator.PUBLISHER);
-                Publisher publisher = null;
-                if (publisherKey != null) {
-                    publisher = Publisher.fromKey(publisherKey).valueOrDefault(null);
-                }
-                return new LookupRef(uri, id, publisher, category);
+                return new LookupRef(uri, NULL_ID, NULL_PUBLISHER, category);
             }
         };
     }
