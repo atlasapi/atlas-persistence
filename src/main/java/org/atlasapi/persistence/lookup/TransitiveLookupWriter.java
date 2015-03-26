@@ -172,7 +172,10 @@ public class TransitiveLookupWriter implements LookupWriter {
         Set<LookupEntry> entries = entriesFor(neighboursUris);
         Iterable<LookupRef> transitiveSetRefs = Iterables.concat(Iterables.transform(entries, LookupEntry.TO_EQUIVS));
         Set<String> transitiveSetUris = ImmutableSet.copyOf(Iterables.transform(transitiveSetRefs, LookupRef.TO_URI));
-        if (transitiveSetUris.size() > maxSetSize) {
+        // We allow oversize sets if this is being written as an explicit equivalence, 
+        // since a user has explicitly asked us to make the assertion, so we must
+        // honour it
+        if (!explicit && transitiveSetUris.size() > maxSetSize) {
             throw new OversizeTransitiveSetException(transitiveSetUris.size());
         }
         Iterable<String> urisToLock = Iterables.filter(transitiveSetUris, not(in(neighboursUris)));
