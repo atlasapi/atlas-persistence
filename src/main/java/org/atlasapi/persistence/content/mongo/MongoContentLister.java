@@ -23,6 +23,7 @@ import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.topic.TopicContentLister;
@@ -218,7 +219,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             @Override
             public DBCursor cursorFor(ContentCategory category) {
                 return contentTables.collectionFor(category).find(
-                        where().fieldEquals("topics.topic", topicId).build(),
+                        where().fieldEquals("topics.topic", topicId)
+                               .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, 0)
+                               .build(),
                         BasicDBObjectBuilder.start(MongoConstants.ID, 1).get()
                         ).sort(sort().ascending(ID).build());
             }
