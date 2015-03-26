@@ -23,6 +23,7 @@ import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.player.PlayerResolver;
 import org.atlasapi.persistence.service.ServiceResolver;
 import org.joda.time.DateTime;
@@ -37,6 +38,7 @@ import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.ReadPreference;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MongoContentListerTest {
@@ -51,7 +53,9 @@ public class MongoContentListerTest {
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     private static final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
     
-    private final MongoContentLister lister = new MongoContentLister(mongo);
+    private final MongoContentLister lister = new MongoContentLister(mongo, 
+            new MongoContentResolver(mongo, new MongoLookupEntryStore(
+                    mongo.collection("lookup"), persistenceAuditLog, ReadPreference.primary())));
 
     private static final ServiceResolver serviceResolver = mock(ServiceResolver.class);
     private static final PlayerResolver playerResolver = mock(PlayerResolver.class);

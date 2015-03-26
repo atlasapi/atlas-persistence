@@ -36,6 +36,7 @@ import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.DBCollection;
 import com.mongodb.ReadPreference;
 
 @RunWith( MockitoJUnitRunner.class )
@@ -57,7 +58,8 @@ public class MongoContentPurgerTest {
     public void setUp() {
         db = MongoTestHelper.anEmptyTestDatabase();
         persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
-        entryStore = new MongoLookupEntryStore(db.collection("lookup"), 
+        DBCollection lookupCollection = db.collection("lookup");
+        entryStore = new MongoLookupEntryStore(lookupCollection, 
                 new NoLoggingPersistenceAuditLog(), ReadPreference.primary());
         contentWriter = new EquivalenceWritingContentWriter(
                 new MongoContentWriter(db, entryStore, persistenceAuditLog, 
@@ -68,9 +70,10 @@ public class MongoContentPurgerTest {
         
         
         mongoContentPurger = 
-                new MongoContentPurger(new MongoContentLister(db), 
+                new MongoContentPurger(new MongoContentLister(db, 
+                        new MongoContentResolver(db, entryStore)), 
                                        new LookupResolvingContentResolver(new MongoContentResolver(db, entryStore), entryStore),
-                                       contentWriter, new MongoContentTables(db), db.collection("lookup"), 
+                                       contentWriter, new MongoContentTables(db), lookupCollection, 
                                        TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore),
                                        TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore));
     }
