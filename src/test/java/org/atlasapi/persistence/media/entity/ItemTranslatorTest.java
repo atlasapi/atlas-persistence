@@ -48,8 +48,8 @@ public class ItemTranslatorTest extends TestCase {
     public void testConvertFromItem() throws Exception {
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
-        item.setReleaseDates(Lists.newArrayList(new ReleaseDate(new LocalDate(2010, 3, 20),
-            Countries.ALL, ReleaseDate.ReleaseType.GENERAL)));
+        ReleaseDate releaseDate = new ReleaseDate(new LocalDate(2010, 3, 20), Countries.ALL, ReleaseDate.ReleaseType.GENERAL);
+        item.setReleaseDates(Lists.newArrayList(releaseDate));
         
         Location loc = new Location();
         loc.setAvailable(true);
@@ -86,7 +86,12 @@ public class ItemTranslatorTest extends TestCase {
         for (String tag: t) {
             assertTrue(tags.contains(tag));
         }
-        
+
+        BasicDBList rs = (BasicDBList) dbObject.get("releases");
+        assertEquals(1, rs.size());
+        DBObject r = (DBObject) rs.get(0);
+        assertEquals(releaseDate.date().toString(), r.get("date"));
+
         BasicDBList vs = (BasicDBList) dbObject.get("versions");
         assertEquals(1, vs.size());
         DBObject v = (DBObject) vs.get(0);
@@ -122,8 +127,8 @@ public class ItemTranslatorTest extends TestCase {
         
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
-        item.setReleaseDates(Lists.newArrayList(new ReleaseDate(new LocalDate(2010, 3, 20),
-            Countries.ALL, ReleaseDate.ReleaseType.GENERAL)));
+        ReleaseDate releaseDate = new ReleaseDate(new LocalDate(2010, 3, 20), Countries.ALL, ReleaseDate.ReleaseType.GENERAL);
+        item.setReleaseDates(Lists.newArrayList(releaseDate));
 
         Location loc = new Location();
         loc.setAvailable(true);
@@ -169,7 +174,12 @@ public class ItemTranslatorTest extends TestCase {
         for (String tag: t) {
             assertTrue(item.getTags().contains(tag));
         }
-        
+
+        Set<ReleaseDate> rs = item.getReleaseDates();
+        assertEquals(1, rs.size());
+        ReleaseDate r = rs.iterator().next();
+        assertEquals(releaseDate.date(), r.date());
+
         Set<Version> vs = item.getVersions();
         assertEquals(1, vs.size());
         Version v = vs.iterator().next();

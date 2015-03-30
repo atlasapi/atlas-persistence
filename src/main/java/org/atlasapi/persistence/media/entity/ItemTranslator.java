@@ -240,6 +240,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     public DBObject toDBObject(DBObject itemDbo, Item entity) {
         itemDbo = contentTranslator.toDBObject(itemDbo, entity);
         itemDbo.put(TYPE_KEY, EntityType.from(entity).toString());
+        encodeReleases(itemDbo, entity.getReleaseDates());
         
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
         if (! entity.getVersions().isEmpty()) {
@@ -283,12 +284,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		}
 		
 		if (entity instanceof Film) {
-		    Film film = (Film) entity;
-		    TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
-		    
-		    encodeSubtitles(itemDbo, film.getSubtitles());
-		    encodeReleases(itemDbo, film.getReleaseDates());
-		    
+            Film film = (Film) entity;
+            TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
+
+            encodeSubtitles(itemDbo, film.getSubtitles());
 		}
 		
         if (entity instanceof Song) {
