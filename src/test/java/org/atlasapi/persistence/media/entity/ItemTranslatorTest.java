@@ -175,9 +175,7 @@ public class ItemTranslatorTest extends TestCase {
             assertTrue(item.getTags().contains(tag));
         }
 
-        Set<ReleaseDate> rs = item.getReleaseDates();
-        assertEquals(1, rs.size());
-        ReleaseDate r = rs.iterator().next();
+        ReleaseDate r = Iterables.getOnlyElement(item.getReleaseDates());
         assertEquals(releaseDate.date(), r.date());
 
         Set<Version> vs = item.getVersions();
