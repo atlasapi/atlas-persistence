@@ -7,26 +7,28 @@ import static org.junit.Assert.assertThat;
 import java.util.List;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
 import org.atlasapi.media.entity.Actor;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.Clip;
-import org.atlasapi.media.entity.TopicRef;
+import org.atlasapi.media.entity.ContentGroupRef;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.ReleaseDate;
+import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.time.Clock;
@@ -34,7 +36,8 @@ import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.atlasapi.media.entity.ContentGroupRef;
+
+import junit.framework.TestCase;
 
 public class ItemTranslatorTest extends TestCase {
 	
@@ -45,6 +48,8 @@ public class ItemTranslatorTest extends TestCase {
     public void testConvertFromItem() throws Exception {
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
+        item.setReleaseDates(Lists.newArrayList(new ReleaseDate(new LocalDate(2010, 3, 20),
+            Countries.ALL, ReleaseDate.ReleaseType.GENERAL)));
         
         Location loc = new Location();
         loc.setAvailable(true);
@@ -117,7 +122,9 @@ public class ItemTranslatorTest extends TestCase {
         
         Item item = new Item("canonicalUri", "curie", Publisher.BBC);
         item.setTitle("title");
-        
+        item.setReleaseDates(Lists.newArrayList(new ReleaseDate(new LocalDate(2010, 3, 20),
+            Countries.ALL, ReleaseDate.ReleaseType.GENERAL)));
+
         Location loc = new Location();
         loc.setAvailable(true);
         
