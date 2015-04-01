@@ -7,7 +7,6 @@ import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.ReleaseDate;
 import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
@@ -29,7 +28,6 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.intl.Country;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -105,6 +103,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
         item.setIsLongForm((Boolean) dbObject.get(IS_LONG_FORM_KEY));
         item.setBlackAndWhite(TranslatorUtils.toBoolean(dbObject, BLACK_AND_WHITE_KEY));
         item.setCountriesOfOrigin(Countries.fromCodes(TranslatorUtils.toSet(dbObject, COUNTRIES_OF_ORIGIN_KEY)));
+        if (dbObject.containsField(FILM_RELEASES_KEY)) {
+            item.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
+        }
         
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, VERSIONS_KEY);
         if (list != null && ! list.isEmpty()) {
@@ -146,9 +147,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
             film.setWebsiteUrl(TranslatorUtils.toString(dbObject, FILM_WEBSITE_URL_KEY));
             if (dbObject.containsField(FILM_SUBTITLES_KEY)) {
                 film.setSubtitles(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_SUBTITLES_KEY), subtitlesFromDbo));
-            }
-            if (dbObject.containsField(FILM_RELEASES_KEY)) {
-                film.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
             }
         }
         
@@ -242,6 +240,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     public DBObject toDBObject(DBObject itemDbo, Item entity) {
         itemDbo = contentTranslator.toDBObject(itemDbo, entity);
         itemDbo.put(TYPE_KEY, EntityType.from(entity).toString());
+        encodeReleases(itemDbo, entity.getReleaseDates());
         
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
         if (! entity.getVersions().isEmpty()) {
@@ -285,12 +284,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		}
 		
 		if (entity instanceof Film) {
-		    Film film = (Film) entity;
-		    TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
-		    
-		    encodeSubtitles(itemDbo, film.getSubtitles());
-		    encodeReleases(itemDbo, film.getReleaseDates());
-		    
+            Film film = (Film) entity;
+            TranslatorUtils.from(itemDbo, FILM_WEBSITE_URL_KEY, film.getWebsiteUrl());
+
+            encodeSubtitles(itemDbo, film.getSubtitles());
 		}
 		
         if (entity instanceof Song) {
