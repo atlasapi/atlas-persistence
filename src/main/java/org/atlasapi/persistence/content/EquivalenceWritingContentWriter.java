@@ -23,9 +23,10 @@ public class EquivalenceWritingContentWriter implements ContentWriter {
     }
 
     @Override
-    public void createOrUpdate(Item item) {
-        delegate.createOrUpdate(item);
+    public Item createOrUpdate(Item item) {
+        Item writtenItem = delegate.createOrUpdate(item);
         writeEquivalences(item);
+        return writtenItem;
     }
 
     private void writeEquivalences(Content content) {

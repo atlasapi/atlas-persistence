@@ -19,7 +19,7 @@ import org.atlasapi.media.entity.Item;
 
 public interface ContentWriter {
 
-	void createOrUpdate(Item item);
+	Item createOrUpdate(Item item);
 	
 	void createOrUpdate(Container container);
 
