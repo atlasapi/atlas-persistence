@@ -43,13 +43,14 @@ public class MessageQueueingContentWriter implements ContentWriter {
     }
 
     @Override
-    public void createOrUpdate(Item item) {
-        delegate.createOrUpdate(item);
+    public Item createOrUpdate(Item item) {
+        Item writtenItem = delegate.createOrUpdate(item);
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
             log.debug("{} not changed", item.getCanonicalUri());
-            return;
+            return writtenItem;
         }
         enqueueMessageUpdatedMessage(item);
+        return writtenItem;
     }
 
     @Override

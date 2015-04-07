@@ -23,8 +23,8 @@ public class IdSettingContentWriter implements ContentWriter {
     }
     
     @Override
-    public void createOrUpdate(Item item) {
-        delegate.createOrUpdate(ensureId(item));
+    public Item createOrUpdate(Item item) {
+        return delegate.createOrUpdate(ensureId(item));
     }
     
     //Check for existence of a lookup entry for the content. If none, generate a new ID for the content.

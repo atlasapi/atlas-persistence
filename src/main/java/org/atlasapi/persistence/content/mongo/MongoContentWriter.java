@@ -95,7 +95,7 @@ public class MongoContentWriter implements ContentWriter {
     }
 
     @Override
-    public void createOrUpdate(Item item) {
+    public Item createOrUpdate(Item item) {
         checkNotNull(item, "Tried to persist null item");
         
         setThisOrChildLastUpdated(item);
@@ -106,7 +106,7 @@ public class MongoContentWriter implements ContentWriter {
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
             log.debug("Item {} hash not changed. Not writing.", item.getCanonicalUri());
             persistenceAuditLog.logNoWrite(item);
-        	return;
+        	return item;
         } 
         
         validateRefs(item);
@@ -140,6 +140,7 @@ public class MongoContentWriter implements ContentWriter {
         }
 
         lookupStore.ensureLookup(item);
+        return item;
     }
     
     private void validateRefs(Item item) {
