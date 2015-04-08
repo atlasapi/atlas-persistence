@@ -84,10 +84,11 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     @Override
-    public void createOrUpdate(Item item) {
+    public Item createOrUpdate(Item item) {
         try {
             writeItem(item);
             attachItemToParent(item);
+            return item;
         } catch (Exception ex) {
             throw new CassandraPersistenceException(ex.getMessage(), ex);
         }

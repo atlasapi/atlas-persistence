@@ -25,9 +25,10 @@ public class EventFiringContentWriter implements ContentWriter {
 	}
 	
 	@Override
-	public void createOrUpdate(Item item) {
-		delegate.createOrUpdate(item);
-		notifyListener(item);
+	public Item createOrUpdate(Item item) {
+        Item writtenItem = delegate.createOrUpdate(item);
+        notifyListener(item);
+        return writtenItem;
 	}
     
     private void notifyListener(Container container) {
