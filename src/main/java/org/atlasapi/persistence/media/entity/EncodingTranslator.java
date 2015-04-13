@@ -17,6 +17,7 @@ import com.mongodb.DBObject;
 
 public class EncodingTranslator implements ModelTranslator<Encoding> {
 	
+    private static final String SUBTITLED_KEY = "subtitled";
     static final String LOCATIONS_KEY = "availableAt";
     private static final String AUDIO_DESCRIBED_KEY = "audioDescribed";
     private static final String SIGNED_KEY = "signed";
@@ -49,6 +50,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         entity.setSource((String) dbObject.get("source"));
         entity.setVideoAspectRatio((String) dbObject.get("videoAspectRatio"));
         entity.setVideoBitRate((Integer) dbObject.get("videoBitRate"));
+        entity.setSubtitled((Boolean) dbObject.get(SUBTITLED_KEY));
         
         entity.setVideoCoding(readVideoCoding(dbObject));
         
@@ -140,6 +142,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "videoVerticalSize", entity.getVideoVerticalSize());
         TranslatorUtils.from(dbObject, AUDIO_DESCRIBED_KEY, entity.getAudioDescribed());
         TranslatorUtils.from(dbObject, SIGNED_KEY, entity.getSigned());
+        TranslatorUtils.from(dbObject, SUBTITLED_KEY, entity.getSubtitled());
 
         if (! entity.getAvailableAt().isEmpty()) {
             BasicDBList list = new BasicDBList();
