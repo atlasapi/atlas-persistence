@@ -128,9 +128,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             store(newEntry, existing);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
             updateEntry(content, newEntry, existing);
-        } else if (!newEntry.aliasUrls().equals(existing.aliasUrls())) {
-            store(merge(content, newEntry, existing), existing);
-        } else if (!newEntry.aliases().equals(existing.aliases())) {
+        } else if (!newEntry.aliasUrls().equals(existing.aliasUrls())
+                || !newEntry.aliases().equals(existing.aliases())
+                || newEntry.activelyPublished() != existing.activelyPublished()) {
             store(merge(content, newEntry, existing), existing);
         } 
     }
