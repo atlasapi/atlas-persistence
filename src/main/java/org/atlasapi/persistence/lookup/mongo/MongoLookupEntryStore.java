@@ -14,6 +14,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.media.entity.LookupRef.TO_URI;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.IDS;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
@@ -154,7 +155,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
         Set<LookupRef> explicit = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.explicitEquivalents()).build();
         Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
-        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliasUrls(), newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated());
+        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliasUrls(), newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated(), newEntry.activelyPublished());
         return merged;
     }
 
@@ -201,9 +202,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, @Nullable Selection selection) {
-    	DBCursor find = lookup.find(where().fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY)).build())
-    	                        .setReadPreference(readPreference)
-    	                        .sort(sort().ascending(OPAQUE_ID).build());
+    	DBCursor find = lookup.find(where()
+    	                               .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
+    	                               .fieldNotEqualTo(ACTIVELY_PUBLISHED, 0)
+    	                               .build()
+    	                           )
+    	                      .setReadPreference(readPreference)
+    	                      .sort(sort().ascending(OPAQUE_ID).build());
     	
     	Iterable<DBObject> result;
     	if (selection != null) {
