@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Alias;
-import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.LookupRef;
 import org.joda.time.DateTime;
@@ -21,7 +20,7 @@ public class LookupEntry {
         DateTime now = new DateTime(DateTimeZones.UTC);
         LookupRef lookupRef = LookupRef.from(c);
         ImmutableSet<LookupRef> reflexiveSet = ImmutableSet.of(lookupRef);
-        return new LookupEntry(c.getCanonicalUri(), c.getId(), lookupRef, c.getAllUris(), c.getAliases(), reflexiveSet, reflexiveSet, reflexiveSet, now, now);
+        return new LookupEntry(c.getCanonicalUri(), c.getId(), lookupRef, c.getAllUris(), c.getAliases(), reflexiveSet, reflexiveSet, reflexiveSet, now, now, c.isActivelyPublished());
     }
     
     public static Function<LookupEntry,String> TO_ID = new Function<LookupEntry, String>() {
@@ -65,8 +64,9 @@ public class LookupEntry {
     private final DateTime updated;
 
     private final LookupRef self;
+    private final boolean activelyPublished;
 
-    public LookupEntry(String uri, Long id, LookupRef self, Set<String> aliasUris, Set<Alias> aliases, Set<LookupRef> directEquivs, Set<LookupRef> explicit, Set<LookupRef> equivs, DateTime created, DateTime updated) {
+    public LookupEntry(String uri, Long id, LookupRef self, Set<String> aliasUris, Set<Alias> aliases, Set<LookupRef> directEquivs, Set<LookupRef> explicit, Set<LookupRef> equivs, DateTime created, DateTime updated, boolean activelyPublished) {
         this.uri = uri;
         this.id = id;
         this.self = self;
@@ -77,6 +77,7 @@ public class LookupEntry {
         this.equivs = ImmutableSet.copyOf(equivs);
         this.created = created;
         this.updated = updated;
+        this.activelyPublished = activelyPublished;
     }
 
     public String uri() {
@@ -87,6 +88,10 @@ public class LookupEntry {
         return id;
     }
 
+    public boolean activelyPublished() {
+        return activelyPublished;
+    }
+    
     public Set<String> aliasUrls() {
         return aliasUris;
     }
@@ -105,7 +110,7 @@ public class LookupEntry {
 
     public LookupEntry copyWithExplicitEquivalents(Iterable<LookupRef> newExplicits) {
         List<LookupRef> explicit = ImmutableList.<LookupRef>builder().addAll(newExplicits).add(self).build();
-        return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, ImmutableSet.copyOf(explicit), this.equivs, created, new DateTime(DateTimeZones.UTC));
+        return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, ImmutableSet.copyOf(explicit), this.equivs, created, new DateTime(DateTimeZones.UTC), activelyPublished);
     }
     
     public Set<LookupRef> equivalents() {
@@ -114,7 +119,7 @@ public class LookupEntry {
 
     public LookupEntry copyWithEquivalents(Iterable<LookupRef> newEquivs) {
         Set<LookupRef> equivs = ImmutableSet.<LookupRef>builder().addAll(newEquivs).add(self).build();
-        return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicit, equivs, created, new DateTime(DateTimeZones.UTC));
+        return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicit, equivs, created, new DateTime(DateTimeZones.UTC), activelyPublished);
     }
     
     public Set<LookupRef> directEquivalents() {
@@ -123,7 +128,7 @@ public class LookupEntry {
     
     public LookupEntry copyWithDirectEquivalents(Iterable<LookupRef> directEquivalents) {
         List<LookupRef> dequivs = ImmutableList.<LookupRef>builder().addAll(directEquivalents).add(self).build();
-        return new LookupEntry(uri, id, self, aliasUris, aliases, ImmutableSet.copyOf(dequivs), explicit, equivs, created, new DateTime(DateTimeZones.UTC));
+        return new LookupEntry(uri, id, self, aliasUris, aliases, ImmutableSet.copyOf(dequivs), explicit, equivs, created, new DateTime(DateTimeZones.UTC), activelyPublished);
     }
 
     public DateTime created() {
@@ -145,7 +150,8 @@ public class LookupEntry {
         }
         if(that instanceof LookupEntry) {
             LookupEntry other = (LookupEntry) that;
-            return uri.equals(other.uri) && equivs.equals(other.equivs) && created.equals(other.created) && updated.equals(other.updated);
+            return uri.equals(other.uri) && equivs.equals(other.equivs) && created.equals(other.created) && updated.equals(other.updated) 
+                    && activelyPublished == other.activelyPublished;
         }
         return false;
     }
