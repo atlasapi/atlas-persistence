@@ -40,7 +40,8 @@ public class LookupEntryHasherTest {
                 ImmutableSet.<LookupRef>of(),
                 ImmutableSet.<LookupRef>of(),
                 created,
-                updated);
+                updated,
+                true);
                 
                 
                 
