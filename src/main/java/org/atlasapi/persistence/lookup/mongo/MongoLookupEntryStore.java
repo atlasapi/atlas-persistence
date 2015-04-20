@@ -204,7 +204,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, @Nullable Selection selection) {
     	DBCursor find = lookup.find(where()
     	                               .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
-    	                               .fieldNotEqualTo(ACTIVELY_PUBLISHED, 0)
+    	                               .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
     	                               .build()
     	                           )
     	                      .setReadPreference(readPreference)
