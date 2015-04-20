@@ -220,7 +220,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public DBCursor cursorFor(ContentCategory category) {
                 return contentTables.collectionFor(category).find(
                         where().fieldEquals("topics.topic", topicId)
-                               .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, 0)
+                               .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false)
                                .build(),
                         BasicDBObjectBuilder.start(MongoConstants.ID, 1).get()
                         ).sort(sort().ascending(ID).build());
