@@ -2,6 +2,7 @@ package org.atlasapi.persistence.lookup.mongo;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -24,6 +25,7 @@ import com.mongodb.DBObject;
 
 public class LookupEntryTranslatorTest {
 
+    private static final String ACTIVELY_PUBLISHED = "activelyPublished";
     private final LookupEntryTranslator translator
         = new LookupEntryTranslator();
     
@@ -47,9 +49,15 @@ public class LookupEntryTranslatorTest {
         DateTime created = DateTime.now(DateTimeZones.UTC);
         DateTime updated = DateTime.now(DateTimeZones.UTC);
         
-        LookupEntry e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated);
+        boolean activelyPublished = true;
+        
+        LookupEntry e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated, activelyPublished );
         
         DBObject dbo = translator.toDbo(e);
+        
+        // not stored if true, since this is the common case, and we don't want 
+        // to write all records unnecessarily when this field has been added
+        assertFalse(dbo.containsField(ACTIVELY_PUBLISHED));
         
         LookupEntry t = translator.fromDbo(dbo);
         
@@ -63,6 +71,15 @@ public class LookupEntryTranslatorTest {
         assertEquals(e.equivalents(), t.equivalents());
         assertEquals(e.created(), t.created());
         assertEquals(e.updated(), t.updated());
+        assertEquals(e.activelyPublished(), t.activelyPublished());
+        
+        e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated, false);
+        dbo = translator.toDbo(e);
+        
+        assertTrue(dbo.containsField(ACTIVELY_PUBLISHED));
+        
+        t = translator.fromDbo(dbo);
+        assertEquals(e.activelyPublished(), t.activelyPublished());
         
     }
     
@@ -86,7 +103,8 @@ public class LookupEntryTranslatorTest {
         DateTime created = DateTime.now(DateTimeZones.UTC);
         DateTime updated = DateTime.now(DateTimeZones.UTC);
         
-        LookupEntry e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated);
+        boolean activelyPublished = true;
+        LookupEntry e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated, activelyPublished);
         
         DBObject dbo = translator.toDbo(e);
         

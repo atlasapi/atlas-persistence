@@ -27,6 +27,7 @@ public class LookupEntryTranslator {
     private static final String EQUIVS = "equivs";
     private static final String LAST_UPDATED = "updated";
     private static final String FIRST_CREATED = "created";
+    public static final String ACTIVELY_PUBLISHED = "activelyPublished";
     public static final String ALIASES = "aliases";
     public static final String IDS = "ids";
     public static final String OPAQUE_ID = "aid";
@@ -69,6 +70,10 @@ public class LookupEntryTranslator {
         TranslatorUtils.fromDateTime(dbo, FIRST_CREATED, entry.created());
         TranslatorUtils.fromDateTime(dbo, LAST_UPDATED, entry.updated());
         
+        if (!entry.activelyPublished()) {
+            TranslatorUtils.from(dbo, ACTIVELY_PUBLISHED, entry.activelyPublished());
+        }
+        
         return dbo;
     }
 
@@ -106,7 +111,11 @@ public class LookupEntryTranslator {
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
         
-        return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated);
+        boolean activelyPublished = true;
+        if (dbo.containsField(ACTIVELY_PUBLISHED)) {
+            activelyPublished = TranslatorUtils.toBoolean(dbo, ACTIVELY_PUBLISHED);
+        }
+        return new LookupEntry(uri, id, self, aliasUris, aliases, directEquivalents, explicitEquivalents, equivs, created, updated, activelyPublished);
     }
     
     public DBObject removeFieldsForHash(DBObject dbo) {
