@@ -23,6 +23,7 @@ import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.topic.TopicContentLister;
@@ -52,6 +53,10 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 
     private static final Logger log = LoggerFactory.getLogger(MongoContentLister.class);
     
+    private static final Long NULL_ID = null;
+    private static final Publisher NULL_PUBLISHER = null;
+    
+
     private final ContainerTranslator containerTranslator;
     private final ItemTranslator itemTranslator;
 
@@ -135,7 +140,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
     
     private static final List<ContentCategory> BRAND_SERIES_AND_ITEMS_TABLES = ImmutableList.of(CONTAINER, PROGRAMME_GROUP, TOP_LEVEL_ITEM, CHILD_ITEM);
-    
+
     @Override
     public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {
         return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<Content>() {
@@ -214,7 +219,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             @Override
             public DBCursor cursorFor(ContentCategory category) {
                 return contentTables.collectionFor(category).find(
-                        where().fieldEquals("topics.topic", topicId).build(),
+                        where().fieldEquals("topics.topic", topicId)
+                               .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false)
+                               .build(),
                         BasicDBObjectBuilder.start()
                                             .add(IdentifiedTranslator.PUBLISHER, 1)
                                             .add(IdentifiedTranslator.OPAQUE_ID, 1)

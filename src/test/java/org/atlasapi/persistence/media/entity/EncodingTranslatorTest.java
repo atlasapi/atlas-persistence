@@ -23,6 +23,7 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setVideoFrameRate(1.0F);
         encoding.setAudioDescribed(true);
         encoding.setSigned(true);
+        encoding.setSubtitled(true);
         
         DBObject dbObject = ent.toDBObject(null, encoding);
         
@@ -31,6 +32,7 @@ public class EncodingTranslatorTest extends TestCase {
         assertEquals(encoding.getVideoFrameRate(), dbObject.get("videoFrameRate"));
         assertEquals(encoding.getAudioDescribed(), dbObject.get("audioDescribed"));
         assertEquals(encoding.getSigned(), dbObject.get("signed"));
+        assertEquals(encoding.getSubtitled(), dbObject.get("subtitled"));
     }
     
     public void testToEncoding() throws Exception {
@@ -60,6 +62,7 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setVideoVerticalSize(2);
         encoding.setAudioDescribed(true);
         encoding.setSigned(true);
+        encoding.setSubtitled(false);
         
         Location location = new Location();
         location.setCanonicalUri("uri");
@@ -95,6 +98,7 @@ public class EncodingTranslatorTest extends TestCase {
         assertEquals(encoding.getVideoVerticalSize(), enc.getVideoVerticalSize());
         assertEquals(encoding.getAudioDescribed(), enc.getAudioDescribed());
         assertEquals(encoding.getSigned(), enc.getSigned());
+        assertEquals(encoding.getSubtitled(), enc.getSubtitled());
 
         Location l = enc.getAvailableAt().iterator().next();
         assertEquals(location.getCanonicalUri(), l.getCanonicalUri());

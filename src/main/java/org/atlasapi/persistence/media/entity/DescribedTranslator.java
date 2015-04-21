@@ -142,9 +142,14 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		identifiedTranslator.fromDBObject(dbObject, entity);
 
         decodeRelatedLinks(dbObject, entity);
-		
-		entity.setDescription((String) dbObject.get(DESCRIPTION_KEY));
-		
+        // this is needed in order to translate some Segments which have Object in the description field.
+        Object description = dbObject.get(DESCRIPTION_KEY);
+        if(description instanceof DBObject) {
+            entity.setDescription(TranslatorUtils.toString((DBObject)description, TITLE_KEY));
+        } else {
+            entity.setDescription((String) description);
+        }
+
 		entity.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESC_KEY));
 		entity.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESC_KEY));
 		entity.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESC_KEY));

@@ -1,6 +1,8 @@
 package org.atlasapi.persistence.media.entity;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -17,6 +19,8 @@ import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Review;
+import org.atlasapi.media.segment.Segment;
+import org.bson.BSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
@@ -134,6 +138,34 @@ public class DescribedTranslatorTest {
         
         assertEquals(content.getReviews(), fromDBO.getReviews());
         
+    }
+
+    @Test
+    public void testTranslateFromDBObjectForSegmentWithObjectAsDescription() {
+        Segment segment = new Segment();
+        DBObject dboObject = new BasicDBObject();
+        DBObject description = new BasicDBObject();
+        description.put("title", "description title");
+        dboObject.put("description", description);
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+
+        translator.fromDBObject(dboObject, segment);
+
+        assertThat(segment.getDescription(), is("description title"));
+
+    }
+
+    @Test
+    public void testTranslateFromDBObjectWithStringDescription() {
+        Segment segment = new Segment();
+        DBObject dboObject = new BasicDBObject();
+        dboObject.put("description", "description title");
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+
+        translator.fromDBObject(dboObject, segment);
+
+        assertThat(segment.getDescription(), is("description title"));
+
     }
     
     private Set<LocalizedDescription> localizedDescriptions() {
