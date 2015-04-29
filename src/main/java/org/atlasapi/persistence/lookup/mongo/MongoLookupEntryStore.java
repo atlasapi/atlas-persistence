@@ -101,7 +101,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
     
     @Override
-    public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
+    public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<? extends String> uris) {
         DBCursor found = lookup.find(where().idIn(uris).build()).setReadPreference(readPreference);
         if (found == null) {
             return ImmutableList.of();
@@ -160,11 +160,11 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean useAliases) {
+    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<? extends String> identifiers, boolean useAliases) {
         return Iterables.transform(find(identifiers), translator.FROM_DBO);
     }
 
-    private Iterable<DBObject> find(Iterable<String> identifiers) {
+    private Iterable<DBObject> find(Iterable<? extends String> identifiers) {
         return lookup.find(where().fieldIn(ALIASES, identifiers).build()).setReadPreference(readPreference);
     }
 

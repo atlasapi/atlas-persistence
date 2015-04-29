@@ -15,7 +15,7 @@ public class FilterScheduleOnlyContentResolver implements ContentResolver {
     }
 
     @Override
-    public ResolvedContent findByCanonicalUris(Iterable<String> lookups) {
+    public ResolvedContent findByCanonicalUris(Iterable<? extends String> lookups) {
         ResolvedContent resolvedContent = contentResolver.findByCanonicalUris(lookups);
         return resolvedContent.filterContent(NOT_SCHEDULE_ONLY);
     }
