@@ -49,7 +49,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
     
     @Override
-    public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
+    public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<? extends String> uris) {
         return Iterables.filter(Iterables.transform(uris, Functions.forMap(uriStore, null)), Predicates.notNull());
     }
 
@@ -59,7 +59,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean useAliases) {
+    public Iterable<LookupEntry> entriesForIdentifiers(Iterable<? extends String> identifiers, boolean useAliases) {
         return Iterables.concat(Iterables.filter(Iterables.transform(identifiers, Functions.forMap(identifierStore.asMap(),null)),Predicates.notNull()));
     }
 

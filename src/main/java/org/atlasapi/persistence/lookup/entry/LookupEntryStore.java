@@ -25,7 +25,7 @@ public interface LookupEntryStore {
      * @param useAliases TODO
      * @return
      */
-    Iterable<LookupEntry> entriesForIdentifiers(Iterable<String> identifiers, boolean useAliases);
+    Iterable<LookupEntry> entriesForIdentifiers(Iterable<? extends String> identifiers, boolean useAliases);
     
     /**
      * Get entries for specified namespace and values.
@@ -42,7 +42,7 @@ public interface LookupEntryStore {
      * @param uris
      * @return
      */
-    Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris);
+    Iterable<LookupEntry> entriesForCanonicalUris(Iterable<? extends String> uris);
 
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
 

@@ -19,7 +19,7 @@ public class LookupResolvingContentResolver implements ContentResolver {
     }
     
     @Override
-    public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
+    public ResolvedContent findByCanonicalUris(Iterable<? extends String> canonicalUris) {
         Iterable<LookupEntry> entriesForCanonicalUris = lookupResolver.entriesForCanonicalUris(canonicalUris);
         return resolveLookupEntries(entriesForCanonicalUris).copyWithAllRequestedUris(canonicalUris);
     }

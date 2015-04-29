@@ -104,7 +104,7 @@ public class CassandraContentStore implements ContentWriter, ContentResolver, Co
     }
 
     @Override
-    public ResolvedContent findByCanonicalUris(Iterable<String> canonicalUris) {
+    public ResolvedContent findByCanonicalUris(Iterable<? extends String> canonicalUris) {
         try {
             Map<String, Maybe<Identified>> results = new HashMap<String, Maybe<Identified>>();
             for (String uri : canonicalUris) {
