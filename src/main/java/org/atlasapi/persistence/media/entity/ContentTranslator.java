@@ -41,6 +41,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
     private static final String SIMILAR_CONTENT_KEY = "similar";
     private static final String EVENTS_KEY = "events";
+    private static final String EDITORIAL_PRIORITY_KEY = "editorialPriority";
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
@@ -77,6 +78,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
         entity.setSimilarContent(similarContentRefTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, SIMILAR_CONTENT_KEY)));
+        entity.setEditorialPriority(TranslatorUtils.toInteger(dbObject, EDITORIAL_PRIORITY_KEY));
         
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, PEOPLE);
         if (list != null && ! list.isEmpty()) {
@@ -184,6 +186,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeCertificates(dbObject, entity.getCertificates());
         TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
         TranslatorUtils.from(dbObject, GENERIC_DESCRIPTION_KEY, entity.getGenericDescription());
+        TranslatorUtils.from(dbObject, EDITORIAL_PRIORITY_KEY, entity.getEditorialPriority());
         
         TranslatorUtils.from(dbObject, SIMILAR_CONTENT_KEY, similarContentRefTranslator.toDBList(entity.getSimilarContent()));
         if (! entity.people().isEmpty()) {
