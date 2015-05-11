@@ -63,7 +63,7 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setAudioDescribed(true);
         encoding.setSigned(true);
         encoding.setSubtitled(false);
-        
+        encoding.setHd(true);
         Location location = new Location();
         location.setCanonicalUri("uri");
         location.setUri("uri");
@@ -98,7 +98,11 @@ public class EncodingTranslatorTest extends TestCase {
         assertEquals(encoding.getVideoVerticalSize(), enc.getVideoVerticalSize());
         assertEquals(encoding.getAudioDescribed(), enc.getAudioDescribed());
         assertEquals(encoding.getSigned(), enc.getSigned());
+<<<<<<< HEAD
         assertEquals(encoding.getSubtitled(), enc.getSubtitled());
+=======
+        assertEquals(encoding.getHd(), enc.getHd());
+>>>>>>> Add HD flag to Encoding.
 
         Location l = enc.getAvailableAt().iterator().next();
         assertEquals(location.getCanonicalUri(), l.getCanonicalUri());
