@@ -1,10 +1,18 @@
 package org.atlasapi.persistence.media.entity;
 
+import com.google.common.collect.ImmutableList;
+import com.metabroadcast.common.currency.Price;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import junit.framework.TestCase;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.simple.Pricing;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
+
+import java.util.Currency;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -36,5 +44,31 @@ public class PolicyTranslatorTest extends TestCase {
         Policy policy = translator.fromDBObject(dbObject, new Policy());
 
         assertThat(policy.getTermsOfUse(), is("ToU text"));
+    }
+
+    @Test
+    public void testToAndFromDBObjectWithPricing() {
+        Policy policy = new Policy();
+        Price price1 = new Price(Currency.getInstance("GBP"), 1);
+        Price price2 = new Price(Currency.getInstance("GBP"), 2);
+        DateTime startTime1 = DateTime.now(DateTimeZone.UTC);
+        DateTime endTime1 = DateTime.now(DateTimeZone.UTC).plusHours(1);
+        DateTime startTime2 = DateTime.now(DateTimeZone.UTC).plusHours(1);
+        DateTime endTime2 = DateTime.now(DateTimeZone.UTC).plusHours(2);
+        Pricing pricing1 = new Pricing(startTime1, endTime1, price1);
+        Pricing pricing2 = new Pricing(startTime2, endTime2, price2);
+        policy.setPricing(ImmutableList.of(pricing1, pricing2));
+
+
+        Policy result = translator.fromDBObject(translator.toDBObject(new BasicDBObject(), policy), new Policy());
+
+        assertThat(result.getPricing().get(0).getPrice(), is(price1));
+        assertThat(result.getPricing().get(0).getStartTime(), is(startTime1));
+        assertThat(result.getPricing().get(0).getEndTime(), is(endTime1));
+
+        assertThat(result.getPricing().get(1).getPrice(), is(price2));
+        assertThat(result.getPricing().get(1).getStartTime(), is(startTime2));
+        assertThat(result.getPricing().get(1).getEndTime(), is(endTime2));
+
     }
 }
