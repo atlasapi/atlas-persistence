@@ -14,8 +14,10 @@
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>
-                        <fork>true</fork>
-                        <compilerArguments><J>-Xss1M</J></compilerArguments>
+                    <fork>true</fork>
+                    <compilerArgs>
+                        <arg>-J-Xss1M</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>
