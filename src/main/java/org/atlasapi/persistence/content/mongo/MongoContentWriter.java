@@ -30,6 +30,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.player.PlayerResolver;
@@ -39,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
@@ -47,12 +49,14 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.time.Clock;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
 public class MongoContentWriter implements ContentWriter {
 
+    private static final Set<String> KEYS_TO_REMOVE = ImmutableSet.of(DescribedTranslator.LINKS_KEY);
     private final Logger log = LoggerFactory.getLogger(MongoContentWriter.class);
     
     private final Clock clock;
@@ -246,14 +250,37 @@ public class MongoContentWriter implements ContentWriter {
     private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
         MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.ID, container.getCanonicalUri());
         
-        collection.update(where.build(), set(containerDbo), true, false);
+        BasicDBObject op = set(containerDbo);
+        unset(containerDbo, op);
+        collection.update(where.build(), op, true, false);
 
         lookupStore.ensureLookup(container);
+    }
+
+    /**
+     * Since we do not perform a save() on containers, we must unset
+     * keys that are not present in the object to be persisted. Since 
+     * there is no prototype object from which to unset fields, we
+     * maintain a list of keys to perform unsets on. Limited to
+     * related links at the moment, but can be extended.
+     */
+    private void unset(DBObject dbo, BasicDBObject op) {
+        BasicDBObject toRemove = new BasicDBObject();
+        for (String key : KEYS_TO_REMOVE) {
+            if (!dbo.containsField(key)) {
+                toRemove.put(key, 1);
+            }
+        }
+        if (!toRemove.isEmpty()) {
+            op.append(MongoConstants.UNSET, toRemove);
+        }
+        
     }
 
     private BasicDBObject set(DBObject dbo) {
         dbo.removeField(MongoConstants.ID);
         BasicDBObject containerUpdate = new BasicDBObject(MongoConstants.SET, dbo);
+        
         return containerUpdate;
     }
     
