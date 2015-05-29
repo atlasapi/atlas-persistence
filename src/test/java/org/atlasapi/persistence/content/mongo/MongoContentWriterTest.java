@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -18,12 +19,15 @@ import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.player.PlayerResolver;
 import org.atlasapi.persistence.service.ServiceResolver;
@@ -34,6 +38,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.MongoTestHelper;
@@ -211,6 +216,20 @@ public class MongoContentWriterTest {
         contentWriter.createOrUpdate(container);
         
         assertNotNull(containers.findOne(container.getCanonicalUri()));
+    }
+    
+    @Test
+    public void testWritingContainerAndRemovingRelatedLinks() {
+        Brand container = new Brand("containerUri", "containerCurie", Publisher.BBC);
+        container.setRelatedLinks(ImmutableSet.of(RelatedLink.unknownTypeLink("http://example.org").build()));
+        contentWriter.createOrUpdate(container);
+        
+        assertTrue(containers.findOne(container.getCanonicalUri()).containsField(DescribedTranslator.LINKS_KEY));
+        
+        container.setRelatedLinks(ImmutableSet.<RelatedLink>of());
+        contentWriter.createOrUpdate(container);
+        
+        assertFalse(containers.findOne(container.getCanonicalUri()).containsField(DescribedTranslator.LINKS_KEY));
     }
     
     @Test

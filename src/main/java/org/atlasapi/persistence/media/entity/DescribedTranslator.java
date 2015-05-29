@@ -50,7 +50,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String MEDIUM_DESC_KEY = "mediumDescription";
     public static final String LONG_DESC_KEY = "longDescription";
     public static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
-    private static final String LINKS_KEY = "links";
+    public static final String LINKS_KEY = "links";
     protected static final String LOCALIZED_DESCRIPTIONS_KEY = "descriptions";
     protected static final String LOCALIZED_TITLES_KEY = "titles";
     protected static final String REVIEWS_KEY = "reviews";
