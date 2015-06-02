@@ -15,7 +15,7 @@ import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.queue.MessagingException;
 import com.metabroadcast.common.time.Timestamper;
 
-public class MessageQueuingContentGroupWriter implements ContentG   roupWriter {
+public class MessageQueuingContentGroupWriter implements ContentGroupWriter {
 
     private static final Logger log = LoggerFactory.getLogger(MessageQueuingContentGroupWriter.class);
 
@@ -32,7 +32,8 @@ public class MessageQueuingContentGroupWriter implements ContentG   roupWriter {
         this.clock = checkNotNull(clock);
     }
 
-    @Override public void createOrUpdate(ContentGroup group) {
+    @Override
+    public void createOrUpdate(ContentGroup group) {
         try {
             delegate.createOrUpdate(group);
             messageSender.sendMessage(createEntityUpdatedMessage(group));

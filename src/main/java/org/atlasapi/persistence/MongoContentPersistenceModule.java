@@ -6,7 +6,6 @@ import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
-import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.product.IdSettingProductStore;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
@@ -35,6 +34,7 @@ import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
+import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
@@ -65,7 +65,6 @@ import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.LookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.player.CachingPlayerResolver;
@@ -112,6 +111,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.content.changes}") String contentChanges;
     private @Value("${messaging.destination.topics.changes}") String topicChanges;
     private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
+    private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
     private @Value("${mongo.audit.dbname}") String auditDbName;
@@ -151,8 +151,19 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired ChannelResolver channelResolver;
     
     public @Bean ContentGroupWriter contentGroupWriter() {
-        ContentGroupWriter contentGroupWriter = new MongoContentGroupWriter(db, persistenceAuditLog(), new SystemClock());
-        return contentGroupWriter;
+        MessageSender<EntityUpdatedMessage> messageSender = messagingModule.messageSenderFactory()
+                .makeMessageSender(
+                        contentGroupChanges,
+                        JacksonMessageSerializer.forType(EntityUpdatedMessage.class)
+                );
+
+        SystemClock clock = new SystemClock();
+
+        return new MessageQueuingContentGroupWriter(
+                new MongoContentGroupWriter(db, persistenceAuditLog(), clock),
+                messageSender,
+                clock
+        );
     }
     
     public @Bean ContentGroupResolver contentGroupResolver() {
