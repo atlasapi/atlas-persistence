@@ -146,6 +146,7 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         TranslatorUtils.from(dbObject, "videoVerticalSize", entity.getVideoVerticalSize());
         TranslatorUtils.from(dbObject, AUDIO_DESCRIBED_KEY, entity.getAudioDescribed());
         TranslatorUtils.from(dbObject, SIGNED_KEY, entity.getSigned());
+        TranslatorUtils.from(dbObject, SUBTITLED_KEY, entity.getSubtitled());
         TranslatorUtils.from(dbObject, HIGH_DEFINITION_KEY, entity.getHighDefinition());
 
         if (! entity.getAvailableAt().isEmpty()) {

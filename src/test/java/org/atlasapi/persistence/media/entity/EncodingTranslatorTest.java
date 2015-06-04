@@ -60,6 +60,7 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setVideoVerticalSize(2);
         encoding.setAudioDescribed(true);
         encoding.setSigned(true);
+        encoding.setSubtitled(false);
         encoding.setHighDefinition(true);
         Location location = new Location();
         location.setCanonicalUri("uri");
@@ -95,6 +96,7 @@ public class EncodingTranslatorTest extends TestCase {
         assertEquals(encoding.getVideoVerticalSize(), enc.getVideoVerticalSize());
         assertEquals(encoding.getAudioDescribed(), enc.getAudioDescribed());
         assertEquals(encoding.getSigned(), enc.getSigned());
+        assertEquals(encoding.getSubtitled(), enc.getSubtitled());
         assertEquals(encoding.getHighDefinition(), enc.getHighDefinition());
 
         Location l = enc.getAvailableAt().iterator().next();

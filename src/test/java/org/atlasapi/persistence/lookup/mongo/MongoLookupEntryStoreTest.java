@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -372,5 +373,21 @@ public class MongoLookupEntryStoreTest {
                                  "Hash code not changed for URI {}; skipping write"), 
                 arg1captor.getAllValues()
         );
+    }
+    
+    @Test
+    public void testEnsureLookupWritesWhenActivelyPublishedChanges() {
+        
+        Item item = new Item("http://example.org/item", "testItem1Curie", Publisher.BBC);
+        
+        entryStore.ensureLookup(item);
+        LookupEntry entry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(item.getCanonicalUri())));
+        assertTrue(entry.activelyPublished());
+        
+        item.setActivelyPublished(false);
+        entryStore.ensureLookup(item);
+
+        entry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(item.getCanonicalUri())));
+        assertFalse(entry.activelyPublished());
     }
 }
