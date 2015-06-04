@@ -42,13 +42,13 @@ public class MessageQueuingContentGroupWriter implements ContentGroupWriter {
         }
     }
 
-    private EntityUpdatedMessage createEntityUpdatedMessage(ContentGroup content) {
+    private EntityUpdatedMessage createEntityUpdatedMessage(ContentGroup contentGroup) {
         return new EntityUpdatedMessage(
                 UUID.randomUUID().toString(),
                 clock.timestamp(),
-                entityIdCodec.encode(BigInteger.valueOf(content.getId())),
-                content.getClass().getSimpleName().toLowerCase(),
-                content.getPublisher().key()
+                entityIdCodec.encode(BigInteger.valueOf(contentGroup.getId())),
+                contentGroup.getClass().getSimpleName().toLowerCase(),
+                contentGroup.getPublisher().key()
         );
     }
 }
