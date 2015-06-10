@@ -1,11 +1,14 @@
 package org.atlasapi.persistence.media.entity;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.metabroadcast.common.currency.Price;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+
 import junit.framework.TestCase;
+
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.simple.Pricing;
 import org.joda.time.DateTime;
@@ -13,6 +16,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import java.util.Currency;
+import java.util.Set;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -60,7 +64,7 @@ public class PolicyTranslatorTest extends TestCase {
         policy.setPricing(ImmutableList.of(pricing1, pricing2));
 
 
-        Policy result = translator.fromDBObject(translator.toDBObject(new BasicDBObject(), policy), new Policy());
+        Policy result = toDbObjectAndBack(policy);
 
         assertThat(result.getPricing().get(0).getPrice(), is(price1));
         assertThat(result.getPricing().get(0).getStartTime(), is(startTime1));
@@ -70,5 +74,19 @@ public class PolicyTranslatorTest extends TestCase {
         assertThat(result.getPricing().get(1).getStartTime(), is(startTime2));
         assertThat(result.getPricing().get(1).getEndTime(), is(endTime2));
 
+    }
+
+    private Policy toDbObjectAndBack(Policy policy) {
+        return translator.fromDBObject(translator.toDBObject(new BasicDBObject(), policy), new Policy());
+    }
+    
+    @Test
+    public void testToAndFromDbObjectWithSubscriptionPackages() {
+        Set<String> packages = ImmutableSet.of("a", "b");
+        Policy policy = new Policy();
+        policy.setSubscriptionPackages(packages);
+        
+        Policy result = toDbObjectAndBack(policy);
+        assertThat(result.getSubscriptionPackages(), is(packages));
     }
 }

@@ -4,6 +4,7 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Quality;
 
 import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.MongoTestHelper;
@@ -24,6 +25,8 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setAudioDescribed(true);
         encoding.setSigned(true);
         encoding.setSubtitled(true);
+        encoding.setQuality(Quality.SD);
+        encoding.setQualityDetail("quality_detail");
         
         DBObject dbObject = ent.toDBObject(null, encoding);
         
@@ -33,6 +36,8 @@ public class EncodingTranslatorTest extends TestCase {
         assertEquals(encoding.getAudioDescribed(), dbObject.get("audioDescribed"));
         assertEquals(encoding.getSigned(), dbObject.get("signed"));
         assertEquals(encoding.getSubtitled(), dbObject.get("subtitled"));
+        assertEquals(encoding.getQuality().toString().toLowerCase(), dbObject.get("quality"));
+        assertEquals(encoding.getQualityDetail(), dbObject.get("qualityDetail"));
     }
     
     public void testToEncoding() throws Exception {
