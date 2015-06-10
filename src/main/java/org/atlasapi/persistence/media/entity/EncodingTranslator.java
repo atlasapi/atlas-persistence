@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
+import org.atlasapi.media.entity.Quality;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ComparisonChain;
@@ -22,6 +23,8 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
     private static final String AUDIO_DESCRIBED_KEY = "audioDescribed";
     private static final String SIGNED_KEY = "signed";
     private static final String HIGH_DEFINITION_KEY = "highDefinition";
+    private static final String QUALITY_KEY = "quality";
+    private static final String QUALITY_DETAIL_KEY = "qualityDetail";
 
     private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
     private final LocationTranslator locationTranslator = new LocationTranslator();
@@ -52,6 +55,10 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         entity.setVideoAspectRatio((String) dbObject.get("videoAspectRatio"));
         entity.setVideoBitRate((Integer) dbObject.get("videoBitRate"));
         entity.setSubtitled((Boolean) dbObject.get(SUBTITLED_KEY));
+        if (dbObject.containsField(QUALITY_KEY)) {
+            entity.setQuality(Quality.valueOf(TranslatorUtils.toString(dbObject, QUALITY_KEY).toUpperCase()));
+        }
+        entity.setQualityDetail(TranslatorUtils.toString(dbObject, QUALITY_DETAIL_KEY));
         
         entity.setVideoCoding(readVideoCoding(dbObject));
         
@@ -140,6 +147,10 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         	TranslatorUtils.from(dbObject, "videoCoding", entity.getVideoCoding().toString());
         }
         
+        if (entity.getQuality() != null) {
+            TranslatorUtils.from(dbObject, QUALITY_KEY, entity.getQuality().toString().toLowerCase());
+        }
+        TranslatorUtils.from(dbObject, QUALITY_DETAIL_KEY, entity.getQualityDetail());
         TranslatorUtils.from(dbObject, "videoFrameRate", entity.getVideoFrameRate());
         TranslatorUtils.from(dbObject, "videoHorizontalSize", entity.getVideoHorizontalSize());
         TranslatorUtils.from(dbObject, "videoProgressiveScan", entity.getVideoProgressiveScan());
