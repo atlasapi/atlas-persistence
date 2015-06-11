@@ -56,7 +56,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String REVIEWS_KEY = "reviews";
     protected static final String RATINGS_KEY = "ratings";
     protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
-    protected static final String PRIORITY_KEY = "ratings";
+    protected static final String PRIORITY_KEY = "priority";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
