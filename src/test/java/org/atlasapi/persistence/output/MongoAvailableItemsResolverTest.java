@@ -66,7 +66,7 @@ public class MongoAvailableItemsResolverTest {
     private final Episode p2 = episode("p2", primary);
     
     private final Episode e1 = episode("e1", equivalent, location("e1l1", dateTime(0), dateTime(10)));
-    private final Episode e2 = episode("e2", equivalent, location("e2l2", dateTime(0), dateTime(10)));
+    private final Episode e2 = episode("e2", equivalent, location("e2l2", null, null)); // Availability start/end of null implies always available
     
     @Before
     public void setUp() {

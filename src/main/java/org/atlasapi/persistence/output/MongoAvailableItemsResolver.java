@@ -39,6 +39,7 @@ import com.google.common.collect.Ordering;
 import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.time.Clock;
 import com.metabroadcast.common.time.DateTimeZones;
@@ -65,6 +66,18 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
             DateTime one = earliestAvailabilityStart(o1);
             DateTime two = earliestAvailabilityStart(o2);
             
+            if (one == null && two == null) {
+                return 0;
+            }
+            
+            if (one == null) {
+                return -1;
+            }
+            
+            if (two == null) {
+                return 1;
+            }
+            
             return one.compareTo(two);
         }
         
@@ -76,7 +89,7 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
                         DBObject policy = toDBObject(location, MongoAvailableItemsResolver.policy);
                         if (policy != null) {
                             DateTime start = toDateTime(policy, availabilityStart);
-                            if (before(start, earliest)) {
+                            if (availableBefore(start, earliest)) {
                                 earliest = start;
                             }
                         }
@@ -134,7 +147,9 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
                                     .filter(sourceFilter(config.getEnabledSources()))
                                     .transform(LookupRef.TO_URI)
                      )
-                .fieldAfter(availabilityEndKey, now)
+                .or(new MongoQueryBuilder().doesNotExist(availabilityEnd),
+                    new MongoQueryBuilder().fieldAfter(availabilityEnd, now))
+                //.fieldAfter(availabilityEndKey, now)
                 .build();
         return filterItems(now, Iterables.concat(children.find(query,fields), topLevelItems.find(query,fields)));
     }
@@ -203,7 +218,10 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
                 for (DBObject encoding : toDBObjectList(version, encodings)) {
                     for (DBObject location : toDBObjectList(encoding, locations)) {
                         DBObject policy = toDBObject(location, MongoAvailableItemsResolver.policy);
-                        if (policy != null && before(toDateTime(policy, availabilityStart), now) && after(toDateTime(policy, availabilityEnd), now)) {
+                        if (policy != null 
+                                && availableBefore(toDateTime(policy, availabilityStart), now) 
+                                && availableAfter(toDateTime(policy, availabilityEnd), now)) 
+                        {
                             String uri = TranslatorUtils.toString(availableItem, MongoConstants.ID);
                             Long aid = TranslatorUtils.toLong(availableItem, IdentifiedTranslator.OPAQUE_ID);
                             String type = TranslatorUtils.toString(availableItem, IdentifiedTranslator.TYPE);
@@ -221,19 +239,21 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
         return itemMap.build();
     }
     
-    private static boolean before(DateTime dateTime, DateTime now) {
-        return dateTime != null && dateTime.isBefore(now);
+    private static boolean availableBefore(DateTime availabilityStart, DateTime now) {
+        return availabilityStart == null || availabilityStart.isBefore(now);
     }
 
-    private boolean after(DateTime dateTime, DateTime now) {
-        return dateTime != null && dateTime.isAfter(now);
+    private boolean availableAfter(DateTime availabilityEnd, DateTime now) {
+        return availabilityEnd == null || availabilityEnd.isAfter(now);
     }
 
     // find available items for container and its equivalents from enabled sources
     private Iterable<DBObject> availablityWindowsForItemsOf(Container container, ApplicationConfiguration config, DateTime time) {
         DBObject query = where()
             .fieldIn(containerKey, containerAndEquivalents(container, config))
-            .fieldAfter(availabilityEndKey, time)
+            .or(new MongoQueryBuilder().doesNotExist(availabilityEnd),
+                new MongoQueryBuilder().fieldAfter(availabilityEnd, time))
+            //.fieldAfter(availabilityEndKey, time)
             .build();
         return children.find(query,fields);
     }
