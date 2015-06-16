@@ -85,6 +85,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
@@ -118,13 +119,16 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
     public MongoContentPersistenceModule() {}
     
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log) {
+    @VisibleForTesting
+    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
+            ReadPreference readPreference) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
         this.messagingModule = messagingModule;
         this.generateIds = "true";
         this.auditDbName = auditDbName;
+        this.readPreference = readPreference;
     }
     
     @Bean
