@@ -11,6 +11,8 @@ public class RestrictionTranslator implements ModelTranslator<Restriction> {
     private static final String MESSAGE = "message";
 	private static final String MINIMUM_AGE = "minimumAge";
 	private static final String RESTRICTED = "restricted";
+	private static final String AUTHORITY = "authority";
+	private static final String RATING = "rating";
 	
 	private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 
@@ -21,6 +23,8 @@ public class RestrictionTranslator implements ModelTranslator<Restriction> {
 		TranslatorUtils.from(dbObject, RESTRICTED, model.isRestricted());
 		TranslatorUtils.from(dbObject, MINIMUM_AGE, model.getMinimumAge());
 		TranslatorUtils.from(dbObject, MESSAGE, model.getMessage());
+		TranslatorUtils.from(dbObject, AUTHORITY, model.getAuthority());
+		TranslatorUtils.from(dbObject, RATING, model.getRating());
 		
 		return dbObject;
 	}
@@ -36,6 +40,7 @@ public class RestrictionTranslator implements ModelTranslator<Restriction> {
 		model.setRestricted(TranslatorUtils.toBoolean(dbObject, RESTRICTED));
 		model.setMinimumAge(TranslatorUtils.toInteger(dbObject, MINIMUM_AGE));
 		model.setMessage(TranslatorUtils.toString(dbObject, MESSAGE));
+		model.setAuthority(TranslatorUtils.toString(dbObject, AUTHORITY));
 		
 		return model;
 	}
