@@ -32,6 +32,7 @@ public class ImageTranslatorTest {
         assertThat(decodedImage.getHeight(), is(equalTo(image.getHeight())));
         assertThat(decodedImage.getWidth(), is(equalTo(image.getWidth())));
         assertThat(decodedImage.getMimeType(), is(equalTo(image.getMimeType())));
+        assertThat(decodedImage.hasTitleArt(), is(equalTo(image.hasTitleArt())));
 
     }
 
@@ -45,6 +46,7 @@ public class ImageTranslatorTest {
         image.setHeight(300);
         image.setWidth(200);
         image.setMimeType(MimeType.IMAGE_JPG);
+        image.setHasTitleArt(true);
 
         return image;
     }

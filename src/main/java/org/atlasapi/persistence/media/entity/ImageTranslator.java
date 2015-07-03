@@ -24,6 +24,7 @@ public class ImageTranslator implements ModelTranslator<Image> {
     private static final String THEME = "theme";
     private static final String ASPECT_RATIO = "aspectRatio";
     private static final String MIME_TYPE = "mimeType";
+    private static final String HAS_TITLE_ART = "hasTitleArt";
 
     private IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
 
@@ -37,6 +38,7 @@ public class ImageTranslator implements ModelTranslator<Image> {
 
         TranslatorUtils.fromDateTime(dbObject, AVAILABILITY_START, model.getAvailabilityStart());
         TranslatorUtils.fromDateTime(dbObject, AVAILABILITY_END, model.getAvailabilityEnd());
+        TranslatorUtils.from(dbObject, HAS_TITLE_ART, model.hasTitleArt());
         TranslatorUtils.from(dbObject, HEIGHT, model.getHeight());
         TranslatorUtils.from(dbObject, WIDTH, model.getWidth());
 
@@ -79,6 +81,7 @@ public class ImageTranslator implements ModelTranslator<Image> {
         model.setAvailabilityEnd(TranslatorUtils.toDateTime(dbObject, AVAILABILITY_END));
         model.setHeight(TranslatorUtils.toInteger(dbObject, HEIGHT));
         model.setWidth(TranslatorUtils.toInteger(dbObject, WIDTH));
+        model.setHasTitleArt(TranslatorUtils.toBoolean(dbObject, HAS_TITLE_ART));
 
         String imageType = TranslatorUtils.toString(dbObject, IMAGE_TYPE);
         if (imageType != null) {
