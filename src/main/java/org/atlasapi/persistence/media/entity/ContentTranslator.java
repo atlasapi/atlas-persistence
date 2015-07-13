@@ -3,6 +3,8 @@ package org.atlasapi.persistence.media.entity;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
@@ -11,6 +13,7 @@ import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.EventRef;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.TopicRef;
+import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -42,6 +45,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String SIMILAR_CONTENT_KEY = "similar";
     private static final String EVENTS_KEY = "events";
     private static final String EDITORIAL_PRIORITY_KEY = "editorialPriority";
+    private static final String VERSIONS_KEY = "versions";
+
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
     private final DescribedTranslator describedTranslator;
@@ -49,13 +54,15 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final ContentGroupRefTranslator contentGroupRefTranslator;
     private final CrewMemberTranslator crewMemberTranslator;
     private final SimilarContentRefTranslator similarContentRefTranslator;
+    private final VersionTranslator versionTranslator;
+
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
-        this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec));
+        this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec), new VersionTranslator(idCodec));
     }
 
     //TODO: why not use collaborators interface here? ModelTranslator<Described> etc...
-    public ContentTranslator(DescribedTranslator describedTranslator, ClipTranslator clipTranslator) {
+    public ContentTranslator(DescribedTranslator describedTranslator, ClipTranslator clipTranslator, VersionTranslator versionTranslator) {
         this.describedTranslator = checkNotNull(describedTranslator);
         this.clipTranslator = checkNotNull(clipTranslator);
         this.keyPhraseTranslator = new KeyPhraseTranslator();
@@ -63,6 +70,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.contentGroupRefTranslator = new ContentGroupRefTranslator();
         this.crewMemberTranslator = new CrewMemberTranslator();
         this.similarContentRefTranslator = new SimilarContentRefTranslator();
+        this.versionTranslator = checkNotNull(versionTranslator);
+
     }
 
     @Override
@@ -79,7 +88,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
         entity.setSimilarContent(similarContentRefTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, SIMILAR_CONTENT_KEY)));
         entity.setEditorialPriority(TranslatorUtils.toInteger(dbObject, EDITORIAL_PRIORITY_KEY));
-        
+
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, PEOPLE);
         if (list != null && ! list.isEmpty()) {
             for (DBObject dbPerson: list) {
@@ -89,7 +98,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
                 }
             }
         }
-        
+
         Optional<Iterable<EventRef>> events = TranslatorUtils.toIterable(dbObject, EVENTS_KEY, new Function<DBObject, EventRef>() {
             @Override
             public EventRef apply(DBObject input) {
@@ -98,6 +107,19 @@ public class ContentTranslator implements ModelTranslator<Content> {
         });
         if (events.isPresent()) {
             entity.setEventRefs(events.get());
+        }
+
+        List<DBObject> versionList = TranslatorUtils.toDBObjectList(dbObject, VERSIONS_KEY);
+        if (versionList != null && ! versionList.isEmpty()) {
+            Set<Version> versions = Sets.newHashSet();
+            for (DBObject versionDbo: versionList) {
+                if (versionDbo == null) {
+                    throw new IllegalStateException("Cannot read item stored with null version: " + entity.getCanonicalUri());
+                }
+                Version version = versionTranslator.fromDBObject(versionDbo, null);
+                versions.add(version);
+            }
+            entity.setVersions(versions);
         }
 
         return entity;
@@ -205,7 +227,16 @@ public class ContentTranslator implements ModelTranslator<Content> {
                 return dbo;
             }
         });
-
+        if (!entity.getVersions().isEmpty()) {
+            BasicDBList list = new BasicDBList();
+            for (Version version: VERSION_ORDERING.immutableSortedCopy(entity.getVersions())) {
+                if (version == null) {
+                    throw new IllegalArgumentException("Cannot save item with null version: " + entity.getCanonicalUri());
+                }
+                list.add(versionTranslator.toDBObject(null, version));
+            }
+            dbObject.put(VERSIONS_KEY, list);
+        }
         return dbObject;
     }
 
@@ -281,5 +312,67 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
             dbObject.put(ContentTranslator.CLIPS_KEY, unorderedClips);
         }
+        Iterable<DBObject> versions = (Iterable<DBObject>) dbObject.get(VERSIONS_KEY);
+        if (versions != null) {
+            dbObject.put(VERSIONS_KEY, removeUpdateTimeFromVersions(versions));
+        }
+    }
+
+    private static final Ordering<Version> VERSION_ORDERING = new Ordering<Version>() {
+
+        @Override
+        public int compare(Version left, Version right) {
+            return ComparisonChain.start()
+                    .compare(left.getCanonicalUri(), right.getCanonicalUri(), Ordering.natural().nullsLast())
+                    .compare(left.getCurie(), right.getCurie(), Ordering.natural().nullsLast())
+                    .result();
+        }
+
+    };
+
+    @SuppressWarnings("unchecked")
+    private Set<DBObject> removeUpdateTimeFromVersions(Iterable<DBObject> versions) {
+        Set<DBObject> unorderedVersions = Sets.newHashSet();
+        for (DBObject versionDbo : versions) {
+            versionDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
+            Iterable<DBObject> broadcasts = (Iterable<DBObject>) versionDbo.get(VersionTranslator.BROADCASTS_KEY);
+            if (broadcasts != null) {
+                Set<DBObject> unorderedBroadcasts = Sets.newHashSet();
+                for (DBObject broadcastDbo : broadcasts) {
+                    broadcastDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
+                    unorderedBroadcasts.add(broadcastDbo);
+                }
+                versionDbo.put(VersionTranslator.BROADCASTS_KEY, unorderedBroadcasts);
+            }
+            Iterable<DBObject> encodings = (Iterable<DBObject>) versionDbo.get(VersionTranslator.ENCODINGS_KEY);
+            if (encodings != null) {
+                versionDbo.put(VersionTranslator.ENCODINGS_KEY, removeUpdateTimesFromEncodings(encodings));
+            }
+            unorderedVersions.add(versionDbo);
+        }
+        return unorderedVersions;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<DBObject> removeUpdateTimesFromEncodings(Iterable<DBObject> encodings) {
+        Set<DBObject> unorderedEncodings = Sets.newHashSet();
+        for (DBObject encodingDbo : encodings) {
+            encodingDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
+            Iterable<DBObject> locations = (Iterable<DBObject>) encodingDbo.get(EncodingTranslator.LOCATIONS_KEY);
+            if (locations != null) {
+                Set<DBObject> unorderedLocations = Sets.newHashSet();
+                for (DBObject locationDbo : locations) {
+                    locationDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
+                    DBObject policy = (DBObject) locationDbo.get(LocationTranslator.POLICY);
+                    if(policy != null) {
+                        policy.removeField(IdentifiedTranslator.LAST_UPDATED);
+                    }
+                    unorderedLocations.add(locationDbo);
+                }
+                encodingDbo.put(EncodingTranslator.LOCATIONS_KEY, unorderedLocations);
+            }
+            unorderedEncodings.add(encodingDbo);
+        }
+        return unorderedEncodings;
     }
 }
