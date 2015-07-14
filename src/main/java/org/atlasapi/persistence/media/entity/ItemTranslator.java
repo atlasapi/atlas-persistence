@@ -49,7 +49,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
     private static final String SERIES_NUMBER = "seriesNumber";
     private static final String SPECIAL = "special";
 
-    private static final String VERSIONS_KEY = "versions";
 	private static final String TYPE_KEY = "type";
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
@@ -58,7 +57,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
 
 	private final ContentTranslator contentTranslator;
-    private final VersionTranslator versionTranslator;
 
     private final DbObjectHashCodeDebugger dboHashCodeDebugger = new DbObjectHashCodeDebugger();
 
@@ -80,7 +78,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 
     ItemTranslator(ContentTranslator contentTranslator, NumberToShortStringCodec idCodec) {
 		this.contentTranslator = contentTranslator;
-		this.versionTranslator = new VersionTranslator(idCodec);
     }
     
     public ItemTranslator(NumberToShortStringCodec idCodec) {
@@ -105,19 +102,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         item.setCountriesOfOrigin(Countries.fromCodes(TranslatorUtils.toSet(dbObject, COUNTRIES_OF_ORIGIN_KEY)));
         if (dbObject.containsField(FILM_RELEASES_KEY)) {
             item.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
-        }
-        
-        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, VERSIONS_KEY);
-        if (list != null && ! list.isEmpty()) {
-            Set<Version> versions = Sets.newHashSet();
-            for (DBObject versionDbo: list) {
-                if (versionDbo == null) {
-                    throw new IllegalStateException("Cannot read item stored with null version: " + item.getCanonicalUri());
-                }
-                Version version = versionTranslator.fromDBObject(versionDbo, null);
-                versions.add(version);
-            }
-            item.setVersions(versions);
         }
         
         if(dbObject.containsField(CONTAINER)) {
@@ -179,58 +163,12 @@ public class ItemTranslator implements ModelTranslator<Item> {
     @SuppressWarnings("unchecked")
     public void removeFieldsForHash(DBObject dbObject) {
         contentTranslator.removeFieldsForHash(dbObject);
-        Iterable<DBObject> versions = (Iterable<DBObject>) dbObject.get(VERSIONS_KEY);
-        if (versions != null) {
-            dbObject.put(VERSIONS_KEY, removeUpdateTimeFromVersions(versions));
-        }
-        
+
     }
 
-    @SuppressWarnings("unchecked")
-    private Set<DBObject> removeUpdateTimeFromVersions(Iterable<DBObject> versions) {
-        Set<DBObject> unorderedVersions = Sets.newHashSet();
-        for (DBObject versionDbo : versions) {
-            versionDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
-            Iterable<DBObject> broadcasts = (Iterable<DBObject>) versionDbo.get(VersionTranslator.BROADCASTS_KEY);
-            if (broadcasts != null) {
-                Set<DBObject> unorderedBroadcasts = Sets.newHashSet();
-                for (DBObject broadcastDbo : broadcasts) {
-                    broadcastDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
-                    unorderedBroadcasts.add(broadcastDbo);
-                }
-                versionDbo.put(VersionTranslator.BROADCASTS_KEY, unorderedBroadcasts);
-            }
-            Iterable<DBObject> encodings = (Iterable<DBObject>) versionDbo.get(VersionTranslator.ENCODINGS_KEY);
-            if (encodings != null) {
-                versionDbo.put(VersionTranslator.ENCODINGS_KEY, removeUpdateTimesFromEncodings(encodings));
-            }
-            unorderedVersions.add(versionDbo);
-        }
-        return unorderedVersions;
-    }
 
-    @SuppressWarnings("unchecked")
-    private Set<DBObject> removeUpdateTimesFromEncodings(Iterable<DBObject> encodings) {
-        Set<DBObject> unorderedEncodings = Sets.newHashSet();
-        for (DBObject encodingDbo : encodings) {
-            encodingDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
-            Iterable<DBObject> locations = (Iterable<DBObject>) encodingDbo.get(EncodingTranslator.LOCATIONS_KEY);
-            if (locations != null) {
-                Set<DBObject> unorderedLocations = Sets.newHashSet();
-                for (DBObject locationDbo : locations) {
-                    locationDbo.removeField(IdentifiedTranslator.LAST_UPDATED);
-                    DBObject policy = (DBObject) locationDbo.get(LocationTranslator.POLICY);
-                    if(policy != null) {
-                        policy.removeField(IdentifiedTranslator.LAST_UPDATED);
-                    }
-                    unorderedLocations.add(locationDbo);
-                }
-                encodingDbo.put(EncodingTranslator.LOCATIONS_KEY, unorderedLocations);
-            }
-            unorderedEncodings.add(encodingDbo);
-        }
-        return unorderedEncodings;
-    }
+
+
 	
 	public DBObject toDB(Item item) {
 	    return toDBObject(null, item);
@@ -243,16 +181,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         encodeReleases(itemDbo, entity.getReleaseDates());
         
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
-        if (! entity.getVersions().isEmpty()) {
-            BasicDBList list = new BasicDBList();
-            for (Version version: VERSION_ORDERING.immutableSortedCopy(entity.getVersions())) {
-                if (version == null) {
-                    throw new IllegalArgumentException("Cannot save item with null version: " + entity.getCanonicalUri());
-                }
-                list.add(versionTranslator.toDBObject(null, version));
-            }
-            itemDbo.put(VERSIONS_KEY, list);
-        }
+
         
         TranslatorUtils.from(itemDbo, BLACK_AND_WHITE_KEY, entity.getBlackAndWhite());
         if (! entity.getCountriesOfOrigin().isEmpty()) {
@@ -327,16 +256,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         }
     }
     
-    private static final Ordering<Version> VERSION_ORDERING = new Ordering<Version>() {
 
-        @Override
-        public int compare(Version left, Version right) {
-            return ComparisonChain.start()
-                    .compare(left.getCanonicalUri(), right.getCanonicalUri(), Ordering.natural().nullsLast())
-                    .compare(left.getCurie(), right.getCurie(), Ordering.natural().nullsLast())
-                    .result();
-        }
-        
-    };
     
 }
