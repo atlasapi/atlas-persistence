@@ -89,21 +89,20 @@ public class ChildRefWriter {
         
         Maybe<Container> maybeContainer = getContainer(containerUri, containers);
 
-        if (maybeContainer.hasValue()) {
-            Container container = maybeContainer.requireValue();
-            if(container instanceof Brand) {
-                Brand brand = (Brand) container;
-                List<SeriesRef> merged = mergeSeriesRefs(series.seriesRef(), brand.getSeriesRefs());
-                brand.setSeriesRefs(merged);
-                brand.setThisOrChildLastUpdated(laterOf(brand.getThisOrChildLastUpdated(), series.getThisOrChildLastUpdated()));
-                save(brand, containers);
-                series.setParent(brand);
-            } else {
-                throw new IllegalStateException(String.format("Container %s for series child ref %s is not brand", containerUri, series.getCanonicalUri()));
-            }
-        } else {
+        if (!maybeContainer.hasValue()) {
             throw new IllegalStateException(String.format("Container %s not found in %s for series child ref %s", containerUri, containers.getName(), series.getCanonicalUri()));
         }
+        Container container = maybeContainer.requireValue();
+        if(!(container instanceof Brand)) {
+            throw new IllegalStateException(String.format("Container %s for series child ref %s is not brand", containerUri, series.getCanonicalUri()));
+        }
+
+        Brand brand = (Brand) container;
+        List<SeriesRef> merged = mergeSeriesRefs(series.seriesRef(), brand.getSeriesRefs(), series.isActivelyPublished());
+        brand.setSeriesRefs(merged);
+        brand.setThisOrChildLastUpdated(laterOf(brand.getThisOrChildLastUpdated(), series.getThisOrChildLastUpdated()));
+        save(brand, containers);
+        series.setParent(brand);
     }
 
     private void save(Container container, DBCollection collection) {
@@ -158,10 +157,14 @@ public class ChildRefWriter {
         return ChildRef.dedupeAndSort(ImmutableList.<ChildRef> builder().addAll(currentChildRefs).add(newChildRef).build());
     }
     
-    private List<SeriesRef> mergeSeriesRefs(SeriesRef newSeriesRef, Iterable<SeriesRef> currentSeriesRefs) {
+    private List<SeriesRef> mergeSeriesRefs(SeriesRef newSeriesRef, Iterable<SeriesRef> currentSeriesRefs, Boolean activelyPublished) {
         // filter out new refs so they can  be overwritten.
         currentSeriesRefs = filter(currentSeriesRefs, not(equalTo(newSeriesRef)));
-        return SeriesRef.dedupeAndSort(ImmutableList.<SeriesRef> builder().addAll(currentSeriesRefs).add(newSeriesRef).build());
+        if(activelyPublished) {
+            return SeriesRef.dedupeAndSort(ImmutableList.<SeriesRef>builder().addAll(currentSeriesRefs).add(newSeriesRef).build());
+        } else {
+            return SeriesRef.dedupeAndSort(ImmutableList.<SeriesRef>builder().addAll(currentSeriesRefs).build());
+        }
     }
 
     private Maybe<Container> getContainer(String canonicalUri, DBCollection collection) {
