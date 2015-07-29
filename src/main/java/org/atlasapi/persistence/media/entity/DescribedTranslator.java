@@ -264,7 +264,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
             public Review apply(DBObject dbo) {
                 return reviewTranslator.fromDBObject(dbo);
             }
-            
+
         }).or(ImmutableSet.<Review>of()));
     }
     
@@ -332,7 +332,9 @@ public class DescribedTranslator implements ModelTranslator<Described> {
             dbObject.put(AUDIENCE_STATISTICS_KEY, audienceDbo);
         }
 
-        TranslatorUtils.from(dbObject, ITEM_PRIORITY_KEY, entity.getPriority());
+        if (entity.getPriority() != null) {
+            TranslatorUtils.from(dbObject, ITEM_PRIORITY_KEY, entity.getPriority());
+        }
 
         encodeLocalizedDescriptions(entity, dbObject);
         encodeLocalizedTitles(entity, dbObject);
