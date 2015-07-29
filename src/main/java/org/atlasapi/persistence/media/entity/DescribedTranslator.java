@@ -56,6 +56,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String REVIEWS_KEY = "reviews";
     protected static final String RATINGS_KEY = "ratings";
     protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
+    private static final String ITEM_PRIORITY_KEY = "priority";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
@@ -199,9 +200,13 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		}
 		
 		if (dbObject.containsField(AUDIENCE_STATISTICS_KEY)) {
-		    entity.setAudienceStatistics(audienceStatisticsTranslator.fromDBObject((DBObject)dbObject.get(AUDIENCE_STATISTICS_KEY)));
+		    entity.setAudienceStatistics(audienceStatisticsTranslator.fromDBObject((DBObject) dbObject.get(AUDIENCE_STATISTICS_KEY)));
 		}
-		
+
+        if(dbObject.containsField(ITEM_PRIORITY_KEY)) {
+            entity.setPriority(TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY));
+        }
+
         decodeLocalizedDescriptions(dbObject, entity);
         decodeLocalizedTitles(dbObject, entity);
         decodeReviews(dbObject, entity);
@@ -259,7 +264,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
             public Review apply(DBObject dbo) {
                 return reviewTranslator.fromDBObject(dbo);
             }
-            
+
         }).or(ImmutableSet.<Review>of()));
     }
     
@@ -326,7 +331,11 @@ public class DescribedTranslator implements ModelTranslator<Described> {
             audienceStatisticsTranslator.toDBObject(audienceDbo, entity.getAudienceStatistics());
             dbObject.put(AUDIENCE_STATISTICS_KEY, audienceDbo);
         }
-        
+
+        if (entity.getPriority() != null) {
+            TranslatorUtils.from(dbObject, ITEM_PRIORITY_KEY, entity.getPriority());
+        }
+
         encodeLocalizedDescriptions(entity, dbObject);
         encodeLocalizedTitles(entity, dbObject);
         encodeReviews(dbObject, entity);
