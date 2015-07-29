@@ -209,5 +209,19 @@ public class DescribedTranslatorTest {
         
         return localizedTitles;        
     }
-    
+
+    @Test
+    public void testPriorityTranslation() {
+        Content content = new Item();
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+
+        content.setPriority(42.0);
+        BasicDBObject dbo = new BasicDBObject();
+        translator.toDBObject(dbo, content);
+
+
+        Described fromDBO = translator.fromDBObject(dbo, new Item());
+
+        assertEquals(content.getPriority(), fromDBO.getPriority());
+    }
 }
