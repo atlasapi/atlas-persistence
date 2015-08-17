@@ -6,6 +6,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -48,7 +50,7 @@ public class MongoContentResolver implements KnownTypeContentResolver {
 
     public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
         Builder<String, Identified> results = ImmutableMap.builder();
-        
+        Set<String> foundUris = Sets.newHashSet();
         Multimap<DBCollection, String> idsGroupedByTable = HashMultimap.create();
         for (LookupRef lookupRef : lookupRefs) {
             idsGroupedByTable.put(contentTables.collectionFor(lookupRef.category()), lookupRef.uri());
@@ -60,7 +62,10 @@ public class MongoContentResolver implements KnownTypeContentResolver {
             if (found != null) {
                 for (DBObject dbo : found) {
                     Identified model = toModel(dbo);
-                    results.put(model.getCanonicalUri(), model);
+                    if (!foundUris.contains(model.getCanonicalUri())) {
+                        results.put(model.getCanonicalUri(), model);
+                        foundUris.add(model.getCanonicalUri());
+                    }
                 }
             }
         }

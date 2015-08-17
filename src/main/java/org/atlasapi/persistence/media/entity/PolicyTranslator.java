@@ -25,6 +25,8 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
     private static final String SERVICE_KEY = "service";
     private static final String TERMS_OF_USE_KEY = "termsOfUse";
     private static final String PRICING_KEY = "pricing";
+    private static final String SUBSCRIPTION_PACKAGES = "subscriptionPackages";
+    
     private final PricingTranslator pricingTranslator = new PricingTranslator();
 
     @Override
@@ -56,6 +58,9 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         }
         if (dbObject.containsField("network")) {
             entity.setNetwork(Network.fromKey(TranslatorUtils.toString(dbObject, "network")));
+        }
+        if (dbObject.containsField(SUBSCRIPTION_PACKAGES)) {
+            entity.setSubscriptionPackages(TranslatorUtils.toSet(dbObject, SUBSCRIPTION_PACKAGES));
         }
         
         entity.setService(TranslatorUtils.toLong(dbObject, SERVICE_KEY));
@@ -113,7 +118,7 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
             pricingDbObject.add(pricingTranslator.toDBObject(new BasicDBObject(), pricing));
         }
 
-
+        TranslatorUtils.fromIterable(dbObject, entity.getSubscriptionPackages(), SUBSCRIPTION_PACKAGES);
         dbObject.put(PRICING_KEY, pricingDbObject);
         return dbObject;
     }

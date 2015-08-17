@@ -139,6 +139,20 @@ public class DescribedTranslatorTest {
         assertEquals(content.getReviews(), fromDBO.getReviews());
         
     }
+    
+    @Test
+    public void testPriorityTanslation() {
+        Content content = new Item();
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        
+        content.setPriority(1.2);
+        BasicDBObject dbo = new BasicDBObject();
+        translator.toDBObject(dbo, content);
+        
+        Described fromDBO = translator.fromDBObject(dbo, new Item());
+        assertEquals(content.getPriority(), fromDBO.getPriority());
+        
+    }
 
     @Test
     public void testTranslateFromDBObjectForSegmentWithObjectAsDescription() {

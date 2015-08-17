@@ -57,6 +57,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String RATINGS_KEY = "ratings";
     protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     private static final String ITEM_PRIORITY_KEY = "priority";
+    protected static final String PRIORITY_KEY = "priority";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
@@ -154,6 +155,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		entity.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESC_KEY));
 		entity.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESC_KEY));
 		entity.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESC_KEY));
+		entity.setPriority(TranslatorUtils.toDouble(dbObject, PRIORITY_KEY));
 
 		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, FIRST_SEEN_KEY));
 		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY));
@@ -295,6 +297,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.fromSet(dbObject, entity.getGenres(), GENRES_KEY);
         TranslatorUtils.from(dbObject, IMAGE_KEY, entity.getImage());
         TranslatorUtils.fromDateTime(dbObject, LAST_FETCHED_KEY, entity.getLastFetched());
+        TranslatorUtils.from(dbObject, PRIORITY_KEY, entity.getPriority());
         
         if (entity.getPublisher() != null) {
         	TranslatorUtils.from(dbObject, PUBLISHER_KEY, entity.getPublisher().key());

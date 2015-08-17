@@ -36,6 +36,7 @@ import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
+import org.atlasapi.persistence.content.listing.MongoProgressStore;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -86,6 +87,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
@@ -118,9 +120,10 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${mongo.audit.dbname}") String auditDbName;
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
     public MongoContentPersistenceModule() {}
-    
+
+    @VisibleForTesting
     public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
-    		ReadPreference readPreference) {
+            ReadPreference readPreference) {
         this.mongo = mongo;
         this.db = db;
         this.log = log;
@@ -348,5 +351,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         } else {
             return new NoLoggingPersistenceAuditLog();
         }
+    }
+
+    public @Bean MongoProgressStore mongoProgressStore() {
+        return new MongoProgressStore(db);
     }
 }
