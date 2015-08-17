@@ -36,6 +36,7 @@ import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
+import org.atlasapi.persistence.content.listing.MongoProgressStore;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupResolver;
 import org.atlasapi.persistence.content.mongo.MongoContentGroupWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -347,5 +348,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         } else {
             return new NoLoggingPersistenceAuditLog();
         }
+    }
+
+    public @Bean MongoProgressStore mongoProgressStore() {
+        return new MongoProgressStore(db);
     }
 }
