@@ -57,7 +57,6 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String RATINGS_KEY = "ratings";
     protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     private static final String ITEM_PRIORITY_KEY = "priority";
-    protected static final String PRIORITY_KEY = "priority";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
@@ -126,6 +125,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     private final ReviewTranslator reviewTranslator;
     private final AudienceStatisticsTranslator audienceStatisticsTranslator;
     private final RatingsTranslator ratingsTranslator;
+    private final PriorityTranslator priorityTranslator;
 
 	public DescribedTranslator(IdentifiedTranslator identifiedTranslator, ImageTranslator imageTranslator) {
 		this.identifiedTranslator = identifiedTranslator;
@@ -136,6 +136,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         this.reviewTranslator = new ReviewTranslator();
         this.ratingsTranslator = new RatingsTranslator();
         this.audienceStatisticsTranslator = new AudienceStatisticsTranslator();
+        this.priorityTranslator = new PriorityTranslator();
 	}
 	
 	@Override
@@ -155,7 +156,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		entity.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESC_KEY));
 		entity.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESC_KEY));
 		entity.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESC_KEY));
-		entity.setPriority(TranslatorUtils.toDouble(dbObject, PRIORITY_KEY));
+		entity.setPriority(priorityTranslator.getPriority(dbObject));
 
 		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, FIRST_SEEN_KEY));
 		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY));
@@ -206,7 +207,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		}
 
         if(dbObject.containsField(ITEM_PRIORITY_KEY)) {
-            entity.setPriority(TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY));
+            entity.setPriority(priorityTranslator.getPriority(dbObject));
         }
 
         decodeLocalizedDescriptions(dbObject, entity);
@@ -297,7 +298,6 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         TranslatorUtils.fromSet(dbObject, entity.getGenres(), GENRES_KEY);
         TranslatorUtils.from(dbObject, IMAGE_KEY, entity.getImage());
         TranslatorUtils.fromDateTime(dbObject, LAST_FETCHED_KEY, entity.getLastFetched());
-        TranslatorUtils.from(dbObject, PRIORITY_KEY, entity.getPriority());
         
         if (entity.getPublisher() != null) {
         	TranslatorUtils.from(dbObject, PUBLISHER_KEY, entity.getPublisher().key());
@@ -336,7 +336,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         }
 
         if (entity.getPriority() != null) {
-            TranslatorUtils.from(dbObject, ITEM_PRIORITY_KEY, entity.getPriority());
+            priorityTranslator.setPriority(dbObject, entity);
         }
 
         encodeLocalizedDescriptions(entity, dbObject);
