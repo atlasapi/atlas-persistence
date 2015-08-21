@@ -71,7 +71,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.crewMemberTranslator = new CrewMemberTranslator();
         this.similarContentRefTranslator = new SimilarContentRefTranslator();
         this.versionTranslator = checkNotNull(versionTranslator);
-
     }
 
     @Override
