@@ -25,16 +25,29 @@ public class ContentListingProgress {
         return new ContentListingProgress(categoryFor(content), content.getPublisher(), content.getCanonicalUri());
     }
 
+    public static final ContentListingProgress progressFrom(Content content, Integer count) {
+        return new ContentListingProgress(categoryFor(content), content.getPublisher(), content.getCanonicalUri(), count);
+    }
+
     public static final ContentListingProgress START = new ContentListingProgress(null, null, null);
 
     private final ContentCategory category;
     private final Publisher publisher;
     private final String initialId;
+    private final Integer count;
+
+    public ContentListingProgress(ContentCategory table, Publisher publisher, String initialId, Integer count) {
+        this.category = table;
+        this.publisher = publisher;
+        this.initialId = initialId;
+        this.count = count;
+    }
 
     public ContentListingProgress(ContentCategory table, Publisher publisher, String initialId) {
         this.category = table;
         this.publisher = publisher;
         this.initialId = initialId;
+        this.count = null;
     }
 
     public ContentCategory getCategory() {
@@ -47,6 +60,10 @@ public class ContentListingProgress {
 
     public String getUri() {
         return initialId;
+    }
+
+    public Integer getCount() {
+        return count;
     }
 
     @Override

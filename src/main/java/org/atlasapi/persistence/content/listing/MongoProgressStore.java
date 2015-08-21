@@ -68,6 +68,10 @@ public class MongoProgressStore implements ProgressStore {
             update.unsetField(PUBLISHER);
         }
 
+        if (progress.getCount() != null) {
+            update.setField("count", progress.getCount());
+        }
+
         progressCollection.update(
                 where().fieldEquals(MongoConstants.ID, taskName).build(),
                 update.build(),
