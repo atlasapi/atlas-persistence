@@ -206,7 +206,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		    entity.setAudienceStatistics(audienceStatisticsTranslator.fromDBObject((DBObject) dbObject.get(AUDIENCE_STATISTICS_KEY)));
 		}
 
-        if(dbObject.containsField(ITEM_PRIORITY_KEY)) {
+        if (dbObject.containsField(ITEM_PRIORITY_KEY)) {
             entity.setPriority(priorityTranslator.getPriority(dbObject));
         }
 
