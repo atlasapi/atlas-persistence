@@ -12,13 +12,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Described;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.LocalizedDescription;
-import org.atlasapi.media.entity.LocalizedTitle;
-import org.atlasapi.media.entity.RelatedLink;
-import org.atlasapi.media.entity.Review;
+import com.google.common.collect.ImmutableList;
+import org.atlasapi.media.entity.*;
 import org.atlasapi.media.segment.Segment;
 import org.bson.BSONObject;
 import org.junit.Test;
@@ -229,7 +224,7 @@ public class DescribedTranslatorTest {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
-        content.setPriority(42.0);
+        content.setPriority(new Priority(47.0, ImmutableList.of("Score test 1", "Score test 2")));
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
 
