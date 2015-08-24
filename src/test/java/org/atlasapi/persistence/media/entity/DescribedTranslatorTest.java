@@ -13,13 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Described;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.LocalizedDescription;
-import org.atlasapi.media.entity.LocalizedTitle;
-import org.atlasapi.media.entity.RelatedLink;
-import org.atlasapi.media.entity.Review;
+import org.atlasapi.media.entity.*;
 import org.atlasapi.media.segment.Segment;
 import org.bson.BSONObject;
 import org.junit.Test;
@@ -151,7 +145,7 @@ public class DescribedTranslatorTest {
         translator.toDBObject(dbo, content);
         
         Described fromDBO = translator.fromDBObject(dbo, new Item());
-        assertEquals(content.getPriority(), fromDBO.getPriority());
+        assertEquals(content.getPriority().getScore(), fromDBO.getPriority().getReasons());
         
     }
 
