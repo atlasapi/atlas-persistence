@@ -13,7 +13,14 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import org.atlasapi.media.entity.*;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LocalizedDescription;
+import org.atlasapi.media.entity.LocalizedTitle;
+import org.atlasapi.media.entity.Priority;
+import org.atlasapi.media.entity.RelatedLink;
+import org.atlasapi.media.entity.Review;
 import org.atlasapi.media.segment.Segment;
 import org.bson.BSONObject;
 import org.junit.Test;
@@ -120,32 +127,18 @@ public class DescribedTranslatorTest {
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
         
         content.setReviews(ImmutableSet.of
-                (new Review(Locale.ENGLISH, "I am an English review."),
-                 new Review(Locale.FRENCH, "Je suis un examen en français.")     
-                ));
+            (new Review(Locale.ENGLISH, "I am an English review."),
+                new Review(Locale.FRENCH, "Je suis un examen en français.")
+            ));
         
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
         
-        assertEquals(2, ((BasicDBList)dbo.get(DescribedTranslator.REVIEWS_KEY)).size());
+        assertEquals(2, ((BasicDBList) dbo.get(DescribedTranslator.REVIEWS_KEY)).size());
         
         Described fromDBO = translator.fromDBObject(dbo, new Item());
         
         assertEquals(content.getReviews(), fromDBO.getReviews());
-        
-    }
-    
-    @Test
-    public void testPriorityTanslation() {
-        Content content = new Item();
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
-        
-        content.setPriority(1.2);
-        BasicDBObject dbo = new BasicDBObject();
-        translator.toDBObject(dbo, content);
-        
-        Described fromDBO = translator.fromDBObject(dbo, new Item());
-        assertEquals(content.getPriority(), fromDBO.getPriority());
         
     }
 
@@ -224,7 +217,7 @@ public class DescribedTranslatorTest {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
-        content.setPriority(new Priority(47.0, ImmutableList.of("Score test 1", "Score test 2")));
+        content.setPriority(new Priority(new Double(47.0), ImmutableList.of("Score test 1", "Score test 2")));
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
 
