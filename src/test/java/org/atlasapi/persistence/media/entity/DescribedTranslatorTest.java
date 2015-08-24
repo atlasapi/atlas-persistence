@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
@@ -144,8 +145,8 @@ public class DescribedTranslatorTest {
     public void testPriorityTanslation() {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
-        
-        content.setPriority(1.2);
+
+        content.setPriority(new Priority(47.0, ImmutableList.of("Score test 1", "Score test 2")));
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
         
