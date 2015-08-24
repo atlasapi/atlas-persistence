@@ -142,7 +142,7 @@ public class DescribedTranslatorTest {
     }
     
     @Test
-    public void testPriorityTanslation() {
+    public void testPriorityTranslation() {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
