@@ -23,13 +23,7 @@ public class PriorityTranslator {
             score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
         }
         if (dbObject.containsField(REASONS_KEY)) {
-            List<DBObject> dbos = TranslatorUtils.toDBObjectList(dbObject, REASONS_KEY);
-            for (Object object : dbos) {
-                if (object != null && object instanceof String) {
-                    String string = (String) object;
-                    priorityScoreReasons.add(string);
-                }
-            }
+            priorityScoreReasons = TranslatorUtils.toList(dbObject, REASONS_KEY);
         }
         return new Priority(score, priorityScoreReasons);
     }
