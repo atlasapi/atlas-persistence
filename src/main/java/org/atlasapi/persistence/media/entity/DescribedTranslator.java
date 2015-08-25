@@ -196,9 +196,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		}
 
         if (dbObject.containsField(ITEM_PRIORITY_KEY)) {
-            if(TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY) instanceof Double) {
+            try {
+                Double.parseDouble(TranslatorUtils.toString(dbObject, ITEM_PRIORITY_KEY));
                 entity.setPriority(new Priority(TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY), null));
-            } else {
+            } catch (NumberFormatException e) {
                 entity.setPriority(priorityTranslator.getPriority(dbObject));
             }
         }
