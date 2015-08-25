@@ -14,16 +14,20 @@ public class PriorityTranslator {
 
     private static final String SCORE_KEY = "score";
     private static final String REASONS_KEY = "reasons";
+    private static final String ITEM_PRIORITY_KEY = "priority";
 
     public Priority getPriority(DBObject dbObject) {
         Double score = null;
         List<String> priorityScoreReasons = Lists.newArrayList();
-
-        if (dbObject.containsField(SCORE_KEY)) {
-            score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
-        }
-        if (dbObject.containsField(REASONS_KEY)) {
-            priorityScoreReasons = TranslatorUtils.toList(dbObject, REASONS_KEY);
+        if(dbObject.containsField(ITEM_PRIORITY_KEY)) {
+            score = Double.parseDouble(TranslatorUtils.toString(dbObject, ITEM_PRIORITY_KEY));
+        } else {
+            if (dbObject.containsField(SCORE_KEY)) {
+                score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
+            }
+            if (dbObject.containsField(REASONS_KEY)) {
+                priorityScoreReasons = TranslatorUtils.toList(dbObject, REASONS_KEY);
+            }
         }
         return new Priority(score, priorityScoreReasons);
     }
