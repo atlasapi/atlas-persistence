@@ -12,16 +12,19 @@ import java.util.List;
 public class PriorityTranslator {
 
     private static final String SCORE_KEY = "score";
-    private static final String REASON_KEY = "reason";
     private static final String REASONS_KEY = "reasons";
 
     public Priority getPriority(DBObject dbObject) {
-        Double score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
+        Double score = null;
         List<String> priorityScoreReasons = null;
+
+        if (dbObject.containsField(SCORE_KEY)) {
+            score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
+        }
         if (dbObject.containsField(REASONS_KEY)) {
             List<DBObject> dbos = TranslatorUtils.toDBObjectList(dbObject, REASONS_KEY);
             for (DBObject object : dbos) {
-                priorityScoreReasons.add(TranslatorUtils.toString(object, REASON_KEY));
+                priorityScoreReasons.add(TranslatorUtils.toString(object));
             }
         }
         return new Priority(score, priorityScoreReasons);
