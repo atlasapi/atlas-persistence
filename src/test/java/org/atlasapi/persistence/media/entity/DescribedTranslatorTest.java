@@ -134,19 +134,19 @@ public class DescribedTranslatorTest {
         assertEquals(content.getReviews(), fromDBO.getReviews());
         
     }
-    
+
     @Test
     public void testPriorityTranslation() {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
-        content.setPriority(new Priority(47.0, ImmutableList.of("Score test 1", "Score test 2")));
+        content.setPriority(new Priority(new Double(47.0), ImmutableList.of("Score test 1", "Score test 2")));
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
-        
+
         Described fromDBO = translator.fromDBObject(dbo, new Item());
-        assertEquals(content.getPriority().getScore(), fromDBO.getPriority().getReasons());
-        
+
+        assertEquals(content.getPriority(), fromDBO.getPriority());
     }
 
     @Test
@@ -176,7 +176,7 @@ public class DescribedTranslatorTest {
         assertThat(segment.getDescription(), is("description title"));
 
     }
-    
+
     private Set<LocalizedDescription> localizedDescriptions() {
         Set<LocalizedDescription> localizedDescriptions = Sets.newHashSet();
         
@@ -184,13 +184,13 @@ public class DescribedTranslatorTest {
         desc1.setLocale(new Locale("en", "GB"));
         desc1.setDescription("Desc 1");
         desc1.setShortDescription("Desc 1");
-        
+
         LocalizedDescription desc2 = new LocalizedDescription();
         desc2.setLocale(new Locale("en", "US"));
         desc2.setDescription("Desc 2 Medium");
         desc2.setShortDescription("Desc 2");
         desc2.setMediumDescription("Desc 2 Medium");
-        
+
         localizedDescriptions.add(desc1);
         localizedDescriptions.add(desc2);
         
@@ -215,7 +215,7 @@ public class DescribedTranslatorTest {
         localizedTitles.add(title1);
         localizedTitles.add(title2);
         localizedTitles.add(title3);
-        
+
         return localizedTitles;        
     }
     

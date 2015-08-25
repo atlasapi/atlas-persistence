@@ -13,7 +13,6 @@ import java.util.List;
 public class PriorityTranslator {
 
     private static final String SCORE_KEY = "score";
-    private static final String REASON_KEY = "reason";
     private static final String REASONS_KEY = "reasons";
 
     public Priority getPriority(DBObject dbObject) {
