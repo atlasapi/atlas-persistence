@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
@@ -16,15 +17,18 @@ public class PriorityTranslator {
 
     public Priority getPriority(DBObject dbObject) {
         Double score = null;
-        List<String> priorityScoreReasons = null;
+        List<String> priorityScoreReasons = Lists.newArrayList();
 
         if (dbObject.containsField(SCORE_KEY)) {
             score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
         }
         if (dbObject.containsField(REASONS_KEY)) {
             List<DBObject> dbos = TranslatorUtils.toDBObjectList(dbObject, REASONS_KEY);
-            for (DBObject object : dbos) {
-                priorityScoreReasons.add(TranslatorUtils.toString(object));
+            for (Object object : dbos) {
+                if (object != null && object instanceof String) {
+                    String string = (String) object;
+                    priorityScoreReasons.add(string);
+                }
             }
         }
         return new Priority(score, priorityScoreReasons);
