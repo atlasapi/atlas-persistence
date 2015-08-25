@@ -4,18 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-import org.atlasapi.media.entity.Described;
-import org.atlasapi.media.entity.EntityType;
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.Image;
-import org.atlasapi.media.entity.LocalizedDescription;
-import org.atlasapi.media.entity.LocalizedTitle;
-import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.media.entity.Rating;
-import org.atlasapi.media.entity.RelatedLink;
-import org.atlasapi.media.entity.Review;
-import org.atlasapi.media.entity.Specialization;
+import org.atlasapi.media.entity.*;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -207,7 +196,11 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		}
 
         if (dbObject.containsField(ITEM_PRIORITY_KEY)) {
-            entity.setPriority(priorityTranslator.getPriority(dbObject));
+            if(TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY) instanceof Double) {
+                entity.setPriority(new Priority(TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY), null));
+            } else {
+                entity.setPriority(priorityTranslator.getPriority(dbObject));
+            }
         }
 
         decodeLocalizedDescriptions(dbObject, entity);
