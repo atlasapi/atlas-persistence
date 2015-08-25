@@ -195,15 +195,6 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		    entity.setAudienceStatistics(audienceStatisticsTranslator.fromDBObject((DBObject) dbObject.get(AUDIENCE_STATISTICS_KEY)));
 		}
 
-        if (dbObject.containsField(ITEM_PRIORITY_KEY)) {
-            try {
-                Double.parseDouble(TranslatorUtils.toString(dbObject, ITEM_PRIORITY_KEY));
-                entity.setPriority(new Priority(TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY), null));
-            } catch (NumberFormatException e) {
-                entity.setPriority(priorityTranslator.getPriority(dbObject));
-            }
-        }
-
         decodeLocalizedDescriptions(dbObject, entity);
         decodeLocalizedTitles(dbObject, entity);
         decodeReviews(dbObject, entity);
