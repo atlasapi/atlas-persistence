@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Priority;
@@ -18,24 +19,37 @@ public class PriorityTranslator {
 
     public Priority getPriority(DBObject dbObject) {
         Double score = null;
-        List<String> priorityScoreReasons = Lists.newArrayList();
-        if(dbObject.containsField(ITEM_PRIORITY_KEY)) {
+        List<String> scoreReasons = Lists.newArrayList();
+        try {
             score = TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY);
-        } else {
-            if (dbObject.containsField(SCORE_KEY)) {
-                score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
-            }
-            if (dbObject.containsField(REASONS_KEY)) {
-                priorityScoreReasons = TranslatorUtils.toList(dbObject, REASONS_KEY);
+        } catch (ClassCastException e) {
+            DBObject priority = TranslatorUtils.toDBObject(dbObject, ITEM_PRIORITY_KEY);
+            score = TranslatorUtils.toDouble(priority, SCORE_KEY);
+            List<DBObject> reasons = TranslatorUtils.toDBObjectList(priority, REASONS_KEY);
+            for (Object reason : reasons) {
+                if (reason != null && reason instanceof String) {
+                    String string = (String) reason;
+                    scoreReasons.add(string);
+                }
             }
         }
-        return new Priority(score, priorityScoreReasons);
+        return new Priority(score, scoreReasons);
     }
 
     public void setPriority(DBObject dbObject, Described entity) {
+        TranslatorUtils.from(dbObject, ITEM_PRIORITY_KEY, getPriorityDBObject(entity));
+    }
+
+    public DBObject getPriorityDBObject(Described entity) {
+        DBObject dbObject = new BasicDBObject();
         TranslatorUtils.from(dbObject, SCORE_KEY, entity.getPriority().getScore());
+
         BasicDBList list = new BasicDBList();
-        list.addAll(ImmutableSet.copyOf(entity.getPriority().getReasons()));
+        if (entity.getPriority().getReasons() != null) {
+            list.addAll(ImmutableSet.copyOf(entity.getPriority().getReasons()));
+        }
+
         TranslatorUtils.from(dbObject, REASONS_KEY, list);
+        return dbObject;
     }
 }
