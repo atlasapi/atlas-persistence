@@ -157,7 +157,9 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		entity.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESC_KEY));
 		entity.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESC_KEY));
 		entity.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESC_KEY));
-        entity.setPriority(priorityTranslator.getPriority(dbObject));
+        if (dbObject.containsField(ITEM_PRIORITY_KEY)) {
+            entity.setPriority(priorityTranslator.getPriority(dbObject));
+        }
 
 		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, FIRST_SEEN_KEY));
 		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY));
