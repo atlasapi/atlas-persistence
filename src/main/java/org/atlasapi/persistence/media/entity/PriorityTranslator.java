@@ -20,7 +20,7 @@ public class PriorityTranslator {
         Double score = null;
         List<String> priorityScoreReasons = Lists.newArrayList();
         if(dbObject.containsField(ITEM_PRIORITY_KEY)) {
-            score = Double.parseDouble(TranslatorUtils.toString(dbObject, ITEM_PRIORITY_KEY));
+            score = TranslatorUtils.toDouble(dbObject, ITEM_PRIORITY_KEY);
         } else {
             if (dbObject.containsField(SCORE_KEY)) {
                 score = TranslatorUtils.toDouble(dbObject, SCORE_KEY);
