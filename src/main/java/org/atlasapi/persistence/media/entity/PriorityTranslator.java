@@ -1,9 +1,9 @@
 package org.atlasapi.persistence.media.entity;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Priority;
@@ -36,9 +36,20 @@ public class PriorityTranslator {
     }
 
     public void setPriority(DBObject dbObject, Described entity) {
+        TranslatorUtils.from(dbObject, ITEM_PRIORITY_KEY, getPriorityDBObject(entity));
+    }
+
+    public DBObject getPriorityDBObject(Described entity) {
+        DBObject dbObject = new BasicDBObject();
         TranslatorUtils.from(dbObject, SCORE_KEY, entity.getPriority().getScore());
+
         BasicDBList list = new BasicDBList();
-        list.addAll(ImmutableSet.copyOf(entity.getPriority().getReasons()));
-        TranslatorUtils.from(dbObject, REASONS_KEY, list);
+        if (entity.getPriority().getReasons() != null) {
+            for (String reason : entity.getPriority().getReasons()) {
+                list.add(reason);
+            }
+        }
+        dbObject.put(REASONS_KEY, list);
+        return dbObject;
     }
 }
