@@ -15,7 +15,6 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import org.atlasapi.media.entity.*;
 import org.atlasapi.media.segment.Segment;
-import org.bson.BSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
