@@ -11,7 +11,6 @@ import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.Priority;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Rating;
 import org.atlasapi.media.entity.RelatedLink;
