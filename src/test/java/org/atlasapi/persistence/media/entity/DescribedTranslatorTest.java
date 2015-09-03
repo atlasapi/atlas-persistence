@@ -8,11 +8,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.*;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import org.atlasapi.media.entity.*;
 import org.atlasapi.media.segment.Segment;
 import org.junit.Test;
@@ -21,9 +23,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -120,7 +119,7 @@ public class DescribedTranslatorTest {
         
         content.setReviews(ImmutableSet.of
                 (new Review(Locale.ENGLISH, "I am an English review."),
-                 new Review(Locale.FRENCH, "Je suis un examen en français.")     
+                        new Review(Locale.FRENCH, "Je suis un examen en français.")
                 ));
         
         BasicDBObject dbo = new BasicDBObject();
@@ -135,7 +134,7 @@ public class DescribedTranslatorTest {
     }
 
     @Test
-    public void testPriorityTranslation() {
+    public void testPriorityTranslationFromDb() {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
@@ -146,6 +145,29 @@ public class DescribedTranslatorTest {
         Described fromDBO = translator.fromDBObject(dbo, new Item());
 
         assertEquals(content.getPriority(), fromDBO.getPriority());
+    }
+
+    @Test
+    public void testPriorityTranslationToDb() {
+        List<String> scoreReasons = Lists.newArrayList();
+        Content content = new Item();
+        BasicDBObject dbo = new BasicDBObject();
+        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+
+        content.setPriority(new Priority(new Double(47.0), ImmutableList.of("Score test 1", "Score test 2")));
+        DBObject fromDBO = translator.toDBObject(dbo, content);
+
+        DBObject priority = TranslatorUtils.toDBObject(fromDBO, "priority");
+        Double score = TranslatorUtils.toDouble(priority, "score");
+        List<DBObject> reasons = TranslatorUtils.toDBObjectList(priority, "reasons");
+        for (Object reason : reasons) {
+            if (reason != null && reason instanceof String) {
+                String string = (String) reason;
+                scoreReasons.add(string);
+            }
+        }
+
+        assertEquals(content.getPriority().getScore(), score);
     }
 
     @Test
