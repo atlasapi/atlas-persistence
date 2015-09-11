@@ -6,6 +6,8 @@ import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
+import org.atlasapi.media.entity.Event;
+import org.atlasapi.media.entity.Topic;
 import org.atlasapi.media.product.IdSettingProductStore;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
@@ -59,8 +61,11 @@ import org.atlasapi.persistence.content.people.PersonStore;
 import org.atlasapi.persistence.content.people.QueuingItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.QueuingPersonWriter;
 import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
+import org.atlasapi.persistence.event.EventResolver;
 import org.atlasapi.persistence.event.EventStore;
+import org.atlasapi.persistence.event.EventWriter;
 import org.atlasapi.persistence.event.IdSettingEventStore;
+import org.atlasapi.persistence.event.MessageQueueingEventWriter;
 import org.atlasapi.persistence.event.MongoEventStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
@@ -78,6 +83,7 @@ import org.atlasapi.persistence.topic.MessageQueueingTopicWriter;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -87,6 +93,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
@@ -114,10 +121,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.topics.changes}") String topicChanges;
     private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
     private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
+    private @Value("${messaging.destination.event.changes}") String eventChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
     private @Value("${mongo.audit.dbname}") String auditDbName;
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
+
     public MongoContentPersistenceModule() {}
     
     @VisibleForTesting
@@ -151,6 +160,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public MessageSender<ScheduleUpdateMessage> scheduleChanges() {
         return messagingModule.messageSenderFactory().makeMessageSender(scheduleChanges,
                 JacksonMessageSerializer.forType(ScheduleUpdateMessage.class));
+    }
+
+    @Bean
+    @Lazy(true)
+    public MessageSender<EntityUpdatedMessage> eventChanges() {
+        return messagingModule.messageSenderFactory().makeMessageSender(eventChanges,
+                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
     }
 
     private @Autowired ChannelResolver channelResolver;
@@ -287,9 +303,49 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public @Primary @Bean SegmentResolver segmentResolver() {
         return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
     }
-    
+
+    /**
+     * @deprecated Use {@link MongoContentPersistenceModule#eventWriter()} and
+     * {@link MongoContentPersistenceModule#eventResolver()} instead
+     */
+    @Deprecated
     public @Bean EventStore eventStore() {
-        return new IdSettingEventStore(new MongoEventStore(db), new MongoSequentialIdGenerator(db, "events"));
+        return new EventStore() {
+
+            private EventWriter eventWriter = eventWriter();
+            private EventResolver eventResolver = eventResolver();
+
+            @Override public Optional<Event> fetch(Long id) {
+                return eventResolver.fetch(id);
+            }
+
+            @Override public Optional<Event> fetch(String uri) {
+                return eventResolver.fetch(uri);
+            }
+
+            @Override public Iterable<Event> fetch(Optional<Topic> eventGroup,
+                    Optional<DateTime> from) {
+                return eventResolver.fetch(eventGroup, from);
+            }
+
+            @Override public void createOrUpdate(Event event) {
+                eventWriter.createOrUpdate(event);
+            }
+        };
+    }
+    
+    public @Bean EventWriter eventWriter() {
+        IdSettingEventStore eventStore = new IdSettingEventStore(new MongoEventStore(db),
+                new MongoSequentialIdGenerator(db, "events"));
+
+        if(Boolean.valueOf(messagingEnabled)) {
+            return new MessageQueueingEventWriter(eventStore, eventChanges());
+        }
+        return eventStore;
+    }
+
+    public @Bean EventResolver eventResolver() {
+        return new MongoEventStore(db);
     }
     
     // not sure if this is right
