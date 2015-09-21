@@ -41,6 +41,7 @@ public class RestrictionTranslator implements ModelTranslator<Restriction> {
 		model.setMinimumAge(TranslatorUtils.toInteger(dbObject, MINIMUM_AGE));
 		model.setMessage(TranslatorUtils.toString(dbObject, MESSAGE));
 		model.setAuthority(TranslatorUtils.toString(dbObject, AUTHORITY));
+		model.setRating(TranslatorUtils.toString(dbObject, RATING));
 		
 		return model;
 	}
