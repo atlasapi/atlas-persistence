@@ -58,7 +58,7 @@ public class ChildRefWriter {
         ChildRef childRef = episode.childRef();
 
         if (episode.getSeriesRef() == null) { // just ensure item in container.
-            includeChildRefInContainer(episode, childRef, containers, CHILDREN_KEY);
+            includeChildRefInContainer(episode, childRef, containers, CHILDREN_KEY, episode.isActivelyPublished());
             return;
         }
 
@@ -79,8 +79,8 @@ public class ChildRefWriter {
         episode.setContainer(maybeBrand.requireValue());
         episode.setSeries((Series)maybeSeries.requireValue());
         
-        addChildRef(childRef, containers, maybeBrand.requireValue());
-        addChildRef(childRef, programmeGroups, maybeSeries.requireValue());
+        addChildRef(childRef, containers, maybeBrand.requireValue(), episode.isActivelyPublished());
+        addChildRef(childRef, programmeGroups, maybeSeries.requireValue(), episode.isActivelyPublished());
 
     }
 
@@ -127,34 +127,39 @@ public class ChildRefWriter {
     }
 
     public void includeItemInTopLevelContainer(Item item) {
-        includeChildRefInContainer(item, item.childRef(), containers, CHILDREN_KEY);
+        includeChildRefInContainer(item, item.childRef(), containers, CHILDREN_KEY, item.isActivelyPublished());
     }
 
-    private void includeChildRefInContainer(Item item, ChildRef ref, DBCollection collection, String key) {
+    private void includeChildRefInContainer(Item item, ChildRef ref, DBCollection collection, String key, boolean activelyPublished) {
 
         String containerUri = item.getContainer().getUri();
         Maybe<Container> maybeContainer = getContainer(containerUri, collection);
 
         if (maybeContainer.hasValue()) {
             Container container = maybeContainer.requireValue();
-            addChildRef(ref, collection, container);
+            addChildRef(ref, collection, container, item.isActivelyPublished());
             item.setContainer(container);
         } else {
             throw new IllegalStateException(String.format("Container %s not found in %s for child ref %s", containerUri, collection.getName(), ref.getUri()));
         }
     }
 
-    private void addChildRef(ChildRef ref, DBCollection collection, Container container) {
-        List<ChildRef> merged = mergeChildRefs(ref, container.getChildRefs());
+    private void addChildRef(ChildRef ref, DBCollection collection, Container container, boolean activelyPublished) {
+        List<ChildRef> merged = mergeChildRefs(ref, container.getChildRefs(), activelyPublished);
         container.setThisOrChildLastUpdated(laterOf(container.getThisOrChildLastUpdated(), ref.getUpdated()));
         container.setChildRefs(merged);
         save(container, collection);
     }
 
-    private List<ChildRef> mergeChildRefs(ChildRef newChildRef, Iterable<ChildRef> currentChildRefs) {
+    private List<ChildRef> mergeChildRefs(ChildRef newChildRef, Iterable<ChildRef> currentChildRefs, boolean activelyPublished) {
         // filter out new refs so they can  be overwritten.
         currentChildRefs = filter(currentChildRefs, not(equalTo(newChildRef)));
-        return ChildRef.dedupeAndSort(ImmutableList.<ChildRef> builder().addAll(currentChildRefs).add(newChildRef).build());
+        if (activelyPublished) {
+            return ChildRef.dedupeAndSort(ImmutableList.<ChildRef> builder().addAll(currentChildRefs).add(newChildRef).build());
+        } else {
+            return ChildRef.dedupeAndSort(ImmutableList.<ChildRef> builder().addAll(currentChildRefs).build());
+        }
+        
     }
     
     private List<SeriesRef> mergeSeriesRefs(SeriesRef newSeriesRef, Iterable<SeriesRef> currentSeriesRefs, Boolean activelyPublished) {

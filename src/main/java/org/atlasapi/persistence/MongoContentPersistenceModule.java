@@ -94,6 +94,7 @@ import org.springframework.context.annotation.Primary;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
@@ -200,7 +201,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
             contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
         }
         if (Boolean.valueOf(generateIds)) {
-            contentWriter = new IdSettingContentWriter(lookupStore(), new MongoSequentialIdGenerator(db, "content"), contentWriter);
+            contentWriter = new IdSettingContentWriter(lookupStore(), contentIdGenerator(), contentWriter);
         }
         return contentWriter;
     }
@@ -217,7 +218,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return new MongoLookupEntryStore(db.collection("lookup"), 
                 persistenceAuditLog(), readPreference);
     }
-    
+
+    public @Primary @Bean IdGenerator contentIdGenerator() {
+        return new MongoSequentialIdGenerator(db, "content");
+    }
+
     private LookupWriter explicitLookupWriter() {
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"), 
                 persistenceAuditLog(), ReadPreference.primary());

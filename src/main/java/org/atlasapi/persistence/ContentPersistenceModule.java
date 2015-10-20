@@ -14,6 +14,8 @@ import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 
+import com.metabroadcast.common.ids.IdGenerator;
+
 public interface ContentPersistenceModule {
 
     ContentGroupWriter contentGroupWriter();
@@ -41,4 +43,6 @@ public interface ContentPersistenceModule {
 	ProductResolver productResolver();
 	
 	PeopleQueryResolver peopleQueryResolver();
+
+	IdGenerator contentIdGenerator();
 }
