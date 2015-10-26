@@ -15,7 +15,15 @@ import java.util.Set;
 
 import com.google.common.collect.*;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import org.atlasapi.media.entity.*;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LocalizedDescription;
+import org.atlasapi.media.entity.LocalizedTitle;
+import org.atlasapi.media.entity.Priority;
+import org.atlasapi.media.entity.PriorityScoreReasons;
+import org.atlasapi.media.entity.RelatedLink;
+import org.atlasapi.media.entity.Review;
 import org.atlasapi.media.segment.Segment;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -138,7 +146,7 @@ public class DescribedTranslatorTest {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
-        content.setPriority(new Priority(new Double(47.0), ImmutableList.of("Score test 1", "Score test 2")));
+        content.setPriority(new Priority(new Double(47.0), new PriorityScoreReasons(ImmutableList.of("Positive reason test"), ImmutableList.of("Negative reason test"))));
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
 
@@ -154,13 +162,21 @@ public class DescribedTranslatorTest {
         BasicDBObject dbo = new BasicDBObject();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
-        content.setPriority(new Priority(new Double(47.0), ImmutableList.of("Score test 1", "Score test 2")));
+        content.setPriority(new Priority(new Double(47.0), new PriorityScoreReasons(ImmutableList.of("Positive reason test"), ImmutableList.of("Negative reason test"))));
         DBObject fromDBO = translator.toDBObject(dbo, content);
 
         DBObject priority = TranslatorUtils.toDBObject(fromDBO, "priority");
         Double score = TranslatorUtils.toDouble(priority, "score");
-        List<DBObject> reasons = TranslatorUtils.toDBObjectList(priority, "reasons");
-        for (Object reason : reasons) {
+        DBObject reasons = TranslatorUtils.toDBObject(priority, "reasons");
+        List<DBObject> positiveReasons = TranslatorUtils.toDBObjectList(priority, "positive");
+        List<DBObject> negativeReasons = TranslatorUtils.toDBObjectList(priority, "negative");
+        for (Object reason : positiveReasons) {
+            if (reason != null && reason instanceof String) {
+                String string = (String) reason;
+                scoreReasons.add(string);
+            }
+        }
+        for (Object reason : negativeReasons) {
             if (reason != null && reason instanceof String) {
                 String string = (String) reason;
                 scoreReasons.add(string);
