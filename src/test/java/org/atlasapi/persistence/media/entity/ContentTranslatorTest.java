@@ -5,11 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Event;
-import org.atlasapi.media.entity.EventRef;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.entity.*;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -39,7 +35,7 @@ public class ContentTranslatorTest {
     
     @Test
     public void testEventRefTranslation() {
-        EventRef event = new EventRef(1234l);
+        EventRef event = new EventRef(1234l, Publisher.BBC);
         List<EventRef> events = ImmutableList.of(event);
         Content content = createContentWithEventRefs(events);
         
@@ -48,6 +44,7 @@ public class ContentTranslatorTest {
         EventRef translatedEvent = Iterables.getOnlyElement(translated.events());
         
         assertEquals(event.id(), translatedEvent.id());
+        assertEquals(event.getPublisher(),translatedEvent.getPublisher());
     }
 
     private Content createContentWithEventRefs(Iterable<EventRef> events) {
