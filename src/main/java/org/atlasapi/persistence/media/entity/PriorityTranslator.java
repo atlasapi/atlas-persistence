@@ -39,7 +39,7 @@ public class PriorityTranslator {
             }
 
             List<DBObject> negativeReasons = TranslatorUtils.toDBObjectList(priorityReasons, NEGATIVE_REASONS_KEY);
-            for (Object reason : positiveReasons) {
+            for (Object reason : negativeReasons) {
                 if (reason != null && reason instanceof String) {
                     String string = (String) reason;
                     negativeScoreReasons.add(string);
