@@ -146,44 +146,69 @@ public class DescribedTranslatorTest {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
-        content.setPriority(new Priority(new Double(47.0), new PriorityScoreReasons(ImmutableList.of("Positive reason test"), ImmutableList.of("Negative reason test"))));
+        content.setPriority(new Priority(new Double(47.0), new PriorityScoreReasons(
+                ImmutableList.of("Positive reason test 1", "Positive reason test 2"),
+                ImmutableList.of("Negative reason test 1", "Negative reason test 2", "Negative reason test 3")
+        )));
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
 
         Described fromDBO = translator.fromDBObject(dbo, new Item());
 
-        assertEquals(content.getPriority(), fromDBO.getPriority());
+        assertEquals(content.getPriority().getScore(), fromDBO.getPriority().getScore());
+        assertEquals(content.getPriority().getReasons().getPositive(),
+                fromDBO.getPriority().getReasons().getPositive());
+        assertEquals(content.getPriority().getReasons().getNegative(),
+                fromDBO.getPriority().getReasons().getNegative());
     }
 
     @Test
     public void testPriorityTranslationToDb() {
-        List<String> scoreReasons = Lists.newArrayList();
+        List<String> positiveScoreReasons = Lists.newArrayList();
+        List<String> negativeScoreReasons = Lists.newArrayList();
         Content content = new Item();
         BasicDBObject dbo = new BasicDBObject();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
 
-        content.setPriority(new Priority(new Double(47.0), new PriorityScoreReasons(ImmutableList.of("Positive reason test"), ImmutableList.of("Negative reason test"))));
+        content.setPriority(new Priority(
+                new Double(47.0),
+                new PriorityScoreReasons(
+                        ImmutableList.of("Positive reason test 1","Positive reason test 2","Positive reason test 3"),
+                        ImmutableList.of("Negative reason test 1", "Negative reason test 2", "Negative reason test 3", "Negative reason test 4")
+                )
+        ));
         DBObject fromDBO = translator.toDBObject(dbo, content);
 
         DBObject priority = TranslatorUtils.toDBObject(fromDBO, "priority");
         Double score = TranslatorUtils.toDouble(priority, "score");
         DBObject reasons = TranslatorUtils.toDBObject(priority, "reasons");
-        List<DBObject> positiveReasons = TranslatorUtils.toDBObjectList(priority, "positive");
-        List<DBObject> negativeReasons = TranslatorUtils.toDBObjectList(priority, "negative");
+        List<String> positiveReasons = TranslatorUtils.toList(reasons, "positive");
+        List<String> negativeReasons = TranslatorUtils.toList(reasons, "negative");
         for (Object reason : positiveReasons) {
             if (reason != null && reason instanceof String) {
                 String string = (String) reason;
-                scoreReasons.add(string);
+                positiveScoreReasons.add(string);
             }
         }
         for (Object reason : negativeReasons) {
             if (reason != null && reason instanceof String) {
                 String string = (String) reason;
-                scoreReasons.add(string);
+                negativeScoreReasons.add(string);
             }
         }
 
         assertEquals(content.getPriority().getScore(), score);
+
+        assertEquals(3, positiveReasons.size());
+        assertEquals("Positive reason test 1", positiveReasons.get(0));
+        assertEquals("Positive reason test 2", positiveReasons.get(1));
+        assertEquals("Positive reason test 3", positiveReasons.get(2));
+
+        assertEquals(4, negativeReasons.size());
+        assertEquals("Negative reason test 1", negativeReasons.get(0));
+        assertEquals("Negative reason test 2", negativeReasons.get(1));
+        assertEquals("Negative reason test 3", negativeReasons.get(2));
+        assertEquals("Negative reason test 4", negativeReasons.get(3));
     }
 
     @Test
