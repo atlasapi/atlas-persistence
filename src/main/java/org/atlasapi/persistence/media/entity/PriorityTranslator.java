@@ -57,7 +57,7 @@ public class PriorityTranslator {
     }
 
     public List<String> getPositivePriorityScoreReasonsFromDB(DBObject priorityReasons) {
-        List<String> positiveScoreReasons = new ArrayList<>();
+        List<String> positiveScoreReasons = Lists.newArrayList();
         Optional<List<String>> positiveReasons = Optional.of(TranslatorUtils
                 .toList(priorityReasons, POSITIVE_REASONS_KEY));
 
@@ -73,7 +73,7 @@ public class PriorityTranslator {
     }
 
     public List<String> getNegativePriorityScoreReasonsFromDB(DBObject priorityReasons) {
-        List<String> negativeScoreReasons = new ArrayList<>();
+        List<String> negativeScoreReasons = Lists.newArrayList();
         Optional<List<String>> negativeReasons = Optional.of(TranslatorUtils
                 .toList(priorityReasons, NEGATIVE_REASONS_KEY));
 
