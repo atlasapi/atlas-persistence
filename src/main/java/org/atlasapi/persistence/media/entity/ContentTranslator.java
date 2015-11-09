@@ -29,6 +29,8 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
+import javax.annotation.Nullable;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ContentTranslator implements ModelTranslator<Content> {
@@ -55,7 +57,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final CrewMemberTranslator crewMemberTranslator;
     private final SimilarContentRefTranslator similarContentRefTranslator;
     private final VersionTranslator versionTranslator;
-
+    private final EventRefTranslator eventRefTranslator;
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
         this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec), new VersionTranslator(idCodec));
@@ -71,6 +73,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.crewMemberTranslator = new CrewMemberTranslator();
         this.similarContentRefTranslator = new SimilarContentRefTranslator();
         this.versionTranslator = checkNotNull(versionTranslator);
+        this.eventRefTranslator = new EventRefTranslator();
 
     }
 
@@ -83,6 +86,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         decodeTopics(dbObject, entity);
         decodeContentGroups(dbObject, entity);
         decodeLanguages(dbObject, entity);
+        decodeEvents(dbObject, entity);
         decodeCertificates(dbObject, entity);
         entity.setYear(TranslatorUtils.toInteger(dbObject, YEAR_KEY));
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
@@ -97,16 +101,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
                     entity.addPerson(crewMember);
                 }
             }
-        }
-
-        Optional<Iterable<EventRef>> events = TranslatorUtils.toIterable(dbObject, EVENTS_KEY, new Function<DBObject, EventRef>() {
-            @Override
-            public EventRef apply(DBObject input) {
-                return new EventRef(TranslatorUtils.toLong(input, MongoConstants.ID));
-            }
-        });
-        if (events.isPresent()) {
-            entity.setEventRefs(events.get());
         }
 
         List<DBObject> versionList = TranslatorUtils.toDBObjectList(dbObject, VERSIONS_KEY);
@@ -171,6 +165,18 @@ public class ContentTranslator implements ModelTranslator<Content> {
         }
     }
 
+    private void decodeEvents(DBObject dbObject, Content entity) {
+        if(dbObject.containsField(EVENTS_KEY)) {
+            entity.setEventRefs(Iterables.transform((Iterable<DBObject>) dbObject.get(EVENTS_KEY), new Function<DBObject, EventRef>() {
+
+                @Override
+                public EventRef apply(DBObject dbObject) {
+                    return eventRefTranslator.fromDBObject(dbObject);
+                }
+            }));
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private void decodeKeyPhrases(DBObject dbObject, Content entity) {
         if (dbObject.containsField(PHRASES_KEY)) {
@@ -205,6 +211,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         encodeTopics(dbObject, entity);
         encodeContentGroups(dbObject, entity);
         encodeLanguages(dbObject, entity);
+        encodeEvents(dbObject, entity);
         encodeCertificates(dbObject, entity.getCertificates());
         TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
         TranslatorUtils.from(dbObject, GENERIC_DESCRIPTION_KEY, entity.getGenericDescription());
@@ -219,14 +226,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
             dbObject.put(PEOPLE, list);
         }
         
-        TranslatorUtils.fromIterable(dbObject, EVENTS_KEY, entity.events(), new Function<EventRef, DBObject>() {
-            @Override
-            public DBObject apply(EventRef input) {
-                DBObject dbo = new BasicDBObject();
-                TranslatorUtils.from(dbo, MongoConstants.ID, input.id());
-                return dbo;
-            }
-        });
         if (!entity.getVersions().isEmpty()) {
             BasicDBList list = new BasicDBList();
             for (Version version: VERSION_ORDERING.immutableSortedCopy(entity.getVersions())) {
@@ -277,6 +276,16 @@ public class ContentTranslator implements ModelTranslator<Content> {
                 values.add(contentTopicTranslator.toDBObject(topicRef));
             }
             dbObject.put(TOPICS_KEY, values);
+        }
+    }
+
+    private void encodeEvents(DBObject dbObject, Content entity) {
+        if(!entity.events().isEmpty()) {
+            BasicDBList values = new BasicDBList();
+            for(EventRef eventRef : entity.events()){
+                values.add(eventRefTranslator.toDBObject(eventRef));
+            }
+            dbObject.put(EVENTS_KEY, values);
         }
     }
 
