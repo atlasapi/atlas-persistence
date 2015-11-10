@@ -43,7 +43,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String START_DATE = "startDate";
 	public static final String END_DATE = "endDate";
 	public static final String GENRES_KEY = "genres";
-	
+    public static final String ADVERTISE_FROM = "advertiseFrom";
 
 	private ModelTranslator<Identified> identifiedTranslator;
 	private ChannelNumberingTranslator channelNumberingTranslator;
@@ -71,7 +71,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		setPreviousOldChannelImagesField(dbObject, IMAGES, model.getAllImages());
 		
 		encodeRelatedLinks(dbObject, model);
-		
+
 		TranslatorUtils.from(dbObject, MEDIA_TYPE, model.getMediaType().name());
 		TranslatorUtils.from(dbObject, PUBLISHER, model.getSource().key());
 		TranslatorUtils.from(dbObject, HIGH_DEFINITION, model.getHighDefinition());
@@ -93,7 +93,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		TranslatorUtils.fromLocalDate(dbObject, START_DATE, model.getStartDate());
 		TranslatorUtils.fromLocalDate(dbObject, END_DATE, model.getEndDate());
 		TranslatorUtils.fromSet(dbObject, model.getGenres(), GENRES_KEY);
-		
+		TranslatorUtils.fromDateTime(dbObject, ADVERTISE_FROM, model.getAdvertiseFrom());
 		return dbObject;
 	}
 
@@ -134,6 +134,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		model.setChannelNumbers(channelNumberingTranslator.toChannelNumberingSet(dbObject, NUMBERINGS));
 		model.setStartDate(TranslatorUtils.toLocalDate(dbObject, START_DATE));
 		model.setEndDate(TranslatorUtils.toLocalDate(dbObject, END_DATE));
+        model.setAdvertiseFrom(TranslatorUtils.toDateTime(dbObject, ADVERTISE_FROM));
 		if (dbObject.containsField(GENRES_KEY)) {
 		    model.setGenres(TranslatorUtils.toSet(dbObject, GENRES_KEY));
 		}
