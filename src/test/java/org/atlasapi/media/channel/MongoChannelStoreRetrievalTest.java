@@ -167,7 +167,7 @@ public class MongoChannelStoreRetrievalTest {
     }
 
     @Test
-    public void testRetrievesNewEpisodes() {
+    public void testDoesNotRetrieveEpisodesThatAreNotAdvertisedYet() {
         ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime.minusDays(2)).build();
         Iterable<Channel> retrieved = store.allChannels(query);
         assertTrue(Iterables.isEmpty(retrieved));
