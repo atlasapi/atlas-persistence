@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
+import static org.atlasapi.media.channel.ChannelTranslator.ADVERTISE_FROM;
 import static org.atlasapi.media.channel.ChannelTranslator.AVAILABLE_ON;
 import static org.atlasapi.media.channel.ChannelTranslator.BROADCASTER;
 import static org.atlasapi.media.channel.ChannelTranslator.KEY;
@@ -280,6 +281,10 @@ public class MongoChannelStore implements ChannelStore {
         if (query.getGenres().isPresent()) {
             mongoQuery.fieldIn(ChannelTranslator.GENRES_KEY, query.getGenres().get());
         }
+        if (query.getAdvertisedFrom().isPresent()) {
+            mongoQuery.fieldBeforeOrAt(ADVERTISE_FROM, query.getAdvertisedFrom().get());
+        }
+
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
 
