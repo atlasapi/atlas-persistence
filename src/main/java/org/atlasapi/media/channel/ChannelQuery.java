@@ -19,7 +19,7 @@ public class ChannelQuery {
     private final Optional<Publisher> availableFrom;
     private final Optional<Set<Long>> channelGroups;
     private final Optional<Set<String>> genres;
-    private final Optional<DateTime> advertiseFrom;
+    private final Optional<DateTime> advertisedOn;
     
     public static Builder builder() {
         return new Builder();
@@ -27,13 +27,13 @@ public class ChannelQuery {
     
     private ChannelQuery(Optional<Publisher> broadcaster, Optional<MediaType> mediaType, 
             Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups,
-            Optional<Set<String>> genres, Optional<DateTime> advertiseFrom) {
+            Optional<Set<String>> genres, Optional<DateTime> advertisedOn) {
                 this.broadcaster = checkNotNull(broadcaster);
                 this.mediaType = checkNotNull(mediaType);
                 this.availableFrom = checkNotNull(availableFrom);
                 this.channelGroups = checkNotNull(channelGroups);
                 this.genres = checkNotNull(genres);
-                this.advertiseFrom = checkNotNull(advertiseFrom);
+                this.advertisedOn = checkNotNull(advertisedOn);
     }
     
     public Optional<Publisher> getBroadcaster() {
@@ -56,7 +56,7 @@ public class ChannelQuery {
         return genres;
     }
 
-    public Optional<DateTime> getAdvertisedFrom() { return advertiseFrom; };
+    public Optional<DateTime> getAdvertisedFrom() { return advertisedOn; };
     
     @Override
     public String toString() {
@@ -66,7 +66,7 @@ public class ChannelQuery {
                 .add("availableFrom", availableFrom)
                 .add("channelGroups", channelGroups)
                 .add("genres", genres)
-                .add("advertiseFrom", advertiseFrom)
+                .add("advertiseOn", advertisedOn)
                 .toString();
     }
     
@@ -87,7 +87,7 @@ public class ChannelQuery {
                     && availableFrom.equals(other.availableFrom)
                     && channelGroups.equals(other.channelGroups)
                     && genres.equals(other.genres)
-                    && advertiseFrom.equals(other.advertiseFrom);
+                    && advertisedOn.equals(other.advertisedOn);
         }
         
         return false;
@@ -100,12 +100,13 @@ public class ChannelQuery {
         private Optional<Publisher> availableFrom = Optional.absent();
         private Optional<Set<Long>> channelGroups = Optional.absent();
         private Optional<Set<String>> genres = Optional.absent();
-        private Optional<DateTime> advertiseFrom = Optional.absent();
+        private Optional<DateTime> advertisedOn = Optional.absent();
         
         private Builder() {}
         
         public ChannelQuery build() {
-            return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres, advertiseFrom);
+            return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres,
+                    advertisedOn);
         }
 
         
@@ -134,8 +135,8 @@ public class ChannelQuery {
             return this;
         }
 
-        public Builder withAdvertiseFrom(DateTime advertiseFrom) {
-            this.advertiseFrom = Optional.fromNullable(advertiseFrom);
+        public Builder withAdvertisedOn(DateTime advertisedOn) {
+            this.advertisedOn = Optional.fromNullable(advertisedOn);
             return this;
         }
     }

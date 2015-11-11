@@ -24,7 +24,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.math.LongMath;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -162,14 +161,14 @@ public class MongoChannelStoreRetrievalTest {
 
     @Test
     public void testRetrievesOldEpisode() {
-        ChannelQuery query = ChannelQuery.builder().withAdvertiseFrom(dateTime).build();
+        ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime).build();
         Channel retrieved = Iterables.getOnlyElement(store.allChannels(query));
         assertThat(retrieved.getId(), is(channelId4));
     }
 
     @Test
     public void testRetrievesNewEpisodes() {
-        ChannelQuery query = ChannelQuery.builder().withAdvertiseFrom(dateTime.minusDays(2)).build();
+        ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime.minusDays(2)).build();
         Iterable<Channel> retrieved = store.allChannels(query);
         assertTrue(Iterables.isEmpty(retrieved));
     }
