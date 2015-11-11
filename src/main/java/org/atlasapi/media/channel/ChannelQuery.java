@@ -56,7 +56,7 @@ public class ChannelQuery {
         return genres;
     }
 
-    public Optional<DateTime> getAdvertisedFrom() { return advertisedOn; };
+    public Optional<DateTime> getAdvertisedOn() { return advertisedOn; };
     
     @Override
     public String toString() {

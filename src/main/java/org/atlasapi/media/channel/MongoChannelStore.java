@@ -281,8 +281,8 @@ public class MongoChannelStore implements ChannelStore {
         if (query.getGenres().isPresent()) {
             mongoQuery.fieldIn(ChannelTranslator.GENRES_KEY, query.getGenres().get());
         }
-        if (query.getAdvertisedFrom().isPresent()) {
-            mongoQuery.fieldBeforeOrAt(ADVERTISE_FROM, query.getAdvertisedFrom().get());
+        if (query.getAdvertisedOn().isPresent()) {
+            mongoQuery.fieldBeforeOrAt(ADVERTISE_FROM, query.getAdvertisedOn().get());
         }
 
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
