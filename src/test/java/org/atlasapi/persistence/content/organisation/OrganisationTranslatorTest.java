@@ -9,7 +9,7 @@ import org.atlasapi.persistence.media.entity.OrganisationTranslator;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-
+import com.google.common.collect.ImmutableSet;
 
 public class OrganisationTranslatorTest {
 
@@ -25,7 +25,7 @@ public class OrganisationTranslatorTest {
     }
     
     public static Organisation createOrganisation() {
-        Organisation organisation = new Organisation(ImmutableList.of(createPerson("dbpedia.org/person3", "person:3")));
+        Organisation organisation = new Organisation(ImmutableList.of(createPerson("dbpedia.org/person3", "person:3")), ImmutableSet.of("title"));
         organisation.setCanonicalUri("dbpedia.org/Person3");
         return organisation;
     }
