@@ -47,6 +47,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
@@ -201,27 +202,63 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, @Nullable Selection selection) {
-    	DBCursor find = lookup.find(where()
-    	                               .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
-    	                               .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
-    	                               .build()
-    	                           )
-    	                      .setReadPreference(readPreference)
-    	                      .sort(sort().ascending(OPAQUE_ID).build());
-    	
-    	Iterable<DBObject> result;
-    	if (selection != null) {
-    		find.skip(selection.getOffset());
-    		result = Iterables.limit(find, selection.getLimit());
-    	} else {
-    	    result = find;
-    	}
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            @Nullable Selection selection) {
+        if (selection == null) {
+            return entriesForPublishers(publishers, true);
+        }
+        return entriesForPublishers(publishers, true, selection);
+    }
 
-    	return Iterables.transform(result, translator.FROM_DBO);
+    @Override
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            boolean onlyActivelyPublished) {
+        DBCursor cursor = cursorForPublishers(publishers, onlyActivelyPublished);
+        return Iterables.transform(cursor, translator.FROM_DBO);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            boolean onlyActivelyPublished, Selection selection) {
+        DBCursor cursor = cursorForPublishers(publishers, onlyActivelyPublished);
+
+        Iterable<DBObject> result = resultFrom(cursor, selection);
+
+        return Iterables.transform(result, translator.FROM_DBO);
     }
 
     public Iterable<LookupEntry> all() {
         return Iterables.transform(lookup.find(), translator.FROM_DBO);
+    }
+
+    private DBCursor cursorForPublishers(Iterable<Publisher> publishers,
+            boolean onlyActivelyPublished) {
+        MongoQueryBuilder queryBuilder = where()
+                .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
+
+        if (onlyActivelyPublished) {
+            // Not actively published content will have this value set to false
+            // Actively published content will either have this value be true or null
+            queryBuilder.fieldNotEqualTo(ACTIVELY_PUBLISHED, false);
+        }
+
+        return lookup.find(queryBuilder.build())
+                .setReadPreference(readPreference)
+                .sort(sort().ascending(OPAQUE_ID).build());
+    }
+
+    private Iterable<DBObject> resultFrom(DBCursor cursor, Selection selection) {
+        if (selection.hasNonZeroOffset()) {
+            cursor.skip(selection.getOffset());
+        }
+
+        Iterable<DBObject> result;
+        if (selection.hasLimit()) {
+            result = Iterables.limit(cursor, selection.getLimit());
+        }
+        else {
+            result = cursor;
+        }
+        return result;
     }
 }

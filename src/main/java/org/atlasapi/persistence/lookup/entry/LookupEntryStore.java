@@ -46,7 +46,18 @@ public interface LookupEntryStore {
 
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
 
+    /**
+     * @deprecated Use {@link LookupEntryStore#entriesForPublishers(Iterable, boolean)} or
+     * {@link LookupEntryStore#entriesForPublishers(Iterable, boolean, Selection)}
+     */
+    @Deprecated
     Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, Selection selection);
+
+    Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            boolean onlyActivelyPublished);
+
+    Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            boolean onlyActivelyPublished, Selection selection);
     
     Map<String, Long> idsForCanonicalUris(Iterable<String> uris);
 }
