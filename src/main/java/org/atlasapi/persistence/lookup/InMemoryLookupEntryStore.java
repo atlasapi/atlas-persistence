@@ -89,4 +89,15 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            boolean onlyActivelyPublished) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            boolean onlyActivelyPublished, Selection selection) {
+        throw new UnsupportedOperationException();
+    }
 }
