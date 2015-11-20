@@ -33,7 +33,6 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -238,8 +237,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> allEntriesForPublishers(ContentListingCriteria criteria) {
-        DBCursor cursor = cursorForPublishers(criteria);
+    public Iterable<LookupEntry> allEntriesForPublishers(Iterable<Publisher> publishers,
+            ContentListingProgress progress) {
+        DBCursor cursor = cursorForPublishers(publishers, progress);
         return Iterables.transform(cursor, translator.FROM_DBO);
     }
 
@@ -247,20 +247,31 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         return Iterables.transform(lookup.find(), translator.FROM_DBO);
     }
 
-    private DBCursor cursorForPublishers(ContentListingCriteria criteria) {
+    private DBCursor cursorForPublishers(Iterable<Publisher> publishers,
+            ContentListingProgress progress) {
         MongoQueryBuilder queryBuilder = where()
-                .fieldIn(PUBLISHER, Iterables.transform(criteria.getPublishers(), Publisher.TO_KEY))
-                .fieldIn(
-                        SELF + "." + IdentifiedTranslator.TYPE,
-                        Iterables.transform(criteria.getCategories(), CONTENT_CATEGORY_TO_NAME)
-                );
+                .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
 
-        if (!criteria.getProgress().equals(ContentListingProgress.START)) {
-            queryBuilder.fieldGreaterThan(ID, criteria.getProgress().getUri());
+        if (!progress.equals(ContentListingProgress.START)) {
+            limitQueryByProgress(progress, queryBuilder);
         }
 
         return lookup.find(queryBuilder.build())
                 .setReadPreference(readPreference)
-                .sort(sort().ascending(ID).build());
+                .sort(sort().ascending(OPAQUE_ID).build());
+    }
+
+    private void limitQueryByProgress(ContentListingProgress progress,
+            MongoQueryBuilder queryBuilder) {
+        Iterable<LookupEntry> progressedToEntry = entriesForCanonicalUris(
+                ImmutableList.of(progress.getUri())
+        );
+
+        if (Iterables.isEmpty(progressedToEntry)) {
+            return;
+        }
+
+        LookupEntry entry = Iterables.getOnlyElement(progressedToEntry);
+        queryBuilder.fieldGreaterThan(OPAQUE_ID, entry.id());
     }
 }
