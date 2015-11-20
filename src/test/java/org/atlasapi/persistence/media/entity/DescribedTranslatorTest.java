@@ -241,7 +241,7 @@ public class DescribedTranslatorTest {
 
     private Set<LocalizedDescription> localizedDescriptions() {
         Set<LocalizedDescription> localizedDescriptions = Sets.newHashSet();
-        
+
         LocalizedDescription desc1 = new LocalizedDescription();
         desc1.setLocale(new Locale("en", "GB"));
         desc1.setDescription("Desc 1");
@@ -255,17 +255,17 @@ public class DescribedTranslatorTest {
 
         localizedDescriptions.add(desc1);
         localizedDescriptions.add(desc2);
-        
+
         return localizedDescriptions;
     }
-    
+
     private Set<LocalizedTitle> localizedTitles() {
         Set<LocalizedTitle> localizedTitles = Sets.newHashSet();
 
         LocalizedTitle title1 = new LocalizedTitle();
         title1.setLocale(new Locale("en", "GB"));
         title1.setTitle("Title 1");
-        
+
         LocalizedTitle title2 = new LocalizedTitle();
         title2.setLocale(new Locale("en", "US"));
         title2.setTitle("Title 2");
@@ -273,7 +273,7 @@ public class DescribedTranslatorTest {
         LocalizedTitle title3 = new LocalizedTitle();
         title3.setLocale(new Locale("it"));
         title3.setTitle("Titolo 3");
-        
+
         localizedTitles.add(title1);
         localizedTitles.add(title2);
         localizedTitles.add(title3);

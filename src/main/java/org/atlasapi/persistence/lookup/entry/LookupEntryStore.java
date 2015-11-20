@@ -3,6 +3,7 @@ package org.atlasapi.persistence.lookup.entry;
 import java.util.Map;
 
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.listing.ContentListingProgress;
 
 import com.google.common.base.Optional;
 import com.metabroadcast.common.query.Selection;
@@ -47,6 +48,9 @@ public interface LookupEntryStore {
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
 
     Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, Selection selection);
-    
+
+    Iterable<LookupEntry> allEntriesForPublishers(Iterable<Publisher> publishers,
+            ContentListingProgress progress);
+
     Map<String, Long> idsForCanonicalUris(Iterable<String> uris);
 }
