@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Brand;
+import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
@@ -27,6 +28,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.After;
@@ -409,7 +411,11 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(shouldNotReturn);
 
         Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
-                ImmutableList.of(Publisher.BBC), ContentListingProgress.START, true
+                ContentListingCriteria.defaultCriteria()
+                        .forPublisher(Publisher.BBC)
+                        .forContent(ContentCategory.TOP_LEVEL_ITEM)
+                        .build(),
+                true
         );
 
         assertThat(Iterables.size(entries), is(2));
@@ -430,7 +436,11 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(unpublished);
 
         Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
-                ImmutableList.of(Publisher.BBC), ContentListingProgress.START, false
+                ContentListingCriteria.defaultCriteria()
+                        .forPublisher(Publisher.BBC)
+                        .forContent(ContentCategory.TOP_LEVEL_ITEM)
+                        .build(),
+                false
         );
 
         assertThat(Iterables.size(entries), is(2));
@@ -452,7 +462,11 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(unpublished);
 
         Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
-                ImmutableList.of(Publisher.BBC), ContentListingProgress.START, true
+                ContentListingCriteria.defaultCriteria()
+                        .forPublisher(Publisher.BBC)
+                        .forContent(ContentCategory.TOP_LEVEL_ITEM)
+                        .build(),
+                true
         );
 
         assertThat(Iterables.size(entries), is(1));
@@ -484,14 +498,47 @@ public class MongoLookupEntryStoreTest {
 
         ContentListingProgress progress = ContentListingProgress.progressFrom(lastOneProcessed);
 
+        ImmutableList<Publisher> publishers = ImmutableList.of(
+                Publisher.BBC, Publisher.METABROADCAST, Publisher.CANARY
+        );
         Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
-                ImmutableList.of(Publisher.BBC, Publisher.METABROADCAST, Publisher.CANARY),
-                progress,
+                ContentListingCriteria.defaultCriteria()
+                        .forPublishers(publishers)
+                        .startingAt(progress)
+                        .forContent(ContentCategory.TOP_LEVEL_ITEM)
+                        .build(),
                 true
         );
 
         assertThat(Iterables.size(entries), is(2));
         assertThat(Iterables.get(entries, 0).uri(), is(fourth.uri()));
         assertThat(Iterables.get(entries, 1).uri(), is(fifth.uri()));
+    }
+
+    @Test
+    public void testEntriesForPublishersOnlyReturnsExpectedContentTypes() throws Exception {
+        LookupEntry itemLookup = LookupEntry.lookupEntryFrom(
+                new Item("uriA", "uriA", Publisher.BBC)
+        );
+        Episode episode = new Episode("uriB", "uriB", Publisher.BBC);
+        episode.setContainer(new Container("uriC", "uriC", Publisher.BBC));
+        LookupEntry episodeLookup = LookupEntry.lookupEntryFrom(episode);
+
+        entryStore.store(itemLookup);
+        entryStore.store(episodeLookup);
+
+        ImmutableList<Publisher> publishers = ImmutableList.of(
+                Publisher.BBC, Publisher.METABROADCAST, Publisher.CANARY
+        );
+        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+                ContentListingCriteria.defaultCriteria()
+                        .forPublishers(publishers)
+                        .forContent(ContentCategory.CHILD_ITEM)
+                        .build(),
+                true
+        );
+
+        assertThat(Iterables.size(entries), is(1));
+        assertThat(Iterables.get(entries, 0).uri(), is(episodeLookup.uri()));
     }
 }

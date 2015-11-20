@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.listing.ContentListingProgress;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
@@ -91,8 +91,8 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
-            ContentListingProgress progress, boolean onlyActivelyPublished) {
+    public Iterable<LookupEntry> entriesForPublishers(ContentListingCriteria criteria,
+            boolean onlyActivelyPublished) {
         throw new UnsupportedOperationException();
     }
 }

@@ -32,6 +32,8 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -40,6 +42,7 @@ import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -61,7 +64,14 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
-    
+
+    private static final Function<ContentCategory, String> CONTENT_CATEGORY_TO_NAME =
+            new Function<ContentCategory, String>() {
+        @Nullable @Override public String apply(@Nullable ContentCategory input) {
+            return input != null ? input.name() : null;
+        }
+    };
+
     private final Logger log;
     private final DBCollection lookup;
     private final LookupEntryTranslator translator;
@@ -228,9 +238,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
-            ContentListingProgress progress, boolean onlyActivelyPublished) {
-        DBCursor cursor = cursorForPublishers(publishers, progress, onlyActivelyPublished);
+    public Iterable<LookupEntry> entriesForPublishers(ContentListingCriteria criteria,
+            boolean onlyActivelyPublished) {
+        DBCursor cursor = cursorForPublishers(criteria, onlyActivelyPublished);
         return Iterables.transform(cursor, translator.FROM_DBO);
     }
 
@@ -238,13 +248,17 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         return Iterables.transform(lookup.find(), translator.FROM_DBO);
     }
 
-    private DBCursor cursorForPublishers(Iterable<Publisher> publishers,
-            ContentListingProgress progress, boolean onlyActivelyPublished) {
+    private DBCursor cursorForPublishers(ContentListingCriteria criteria,
+            boolean onlyActivelyPublished) {
         MongoQueryBuilder queryBuilder = where()
-                .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
+                .fieldIn(PUBLISHER, Iterables.transform(criteria.getPublishers(), Publisher.TO_KEY))
+                .fieldIn(
+                        SELF + "." + IdentifiedTranslator.TYPE,
+                        Iterables.transform(criteria.getCategories(), CONTENT_CATEGORY_TO_NAME)
+                );
 
-        if (!progress.equals(ContentListingProgress.START)) {
-            queryBuilder.fieldGreaterThan(ID, progress.getUri());
+        if (!criteria.getProgress().equals(ContentListingProgress.START)) {
+            queryBuilder.fieldGreaterThan(ID, criteria.getProgress().getUri());
         }
 
         if (onlyActivelyPublished) {
