@@ -27,6 +27,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -389,5 +390,108 @@ public class MongoLookupEntryStoreTest {
 
         entry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(item.getCanonicalUri())));
         assertFalse(entry.activelyPublished());
+    }
+
+    @Test
+    public void testEntriesForPublishersReturnsItemsForRequestedPublishers() throws Exception {
+        LookupEntry shouldReturnFirst = LookupEntry.lookupEntryFrom(
+                new Item("uriA", "uriA", Publisher.BBC)
+        );
+        LookupEntry shouldReturnSecond = LookupEntry.lookupEntryFrom(
+                new Item("uriB", "uriB", Publisher.BBC)
+        );
+        LookupEntry shouldNotReturn = LookupEntry.lookupEntryFrom(
+                new Item("uriC", "uriC", Publisher.METABROADCAST)
+        );
+
+        entryStore.store(shouldReturnFirst);
+        entryStore.store(shouldReturnSecond);
+        entryStore.store(shouldNotReturn);
+
+        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+                ImmutableList.of(Publisher.BBC), ContentListingProgress.START, true
+        );
+
+        assertThat(Iterables.size(entries), is(2));
+        assertThat(Iterables.get(entries, 0).uri(), is(shouldReturnFirst.uri()));
+        assertThat(Iterables.get(entries, 1).uri(), is(shouldReturnSecond.uri()));
+    }
+
+    @Test
+    public void testEntriesForPublishersReturnsNonPublishedItemsWhenRequested() throws Exception {
+        LookupEntry published = LookupEntry.lookupEntryFrom(
+                new Item("uriA", "uriA", Publisher.BBC)
+        );
+        Item unpublishedItem = new Item("uriB", "uriB", Publisher.BBC);
+        unpublishedItem.setActivelyPublished(false);
+        LookupEntry unpublished = LookupEntry.lookupEntryFrom(unpublishedItem);
+
+        entryStore.store(published);
+        entryStore.store(unpublished);
+
+        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+                ImmutableList.of(Publisher.BBC), ContentListingProgress.START, false
+        );
+
+        assertThat(Iterables.size(entries), is(2));
+        assertThat(Iterables.get(entries, 0).uri(), is(published.uri()));
+        assertThat(Iterables.get(entries, 1).uri(), is(unpublished.uri()));
+    }
+
+    @Test
+    public void testEntriesForPublishersDoesNotReturnNonPublishedItemsIfNotRequested()
+            throws Exception {
+        LookupEntry published = LookupEntry.lookupEntryFrom(
+                new Item("uriA", "uriA", Publisher.BBC)
+        );
+        Item unpublishedItem = new Item("uriB", "uriB", Publisher.BBC);
+        unpublishedItem.setActivelyPublished(false);
+        LookupEntry unpublished = LookupEntry.lookupEntryFrom(unpublishedItem);
+
+        entryStore.store(published);
+        entryStore.store(unpublished);
+
+        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+                ImmutableList.of(Publisher.BBC), ContentListingProgress.START, true
+        );
+
+        assertThat(Iterables.size(entries), is(1));
+        assertThat(Iterables.get(entries, 0).uri(), is(published.uri()));
+    }
+
+    @Test
+    public void testEntriesForPublishersWithProgressReturnsRemainingItems() throws Exception {
+        LookupEntry first = LookupEntry.lookupEntryFrom(
+                new Item("uriA", "uriA", Publisher.BBC)
+        );
+        LookupEntry second = LookupEntry.lookupEntryFrom(
+                new Item("uriB", "uriB", Publisher.BBC)
+        );
+        Item lastOneProcessed = new Item("uriC", "uriC", Publisher.METABROADCAST);
+        LookupEntry third = LookupEntry.lookupEntryFrom(lastOneProcessed);
+        LookupEntry fourth = LookupEntry.lookupEntryFrom(
+                new Item("uriD", "uriD", Publisher.METABROADCAST)
+        );
+        LookupEntry fifth = LookupEntry.lookupEntryFrom(
+                new Item("uriE", "uriE", Publisher.CANARY)
+        );
+
+        entryStore.store(first);
+        entryStore.store(second);
+        entryStore.store(third);
+        entryStore.store(fourth);
+        entryStore.store(fifth);
+
+        ContentListingProgress progress = ContentListingProgress.progressFrom(lastOneProcessed);
+
+        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+                ImmutableList.of(Publisher.BBC, Publisher.METABROADCAST, Publisher.CANARY),
+                progress,
+                true
+        );
+
+        assertThat(Iterables.size(entries), is(2));
+        assertThat(Iterables.get(entries, 0).uri(), is(fourth.uri()));
+        assertThat(Iterables.get(entries, 1).uri(), is(fifth.uri()));
     }
 }

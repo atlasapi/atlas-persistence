@@ -32,6 +32,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
+import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -204,27 +205,33 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
             @Nullable Selection selection) {
-        if (selection == null) {
-            return entriesForPublishers(publishers, true);
+        DBCursor find = lookup.find(where()
+                .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
+                // Not actively published content will have this value set to false
+                // Actively published content will either have this value be true or null
+                .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
+                .build()
+        )
+                .setReadPreference(readPreference)
+                .sort(sort().ascending(OPAQUE_ID).build());
+
+        Iterable<DBObject> result;
+
+        if (selection != null) {
+            find.skip(selection.getOffset());
+            result = Iterables.limit(find, selection.getLimit());
+        } else {
+            result = find;
         }
-        return entriesForPublishers(publishers, true, selection);
-    }
-
-    @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
-            boolean onlyActivelyPublished) {
-        DBCursor cursor = cursorForPublishers(publishers, onlyActivelyPublished);
-        return Iterables.transform(cursor, translator.FROM_DBO);
-    }
-
-    @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
-            boolean onlyActivelyPublished, Selection selection) {
-        DBCursor cursor = cursorForPublishers(publishers, onlyActivelyPublished);
-
-        Iterable<DBObject> result = resultFrom(cursor, selection);
 
         return Iterables.transform(result, translator.FROM_DBO);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            ContentListingProgress progress, boolean onlyActivelyPublished) {
+        DBCursor cursor = cursorForPublishers(publishers, progress, onlyActivelyPublished);
+        return Iterables.transform(cursor, translator.FROM_DBO);
     }
 
     public Iterable<LookupEntry> all() {
@@ -232,9 +239,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     private DBCursor cursorForPublishers(Iterable<Publisher> publishers,
-            boolean onlyActivelyPublished) {
+            ContentListingProgress progress, boolean onlyActivelyPublished) {
         MongoQueryBuilder queryBuilder = where()
                 .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
+
+        if (!progress.equals(ContentListingProgress.START)) {
+            queryBuilder.fieldGreaterThan(ID, progress.getUri());
+        }
 
         if (onlyActivelyPublished) {
             // Not actively published content will have this value set to false
@@ -244,21 +255,6 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
         return lookup.find(queryBuilder.build())
                 .setReadPreference(readPreference)
-                .sort(sort().ascending(OPAQUE_ID).build());
-    }
-
-    private Iterable<DBObject> resultFrom(DBCursor cursor, Selection selection) {
-        if (selection.hasNonZeroOffset()) {
-            cursor.skip(selection.getOffset());
-        }
-
-        Iterable<DBObject> result;
-        if (selection.hasLimit()) {
-            result = Iterables.limit(cursor, selection.getLimit());
-        }
-        else {
-            result = cursor;
-        }
-        return result;
+                .sort(sort().ascending(ID).build());
     }
 }
