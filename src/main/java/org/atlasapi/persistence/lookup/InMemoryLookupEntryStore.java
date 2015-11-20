@@ -91,8 +91,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(ContentListingCriteria criteria,
-            boolean onlyActivelyPublished) {
+    public Iterable<LookupEntry> allEntriesForPublishers(ContentListingCriteria criteria) {
         throw new UnsupportedOperationException();
     }
 }

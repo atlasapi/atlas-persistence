@@ -410,12 +410,11 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(shouldReturnSecond);
         entryStore.store(shouldNotReturn);
 
-        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+        Iterable<LookupEntry> entries = entryStore.allEntriesForPublishers(
                 ContentListingCriteria.defaultCriteria()
                         .forPublisher(Publisher.BBC)
                         .forContent(ContentCategory.TOP_LEVEL_ITEM)
-                        .build(),
-                true
+                        .build()
         );
 
         assertThat(Iterables.size(entries), is(2));
@@ -435,42 +434,16 @@ public class MongoLookupEntryStoreTest {
         entryStore.store(published);
         entryStore.store(unpublished);
 
-        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+        Iterable<LookupEntry> entries = entryStore.allEntriesForPublishers(
                 ContentListingCriteria.defaultCriteria()
                         .forPublisher(Publisher.BBC)
                         .forContent(ContentCategory.TOP_LEVEL_ITEM)
-                        .build(),
-                false
+                        .build()
         );
 
         assertThat(Iterables.size(entries), is(2));
         assertThat(Iterables.get(entries, 0).uri(), is(published.uri()));
         assertThat(Iterables.get(entries, 1).uri(), is(unpublished.uri()));
-    }
-
-    @Test
-    public void testEntriesForPublishersDoesNotReturnNonPublishedItemsIfNotRequested()
-            throws Exception {
-        LookupEntry published = LookupEntry.lookupEntryFrom(
-                new Item("uriA", "uriA", Publisher.BBC)
-        );
-        Item unpublishedItem = new Item("uriB", "uriB", Publisher.BBC);
-        unpublishedItem.setActivelyPublished(false);
-        LookupEntry unpublished = LookupEntry.lookupEntryFrom(unpublishedItem);
-
-        entryStore.store(published);
-        entryStore.store(unpublished);
-
-        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
-                ContentListingCriteria.defaultCriteria()
-                        .forPublisher(Publisher.BBC)
-                        .forContent(ContentCategory.TOP_LEVEL_ITEM)
-                        .build(),
-                true
-        );
-
-        assertThat(Iterables.size(entries), is(1));
-        assertThat(Iterables.get(entries, 0).uri(), is(published.uri()));
     }
 
     @Test
@@ -501,13 +474,12 @@ public class MongoLookupEntryStoreTest {
         ImmutableList<Publisher> publishers = ImmutableList.of(
                 Publisher.BBC, Publisher.METABROADCAST, Publisher.CANARY
         );
-        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+        Iterable<LookupEntry> entries = entryStore.allEntriesForPublishers(
                 ContentListingCriteria.defaultCriteria()
                         .forPublishers(publishers)
                         .startingAt(progress)
                         .forContent(ContentCategory.TOP_LEVEL_ITEM)
-                        .build(),
-                true
+                        .build()
         );
 
         assertThat(Iterables.size(entries), is(2));
@@ -530,12 +502,11 @@ public class MongoLookupEntryStoreTest {
         ImmutableList<Publisher> publishers = ImmutableList.of(
                 Publisher.BBC, Publisher.METABROADCAST, Publisher.CANARY
         );
-        Iterable<LookupEntry> entries = entryStore.entriesForPublishers(
+        Iterable<LookupEntry> entries = entryStore.allEntriesForPublishers(
                 ContentListingCriteria.defaultCriteria()
                         .forPublishers(publishers)
                         .forContent(ContentCategory.CHILD_ITEM)
-                        .build(),
-                true
+                        .build()
         );
 
         assertThat(Iterables.size(entries), is(1));

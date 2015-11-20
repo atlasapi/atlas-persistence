@@ -238,9 +238,8 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(ContentListingCriteria criteria,
-            boolean onlyActivelyPublished) {
-        DBCursor cursor = cursorForPublishers(criteria, onlyActivelyPublished);
+    public Iterable<LookupEntry> allEntriesForPublishers(ContentListingCriteria criteria) {
+        DBCursor cursor = cursorForPublishers(criteria);
         return Iterables.transform(cursor, translator.FROM_DBO);
     }
 
@@ -248,8 +247,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         return Iterables.transform(lookup.find(), translator.FROM_DBO);
     }
 
-    private DBCursor cursorForPublishers(ContentListingCriteria criteria,
-            boolean onlyActivelyPublished) {
+    private DBCursor cursorForPublishers(ContentListingCriteria criteria) {
         MongoQueryBuilder queryBuilder = where()
                 .fieldIn(PUBLISHER, Iterables.transform(criteria.getPublishers(), Publisher.TO_KEY))
                 .fieldIn(
@@ -259,12 +257,6 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
         if (!criteria.getProgress().equals(ContentListingProgress.START)) {
             queryBuilder.fieldGreaterThan(ID, criteria.getProgress().getUri());
-        }
-
-        if (onlyActivelyPublished) {
-            // Not actively published content will have this value set to false
-            // Actively published content will either have this value be true or null
-            queryBuilder.fieldNotEqualTo(ACTIVELY_PUBLISHED, false);
         }
 
         return lookup.find(queryBuilder.build())

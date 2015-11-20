@@ -49,8 +49,7 @@ public interface LookupEntryStore {
 
     Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, Selection selection);
 
-    Iterable<LookupEntry> entriesForPublishers(ContentListingCriteria criteria,
-            boolean onlyActivelyPublished);
+    Iterable<LookupEntry> allEntriesForPublishers(ContentListingCriteria criteria);
 
     Map<String, Long> idsForCanonicalUris(Iterable<String> uris);
 }
