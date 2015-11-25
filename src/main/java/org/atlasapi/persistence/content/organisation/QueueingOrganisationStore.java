@@ -19,17 +19,17 @@ import com.metabroadcast.common.time.SystemClock;
 import com.metabroadcast.common.time.Timestamper;
 
 public class QueueingOrganisationStore implements OrganisationStore {
-    private static Logger log = LoggerFactory.getLogger(QueueingOrganisationStore.class);
-    private OrganisationStore delegate;
-    private MessageSender<EntityUpdatedMessage> sender;
+    private final static Logger log = LoggerFactory.getLogger(QueueingOrganisationStore.class);
+    private final OrganisationStore delegate;
+    private final MessageSender<EntityUpdatedMessage> sender;
     private final SubstitutionTableNumberCodec entityIdCodec;
     private final Timestamper clock;
 
     public QueueingOrganisationStore(MessageSender<EntityUpdatedMessage> sender, OrganisationStore delegate) {
         this.delegate = checkNotNull(delegate);
         this.sender = checkNotNull(sender);
-        clock = new SystemClock();
-        entityIdCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
+        this.clock = new SystemClock();
+        this.entityIdCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
     }
 
     @Override
