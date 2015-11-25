@@ -124,7 +124,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
     private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
     private @Value("${messaging.destination.event.changes}") String eventChanges;
-    private @Value("${messaging.destination.event.organisations.changes}") String organisationChanges;
+    private @Value("${messaging.destination.organisations.changes}") String organisationChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
     private @Value("${mongo.audit.dbname}") String auditDbName;
@@ -363,7 +363,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     // not sure if this is right
-    public @Bean OrganisationStore organisationStore() {
+    public @Primary @Bean OrganisationStore organisationStore() {
         LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"), 
                 persistenceAuditLog(), readPreference);
         OrganisationStore organisationStore = new MongoOrganisationStore(db, 
