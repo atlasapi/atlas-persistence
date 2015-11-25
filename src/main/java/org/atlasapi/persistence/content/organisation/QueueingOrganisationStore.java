@@ -26,10 +26,15 @@ public class QueueingOrganisationStore implements OrganisationStore {
     private final Timestamper clock;
 
     public QueueingOrganisationStore(MessageSender<EntityUpdatedMessage> sender, OrganisationStore delegate) {
+        this(checkNotNull(sender), checkNotNull(delegate), new SystemClock(), SubstitutionTableNumberCodec.lowerCaseOnly());
+    }
+
+    public QueueingOrganisationStore(MessageSender<EntityUpdatedMessage> sender, OrganisationStore delegate,
+            Timestamper timestamper, SubstitutionTableNumberCodec entityIdCodec) {
         this.delegate = checkNotNull(delegate);
         this.sender = checkNotNull(sender);
-        this.clock = new SystemClock();
-        this.entityIdCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
+        this.clock = checkNotNull(timestamper);
+        this.entityIdCodec = checkNotNull(entityIdCodec);
     }
 
     @Override
