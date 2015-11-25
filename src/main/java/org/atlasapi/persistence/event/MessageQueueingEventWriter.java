@@ -29,7 +29,7 @@ public class MessageQueueingEventWriter implements EventWriter {
         this(delegate, sender, new SystemClock(), SubstitutionTableNumberCodec.lowerCaseOnly());
     }
 
-    MessageQueueingEventWriter(EventWriter delegate, MessageSender<EntityUpdatedMessage> sender,
+    public MessageQueueingEventWriter(EventWriter delegate, MessageSender<EntityUpdatedMessage> sender,
             Timestamper timestamper, SubstitutionTableNumberCodec entityIdCodec) {
         this.delegate = checkNotNull(delegate);
         this.sender = checkNotNull(sender);
