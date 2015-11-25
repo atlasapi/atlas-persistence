@@ -48,7 +48,7 @@ public class QueuingPersonWriterTest {
         
         context.checking(new Expectations() {{
             oneOf(personStore).person(person1.getCanonicalUri()); will(returnValue(Optional.absent()));
-            oneOf(personStore).person(person2.getCanonicalUri()); will(returnValue(person2));
+            oneOf(personStore).person(person2.getCanonicalUri()); will(returnValue(Optional.of(person2)));
             oneOf(personStore).createOrUpdatePerson(person1);
             
             allowing(personStore).updatePersonItems(person1);

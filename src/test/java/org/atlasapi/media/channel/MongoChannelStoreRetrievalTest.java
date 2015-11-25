@@ -13,6 +13,7 @@ import java.util.Map;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,16 +39,23 @@ public class MongoChannelStoreRetrievalTest {
     private static Long channelId1;
     private static Long channelId2;
     private static Long channelId3;
-    
+    private static Long channelId4;
+    private static Long channelId5;
+    private static DateTime dateTime;
     @BeforeClass
     public static void setUp() throws InterruptedException {
-        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "sport", "test/1","test/2")).getId();
-        channelId2 = store.createOrUpdate(channel(2, "uri2", "key2", "not-sport", "asdf/1")).getId();
-        channelId3 = store.createOrUpdate(channel(3, "uri3", "key3", "flim", "test/3","asdf/2")).getId();
+        dateTime = DateTime.now();
+        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "sport", null, "test/1","test/2")).getId();
+        channelId2 = store.createOrUpdate(channel(2, "uri2", "key2", "not-sport", null, "asdf/1")).getId();
+        channelId3 = store.createOrUpdate(channel(3, "uri3", "key3", "flim", null, "test/3","asdf/2")).getId();
+        channelId4 = store.createOrUpdate(channel(4, "uri4", "key4", "old episode", dateTime.minusDays(1), "test")).getId();
+        channelId5 = store.createOrUpdate(channel(5, "uri5", "key5", "episode", dateTime.plusDays(1), "test")).getId();
+
         Thread.sleep(2000);
     }
     
-    private static Channel channel(long id, String uri, String key, String genre, String... aliasUrls) {
+    private static Channel channel(long id, String uri, String key, String genre,
+            DateTime advertisedFrom, String... aliasUrls) {
         Channel channel = new Channel();
         channel.setCanonicalUri(uri);
         channel.setAliasUrls(ImmutableSet.copyOf(aliasUrls));
@@ -56,6 +64,7 @@ public class MongoChannelStoreRetrievalTest {
         channel.setKey(key);
         channel.setAvailableFrom(ImmutableSet.<Publisher>of());
         channel.setGenres(ImmutableSet.of(genre));
+        channel.setAdvertiseFrom(advertisedFrom);
         return channel;
     }
 
@@ -88,7 +97,7 @@ public class MongoChannelStoreRetrievalTest {
         
         Iterable<Channel> channels = store.all();
         
-        assertThat(Iterables.size(channels), is(3));
+        assertThat(Iterables.size(channels), is(5));
         
         Map<String,Channel> channelMap = Maps.uniqueIndex(channels, Identified.TO_URI);
         assertThat(channelMap.get("uri1").getId(), is(channelId1));
@@ -109,7 +118,7 @@ public class MongoChannelStoreRetrievalTest {
             }
         }));
         
-        List<Long> expectedIds = Ordering.natural().immutableSortedCopy(Lists.newArrayList(channelId1, channelId2, channelId3));
+        List<Long> expectedIds = Ordering.natural().immutableSortedCopy(Lists.newArrayList(channelId1, channelId2, channelId3, channelId4, channelId5));
         
         assertEquals(expectedIds, channelIds);
     }
@@ -148,5 +157,19 @@ public class MongoChannelStoreRetrievalTest {
         Channel retrieved = Iterables.getOnlyElement(store.allChannels(query));
         
         assertThat(retrieved.getId(), is(channelId1));
+    }
+
+    @Test
+    public void testRetrievesOldEpisode() {
+        ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime).build();
+        Channel retrieved = Iterables.getOnlyElement(store.allChannels(query));
+        assertThat(retrieved.getId(), is(channelId4));
+    }
+
+    @Test
+    public void testDoesNotRetrieveEpisodesThatAreNotAdvertisedYet() {
+        ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime.minusDays(2)).build();
+        Iterable<Channel> retrieved = store.allChannels(query);
+        assertTrue(Iterables.isEmpty(retrieved));
     }
 }
