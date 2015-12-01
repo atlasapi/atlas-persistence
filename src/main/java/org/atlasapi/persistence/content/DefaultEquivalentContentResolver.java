@@ -180,7 +180,9 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                 }
             }
             //ensure we always get the thing we actually asked for.
-            filteredEquivs.add(subjToEquivs.getKey().lookupRef());
+            if (sourceFilter.apply(subjToEquivs.getKey().lookupRef())) {
+                filteredEquivs.add(subjToEquivs.getKey().lookupRef());
+            }
             //and its exclusive enabled adjacent.
             filteredEquivs.addAll(Sets.difference(
                 Sets.filter(allAdjacents(subjToEquivs.getKey()), sourceFilter), 
