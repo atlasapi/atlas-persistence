@@ -48,6 +48,9 @@ public class ItemTranslator implements ModelTranslator<Item> {
     private static final String EPISODE_NUMBER = "episodeNumber";
     private static final String SERIES_NUMBER = "seriesNumber";
     private static final String SPECIAL = "special";
+    private static final String SHORT_DESCRIPTION = "shortDescription";
+    private static final String MEDIUM_DESCRIPTION = "mediumDescription";
+    private static final String LONG_DESCRIPTION = "longDescription";
 
 	private static final String TYPE_KEY = "type";
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
@@ -121,6 +124,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
             episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
             episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
             episode.setSpecial(TranslatorUtils.toBoolean(dbObject, SPECIAL));
+            episode.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESCRIPTION));
+            episode.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESCRIPTION));
+            episode.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESCRIPTION));
+
             if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
                 episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY),seriesId));
             }
@@ -205,7 +212,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			TranslatorUtils.from(itemDbo, EPISODE_NUMBER, episode.getEpisodeNumber());
 			TranslatorUtils.from(itemDbo, SERIES_NUMBER, episode.getSeriesNumber());
 			TranslatorUtils.from(itemDbo, SPECIAL, episode.getSpecial());
-			
+            TranslatorUtils.from(itemDbo, SHORT_DESCRIPTION, episode.getShortDescription());
+            TranslatorUtils.from(itemDbo, MEDIUM_DESCRIPTION, episode.getMediumDescription());
+            TranslatorUtils.from(itemDbo, LONG_DESCRIPTION, episode.getLongDescription());
+
 			ParentRef series = episode.getSeriesRef();
 			if (series != null) {
 				TranslatorUtils.from(itemDbo, EPISODE_SERIES_URI_KEY, series.getUri());
