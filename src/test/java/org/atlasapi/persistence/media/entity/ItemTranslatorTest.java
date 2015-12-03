@@ -13,6 +13,7 @@ import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.ContentGroupRef;
 import org.atlasapi.media.entity.CrewMember;
 import org.atlasapi.media.entity.Encoding;
+import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
@@ -205,7 +206,84 @@ public class ItemTranslatorTest extends TestCase {
         
         assertEquals(item.getContentGroupRefs(), i.getContentGroupRefs());
     }
-    
+
+    public void testConvertFromEpisode() throws Exception {
+        Item item = new Episode("canonicalUri", "curie", Publisher.BBC);
+        item.setTitle("title");
+        ReleaseDate releaseDate = new ReleaseDate(new LocalDate(2010, 3, 20), Countries.ALL, ReleaseDate.ReleaseType.GENERAL);
+        item.setReleaseDates(Lists.newArrayList(releaseDate));
+
+        Location loc = new Location();
+        loc.setAvailable(true);
+
+        Encoding enc = new Encoding();
+        enc.setAdvertisingDuration(1);
+        enc.addAvailableAt(loc);
+
+        Duration duration = Duration.standardSeconds(1);
+        Broadcast br = new Broadcast("channel", clock.now(), duration);
+        br.setScheduleDate(new LocalDate(2010, 3, 20));
+
+        Version version = new Version();
+        version.setDuration(duration);
+        version.addManifestedAs(enc);
+        version.addBroadcast(br);
+        item.addVersion(version);
+
+        Set<String> tags = Sets.newHashSet();
+        tags.add("tag");
+        item.setTags(tags);
+
+        item.setShortDescription("Hello");
+        item.setMediumDescription("Hello World");
+        item.setLongDescription("Hello World Testing");
+        DBObject dbObject = itemTranslator.toDBObject(null, item);
+
+        assertEquals(item.getShortDescription(), dbObject.get("shortDescription"));
+        assertEquals(item.getMediumDescription(), dbObject.get("mediumDescription"));
+        assertEquals(item.getLongDescription(), dbObject.get("longDescription"));
+    }
+
+    public void testConvertToEpisode() throws Exception {
+        MongoTestHelper.ensureMongoIsRunning();
+        DBCollection collection = MongoTestHelper.anEmptyTestDatabase().collection("test");
+
+        Item item = new Episode("canonicalUri", "curie", Publisher.BBC);
+        item.setTitle("title");
+        ReleaseDate releaseDate = new ReleaseDate(new LocalDate(2010, 3, 20), Countries.ALL, ReleaseDate.ReleaseType.GENERAL);
+        item.setReleaseDates(Lists.newArrayList(releaseDate));
+
+        Location loc = new Location();
+        loc.setAvailable(true);
+
+        Encoding enc = new Encoding();
+        enc.setAdvertisingDuration(1);
+        enc.addAvailableAt(loc);
+
+        Duration duration = Duration.standardSeconds(1);
+
+        Version version = new Version();
+        version.setDuration(duration);
+        version.addManifestedAs(enc);
+        item.addVersion(version);
+
+        Set<String> tags = Sets.newHashSet();
+        tags.add("tag");
+        item.setTags(tags);
+
+        item.setShortDescription("Hello");
+        item.setMediumDescription("Hello World");
+        item.setLongDescription("Hello World Testing");
+
+        DBObject dbObject = itemTranslator.toDBObject(null, item);
+
+        collection.save(dbObject);
+        Item i = itemTranslator.fromDBObject(collection.findOne(new MongoQueryBuilder().idEquals(item.getCanonicalUri()).build()), null);
+
+        assertEquals(item.getShortDescription(), i.getShortDescription());
+        assertEquals(item.getMediumDescription(), i.getMediumDescription());
+        assertEquals(item.getLongDescription(), i.getLongDescription());
+    }
     @SuppressWarnings("unchecked")
     public void testRemovesLastUpdatedFromClipsForHashcode() {
         
