@@ -14,7 +14,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 
-public class MongoTopLevelItemsEntry {
+public class MongoTopLevelItemsEntry implements TopLevelItemsEntry {
 
     private final DBCollection dbCollection;
     private final ReadPreference readPreference;
@@ -28,6 +28,7 @@ public class MongoTopLevelItemsEntry {
         this.itemTranslator = new ItemTranslator(new SubstitutionTableNumberCodec());
     }
 
+    @Override
     public Iterable<String> getItemUrisForEventIds(Iterable<Long> eventIds) {
         return ImmutableSet.copyOf(Iterables.transform(
                 ImmutableSet.copyOf(Iterables.transform(find(eventIds), TO_ITEM)), TO_URI));
