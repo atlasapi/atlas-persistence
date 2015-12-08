@@ -32,6 +32,8 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -39,6 +41,7 @@ import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -47,6 +50,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.mongo.MongoBuilders;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.query.Selection;
 import com.mongodb.BasicDBObject;
@@ -59,7 +63,14 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     private static final String PUBLISHER = SELF + "." + IdentifiedTranslator.PUBLISHER;
     private static final Pattern ANYTHING = Pattern.compile("^.*");
-    
+
+    private static final Function<ContentCategory, String> CONTENT_CATEGORY_TO_NAME =
+            new Function<ContentCategory, String>() {
+        @Nullable @Override public String apply(@Nullable ContentCategory input) {
+            return input != null ? input.name() : null;
+        }
+    };
+
     private final Logger log;
     private final DBCollection lookup;
     private final LookupEntryTranslator translator;
@@ -201,27 +212,66 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, @Nullable Selection selection) {
-    	DBCursor find = lookup.find(where()
-    	                               .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
-    	                               .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
-    	                               .build()
-    	                           )
-    	                      .setReadPreference(readPreference)
-    	                      .sort(sort().ascending(OPAQUE_ID).build());
-    	
-    	Iterable<DBObject> result;
-    	if (selection != null) {
-    		find.skip(selection.getOffset());
-    		result = Iterables.limit(find, selection.getLimit());
-    	} else {
-    	    result = find;
-    	}
+    public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
+            @Nullable Selection selection) {
+        DBCursor find = lookup.find(where()
+                .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
+                // Not actively published content will have this value set to false
+                // Actively published content will either have this value be true or null
+                .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
+                .build()
+        )
+                .setReadPreference(readPreference)
+                .sort(sort().ascending(OPAQUE_ID).build());
 
-    	return Iterables.transform(result, translator.FROM_DBO);
+        Iterable<DBObject> result;
+
+        if (selection != null) {
+            find.skip(selection.getOffset());
+            result = Iterables.limit(find, selection.getLimit());
+        } else {
+            result = find;
+        }
+
+        return Iterables.transform(result, translator.FROM_DBO);
+    }
+
+    @Override
+    public Iterable<LookupEntry> allEntriesForPublishers(Iterable<Publisher> publishers,
+            ContentListingProgress progress) {
+        DBCursor cursor = cursorForPublishers(publishers, progress);
+        return Iterables.transform(cursor, translator.FROM_DBO);
     }
 
     public Iterable<LookupEntry> all() {
         return Iterables.transform(lookup.find(), translator.FROM_DBO);
+    }
+
+    private DBCursor cursorForPublishers(Iterable<Publisher> publishers,
+            ContentListingProgress progress) {
+        MongoQueryBuilder queryBuilder = where()
+                .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
+
+        if (!progress.equals(ContentListingProgress.START)) {
+            limitQueryByProgress(progress, queryBuilder);
+        }
+
+        return lookup.find(queryBuilder.build())
+                .setReadPreference(readPreference)
+                .sort(sort().ascending(OPAQUE_ID).build());
+    }
+
+    private void limitQueryByProgress(ContentListingProgress progress,
+            MongoQueryBuilder queryBuilder) {
+        Iterable<LookupEntry> progressedToEntry = entriesForCanonicalUris(
+                ImmutableList.of(progress.getUri())
+        );
+
+        if (Iterables.isEmpty(progressedToEntry)) {
+            return;
+        }
+
+        LookupEntry entry = Iterables.getOnlyElement(progressedToEntry);
+        queryBuilder.fieldGreaterThan(OPAQUE_ID, entry.id());
     }
 }
