@@ -20,7 +20,7 @@ public class MongoTopLevelItemsEntry {
     private final ReadPreference readPreference;
     private final ItemTranslator itemTranslator;
 
-    public static String EVENTS = "events";
+    public static String EVENTS = "events._id";
 
     public MongoTopLevelItemsEntry(DBCollection dbCollection, ReadPreference readPreference) {
         this.dbCollection = dbCollection;
@@ -34,7 +34,7 @@ public class MongoTopLevelItemsEntry {
     }
 
     private Iterable<DBObject> find(Iterable<Long> eventIds) {
-        return dbCollection.find(where().elemMatch(EVENTS, where().longFieldIn(ID, eventIds)).build())
+        return dbCollection.find(where().longFieldIn(EVENTS, eventIds).build())
                 .setReadPreference(readPreference);
     }
 
