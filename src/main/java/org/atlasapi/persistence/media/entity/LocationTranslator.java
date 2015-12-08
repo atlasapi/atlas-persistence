@@ -1,10 +1,13 @@
 package org.atlasapi.persistence.media.entity;
 
+import java.util.List;
+
 import org.atlasapi.media.TransportSubType;
 import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Quality;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -15,6 +18,10 @@ import com.mongodb.DBObject;
 public class LocationTranslator implements ModelTranslator<Location> {
 	
     public static final String POLICY = "policy";
+    private static final String QUALITY = "quality";
+    private static final String SUBTITLED_LANGUAGES = "subtitledLanguages";
+    private static final String REQUIRED_ENCRYPTION = "requiredEncryption";
+    private static final String VAT = "vat";
     
     private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 	private final PolicyTranslator policyTranslator = new PolicyTranslator();
@@ -38,13 +45,24 @@ public class LocationTranslator implements ModelTranslator<Location> {
         
         entity.setUri((String) dbObject.get("uri"));
         entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED));
-        ent
+        entity.setQuality(Quality.valueOf(TranslatorUtils.toString(dbObject, QUALITY)));
+        entity.setRequiredEncryption(TranslatorUtils.toBoolean(dbObject, REQUIRED_ENCRYPTION));
+        entity.setVat(TranslatorUtils.toDouble(dbObject, VAT));
+
+        decodeSubtitledLanguages(dbObject, entity);
         
         DBObject policyObject = (DBObject) dbObject.get(POLICY);
         if (policyObject != null) {
         	entity.setPolicy(policyTranslator.fromDBObject(policyObject, new Policy()));
         }
         return entity;
+    }
+
+    protected void decodeSubtitledLanguages(DBObject dbObject, Location entity) {
+        if(dbObject.containsField(SUBTITLED_LANGUAGES)) {
+            entity.setSubtitledLanguages(TranslatorUtils.toSet(dbObject, SUBTITLED_LANGUAGES));
+        }
+
     }
 
     private <T extends Enum<T>> T readEnum(Class<T> clazz, DBObject dbObject, String field) {
@@ -63,17 +81,11 @@ public class LocationTranslator implements ModelTranslator<Location> {
         TranslatorUtils.from(dbObject, "embedCode", entity.getEmbedCode());
         TranslatorUtils.from(dbObject, "embedId", entity.getEmbedId());
         TranslatorUtils.from(dbObject, "transportIsLive", entity.getTransportIsLive());
-//        TranslatorUtils.from(dbObject, "requiredEncryption", entity.getRequiredEncryption());
-//        TranslatorUtils.from(dbObject, "vat", entity.getVat());
-//        TranslatorUtils.from(dbObject, "quality", entity.getQuality().name());
-//
-//        BasicDBList subtitledLanguages = new BasicDBList();
-//        if (entity.getSubtitledLanguages() != null) {
-//            for (String subtitledLanguage : entity.getSubtitledLanguages()) {
-//                subtitledLanguages.add(subtitledLanguage);
-//            }
-//        }
-//        dbObject.put("subtitledLanguages", subtitledLanguages);
+        TranslatorUtils.from(dbObject, REQUIRED_ENCRYPTION, entity.getRequiredEncryption());
+        TranslatorUtils.from(dbObject, VAT, entity.getVat());
+        TranslatorUtils.from(dbObject, QUALITY, entity.getQuality().name());
+
+        encodeSubtitledLanguages(dbObject, entity);
 
         if (entity.getTransportType() != null) {
         	TranslatorUtils.from(dbObject, "transportType", entity.getTransportType().toString());
@@ -93,5 +105,11 @@ public class LocationTranslator implements ModelTranslator<Location> {
 			}
         }
         return dbObject;
+    }
+
+    protected void encodeSubtitledLanguages(DBObject dbObject, Location entity) {
+        if(!entity.getSubtitledLanguages().isEmpty()) {
+            TranslatorUtils.fromSet(dbObject, entity.getSubtitledLanguages(), SUBTITLED_LANGUAGES);
+        }
     }
 }
