@@ -29,7 +29,6 @@ public class LocationTranslatorTest extends TestCase {
         location.setAvailable(true);
         location.setRequiredEncryption(true);
         location.setVat(123.1);
-        location.setQuality(Quality.SD);
         location.setSubtitledLanguages(ImmutableSet.of("english"));
         
         location.setPolicy(new Policy()
@@ -41,7 +40,6 @@ public class LocationTranslatorTest extends TestCase {
         DBObject dbObject = lt.toDBObject(null, location);
         
         assertEquals(location.getAvailable(), dbObject.get("available"));
-        assertEquals(location.getQuality(), dbObject.get("quality"));
         assertEquals(location.getRequiredEncryption(), dbObject.get("requiredEncryption"));
         assertEquals(location.getVat(), dbObject.get("vat"));
     
@@ -57,7 +55,6 @@ public class LocationTranslatorTest extends TestCase {
         location.setAvailable(true);
         location.setRequiredEncryption(true);
         location.setVat(123.1);
-        location.setQuality(Quality.SD);
         location.setSubtitledLanguages(ImmutableSet.of("english"));
         
         location.setPolicy(new Policy()
@@ -95,7 +92,6 @@ public class LocationTranslatorTest extends TestCase {
 
         assertEquals(location.getVat(), location.getVat());
         assertEquals(location.getRequiredEncryption(), resultingLocation.getRequiredEncryption());
-        assertEquals(location.getQuality(), resultingLocation.getQuality());
         assertEquals(location.getSubtitledLanguages(), resultingLocation.getSubtitledLanguages());
     }
 }

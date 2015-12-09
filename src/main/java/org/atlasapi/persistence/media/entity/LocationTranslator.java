@@ -45,7 +45,6 @@ public class LocationTranslator implements ModelTranslator<Location> {
         
         entity.setUri((String) dbObject.get("uri"));
         entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED));
-        entity.setQuality(Quality.valueOf(TranslatorUtils.toString(dbObject, QUALITY)));
         entity.setRequiredEncryption(TranslatorUtils.toBoolean(dbObject, REQUIRED_ENCRYPTION));
         entity.setVat(TranslatorUtils.toDouble(dbObject, VAT));
 
@@ -83,7 +82,6 @@ public class LocationTranslator implements ModelTranslator<Location> {
         TranslatorUtils.from(dbObject, "transportIsLive", entity.getTransportIsLive());
         TranslatorUtils.from(dbObject, REQUIRED_ENCRYPTION, entity.getRequiredEncryption());
         TranslatorUtils.from(dbObject, VAT, entity.getVat());
-        TranslatorUtils.from(dbObject, QUALITY, entity.getQuality().name());
 
         encodeSubtitledLanguages(dbObject, entity);
 

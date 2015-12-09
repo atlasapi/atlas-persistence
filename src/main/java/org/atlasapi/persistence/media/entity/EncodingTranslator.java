@@ -167,7 +167,8 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
             }
             dbObject.put(LOCATIONS_KEY, list);
         }
-        
+
+
         return dbObject;
     }
 	

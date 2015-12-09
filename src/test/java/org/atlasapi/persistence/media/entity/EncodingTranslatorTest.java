@@ -1,17 +1,18 @@
 package org.atlasapi.persistence.media.entity;
 
-import junit.framework.TestCase;
-
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Quality;
 
+import com.google.common.collect.ImmutableSet;
 import com.metabroadcast.common.media.MimeType;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+
+import junit.framework.TestCase;
 
 public class EncodingTranslatorTest extends TestCase {
 
@@ -69,9 +70,13 @@ public class EncodingTranslatorTest extends TestCase {
         encoding.setSigned(true);
         encoding.setSubtitled(false);
         encoding.setHighDefinition(true);
+        encoding.setQuality(Quality.SD);
         Location location = new Location();
         location.setCanonicalUri("uri");
         location.setUri("uri");
+        location.setVat(123.3);
+        location.setSubtitledLanguages(ImmutableSet.of("english"));
+        location.setRequiredEncryption(true);
         encoding.addAvailableAt(location);
         
         DBObject dbObject = ent.toDBObject(null, encoding);
@@ -105,9 +110,13 @@ public class EncodingTranslatorTest extends TestCase {
         assertEquals(encoding.getSigned(), enc.getSigned());
         assertEquals(encoding.getSubtitled(), enc.getSubtitled());
         assertEquals(encoding.getHighDefinition(), enc.getHighDefinition());
+        assertEquals(encoding.getQuality(), enc.getQuality());
 
         Location l = enc.getAvailableAt().iterator().next();
         assertEquals(location.getCanonicalUri(), l.getCanonicalUri());
         assertEquals(location.getUri(), l.getUri());
+        assertEquals(location.getVat(), l.getVat());
+        assertEquals(location.getSubtitledLanguages(), l.getSubtitledLanguages());
+        assertEquals(location.getRequiredEncryption(), l.getRequiredEncryption());
     }
 }
