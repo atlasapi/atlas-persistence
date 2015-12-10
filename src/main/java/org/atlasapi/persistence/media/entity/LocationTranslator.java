@@ -18,10 +18,6 @@ import com.mongodb.DBObject;
 public class LocationTranslator implements ModelTranslator<Location> {
 	
     public static final String POLICY = "policy";
-    private static final String QUALITY = "quality";
-    private static final String SUBTITLED_LANGUAGES = "subtitledLanguages";
-    private static final String REQUIRED_ENCRYPTION = "requiredEncryption";
-    private static final String VAT = "vat";
 
     private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 	private final PolicyTranslator policyTranslator = new PolicyTranslator();
@@ -44,24 +40,12 @@ public class LocationTranslator implements ModelTranslator<Location> {
         entity.setTransportSubType(readEnum(TransportSubType.class, dbObject, "transportSubType"));
         
         entity.setUri((String) dbObject.get("uri"));
-        entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED));
-        entity.setRequiredEncryption(TranslatorUtils.toBoolean(dbObject, REQUIRED_ENCRYPTION));
-        entity.setVat(TranslatorUtils.toDouble(dbObject, VAT));
-
-        decodeSubtitledLanguages(dbObject, entity);
 
         DBObject policyObject = (DBObject) dbObject.get(POLICY);
         if (policyObject != null) {
         	entity.setPolicy(policyTranslator.fromDBObject(policyObject, new Policy()));
         }
         return entity;
-    }
-
-    protected void decodeSubtitledLanguages(DBObject dbObject, Location entity) {
-        if(dbObject.containsField(SUBTITLED_LANGUAGES)) {
-            entity.setSubtitledLanguages(TranslatorUtils.toSet(dbObject, SUBTITLED_LANGUAGES));
-        }
-
     }
 
     private <T extends Enum<T>> T readEnum(Class<T> clazz, DBObject dbObject, String field) {
@@ -80,10 +64,6 @@ public class LocationTranslator implements ModelTranslator<Location> {
         TranslatorUtils.from(dbObject, "embedCode", entity.getEmbedCode());
         TranslatorUtils.from(dbObject, "embedId", entity.getEmbedId());
         TranslatorUtils.from(dbObject, "transportIsLive", entity.getTransportIsLive());
-        TranslatorUtils.from(dbObject, REQUIRED_ENCRYPTION, entity.getRequiredEncryption());
-        TranslatorUtils.from(dbObject, VAT, entity.getVat());
-
-        encodeSubtitledLanguages(dbObject, entity);
 
         if (entity.getTransportType() != null) {
         	TranslatorUtils.from(dbObject, "transportType", entity.getTransportType().toString());
@@ -105,9 +85,4 @@ public class LocationTranslator implements ModelTranslator<Location> {
         return dbObject;
     }
 
-    protected void encodeSubtitledLanguages(DBObject dbObject, Location entity) {
-        if(!entity.getSubtitledLanguages().isEmpty()) {
-            TranslatorUtils.fromSet(dbObject, entity.getSubtitledLanguages(), SUBTITLED_LANGUAGES);
-        }
-    }
 }

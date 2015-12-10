@@ -27,9 +27,6 @@ public class LocationTranslatorTest extends TestCase {
         Location location = new Location();
         
         location.setAvailable(true);
-        location.setRequiredEncryption(true);
-        location.setVat(123.1);
-        location.setSubtitledLanguages(ImmutableSet.of("english"));
 
         location.setPolicy(new Policy()
         					.withAvailabilityStart(new SystemClock().now())
@@ -40,8 +37,6 @@ public class LocationTranslatorTest extends TestCase {
         DBObject dbObject = lt.toDBObject(null, location);
         
         assertEquals(location.getAvailable(), dbObject.get("available"));
-        assertEquals(location.getRequiredEncryption(), dbObject.get("requiredEncryption"));
-        assertEquals(location.getVat(), dbObject.get("vat"));
 
         DBObject policyObject = (DBObject) dbObject.get("policy");
         assertEquals(Sets.newHashSet("GB", "IE"),  Sets.newHashSet(((BasicDBList)  policyObject.get("availableCountries"))));
@@ -53,9 +48,6 @@ public class LocationTranslatorTest extends TestCase {
     public void testToLocation() {
         Location location = new Location();
         location.setAvailable(true);
-        location.setRequiredEncryption(true);
-        location.setVat(123.1);
-        location.setSubtitledLanguages(ImmutableSet.of("english"));
 
         location.setPolicy(new Policy()
         	.withAvailabilityStart(new SystemClock().now())
@@ -90,8 +82,5 @@ public class LocationTranslatorTest extends TestCase {
         assertEquals(location.getTransportIsLive(), resultingLocation.getTransportIsLive());
         assertEquals(location.getUri(), resultingLocation.getUri());
 
-        assertEquals(location.getVat(), location.getVat());
-        assertEquals(location.getRequiredEncryption(), resultingLocation.getRequiredEncryption());
-        assertEquals(location.getSubtitledLanguages(), resultingLocation.getSubtitledLanguages());
     }
 }
