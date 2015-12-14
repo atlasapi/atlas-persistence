@@ -22,6 +22,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
+import org.atlasapi.persistence.event.EventContentLister;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
@@ -49,7 +50,8 @@ import com.mongodb.Bytes;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister {
+public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister,
+        EventContentLister {
 
     private static final Logger log = LoggerFactory.getLogger(MongoContentLister.class);
     
@@ -204,6 +206,33 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             PROGRAMME_GROUP, TO_CONTAINER, 
             TOP_LEVEL_ITEM, TO_ITEM, 
             CONTAINER, TO_CONTAINER);
+
+    @Override
+    public Iterator<Content> contentForEvent(final List<Long> eventIds, ContentQuery query) {
+        List<ContentCategory> itemTables = ImmutableList.of(TOP_LEVEL_ITEM);
+        Iterator<LookupRef> allCanonicalUris = contentIterator(itemTables,
+                new ListingCursorBuilder<LookupRef>() {
+
+                    @Override
+                    public DBCursor cursorFor(ContentCategory category) {
+                        return contentTables.collectionFor(category).find(
+                                where().longFieldIn("events._id", eventIds).build(),
+                                BasicDBObjectBuilder.start(MongoConstants.ID, 1).get()
+                        ).sort(sort().ascending(ID).build());
+                    }
+
+                    @Override
+                    public Function<DBObject, LookupRef> translatorFor(ContentCategory contentCategory) {
+                        return toLookupRef(contentCategory);
+                    }
+                });
+        Iterable<LookupRef> selectionToResolve = query.getSelection().applyTo(allCanonicalUris);
+        return Iterables
+                .filter(
+                        contentResolver.findByLookupRefs(selectionToResolve).getAllResolvedResults(),
+                        Content.class
+                ).iterator();
+    }
 
     private interface ListingCursorBuilder<T> {
         

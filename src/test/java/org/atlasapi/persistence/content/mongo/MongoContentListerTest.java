@@ -11,11 +11,13 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.EventRef;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
@@ -49,7 +51,7 @@ public class MongoContentListerTest {
     private static final Item c4Item2 = new Item("aC4Item2", "c4Item2curie",Publisher.C4);
     private static final Brand bbcBrand= new Brand("bbcBrand1", "bbcBrand1curie", Publisher.BBC);
     private static final Brand c4Brand= new Brand("c4Brand1", "c4Brand1curie", Publisher.C4);
-    
+
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
     private static final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
     
@@ -88,7 +90,16 @@ public class MongoContentListerTest {
         c4Item2.setTopicRefs(ImmutableSet.of(topic1, topic3));
         bbcBrand.setTopicRefs(ImmutableSet.of(topic1, topic2));
         c4Brand.setTopicRefs(ImmutableSet.of(topic1, topic3));
-        
+
+        EventRef eventRef1 = new EventRef(1234L);
+        eventRef1.setPublisher(Publisher.BBC);
+
+        EventRef eventRef2 = new EventRef(12345L);
+        eventRef2.setPublisher(Publisher.BBC);
+
+        bbcItem1.setEventRefs(ImmutableList.<EventRef>of(eventRef1));
+        bbcItem2.setEventRefs(ImmutableList.<EventRef>of(eventRef2));
+
         MongoContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, playerResolver, serviceResolver, 
                 new SystemClock());
         writer.createOrUpdate(bbcBrand);
@@ -97,6 +108,7 @@ public class MongoContentListerTest {
         writer.createOrUpdate(bbcItem2);
         writer.createOrUpdate(c4Item1);
         writer.createOrUpdate(c4Item2);
+
     }
     
     @Test
@@ -181,5 +193,14 @@ public class MongoContentListerTest {
         
         contents = ImmutableList.copyOf(lister.updatedSince(C4, ELEVENTH_OF_THE_TENTH.plusHours(6)));
         assertThat(contents, is(equalTo(ImmutableList.<Content>of())));
+    }
+
+    @Test
+    public void testContentForEventIds() {
+        List<Content> contents = ImmutableList.copyOf(lister.contentForEvent(
+                Arrays.asList(1234L, 12345L), ContentQuery.MATCHES_EVERYTHING));
+        assertEquals(contents.get(0).getCanonicalUri(), "bbcItem1" );
+        assertEquals(contents.get(1).getCanonicalUri(), "bbcItem2");
+
     }
 }
