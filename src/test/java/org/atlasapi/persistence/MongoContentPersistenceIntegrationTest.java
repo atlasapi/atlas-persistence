@@ -9,7 +9,6 @@ import static org.hamcrest.Matchers.nullValue;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.v3.KafkaMessagingModule;
 import org.atlasapi.messaging.v3.MessagingModule;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
@@ -55,6 +54,12 @@ public class MongoContentPersistenceIntegrationTest {
                         @Override
                         public void sendMessage(M message)
                                 throws MessagingException {
+                        }
+
+                        @Override
+                        public void sendMessage(M m, byte[] bytes)
+                                throws MessagingException {
+
                         }
                     };
                 }

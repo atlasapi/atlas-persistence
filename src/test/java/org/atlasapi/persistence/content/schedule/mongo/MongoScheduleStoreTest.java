@@ -165,7 +165,14 @@ public class MongoScheduleStoreTest {
         @Override
         public void sendMessage(ScheduleUpdateMessage message) throws MessagingException {
             
-        }};
+        }
+
+        @Override
+        public void sendMessage(ScheduleUpdateMessage scheduleUpdateMessage, byte[] bytes)
+                throws MessagingException {
+
+        }
+    };
     
     @Before
     public void setUp() throws Exception {
