@@ -8,6 +8,7 @@ import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Longs;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
@@ -38,7 +39,7 @@ public class MessageQueueingTopicWriter extends ForwardingTopicStore {
     public void write(final Topic topic) {
         delegate.write(topic);
         try {
-            sender.sendMessage(createEntityUpdatedMessage(topic));
+            sender.sendMessage(createEntityUpdatedMessage(topic), Longs.toByteArray(topic.getId()));
         } catch (Exception e) {
             log.error("update message failed: " + topic, e);
         }

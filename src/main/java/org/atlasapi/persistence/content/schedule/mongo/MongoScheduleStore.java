@@ -148,7 +148,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         DateTime end = interval.getEnd();
         ScheduleUpdateMessage msg = new ScheduleUpdateMessage(mid, ts, src, cid , start, end);
         try {
-            messageSender.sendMessage(msg);
+            messageSender.sendMessage(msg, msg.getChannel().getBytes());
         } catch (MessagingException e) {
             String errMsg = String.format("%s %s %s", src, cid, interval);
             log.error(errMsg, e);

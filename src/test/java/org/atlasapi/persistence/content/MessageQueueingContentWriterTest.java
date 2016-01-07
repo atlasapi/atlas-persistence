@@ -2,6 +2,7 @@ package org.atlasapi.persistence.content;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -13,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.google.common.primitives.Longs;
 import com.metabroadcast.common.queue.MessageSender;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -38,7 +40,7 @@ public class MessageQueueingContentWriterTest {
         
         ArgumentCaptor<EntityUpdatedMessage> creatorCaptor = ArgumentCaptor.forClass(EntityUpdatedMessage.class);
         
-        verify(sender).sendMessage(creatorCaptor.capture());
+        verify(sender).sendMessage(creatorCaptor.capture(), eq(Longs.toByteArray(1225L)));
         
         EntityUpdatedMessage message = creatorCaptor.getValue();
         

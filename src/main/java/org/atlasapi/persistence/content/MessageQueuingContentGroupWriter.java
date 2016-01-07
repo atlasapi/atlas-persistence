@@ -10,6 +10,7 @@ import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Longs;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.queue.MessagingException;
@@ -36,7 +37,9 @@ public class MessageQueuingContentGroupWriter implements ContentGroupWriter {
     public void createOrUpdate(ContentGroup group) {
         try {
             delegate.createOrUpdate(group);
-            messageSender.sendMessage(createEntityUpdatedMessage(group));
+            messageSender.sendMessage(
+                    createEntityUpdatedMessage(group), Longs.toByteArray(group.getId())
+            );
         } catch (MessagingException e) {
             log.error("update message failed: " + group.toString(), e);
         }
