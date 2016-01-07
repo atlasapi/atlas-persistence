@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.google.common.primitives.Longs;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.Timestamp;
@@ -62,7 +64,7 @@ public class MessageQueueingEventWriterTest {
 
         messageQueueingEventWriter.createOrUpdate(event);
 
-        verify(sender).sendMessage(messageCaptor.capture());
+        verify(sender).sendMessage(messageCaptor.capture(), eq(Longs.toByteArray(id)));
 
         EntityUpdatedMessage message = messageCaptor.getValue();
         assertThat(message.getEntityId(), is(entityId));

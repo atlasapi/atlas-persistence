@@ -10,6 +10,7 @@ import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Longs;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
@@ -51,7 +52,7 @@ public class MessageQueueingEventWriter implements EventWriter {
 
     private void enqueueMessageUpdatedEvent(Event event) {
         try {
-            sender.sendMessage(createEntityUpdatedMessage(event));
+            sender.sendMessage(createEntityUpdatedMessage(event), Longs.toByteArray(event.getId()));
         } catch (Exception e) {
             LOG.warn("Update message failed: " + event, e);
         }
