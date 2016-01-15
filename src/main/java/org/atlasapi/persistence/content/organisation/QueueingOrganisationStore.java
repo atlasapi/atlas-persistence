@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.primitives.Longs;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
@@ -66,7 +67,8 @@ public class QueueingOrganisationStore implements OrganisationStore {
 
     private void enqueueMessageUpdatedMessage(final Organisation organisation) {
         try {
-            sender.sendMessage(createEntityUpdatedMessage(organisation));
+            EntityUpdatedMessage message = createEntityUpdatedMessage(organisation);
+            sender.sendMessage(message, Longs.toByteArray(organisation.getId()));
         } catch (Exception e) {
             log.error("update message failed: " + organisation, e);
         }
