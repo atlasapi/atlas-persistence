@@ -54,6 +54,7 @@ import org.atlasapi.persistence.content.mongo.MongoTopicStore;
 import org.atlasapi.persistence.content.organisation.IdSettingOrganisationStore;
 import org.atlasapi.persistence.content.organisation.MongoOrganisationStore;
 import org.atlasapi.persistence.content.organisation.OrganisationStore;
+import org.atlasapi.persistence.content.organisation.QueueingOrganisationStore;
 import org.atlasapi.persistence.content.people.EquivalatingPeopleResolver;
 import org.atlasapi.persistence.content.people.IdSettingPersonStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
@@ -123,6 +124,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
     private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
     private @Value("${messaging.destination.event.changes}") String eventChanges;
+    private @Value("${messaging.destination.organisation.changes}") String organisationChanges;
     private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
     private @Value("${mongo.audit.dbname}") String auditDbName;
@@ -167,6 +169,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Lazy(true)
     public MessageSender<EntityUpdatedMessage> eventChanges() {
         return messagingModule.messageSenderFactory().makeMessageSender(eventChanges,
+                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
+    }
+
+    @Bean
+    @Lazy(true)
+    public MessageSender<EntityUpdatedMessage> organizationChanges() {
+        return messagingModule.messageSenderFactory().makeMessageSender(organisationChanges,
                 JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
     }
 
@@ -365,6 +374,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         if (Boolean.valueOf(generateIds)) {
             organisationStore = new IdSettingOrganisationStore(organisationStore, new MongoSequentialIdGenerator(db, "organisations"));
         }
+
+        if (Boolean.valueOf(messagingEnabled)) {
+            organisationStore = new QueueingOrganisationStore(organizationChanges(),organisationStore);
+        }
+
         return organisationStore;
     }
         
