@@ -61,7 +61,7 @@ public class QueueingOrganisationStoreTest {
     }
 
     @Test
-    public void testEnqueueMessageWhenEventChanges() throws Exception {
+    public void testEnqueueMessageWhenOrganisationChanges() throws Exception {
         Organisation organisation = new Organisation();
         organisation.setId(id);
         organisation.setPublisher(Publisher.BBC);
