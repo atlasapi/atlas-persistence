@@ -11,6 +11,7 @@ import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.RelatedLink;
+import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.junit.Test;
 
@@ -33,11 +34,12 @@ public class ChannelTranslatorTest {
         Set<Long> variations = ImmutableSet.of(2345L, 2346L, 2347L);
         
         RelatedLink relatedLink = RelatedLink.simulcastLink("simulcast_url").build();
-        
+
         Image image = new Image("image");
         image.setTheme(ImageTheme.LIGHT_OPAQUE);
         
         Set<String> genres = ImmutableSet.of("Genre");
+        DateTime dateTimeTest = DateTime.now();
         
         Channel channel = Channel.builder()
             .withSource(Publisher.BBC)
@@ -56,6 +58,7 @@ public class ChannelTranslatorTest {
             .withVariationIds(variations)
             .withRelatedLink(relatedLink)
             .withGenres(genres)
+            .withAdvertiseFrom(dateTimeTest)
             .build();
         
         DBObject encoded = channelTranslator.toDBObject(null, channel);
@@ -79,6 +82,7 @@ public class ChannelTranslatorTest {
         assertThat(decoded.getChannelNumbers(), is(equalTo(channel.getChannelNumbers())));
         assertThat(decoded.getRelatedLinks(), is(equalTo(channel.getRelatedLinks())));
         assertThat(decoded.getGenres(), is(equalTo(genres)));
+        assertThat(decoded.getAdvertiseFrom().toDate(), is(equalTo(channel.getAdvertiseFrom().toDate())));
     }
 
 }
