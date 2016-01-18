@@ -363,7 +363,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
     
     // not sure if this is right
-    public @Primary @Bean OrganisationStore organisationStore() {
+    public @Bean OrganisationStore organisationStore() {
         LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"), 
                 persistenceAuditLog(), readPreference);
         OrganisationStore organisationStore = new MongoOrganisationStore(db, 

@@ -121,7 +121,7 @@ public class ItemTranslatorTest extends TestCase {
         assertEquals(topic1.isSupervised(), t1.get("supervised"));
         assertEquals(topic1.getRelationship().name(), t1.get("relationship"));
     }
-    
+
     public void testConvertToItem() throws Exception {
     	MongoTestHelper.ensureMongoIsRunning();
         DBCollection collection = MongoTestHelper.anEmptyTestDatabase().collection("test");
