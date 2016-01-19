@@ -45,7 +45,7 @@ public class MongoChannelStoreRetrievalTest {
     @BeforeClass
     public static void setUp() throws InterruptedException {
         dateTime = DateTime.now();
-        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "sport", dateTime, "test/1","test/2")).getId();
+        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "sport", null, "test/1","test/2")).getId();
         channelId2 = store.createOrUpdate(channel(2, "uri2", "key2", "not-sport", null, "asdf/1")).getId();
         channelId3 = store.createOrUpdate(channel(3, "uri3", "key3", "flim", null, "test/3","asdf/2")).getId();
         channelId4 = store.createOrUpdate(channel(4, "uri4", "key4", "old episode", dateTime.minusDays(1), "test")).getId();
@@ -75,8 +75,11 @@ public class MongoChannelStoreRetrievalTest {
         
         assertTrue(channel.hasValue());
         assertThat(channel.requireValue().getCanonicalUri(), is(equalTo("uri1")));
-        assertThat(channel.requireValue().getAdvertiseFrom().toString(), is(equalTo(dateTime.toString())));
 
+
+        Maybe<Channel> channel4 = store.fromId(channelId4);
+        assertThat(channel4.requireValue().getAdvertiseFrom().toString(),
+                            is(equalTo(dateTime.minusDays(1).toString())));
     }
 
     @Test
