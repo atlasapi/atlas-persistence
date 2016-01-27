@@ -171,7 +171,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
 		String publisherKey = (String) dbObject.get(PUBLISHER_KEY);
 		if (publisherKey != null) {
-			entity.setPublisher(Publisher.fromKey(publisherKey).valueOrDefault(null));
+			entity.setPublisher(Publisher.fromKey(publisherKey).requireValue());
 		}
 		
 		List<DBObject> imagesDboList = TranslatorUtils.toDBObjectList(dbObject, IMAGES_KEY);
