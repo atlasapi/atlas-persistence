@@ -72,6 +72,11 @@
     <description></description>
     <dependencies>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.atlasapi</groupId>
             <artifactId>atlas-model</artifactId>
             <version>${atlas.version}</version>
@@ -80,6 +85,11 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring-test.version}</version>
         </dependency>
         <dependency>
             <groupId>com.metabroadcast.common.persistence</groupId>
@@ -148,6 +158,12 @@
             <artifactId>common-queue</artifactId>
             <version>${common.version}</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <scm>
@@ -182,8 +198,10 @@
         <atlas.version>${project.version}</atlas.version>
         <common.version>1.0-SNAPSHOT</common.version>
         <spring.version>3.0.5.RELEASE</spring.version>
+        <spring-test.version>2.5</spring-test.version>
         <amq.version>5.9.0</amq.version>
         <jacoco.version>0.7.5.201505241946</jacoco.version>
+        <guava.version>18.0</guava.version>
 
         <sonar.jacoco.itReportPath>${project.basedir}/target/jacoco-it.exec</sonar.jacoco.itReportPath>
         <sonar.jacoco.reportPath>${project.basedir}/target/jacoco.exec</sonar.jacoco.reportPath>
