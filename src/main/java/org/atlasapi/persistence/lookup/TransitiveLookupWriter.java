@@ -250,11 +250,15 @@ public class TransitiveLookupWriter implements LookupWriter {
             
             Queue<LookupRef> direct = Lists.newLinkedList(neighbours(entry));
             //Traverse equivalence graph breadth-first
+            Set<LookupRef> seen = Sets.newHashSet();
             while(!direct.isEmpty()) {
                 LookupRef current = direct.poll();
-                transitiveSet.add(current);
-                LookupEntry currentEntry = checkNotNull(entries.get(current.uri()), "No lookup entry for %s", current);
-                Iterables.addAll(direct, Iterables.filter(neighbours(currentEntry), not(in(transitiveSet))));
+                if (!seen.contains(current)) {
+                    transitiveSet.add(current);
+                    LookupEntry currentEntry = checkNotNull(entries.get(current.uri()), "No lookup entry for %s", current);
+                    Iterables.addAll(direct, Iterables.filter(neighbours(currentEntry), not(in(transitiveSet))));
+                    seen.add(current);
+                }
             }
             
             // Because all entries in the same transitive set should have

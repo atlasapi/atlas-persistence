@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.metabroadcast.common.persistence.MongoTestHelper;
@@ -51,6 +52,7 @@ public class MongoOrganisationStoreTest {
             organisation.setPublisher(Publisher.BBC);
             organisation.setCanonicalUri(uri);
             organisation.setId(1L);
+            organisation.setAlternativeTitles(ImmutableSet.of("title1"));
             store.createOrUpdateOrganisation(organisation);
             
             List<String> items = Lists.newArrayList();
@@ -75,6 +77,7 @@ public class MongoOrganisationStoreTest {
             assertEquals(uri, found.getCanonicalUri());
             assertEquals(organisation.getId(), found.getId());
             assertEquals(organisation.getPublisher(), found.getPublisher());
+            assertEquals("title1",Iterables.getOnlyElement(found.getAlternativeTitles()));
             
             assertEquals(10, found.getContents().size());
             assertEquals(items, ImmutableList.copyOf(Iterables.transform(found.getContents(), ChildRef.TO_URI)));

@@ -6,6 +6,7 @@ import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,18 +46,20 @@ public class MongoChannelStoreWriteTest extends TestCase {
     public void testUpdateExistingChannel() {
         Maybe<Channel> maybeChannel = channelStore.fromUri("uri1");
         Channel channel = maybeChannel.requireValue();
-        
+        DateTime testTime = DateTime.now();
         // update and rewrite channel
         channel.setCanonicalUri("uri2");
         channel.setKey("key2");
         channel.setMediaType(MediaType.AUDIO);
         channel.setAliasUrls(ImmutableList.of("newAlias"));
+        channel.setAdvertiseFrom(testTime);
         channel = channelStore.createOrUpdate(channel);
         
         assertEquals("uri2", channel.getUri());
         assertEquals("key2", channel.getKey());
         assertEquals(MediaType.AUDIO, channel.getMediaType());
         assertEquals(ImmutableSet.of("newAlias"), channel.getAliasUrls());
+        assertEquals(testTime, channel.getAdvertiseFrom());
     }
     
     @Test

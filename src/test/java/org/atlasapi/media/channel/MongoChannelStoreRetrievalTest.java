@@ -75,7 +75,11 @@ public class MongoChannelStoreRetrievalTest {
         
         assertTrue(channel.hasValue());
         assertThat(channel.requireValue().getCanonicalUri(), is(equalTo("uri1")));
-        
+
+
+        Maybe<Channel> channel4 = store.fromId(channelId4);
+        assertThat(channel4.requireValue().getAdvertiseFrom().toString(),
+                            is(equalTo(dateTime.minusDays(1).toString())));
     }
 
     @Test

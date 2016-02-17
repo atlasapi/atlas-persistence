@@ -14,6 +14,7 @@ import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Longs;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
@@ -65,7 +66,9 @@ public class MessageQueueingContentWriter implements ContentWriter {
 
     private void enqueueMessageUpdatedMessage(final Content content) {
         try {
-            sender.sendMessage(createEntityUpdatedMessage(content));
+            sender.sendMessage(
+                    createEntityUpdatedMessage(content), Longs.toByteArray(content.getId())
+            );
         } catch (Exception e) {
             log.error("update message failed: " + content, e);
         }
