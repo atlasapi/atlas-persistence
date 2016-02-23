@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.atlasapi.media.channel.CachingChannelStore;
 import org.atlasapi.media.channel.ChannelGroupStore;
+import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.MongoChannelGroupStore;
 import org.atlasapi.media.channel.MongoChannelStore;
 import org.atlasapi.media.channel.ServiceChannelStore;
@@ -87,6 +88,7 @@ import org.atlasapi.persistence.topic.TopicStore;
 import org.joda.time.DateTime;
 import org.springframework.context.annotation.Bean;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;

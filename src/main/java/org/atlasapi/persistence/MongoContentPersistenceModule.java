@@ -1,5 +1,7 @@
 package org.atlasapi.persistence;
 
+import javax.annotation.PostConstruct;
+
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
@@ -8,6 +10,7 @@ import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+import org.atlasapi.messaging.v3.JacksonMessageSerializer;
 import org.atlasapi.messaging.v3.KafkaMessagingModule;
 import org.atlasapi.messaging.v3.MessagingModule;
 import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
@@ -84,6 +87,9 @@ public class MongoContentPersistenceModule {
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
 
     private ConstructorBasedMongoContentPersistenceModule persistenceModule;
+
+    public MongoContentPersistenceModule() {}
+
 
     @VisibleForTesting
     public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
