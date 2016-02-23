@@ -40,7 +40,7 @@ public class ChannelTranslatorTest {
         
         Set<String> genres = ImmutableSet.of("Genre");
         DateTime dateTimeTest = DateTime.now();
-        
+
         Channel channel = Channel.builder()
             .withSource(Publisher.BBC)
             .withUri("uri")

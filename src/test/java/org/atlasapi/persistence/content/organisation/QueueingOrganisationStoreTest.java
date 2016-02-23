@@ -13,6 +13,8 @@ import org.atlasapi.media.entity.Organisation;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+
+import com.google.common.primitives.Longs;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,6 +34,8 @@ import com.metabroadcast.common.time.Timestamper;
 public class QueueingOrganisationStoreTest {
     @Captor
     public ArgumentCaptor<EntityUpdatedMessage> messageCaptor;
+    @Captor
+    public ArgumentCaptor<byte[]> byteCaptor;
 
     private QueueingOrganisationStore store;
 
@@ -57,7 +61,7 @@ public class QueueingOrganisationStoreTest {
     }
 
     @Test
-    public void testEnqueueMessageWhenEventChanges() throws Exception {
+    public void testEnqueueMessageWhenOrganisationChanges() throws Exception {
         Organisation organisation = new Organisation();
         organisation.setId(id);
         organisation.setPublisher(Publisher.BBC);
@@ -66,7 +70,7 @@ public class QueueingOrganisationStoreTest {
 
         store.createOrUpdateOrganisation(organisation);
 
-        verify(sender).sendMessage(messageCaptor.capture());
+        verify(sender).sendMessage(messageCaptor.capture(), byteCaptor.capture());
 
         EntityUpdatedMessage message = messageCaptor.getValue();
         assertThat(message.getEntityId(), is(entityId));
@@ -74,5 +78,7 @@ public class QueueingOrganisationStoreTest {
         assertThat(message.getEntityType(), is(organisation.getClass().getSimpleName().toLowerCase()));
         assertThat(message.getTimestamp(), is(timestamp));
         assertThat(message.getMessageId(), not(nullValue()));
+        byte[] bytes = byteCaptor.getValue();
+        assertThat(bytes, is(Longs.toByteArray(organisation.getId())));
     }
 }
