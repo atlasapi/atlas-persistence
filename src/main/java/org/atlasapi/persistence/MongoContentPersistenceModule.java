@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.metabroadcast.common.ids.IdGenerator;
@@ -60,6 +61,7 @@ import com.mongodb.ReadPreference;
  * This is the Spring version of the MongoContentPersistenceModule.
  * The non-DI version serves as a delegate in this class.
  */
+@Component
 @Configuration
 @Import(KafkaMessagingModule.class)
 public class MongoContentPersistenceModule {
