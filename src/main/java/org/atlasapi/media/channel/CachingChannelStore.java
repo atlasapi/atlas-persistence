@@ -21,7 +21,7 @@ import com.google.common.collect.Maps;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.caching.BackgroundComputingValue;
 
-public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
+public class CachingChannelStore implements ChannelStore {
 
     private final ChannelStore delegate;
     private final BackgroundComputingValue<List<Channel>> channels;
