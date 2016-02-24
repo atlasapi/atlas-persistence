@@ -1,7 +1,5 @@
 package org.atlasapi.persistence;
 
-import javax.annotation.PostConstruct;
-
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
@@ -64,7 +62,7 @@ import com.mongodb.ReadPreference;
  */
 @Configuration
 @Import(KafkaMessagingModule.class)
-public class MongoContentPersistenceModule {
+public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     private @Autowired ReadPreference readPreference;
     private @Autowired Mongo mongo;
@@ -85,8 +83,6 @@ public class MongoContentPersistenceModule {
     private @Value("${mongo.audit.dbname}") String auditDbName;
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
 
-    private ConstructorBasedMongoContentPersistenceModule persistenceModule;
-
     @VisibleForTesting
     public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
             ReadPreference readPreference) {
@@ -99,10 +95,8 @@ public class MongoContentPersistenceModule {
         this.readPreference = readPreference;
     }
 
-    @PostConstruct
-    @Bean
     public ConstructorBasedMongoContentPersistenceModule persistenceModule() {
-        return persistenceModule = new ConstructorBasedMongoContentPersistenceModule(
+        return new ConstructorBasedMongoContentPersistenceModule(
                 mongo,
                 db,
                 messagingModule,
@@ -155,24 +149,36 @@ public class MongoContentPersistenceModule {
 
     private @Autowired ChannelResolver channelResolver;
 
-    public @Bean ContentGroupWriter contentGroupWriter() {
+    @Override
+    @Bean
+    public ContentGroupWriter contentGroupWriter() {
         return persistenceModule().contentGroupWriter();
     }
 
-    public @Bean ContentGroupResolver contentGroupResolver() {
+    @Override
+    @Bean
+    public ContentGroupResolver contentGroupResolver() {
         return persistenceModule().contentGroupResolver();
     }
 
-    public @Primary @Bean ContentWriter contentWriter() {
+    @Override
+    @Primary
+    @Bean
+    public ContentWriter contentWriter() {
 
         return persistenceModule().contentWriter();
     }
 
-    public @Primary @Bean ContentResolver contentResolver() {
+    @Override
+    @Primary
+    @Bean
+    public ContentResolver contentResolver() {
         return persistenceModule().contentResolver();
     }
 
-    public @Primary @Bean KnownTypeContentResolver knownTypeContentResolver() {
+    @Primary
+    @Bean
+    public KnownTypeContentResolver knownTypeContentResolver() {
         return persistenceModule().knownTypeContentResolver();
     }
 
@@ -180,7 +186,9 @@ public class MongoContentPersistenceModule {
         return persistenceModule().lookupStore();
     }
 
-    public @Primary @Bean IdGenerator contentIdGenerator() {
+    @Primary
+    @Bean
+    public IdGenerator contentIdGenerator() {
         return persistenceModule().contentIdGenerator();
     }
 
@@ -189,67 +197,94 @@ public class MongoContentPersistenceModule {
         return persistenceModule().explicitLookupWriter();
     }
 
-    public @Bean
-    LookupWriter generatedLookupWriter() {
+    @Bean
+    public LookupWriter generatedLookupWriter() {
         return persistenceModule().generatedLookupWriter();
     }
 
-    public @Primary
+    @Primary
     @Bean
-    MongoScheduleStore scheduleStore() {
+    public MongoScheduleStore scheduleStore() {
 
         return persistenceModule().scheduleStore();
     }
 
-    public @Primary @Bean EquivalentContentResolver equivContentResolver() {
+    @Primary
+    @Bean
+    public EquivalentContentResolver equivContentResolver() {
         return persistenceModule().equivContentResolver();
     }
 
-    public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
+    @Primary
+    @Bean
+    public ItemsPeopleWriter itemsPeopleWriter() {
         return persistenceModule().itemsPeopleWriter();
     }
 
-    public @Primary @Bean QueuingPersonWriter personWriter() {
+    @Primary
+    @Bean
+    public QueuingPersonWriter personWriter() {
         return persistenceModule().personWriter();
     }
 
-    public @Primary @Bean PersonStore personStore() {
+    @Primary
+    @Bean
+    public PersonStore personStore() {
 
         return persistenceModule().personStore();
     }
 
-    public @Primary @Bean ShortUrlSaver shortUrlSaver() {
+    @Override
+    @Primary
+    @Bean
+    public ShortUrlSaver shortUrlSaver() {
         return persistenceModule().shortUrlSaver();
     }
 
-    public @Primary @Bean MongoContentLister contentLister() {
+    @Primary
+    @Bean
+    public MongoContentLister contentLister() {
         return persistenceModule().contentLister();
     }
 
-    public @Primary @Bean TopicStore topicStore() {
+    @Override
+    @Primary
+    @Bean
+    public TopicStore topicStore() {
 
         return persistenceModule().topicStore();
     }
 
-    public @Bean ServiceResolver serviceResolver() {
+    @Bean
+    public ServiceResolver serviceResolver() {
 
         return persistenceModule().serviceResolver();
     }
 
-    public @Bean PlayerResolver playerResolver() {
+    @Bean
+    public PlayerResolver playerResolver() {
 
         return persistenceModule().playerResolver();
     }
 
-    public @Primary @Bean TopicQueryResolver topicQueryResolver() {
+    @Override
+    @Primary
+    @Bean
+    public TopicQueryResolver topicQueryResolver() {
         return persistenceModule().topicQueryResolver();
     }
 
-    public @Primary @Bean SegmentWriter segmentWriter() {
+    @Override
+    @Primary
+    @Bean
+    public SegmentWriter segmentWriter() {
         return persistenceModule().segmentWriter();
     }
 
-    public @Primary @Bean SegmentResolver segmentResolver() {
+    @Override
+    @Primary
+    @Bean
+    public SegmentResolver segmentResolver() {
         return persistenceModule().segmentResolver();
     }
 
@@ -258,40 +293,54 @@ public class MongoContentPersistenceModule {
      * {@link MongoContentPersistenceModule#eventResolver()} instead
      */
     @Deprecated
-    public @Bean EventStore eventStore() {
+    @Bean
+    public EventStore eventStore() {
         return persistenceModule().eventStore();
     }
 
-    public @Bean EventWriter eventWriter() {
+    @Bean
+    public EventWriter eventWriter() {
 
         return persistenceModule().eventWriter();
     }
 
-    public @Bean EventResolver eventResolver() {
+    @Bean
+    public EventResolver eventResolver() {
 
         return persistenceModule().eventResolver();
     }
 
     // not sure if this is right
-    public @Bean OrganisationStore organisationStore() {
+    @Bean
+    public OrganisationStore organisationStore() {
         return persistenceModule().organisationStore();
     }
 
-    public @Primary @Bean ChannelStore channelStore() {
+    @Primary
+    @Bean
+    public ChannelStore channelStore() {
 
         return persistenceModule().channelStore();
     }
 
-    public @Primary @Bean ChannelGroupStore channelGroupStore() {
+    @Primary
+    @Bean
+    public ChannelGroupStore channelGroupStore() {
         return persistenceModule().channelGroupStore();
     }
 
-    public @Primary @Bean ProductStore productStore() {
+    @Override
+    @Primary
+    @Bean
+    public ProductStore productStore() {
 
         return persistenceModule().productStore();
     }
 
-    public @Primary @Bean ProductResolver productResolver() {
+    @Override
+    @Primary
+    @Bean
+    public ProductResolver productResolver() {
 
         return persistenceModule().productResolver();
     }
@@ -302,22 +351,27 @@ public class MongoContentPersistenceModule {
         return persistenceModule().mongoIoSetProbe();
     }
 
-    public @Bean PeopleQueryResolver peopleQueryResolver() {
+    @Override
+    @Bean
+    public PeopleQueryResolver peopleQueryResolver() {
 
         return persistenceModule().peopleQueryResolver();
     }
 
-    public @Bean ContentPurger contentPurger() {
+    @Bean
+    public ContentPurger contentPurger() {
 
         return persistenceModule().contentPurger();
     }
 
-    public @Bean PersistenceAuditLog persistenceAuditLog() {
+    @Bean
+    public PersistenceAuditLog persistenceAuditLog() {
 
         return persistenceModule().persistenceAuditLog();
     }
 
-    public @Bean MongoProgressStore mongoProgressStore() {
+    @Bean
+    public MongoProgressStore mongoProgressStore() {
 
         return persistenceModule().mongoProgressStore();
     }
