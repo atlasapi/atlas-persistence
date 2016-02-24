@@ -83,6 +83,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${mongo.audit.dbname}") String auditDbName;
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
 
+    public MongoContentPersistenceModule() {}
+
     @VisibleForTesting
     public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
             ReadPreference readPreference) {
