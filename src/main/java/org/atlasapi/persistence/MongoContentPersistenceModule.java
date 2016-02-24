@@ -97,7 +97,6 @@ public class MongoContentPersistenceModule {
         this.readPreference = readPreference;
     }
 
-    @Bean
     public ConstructorBasedMongoContentPersistenceModule persistenceModule() {
         return persistenceModule = new ConstructorBasedMongoContentPersistenceModule(
                 mongo,
