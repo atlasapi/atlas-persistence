@@ -1,5 +1,7 @@
 package org.atlasapi.persistence;
 
+import javax.annotation.PostConstruct;
+
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
@@ -97,6 +99,8 @@ public class MongoContentPersistenceModule {
         this.readPreference = readPreference;
     }
 
+    @PostConstruct
+    @Bean
     public ConstructorBasedMongoContentPersistenceModule persistenceModule() {
         return persistenceModule = new ConstructorBasedMongoContentPersistenceModule(
                 mongo,
