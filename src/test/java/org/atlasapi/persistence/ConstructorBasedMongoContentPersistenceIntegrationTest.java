@@ -48,6 +48,9 @@ import org.atlasapi.persistence.topic.TopicStore;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -63,6 +66,7 @@ import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.queue.MessageSenderFactory;
 import com.metabroadcast.common.queue.MessageSerializer;
 import com.metabroadcast.common.queue.MessagingException;
+import com.mongodb.DBCursor;
 import com.mongodb.Mongo;
 import com.mongodb.ReadPreference;
 
