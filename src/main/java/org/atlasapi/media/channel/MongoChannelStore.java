@@ -43,7 +43,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-public class MongoChannelStore implements ChannelStore, ServiceChannelStore {
+public class MongoChannelStore implements ChannelStore {
 
     public static final String COLLECTION = "channels";
 	private static final ChannelTranslator translator = new ChannelTranslator();
@@ -288,11 +288,4 @@ public class MongoChannelStore implements ChannelStore, ServiceChannelStore {
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
 
-    @Override public void start() {
-        /* no-op */
-    }
-
-    @Override public void shutdown() {
-        /* no-op */
-    }
 }
