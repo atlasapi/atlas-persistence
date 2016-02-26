@@ -33,11 +33,13 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
     }
     
     @PostConstruct
+    @Override
     public void start() {
         channels.start();
     }
     
     @PreDestroy
+    @Override
     public void shutdown() {
         channels.shutdown();
     }
