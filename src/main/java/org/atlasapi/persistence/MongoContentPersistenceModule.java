@@ -1,8 +1,12 @@
 package org.atlasapi.persistence;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.channel.ChannelStore;
+import org.atlasapi.media.channel.ServiceChannelStore;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.SegmentResolver;
@@ -69,7 +73,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired DatabasedMongo db;
     private @Autowired AdapterLog log;
     private @Autowired MessagingModule messagingModule;
-    
+
     private final Parameter processingConfig = Configurer.get("processing.config");
     
     private @Value("${messaging.destination.content.changes}") String contentChanges;
@@ -95,6 +99,20 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.generateIds = "true";
         this.auditDbName = auditDbName;
         this.readPreference = readPreference;
+    }
+
+    /**
+     * We need both this methods here to initialized the cachedValue of BackgroundComputingValue that will
+     * be used by the CachingChannelStore.
+     */
+    @PostConstruct
+    public void setUp() {
+        channelStore().start();
+    }
+
+    @PreDestroy
+    public void tearDown() {
+        channelStore().shutdown();
     }
 
     public ConstructorBasedMongoContentPersistenceModule persistenceModule() {
@@ -148,8 +166,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public MessageSender<EntityUpdatedMessage> organizationChanges() {
         return persistenceModule().organizationChanges();
     }
-
-    private @Autowired ChannelResolver channelResolver;
 
     @Override
     @Bean
@@ -320,8 +336,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Primary
     @Bean
-    public ChannelStore channelStore() {
-
+    public ServiceChannelStore channelStore() {
         return persistenceModule().channelStore();
     }
 
