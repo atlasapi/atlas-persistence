@@ -331,42 +331,6 @@ public class ConstructorBasedMongoContentPersistenceIT {
         assertThat((Person) personOptional.get(), is(equalTo(person)));
     }
 
-    //processingConfig false gives us a CachingChannelStore
-    @Test
-    @Ignore("5 minute wait time to initialize the cache, test should pass after cache initializes")
-    public void testChannelWritingAndRetrievalWithProcessingConfigFalse() {
-
-        ServiceChannelStore serviceChannelStore = module.channelStore();
-
-        serviceChannelStore.start();
-
-        Channel channel = Channel.builder()
-                                .withSource(Publisher.BBC)
-                                .withTitle("title")
-                                .withHighDefinition(false)
-                                .withMediaType(MediaType.AUDIO)
-                                .withUri("uri")
-                                .build();
-
-
-
-        serviceChannelStore.createOrUpdate(channel);
-
-        //It takes 300seconds for the cache to initialize.
-        try {
-            Thread.sleep(300000);
-        } catch (InterruptedException e) {
-
-        }
-
-        Maybe<Channel> channelMaybe = serviceChannelStore.fromUri("uri");
-
-        serviceChannelStore.shutdown();
-
-        assertThat(channelMaybe.requireValue(), is(equalTo(channel)));
-
-    }
-
     @Test
     public void testChannelWritingAndRetrievalWithProcessingConfigTrue() {
 
