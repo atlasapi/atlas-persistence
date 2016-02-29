@@ -1,24 +1,16 @@
 //package org.atlasapi.persistence;
 //
-//<<<<<<< HEAD
+//import static com.google.common.base.Preconditions.checkNotNull;
+//
 //import org.atlasapi.media.channel.CachingChannelStore;
 //import org.atlasapi.media.channel.ChannelGroupStore;
-//import org.atlasapi.media.channel.ChannelResolver;
 //import org.atlasapi.media.channel.ChannelStore;
 //import org.atlasapi.media.channel.MongoChannelGroupStore;
 //import org.atlasapi.media.channel.MongoChannelStore;
+//import org.atlasapi.media.channel.ServiceChannelStore;
 //import org.atlasapi.media.entity.Event;
 //import org.atlasapi.media.entity.Topic;
 //import org.atlasapi.media.product.IdSettingProductStore;
-//=======
-//import javax.annotation.PostConstruct;
-//import javax.annotation.PreDestroy;
-//
-//import org.atlasapi.media.channel.ChannelGroupStore;
-//import org.atlasapi.media.channel.ChannelResolver;
-//import org.atlasapi.media.channel.ChannelStore;
-//import org.atlasapi.media.channel.ServiceChannelStore;
-//>>>>>>> faulty-changes
 //import org.atlasapi.media.product.ProductResolver;
 //import org.atlasapi.media.product.ProductStore;
 //import org.atlasapi.media.segment.IdSettingSegmentWriter;
@@ -28,7 +20,6 @@
 //import org.atlasapi.media.segment.SegmentWriter;
 //import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 //import org.atlasapi.messaging.v3.JacksonMessageSerializer;
-//import org.atlasapi.messaging.v3.KafkaMessagingModule;
 //import org.atlasapi.messaging.v3.MessagingModule;
 //import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
 //import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
@@ -95,21 +86,13 @@
 //import org.atlasapi.persistence.topic.TopicQueryResolver;
 //import org.atlasapi.persistence.topic.TopicStore;
 //import org.joda.time.DateTime;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.beans.factory.annotation.Value;
 //import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.context.annotation.Import;
-//import org.springframework.context.annotation.Lazy;
-//import org.springframework.context.annotation.Primary;
 //
-//import com.google.common.annotations.VisibleForTesting;
 //import com.google.common.base.Optional;
 //import com.metabroadcast.common.ids.IdGenerator;
 //import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 //import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 //import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
-//import com.metabroadcast.common.properties.Configurer;
 //import com.metabroadcast.common.properties.Parameter;
 //import com.metabroadcast.common.queue.MessageSender;
 //import com.metabroadcast.common.time.SystemClock;
@@ -117,127 +100,102 @@
 //import com.mongodb.ReadPreference;
 //import com.mongodb.WriteConcern;
 //
-//@Configuration
-//@Import(KafkaMessagingModule.class)
-//public class MongoContentPersistenceModule implements ContentPersistenceModule {
+///**
+// * This abstraction logic of the ContentPersistenceModule is done because we do not want to
+// * wire Spring and our Dropwizard microservices project. Currently, BT ingesters extracted from
+// * monolith will be using atlas-persistence to write to mongoDB directly until we decided to
+// * move it to using the Atlas POST api.
+// *
+// * This is intended for non-DI use.
+// */
+//public class ConstructorBasedMongoContentPersistenceModule implements ContentPersistenceModule {
 //
-//    private @Autowired ReadPreference readPreference;
-//    private @Autowired Mongo mongo;
-//    private @Autowired DatabasedMongo db;
-//    private @Autowired AdapterLog log;
-//    private @Autowired MessagingModule messagingModule;
+//    private final ReadPreference readPreference;
+//    private final Mongo mongo;
+//    private final DatabasedMongo db;
+//    private final AdapterLog log;
+//    private final MessagingModule messagingModule;
 //
-//    private final Parameter processingConfig = Configurer.get("processing.config");
+//    private final String contentChanges;
+//    private final String topicChanges;
+//    private final String scheduleChanges;
+//    private final String contentGroupChanges;
+//    private final String eventChanges;
+//    private final String organisationChanges;
+//    private final String generateIds;
+//    private final String messagingEnabled;
+//    private final String auditDbName;
+//    private final boolean auditEnabled;
 //
-//    private @Value("${messaging.destination.content.changes}") String contentChanges;
-//    private @Value("${messaging.destination.topics.changes}") String topicChanges;
-//    private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
-//    private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
-//    private @Value("${messaging.destination.event.changes}") String eventChanges;
-//    private @Value("${messaging.destination.organisation.changes}") String organisationChanges;
-//    private @Value("${ids.generate}") String generateIds;
-//    private @Value("${messaging.enabled}") String messagingEnabled;
-//    private @Value("${mongo.audit.dbname}") String auditDbName;
-//    private @Value("${mongo.audit.enabled}") boolean auditEnabled;
+//    // This decides whether to use MongoChannelStore or CachingChannelStore which has
+//    // additional methods.
+//    private final Parameter processingConfig;
 //
-//    public MongoContentPersistenceModule() {}
 //
-//    @VisibleForTesting
-//    public MongoContentPersistenceModule(
+//    //This MongoContentPersistenceModule is intended to be used by projects without DI.
+//    public ConstructorBasedMongoContentPersistenceModule(
 //            Mongo mongo,
 //            DatabasedMongo db,
 //            MessagingModule messagingModule,
 //            String auditDbName,
 //            AdapterLog log,
-//            ReadPreference readPreference) {
-//        this.mongo = mongo;
-//        this.db = db;
-//        this.log = log;
-//        this.messagingModule = messagingModule;
+//            ReadPreference readPreference,
+//            String contentChanges,
+//            String topicChanges,
+//            String scheduleChanges,
+//            String contentGroupChanges,
+//            String eventChanges,
+//            String organisationChanges,
+//            String generateIds,
+//            String messagingEnabled,
+//            boolean auditEnabled,
+//            Parameter processingConfig
+//    ) {
+//        this.mongo = checkNotNull(mongo);
+//        this.db = checkNotNull(db);
+//        this.log = checkNotNull(log);
+//        this.messagingModule = checkNotNull(messagingModule);
 //        this.generateIds = "true";
-//        this.auditDbName = auditDbName;
-//        this.readPreference = readPreference;
-//    }
-//<<<<<<< HEAD
+//        this.auditDbName = checkNotNull(auditDbName);
+//        this.readPreference = checkNotNull(readPreference);
 //
-//=======
-//
-//    /**
-//     * We need both this methods here to initialized the cachedValue of BackgroundComputingValue
-//     * that will be used by the CachingChannelStore.
-//     */
-//    @PostConstruct
-//    public void setUp() {
-//        channelStore().start();
+//        this.contentChanges = checkNotNull(contentChanges);
+//        this.topicChanges = checkNotNull(topicChanges);
+//        this.scheduleChanges = checkNotNull(scheduleChanges);
+//        this.contentGroupChanges = checkNotNull(contentGroupChanges);
+//        this.eventChanges = checkNotNull(eventChanges);
+//        this.organisationChanges = checkNotNull(organisationChanges);
+//        this.messagingEnabled = checkNotNull(messagingEnabled);
+//        this.auditEnabled = checkNotNull(auditEnabled);
+//        this.processingConfig = checkNotNull(processingConfig);
 //    }
 //
-//    @PreDestroy
-//    public void tearDown() {
-//        channelStore().shutdown();
-//    }
-//
-//    public ConstructorBasedMongoContentPersistenceModule persistenceModule() {
-//        return new ConstructorBasedMongoContentPersistenceModule(
-//                mongo,
-//                db,
-//                messagingModule,
-//                auditDbName,
-//                log,
-//                readPreference,
-//                contentChanges,
-//                topicChanges,
-//                scheduleChanges,
-//                contentGroupChanges,
-//                eventChanges,
-//                organisationChanges,
-//                generateIds,
-//                messagingEnabled,
-//                auditEnabled,
-//                processingConfig
-//
-//        );
-//    }
-//
-//>>>>>>> faulty-changes
-//    @Bean
-//    @Lazy(true)
 //    public MessageSender<EntityUpdatedMessage> contentChanges() {
 //        return messagingModule.messageSenderFactory().makeMessageSender(contentChanges,
 //                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
 //    }
 //
-//    @Bean
-//    @Lazy(true)
 //    public MessageSender<EntityUpdatedMessage> topicChanges() {
 //        return messagingModule.messageSenderFactory().makeMessageSender(topicChanges,
 //                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
 //    }
 //
-//    @Bean
-//    @Lazy(true)
 //    public MessageSender<ScheduleUpdateMessage> scheduleChanges() {
 //        return messagingModule.messageSenderFactory().makeMessageSender(scheduleChanges,
 //                JacksonMessageSerializer.forType(ScheduleUpdateMessage.class));
 //    }
 //
-//    @Bean
-//    @Lazy(true)
 //    public MessageSender<EntityUpdatedMessage> eventChanges() {
 //        return messagingModule.messageSenderFactory().makeMessageSender(eventChanges,
 //                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
 //    }
 //
-//    @Bean
-//    @Lazy(true)
 //    public MessageSender<EntityUpdatedMessage> organizationChanges() {
 //        return messagingModule.messageSenderFactory().makeMessageSender(organisationChanges,
 //                JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
 //    }
 //
-//<<<<<<< HEAD
-//    private @Autowired ChannelResolver channelResolver;
-//
-//    public @Bean ContentGroupWriter contentGroupWriter() {
+//    public ContentGroupWriter contentGroupWriter() {
 //        MessageSender<EntityUpdatedMessage> messageSender = messagingModule.messageSenderFactory()
 //                .makeMessageSender(
 //                        contentGroupChanges,
@@ -251,25 +209,13 @@
 //                messageSender,
 //                clock
 //        );
-//=======
-//    @Override
-//    @Bean
-//    public ContentGroupWriter contentGroupWriter() {
-//        return persistenceModule().contentGroupWriter();
 //    }
 //
-//    @Override
-//    @Bean
 //    public ContentGroupResolver contentGroupResolver() {
-//        return persistenceModule().contentGroupResolver();
-//>>>>>>> faulty-changes
-//    }
-//
-//    public @Bean ContentGroupResolver contentGroupResolver() {
 //        return new MongoContentGroupResolver(db);
 //    }
 //
-//    public @Primary @Bean ContentWriter contentWriter() {
+//    public ContentWriter contentWriter() {
 //        ContentWriter contentWriter = new MongoContentWriter(db, lookupStore(), persistenceAuditLog(),
 //                playerResolver(), serviceResolver(), new SystemClock());
 //
@@ -283,64 +229,68 @@
 //        return contentWriter;
 //    }
 //
-//    public @Primary @Bean ContentResolver contentResolver() {
+//    public ContentResolver contentResolver() {
 //        return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
 //    }
 //
-//    public @Primary @Bean KnownTypeContentResolver knownTypeContentResolver() {
+//    public KnownTypeContentResolver knownTypeContentResolver() {
 //        return new MongoContentResolver(db, lookupStore());
 //    }
 //
-//    public @Primary @Bean MongoLookupEntryStore lookupStore() {
+//    public MongoLookupEntryStore lookupStore() {
 //        return new MongoLookupEntryStore(db.collection("lookup"),
 //                persistenceAuditLog(), readPreference);
 //    }
 //
-//    public @Primary @Bean IdGenerator contentIdGenerator() {
+//    public IdGenerator contentIdGenerator() {
 //        return new MongoSequentialIdGenerator(db, "content");
 //    }
 //
-//    private LookupWriter explicitLookupWriter() {
+//    protected LookupWriter explicitLookupWriter() {
 //        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"),
 //                persistenceAuditLog(), ReadPreference.primary());
 //        return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
 //    }
 //
-//    public @Bean
+//    public
 //    LookupWriter generatedLookupWriter() {
 //        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"),
 //                persistenceAuditLog(), ReadPreference.primary());
 //        return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
 //    }
 //
-//    public @Primary
-//    @Bean
-//<<<<<<< HEAD
-//    MongoScheduleStore scheduleStore() {
+//    /**
+//     * We are passing in channel store here instead of initializing it like the other arguements
+//     * is because we want to avoid calling the start() and stop() of CachingChannelStore here and
+//     * would like to use the singleton ChannelStore bean initialized in the
+//     * Spring MongoContentPersistenceModule
+//     *
+//     * @param channelStore
+//     * @return
+//     */
+//    public MongoScheduleStore scheduleStore(ChannelStore channelStore) {
 //        try {
-//            return new MongoScheduleStore(db, channelResolver, contentResolver(), equivContentResolver(), scheduleChanges());
+//            return new MongoScheduleStore(
+//                    db, channelStore, contentResolver(), equivContentResolver(), scheduleChanges()
+//            );
 //        } catch (Exception e) {
 //            throw new RuntimeException(e);
 //        }
-//=======
-//    public MongoScheduleStore scheduleStore() {
-//        return persistenceModule().scheduleStore(channelStore());
-//>>>>>>> faulty-changes
 //    }
 //
-//    public @Primary @Bean EquivalentContentResolver equivContentResolver() {
+//    public EquivalentContentResolver equivContentResolver() {
 //        return new DefaultEquivalentContentResolver(knownTypeContentResolver(), lookupStore());
 //    }
 //
-//    public @Primary @Bean ItemsPeopleWriter itemsPeopleWriter() {
+//    public ItemsPeopleWriter itemsPeopleWriter() {
 //        return new QueuingItemsPeopleWriter(personWriter(), log);
 //    }
 //
-//    public @Primary @Bean QueuingPersonWriter personWriter() {
+//    public QueuingPersonWriter personWriter() {
 //        return new QueuingPersonWriter(personStore(), log);
 //    }
 //
-//    public @Primary @Bean PersonStore personStore() {
+//    public PersonStore personStore() {
 //        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"),
 //                persistenceAuditLog(), readPreference);
 //        PersonStore personStore = new MongoPersonStore(db,
@@ -355,15 +305,15 @@
 //        return personStore;
 //    }
 //
-//    public @Primary @Bean ShortUrlSaver shortUrlSaver() {
+//    public ShortUrlSaver shortUrlSaver() {
 //        return new MongoShortUrlSaver(db);
 //    }
 //
-//    public @Primary @Bean MongoContentLister contentLister() {
+//    public MongoContentLister contentLister() {
 //        return new MongoContentLister(db, knownTypeContentResolver());
 //    }
 //
-//    public @Primary @Bean TopicStore topicStore() {
+//    public TopicStore topicStore() {
 //        TopicStore store = new MongoTopicStore(db, persistenceAuditLog());
 //        if (Boolean.valueOf(messagingEnabled)) {
 //            store = new MessageQueueingTopicWriter(topicChanges(), store);
@@ -371,23 +321,23 @@
 //        return new TopicCreatingTopicResolver(store, new MongoSequentialIdGenerator(db, "topic"));
 //    }
 //
-//    public @Bean ServiceResolver serviceResolver() {
+//    public ServiceResolver serviceResolver() {
 //        return new CachingServiceResolver(new MongoServiceStore(db));
 //    }
 //
-//    public @Bean PlayerResolver playerResolver() {
+//    public PlayerResolver playerResolver() {
 //        return new CachingPlayerResolver(new MongoPlayerStore(db));
 //    }
 //
-//    public @Primary @Bean TopicQueryResolver topicQueryResolver() {
+//    public TopicQueryResolver topicQueryResolver() {
 //        return new MongoTopicStore(db, persistenceAuditLog());
 //    }
 //
-//    public @Primary @Bean SegmentWriter segmentWriter() {
+//    public SegmentWriter segmentWriter() {
 //        return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
 //    }
 //
-//    public @Primary @Bean SegmentResolver segmentResolver() {
+//    public SegmentResolver segmentResolver() {
 //        return new MongoSegmentResolver(db, new SubstitutionTableNumberCodec());
 //    }
 //
@@ -396,7 +346,7 @@
 //     * {@link MongoContentPersistenceModule#eventResolver()} instead
 //     */
 //    @Deprecated
-//    public @Bean EventStore eventStore() {
+//    protected EventStore eventStore() {
 //        return new EventStore() {
 //
 //            private EventWriter eventWriter = eventWriter();
@@ -421,29 +371,22 @@
 //        };
 //    }
 //
-//    public @Bean EventWriter eventWriter() {
+//    public EventWriter eventWriter() {
 //        IdSettingEventStore eventStore = new IdSettingEventStore(new MongoEventStore(db),
 //                new MongoSequentialIdGenerator(db, "events"));
 //
-//<<<<<<< HEAD
 //        if(Boolean.valueOf(messagingEnabled)) {
 //            return new MessageQueueingEventWriter(eventStore, eventChanges());
 //        }
 //        return eventStore;
-//=======
-//    @Primary
-//    @Bean
-//    public ServiceChannelStore channelStore() {
-//        return persistenceModule().channelStore();
-//>>>>>>> faulty-changes
 //    }
 //
 //    public @Bean EventResolver eventResolver() {
 //        return new MongoEventStore(db);
 //    }
 //
-//    // not sure if this is right
-//    public @Bean OrganisationStore organisationStore() {
+//    public OrganisationStore organisationStore() {
+//
 //        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"),
 //                persistenceAuditLog(), readPreference);
 //        OrganisationStore organisationStore = new MongoOrganisationStore(db,
@@ -462,36 +405,37 @@
 //        return organisationStore;
 //    }
 //
-//    public @Primary @Bean ChannelStore channelStore() {
+//    public ServiceChannelStore channelStore() {
+//
 //        if (processingConfig == null || !processingConfig.toBoolean()) {
 //            return new CachingChannelStore(new MongoChannelStore(db, channelGroupStore(), channelGroupStore()));
 //        }
 //        return new MongoChannelStore(db, channelGroupStore(), channelGroupStore());
 //    }
 //
-//    public @Primary @Bean ChannelGroupStore channelGroupStore() {
+//    public ChannelGroupStore channelGroupStore() {
 //        return new MongoChannelGroupStore(db);
 //    }
 //
-//    public @Primary @Bean ProductStore productStore() {
+//    public ProductStore productStore() {
 //        return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
 //    }
 //
-//    public @Primary @Bean ProductResolver productResolver() {
+//    public ProductResolver productResolver() {
 //        return new MongoProductStore(db);
 //    }
 //
-//    @Bean
 //    MongoIOProbe mongoIoSetProbe() {
 //        return new MongoIOProbe(mongo).withWriteConcern(WriteConcern.REPLICAS_SAFE);
 //    }
 //
-//    public @Bean PeopleQueryResolver peopleQueryResolver() {
+//    public PeopleQueryResolver peopleQueryResolver() {
 //        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup"),
 //                persistenceAuditLog(), readPreference));
 //    }
 //
-//    public @Bean ContentPurger contentPurger() {
+//    public ContentPurger contentPurger() {
+//
 //        return new MongoContentPurger(contentLister(),
 //                contentResolver(),
 //                contentWriter(),
@@ -501,7 +445,8 @@
 //                generatedLookupWriter());
 //    }
 //
-//    public @Bean PersistenceAuditLog persistenceAuditLog() {
+//    public PersistenceAuditLog persistenceAuditLog() {
+//
 //        if (auditEnabled) {
 //            return new PerHourAndDayMongoPersistenceAuditLog(new DatabasedMongo(mongo, auditDbName));
 //        } else {
@@ -509,7 +454,8 @@
 //        }
 //    }
 //
-//    public @Bean MongoProgressStore mongoProgressStore() {
+//    public MongoProgressStore mongoProgressStore() {
 //        return new MongoProgressStore(db);
 //    }
+//
 //}
