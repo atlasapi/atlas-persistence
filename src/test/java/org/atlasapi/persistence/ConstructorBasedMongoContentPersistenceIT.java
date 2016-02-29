@@ -26,7 +26,6 @@ import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.Topic;
-import org.atlasapi.media.entity.simple.Broadcast;
 import org.atlasapi.media.product.Product;
 import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.Segment;

@@ -5,9 +5,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +33,8 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
     public void start() {
         channels.start();
     }
-    
+
+
     @Override
     public void shutdown() {
         channels.shutdown();

@@ -72,11 +72,6 @@
     <description></description>
     <dependencies>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.atlasapi</groupId>
             <artifactId>atlas-model</artifactId>
             <version>${atlas.version}</version>
@@ -187,10 +182,8 @@
         <atlas.version>${project.version}</atlas.version>
         <common.version>1.0-SNAPSHOT</common.version>
         <spring.version>3.0.5.RELEASE</spring.version>
-        <spring-test.version>2.5</spring-test.version>
         <amq.version>5.9.0</amq.version>
         <jacoco.version>0.7.5.201505241946</jacoco.version>
-        <guava.version>18.0</guava.version>
 
         <sonar.jacoco.itReportPath>${project.basedir}/target/jacoco-it.exec</sonar.jacoco.itReportPath>
         <sonar.jacoco.reportPath>${project.basedir}/target/jacoco.exec</sonar.jacoco.reportPath>

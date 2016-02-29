@@ -1,4 +1,4 @@
-    package org.atlasapi.media.channel;
+package org.atlasapi.media.channel;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -288,11 +288,13 @@ public class MongoChannelStore implements ChannelStore, ServiceChannelStore {
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
 
-    @Override public void start() {
+    @Override
+    public void start() {
         /* no-op */
     }
 
-    @Override public void shutdown() {
+    @Override
+    public void shutdown() {
         /* no-op */
     }
 }

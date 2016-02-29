@@ -4,8 +4,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.atlasapi.media.channel.ChannelGroupStore;
-import org.atlasapi.media.channel.ChannelResolver;
-import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.ServiceChannelStore;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
@@ -75,7 +73,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired MessagingModule messagingModule;
 
     private final Parameter processingConfig = Configurer.get("processing.config");
-    
+
     private @Value("${messaging.destination.content.changes}") String contentChanges;
     private @Value("${messaging.destination.topics.changes}") String topicChanges;
     private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
@@ -107,8 +105,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     /**
-     * We need both this methods here to initialized the cachedValue of BackgroundComputingValue that will
-     * be used by the CachingChannelStore.
+     * We need both this methods here to initialized the cachedValue of BackgroundComputingValue
+     * that will be used by the CachingChannelStore.
      */
     @PostConstruct
     public void setUp() {
