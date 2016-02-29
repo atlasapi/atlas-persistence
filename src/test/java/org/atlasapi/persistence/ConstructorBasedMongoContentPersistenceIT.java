@@ -348,8 +348,6 @@ public class ConstructorBasedMongoContentPersistenceIT {
                                 .withUri("uri")
                                 .build();
 
-
-
         serviceChannelStore.createOrUpdate(channel);
 
         //It takes 300seconds for the cache to initialize.
