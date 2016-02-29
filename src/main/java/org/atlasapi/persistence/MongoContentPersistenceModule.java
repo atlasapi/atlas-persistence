@@ -107,8 +107,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     /**
-     * We need both this methods here to initialized the cachedValue of BackgroundComputingValue that will
-     * be used by the CachingChannelStore.
+     * We need both this methods here to initialized the cachedValue of BackgroundComputingValue
+     * that will be used by the CachingChannelStore.
      */
     @PostConstruct
     public void setUp() {

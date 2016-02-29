@@ -88,7 +88,6 @@ import org.atlasapi.persistence.topic.TopicStore;
 import org.joda.time.DateTime;
 import org.springframework.context.annotation.Bean;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
@@ -260,6 +259,15 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
     }
 
+    /**
+     * We are passing in channel store here instead of initializing it like the other arguements
+     * is because we want to avoid calling the start() and stop() of CachingChannelStore here and
+     * would like to use the singleton ChannelStore bean initialized in the
+     * Spring MongoContentPersistenceModule
+     *
+     * @param channelStore
+     * @return
+     */
     public MongoScheduleStore scheduleStore(ChannelStore channelStore) {
         try {
             return new MongoScheduleStore(
