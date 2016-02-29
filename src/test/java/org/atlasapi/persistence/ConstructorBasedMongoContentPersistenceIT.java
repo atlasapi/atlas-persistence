@@ -8,10 +8,10 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.util.Map;
 
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
 import org.atlasapi.media.channel.ChannelGroupStore;
-import org.atlasapi.media.channel.ChannelStore;
 import org.atlasapi.media.channel.Platform;
 import org.atlasapi.media.channel.ServiceChannelStore;
 import org.atlasapi.media.entity.ChildRef;
@@ -24,7 +24,9 @@ import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Organisation;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Schedule;
 import org.atlasapi.media.entity.Topic;
+import org.atlasapi.media.entity.simple.Broadcast;
 import org.atlasapi.media.product.Product;
 import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.Segment;
@@ -39,6 +41,7 @@ import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.organisation.OrganisationStore;
 import org.atlasapi.persistence.content.people.PersonStore;
+import org.atlasapi.persistence.content.schedule.mongo.MongoScheduleStore;
 import org.atlasapi.persistence.event.EventResolver;
 import org.atlasapi.persistence.event.EventWriter;
 import org.atlasapi.persistence.logging.MongoLoggingAdapter;
@@ -47,6 +50,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.topic.TopicStore;
 import org.joda.time.DateTime;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Optional;
@@ -66,7 +70,7 @@ import com.metabroadcast.common.queue.MessagingException;
 import com.mongodb.Mongo;
 import com.mongodb.ReadPreference;
 
-public class ConstructorBasedMongoContentPersistenceIntegrationTest {
+public class ConstructorBasedMongoContentPersistenceIT {
 
     private final Mongo mongo = MongoTestHelper.anEmptyMongo();
     private final DatabasedMongo db = new DatabasedMongo(mongo, "atlas");
@@ -107,10 +111,30 @@ public class ConstructorBasedMongoContentPersistenceIntegrationTest {
     };
 
     private ConstructorBasedMongoContentPersistenceModule module;
+    private ConstructorBasedMongoContentPersistenceModule moduleWithProcessingConfigTrue;
 
     @Before
     public void setUp() throws Exception {
         module = new ConstructorBasedMongoContentPersistenceModule(
+                mongo,
+                db,
+                messagingModule,
+                "atlas-audit",
+                adapterLog,
+                ReadPreference.PRIMARY,
+                "ContentChanges",
+                "TopicChanges",
+                "ScheduleChanges",
+                "ContentGroupChanges",
+                "EventChanges",
+                "OrganisationChanges",
+                "true",
+                "true",
+                true,
+                Parameter.valueOf("false")
+        );
+
+        moduleWithProcessingConfigTrue = new ConstructorBasedMongoContentPersistenceModule(
                 mongo,
                 db,
                 messagingModule,
@@ -308,10 +332,11 @@ public class ConstructorBasedMongoContentPersistenceIntegrationTest {
         assertThat((Person) personOptional.get(), is(equalTo(person)));
     }
 
+    //processingConfig false gives us a CachingChannelStore
     @Test
-    public void testChannelWritingAndRetrieval() {
+    @Ignore("5 minute wait time to initialize the cache, test should pass after cache initializes")
+    public void testChannelWritingAndRetrievalWithProcessingConfigFalse() {
 
-        ChannelStore channelStore = module.channelStore();
         ServiceChannelStore serviceChannelStore = module.channelStore();
 
         serviceChannelStore.start();
@@ -325,9 +350,43 @@ public class ConstructorBasedMongoContentPersistenceIntegrationTest {
                                 .build();
 
 
+
         serviceChannelStore.createOrUpdate(channel);
 
-        Maybe<Channel> channelMaybe = channelStore.fromUri("uri");
+        //It takes 300seconds for the cache to initialize.
+        try {
+            Thread.sleep(300000);
+        } catch (InterruptedException e) {
+
+        }
+
+        Maybe<Channel> channelMaybe = serviceChannelStore.fromUri("uri");
+
+        serviceChannelStore.shutdown();
+
+        assertThat(channelMaybe.requireValue(), is(equalTo(channel)));
+
+    }
+
+    @Test
+    public void testChannelWritingAndRetrievalWithProcessingConfigTrue() {
+
+        ServiceChannelStore serviceChannelStore = moduleWithProcessingConfigTrue.channelStore();
+
+        serviceChannelStore.start();
+
+        Channel channel = Channel.builder()
+                .withSource(Publisher.BBC)
+                .withTitle("title")
+                .withHighDefinition(false)
+                .withMediaType(MediaType.AUDIO)
+                .withUri("uri")
+                .build();
+
+
+        serviceChannelStore.createOrUpdate(channel);
+
+        Maybe<Channel> channelMaybe = serviceChannelStore.fromUri("uri");
 
         serviceChannelStore.shutdown();
 
@@ -362,7 +421,10 @@ public class ConstructorBasedMongoContentPersistenceIntegrationTest {
 
         productStore.store(product);
 
-        Optional<Product> productOptional = productStore.productForSourceIdentified(Publisher.BBC, "uri");
+        Optional<Product> productOptional = productStore.productForSourceIdentified(
+                Publisher.BBC,
+                "uri"
+        );
 
         assertThat((Product) productOptional.get(), is(equalTo(product)));
     }
@@ -382,4 +444,43 @@ public class ConstructorBasedMongoContentPersistenceIntegrationTest {
         assertThat((Topic) topicMaybe.requireValue(), is(equalTo(topic)));
     }
 
+    @Test
+    public void testScheduleWritingAndRetrieval() {
+        ServiceChannelStore channelStore = module.channelStore();
+        channelStore.start();
+        MongoScheduleStore scheduleStore = module.scheduleStore(channelStore);
+
+        String uri = "itemUri";
+        Item item = new Item(uri, "itemCurie", Publisher.BBC);
+        item.setTitle("I am a title");
+
+        Channel channel = Channel.builder()
+                .withSource(Publisher.BBC)
+                .withTitle("title")
+                .withHighDefinition(false)
+                .withMediaType(MediaType.AUDIO)
+                .withUri("uri")
+                .withKey("key")
+                .build();
+
+        item.setPresentationChannel(channel);
+
+        ApplicationConfiguration applicationConfiguration = ApplicationConfiguration.defaultConfiguration();
+
+        scheduleStore.writeScheduleFor(ImmutableList.of(item));
+
+        Schedule schedule = scheduleStore.schedule(
+                DateTime.now().minusHours(12),
+                DateTime.now(),
+                ImmutableList.of(channel),
+                ImmutableList.of(Publisher.BBC),
+                Optional.of(applicationConfiguration)
+                );
+        Schedule.ScheduleChannel scheduleChannel = Iterables.getOnlyElement(schedule.scheduleChannels());
+
+        channelStore.shutdown();
+
+        assertThat(scheduleChannel.channel(), is(equalTo(channel)));
+
+    }
 }

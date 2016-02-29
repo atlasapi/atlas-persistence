@@ -90,7 +90,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public MongoContentPersistenceModule() {}
 
     @VisibleForTesting
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
+    public MongoContentPersistenceModule(
+            Mongo mongo,
+            DatabasedMongo db,
+            MessagingModule messagingModule,
+            String auditDbName,
+            AdapterLog log,
             ReadPreference readPreference) {
         this.mongo = mongo;
         this.db = db;
@@ -223,8 +228,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Primary
     @Bean
     public MongoScheduleStore scheduleStore() {
-
-        return persistenceModule().scheduleStore();
+        return persistenceModule().scheduleStore(channelStore());
     }
 
     @Primary

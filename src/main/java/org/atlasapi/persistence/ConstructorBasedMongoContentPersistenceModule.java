@@ -260,9 +260,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
     }
 
-    public MongoScheduleStore scheduleStore() {
+    public MongoScheduleStore scheduleStore(ChannelStore channelStore) {
         try {
-            return new MongoScheduleStore(db, channelStore(), contentResolver(), equivContentResolver(), scheduleChanges());
+            return new MongoScheduleStore(
+                    db, channelStore, contentResolver(), equivContentResolver(), scheduleChanges()
+            );
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
