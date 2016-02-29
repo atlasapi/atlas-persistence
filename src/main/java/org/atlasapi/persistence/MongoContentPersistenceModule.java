@@ -1,8 +1,10 @@
 package org.atlasapi.persistence;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.atlasapi.media.channel.ChannelGroupStore;
-import org.atlasapi.media.channel.ChannelResolver;
-import org.atlasapi.media.channel.ChannelStore;
+import org.atlasapi.media.channel.ServiceChannelStore;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.SegmentResolver;
@@ -69,9 +71,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Autowired DatabasedMongo db;
     private @Autowired AdapterLog log;
     private @Autowired MessagingModule messagingModule;
-    
+
     private final Parameter processingConfig = Configurer.get("processing.config");
-    
+
     private @Value("${messaging.destination.content.changes}") String contentChanges;
     private @Value("${messaging.destination.topics.changes}") String topicChanges;
     private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
@@ -86,7 +88,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public MongoContentPersistenceModule() {}
 
     @VisibleForTesting
-    public MongoContentPersistenceModule(Mongo mongo, DatabasedMongo db, MessagingModule messagingModule, String auditDbName, AdapterLog log,
+    public MongoContentPersistenceModule(
+            Mongo mongo,
+            DatabasedMongo db,
+            MessagingModule messagingModule,
+            String auditDbName,
+            AdapterLog log,
             ReadPreference readPreference) {
         this.mongo = mongo;
         this.db = db;
@@ -95,6 +102,21 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.generateIds = "true";
         this.auditDbName = auditDbName;
         this.readPreference = readPreference;
+    }
+
+
+    /**
+     * We need both this methods here to initialized the cachedValue of BackgroundComputingValue
+     * that will be used by the CachingChannelStore.
+     */
+    @PostConstruct
+    public void setUp() {
+        channelStore().start();
+    }
+
+    @PreDestroy
+    public void tearDown() {
+        channelStore().shutdown();
     }
 
     public ConstructorBasedMongoContentPersistenceModule persistenceModule() {
@@ -149,7 +171,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return persistenceModule().organizationChanges();
     }
 
-    private @Autowired ChannelResolver channelResolver;
 
     @Override
     @Bean
@@ -207,8 +228,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Primary
     @Bean
     public MongoScheduleStore scheduleStore() {
-
-        return persistenceModule().scheduleStore();
+        return persistenceModule().scheduleStore(channelStore());
     }
 
     @Primary
@@ -320,8 +340,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Primary
     @Bean
-    public ChannelStore channelStore() {
-
+    public ServiceChannelStore channelStore() {
         return persistenceModule().channelStore();
     }
 
