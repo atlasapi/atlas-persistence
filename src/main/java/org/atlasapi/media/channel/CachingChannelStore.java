@@ -5,9 +5,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +18,7 @@ import com.google.common.collect.Maps;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.caching.BackgroundComputingValue;
 
-public class CachingChannelStore implements ChannelStore {
+public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
 
     private final ChannelStore delegate;
     private final BackgroundComputingValue<List<Channel>> channels;
@@ -31,13 +28,14 @@ public class CachingChannelStore implements ChannelStore {
         this.delegate = delegate;
         channels = new BackgroundComputingValue<List<Channel>>(Duration.standardMinutes(5), new ChannelsUpdater(delegate));
     }
-    
-    @PostConstruct
+
+    @Override
     public void start() {
         channels.start();
     }
-    
-    @PreDestroy
+
+
+    @Override
     public void shutdown() {
         channels.shutdown();
     }
