@@ -21,6 +21,7 @@ import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
+import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.listing.MongoProgressStore;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
@@ -40,6 +41,17 @@ import org.atlasapi.persistence.service.ServiceResolver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
+
+import com.metabroadcast.common.ids.IdGenerator;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
+import com.metabroadcast.common.properties.Configurer;
+import com.metabroadcast.common.properties.Parameter;
+import com.metabroadcast.common.queue.MessageSender;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.mongodb.Mongo;
+import com.mongodb.ReadPreference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -48,16 +60,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.metabroadcast.common.ids.IdGenerator;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
-import com.metabroadcast.common.properties.Configurer;
-import com.metabroadcast.common.properties.Parameter;
-import com.metabroadcast.common.queue.MessageSender;
-import com.mongodb.Mongo;
-import com.mongodb.ReadPreference;
-
 /**
  * This is the Spring version of the MongoContentPersistenceModule.
  * The non-DI version serves as a delegate in this class.
@@ -65,6 +67,8 @@ import com.mongodb.ReadPreference;
 @Configuration
 @Import(KafkaMessagingModule.class)
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
+
+    public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
 
     private @Autowired ReadPreference readPreference;
     private @Autowired Mongo mongo;
@@ -80,7 +84,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
     private @Value("${messaging.destination.event.changes}") String eventChanges;
     private @Value("${messaging.destination.organisation.changes}") String organisationChanges;
-    private @Value("${ids.generate}") String generateIds;
     private @Value("${messaging.enabled}") String messagingEnabled;
     private @Value("${mongo.audit.dbname}") String auditDbName;
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
@@ -99,7 +102,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.db = db;
         this.log = log;
         this.messagingModule = messagingModule;
-        this.generateIds = "true";
         this.auditDbName = auditDbName;
         this.readPreference = readPreference;
     }
@@ -132,11 +134,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
                 contentGroupChanges,
                 eventChanges,
                 organisationChanges,
-                generateIds,
-                messagingEnabled,
+                Boolean.valueOf(messagingEnabled),
                 auditEnabled,
                 processingConfig
-
         );
     }
 
@@ -186,8 +186,13 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Primary
     @Bean
     public ContentWriter contentWriter() {
-
         return persistenceModule().contentWriter();
+    }
+
+    @Override
+    @Bean(name = NON_ID_SETTING_CONTENT_WRITER)
+    public ContentWriter nonIdSettingContentWriter() {
+        return persistenceModule().nonIdSettingContentWriter();
     }
 
     @Override
@@ -207,14 +212,20 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return persistenceModule().lookupStore();
     }
 
+    @Override
     @Primary
     @Bean
     public IdGenerator contentIdGenerator() {
         return persistenceModule().contentIdGenerator();
     }
 
-    public LookupWriter explicitLookupWriter() {
+    @Override
+    @Bean
+    public LookupBackedContentIdGenerator lookupBackedContentIdGenerator() {
+        return persistenceModule().lookupBackedContentIdGenerator();
+    }
 
+    public LookupWriter explicitLookupWriter() {
         return persistenceModule().explicitLookupWriter();
     }
 
@@ -235,6 +246,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return persistenceModule().equivContentResolver();
     }
 
+    @Override
     @Primary
     @Bean
     public ItemsPeopleWriter itemsPeopleWriter() {
