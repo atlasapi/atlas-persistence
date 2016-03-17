@@ -8,6 +8,7 @@ import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
@@ -23,6 +24,8 @@ public interface ContentPersistenceModule {
     ContentGroupResolver contentGroupResolver();
     
 	ContentWriter contentWriter();
+
+	ContentWriter nonIdSettingContentWriter();
 	
 	ItemsPeopleWriter itemsPeopleWriter();
 	
@@ -45,4 +48,6 @@ public interface ContentPersistenceModule {
 	PeopleQueryResolver peopleQueryResolver();
 
 	IdGenerator contentIdGenerator();
+
+	LookupBackedContentIdGenerator lookupBackedContentIdGenerator();
 }
