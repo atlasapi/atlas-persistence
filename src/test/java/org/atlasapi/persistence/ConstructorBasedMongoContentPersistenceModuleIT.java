@@ -1,11 +1,5 @@
 package org.atlasapi.persistence;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-
 import java.util.Map;
 
 import org.atlasapi.application.v3.ApplicationConfiguration;
@@ -47,15 +41,7 @@ import org.atlasapi.persistence.logging.MongoLoggingAdapter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.topic.TopicStore;
-import org.joda.time.DateTime;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
@@ -66,10 +52,24 @@ import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.queue.MessageSenderFactory;
 import com.metabroadcast.common.queue.MessageSerializer;
 import com.metabroadcast.common.queue.MessagingException;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.mongodb.Mongo;
 import com.mongodb.ReadPreference;
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Test;
 
-public class ConstructorBasedMongoContentPersistenceIT {
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+
+public class ConstructorBasedMongoContentPersistenceModuleIT {
 
     private final Mongo mongo = MongoTestHelper.anEmptyMongo();
     private final DatabasedMongo db = new DatabasedMongo(mongo, "atlas");
@@ -127,8 +127,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
                 "ContentGroupChanges",
                 "EventChanges",
                 "OrganisationChanges",
-                "true",
-                "true",
+                true,
                 true,
                 Parameter.valueOf("false")
         );
@@ -146,8 +145,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
                 "ContentGroupChanges",
                 "EventChanges",
                 "OrganisationChanges",
-                "true",
-                "true",
+                true,
                 true,
                 Parameter.valueOf("true")
         );
@@ -176,7 +174,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
 
         Maybe<Identified> moreContent = contentResolver.findByCanonicalUris(ImmutableSet.of(uri)).get(uri);
         assertThat((Item) moreContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) moreContent.requireValue()).getId(), is(equalTo(id)));
+        assertThat(moreContent.requireValue().getId(), is(equalTo(id)));
         assertThat(((Item) moreContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
         
         String newTitle = "Changed title";
@@ -191,6 +189,36 @@ public class ConstructorBasedMongoContentPersistenceIT {
         //assertThat(((Item) moreContent.requireValue()).getStringId(), is(equalTo(id)));
         assertThat(((Item) moreContent.requireValue()).getTitle(), is(equalTo(newTitle)));
         
+    }
+
+    @Test
+    public void testContentWritingAndRetrievalWithGivenId() {
+
+        ContentWriter contentWriter = module.nonIdSettingContentWriter();
+        ContentResolver contentResolver = module.contentResolver();
+        LookupEntryStore lookupStore = module.lookupStore();
+
+        String uri = "itemUri";
+        Item item = new Item(uri, "itemCurie", Publisher.BBC);
+        item.setTitle("I am a title");
+
+        item.setId(1L);
+
+        contentWriter.createOrUpdate(item);
+
+        Iterable<LookupEntry> entries = lookupStore.entriesForCanonicalUris(
+                ImmutableSet.of(item.getCanonicalUri())
+        );
+        Long lookupId = Iterables.getOnlyElement(entries).id();
+
+        assertThat(lookupId, is(not(nullValue())));
+        assertThat(lookupId, is(item.getId()));
+
+        Maybe<Identified> moreContent = contentResolver.findByCanonicalUris(
+                ImmutableSet.of(uri)
+        ).get(uri);
+
+        assertThat(moreContent.requireValue().getId(), is(equalTo(lookupId)));
     }
 
     @Test
@@ -212,7 +240,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
 
         Maybe<Identified> maybeContent = knownTypeContentResolver.findByLookupRefs(ImmutableSet.of(entry.lookupRef())).get(uri);
         assertThat((Item) maybeContent.requireValue(), is(equalTo(item)));
-        assertThat(((Item) maybeContent.requireValue()).getId(), is(equalTo(id)));
+        assertThat(maybeContent.requireValue().getId(), is(equalTo(id)));
         assertThat(((Item) maybeContent.requireValue()).getTitle(), is(equalTo(item.getTitle())));
     }
 
@@ -272,8 +300,8 @@ public class ConstructorBasedMongoContentPersistenceIT {
         eventWriter.createOrUpdate(event);
 
         Optional<Event> moreEvent = eventResolver.fetch("uri");
-        assertThat((Event) moreEvent.get(), is(equalTo(event)));
-        assertThat((Event) moreEvent.get(), is(equalTo(event)));
+        assertThat(moreEvent.get(), is(equalTo(event)));
+        assertThat(moreEvent.get(), is(equalTo(event)));
 
     }
 
@@ -287,7 +315,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
         segment.setPublisher(Publisher.BBC);
         segment.setCanonicalUri("uri");
         segment.setTitle("title");
-        segment.setCurie("itemCurie");;
+        segment.setCurie("itemCurie");
 
         segmentWriter.write(segment);
 
@@ -296,7 +324,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
 
         Maybe<Segment> maybeSegment = segmentMap.get(segmentRef);
 
-        assertThat((Segment) maybeSegment.requireValue(), is(equalTo(segment)));
+        assertThat(maybeSegment.requireValue(), is(equalTo(segment)));
     }
 
     @Test
@@ -315,7 +343,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
 
         Optional<Organisation> organisationOptional = organisationStore.organisation("uri");
 
-        assertThat((Organisation) organisationOptional.get(), is(equalTo(organisation)));
+        assertThat(organisationOptional.get(), is(equalTo(organisation)));
     }
 
     @Test
@@ -328,7 +356,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
 
         Optional<Person> personOptional = personStore.person("uri");
 
-        assertThat((Person) personOptional.get(), is(equalTo(person)));
+        assertThat(personOptional.get(), is(equalTo(person)));
     }
 
     @Test
@@ -370,7 +398,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
         channelGroupStore.createOrUpdate(channelGroup);
 
         Optional<ChannelGroup> channelGroupMaybe = channelGroupStore.channelGroupFor("uri");
-        assertThat((ChannelGroup) channelGroupMaybe.get(), is(equalTo(channelGroup)));
+        assertThat(channelGroupMaybe.get(), is(equalTo(channelGroup)));
     }
 
     @Test
@@ -389,7 +417,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
                 "uri"
         );
 
-        assertThat((Product) productOptional.get(), is(equalTo(product)));
+        assertThat(productOptional.get(), is(equalTo(product)));
     }
 
     @Test
@@ -404,7 +432,7 @@ public class ConstructorBasedMongoContentPersistenceIT {
 
         Maybe<Topic> topicMaybe = topicStore.topicFor("namespace", "value");
 
-        assertThat((Topic) topicMaybe.requireValue(), is(equalTo(topic)));
+        assertThat(topicMaybe.requireValue(), is(equalTo(topic)));
     }
 
     @Test

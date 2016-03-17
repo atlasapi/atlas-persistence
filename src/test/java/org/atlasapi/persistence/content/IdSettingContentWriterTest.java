@@ -1,12 +1,14 @@
 package org.atlasapi.persistence.content;
 
-import static org.hamcrest.Matchers.hasItems;
-
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+
+import com.metabroadcast.common.ids.IdGenerator;
+
+import com.google.common.collect.ImmutableList;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.jmock.Expectations;
@@ -16,8 +18,7 @@ import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
 import org.junit.runner.RunWith;
 
-import com.google.common.collect.ImmutableList;
-import com.metabroadcast.common.ids.IdGenerator;
+import static org.hamcrest.Matchers.hasItems;
 
 @RunWith(JMock.class)
 public class IdSettingContentWriterTest {
@@ -26,8 +27,12 @@ public class IdSettingContentWriterTest {
     private final LookupEntryStore lookupStore = context.mock(LookupEntryStore.class);
     private final ContentWriter delegate = context.mock(ContentWriter.class);
     private final IdGenerator idGenerator = context.mock(IdGenerator.class);
+    private final LookupBackedContentIdGenerator lookupBackedContentIdGenerator =
+            new LookupBackedContentIdGenerator(lookupStore, idGenerator);
     
-    private final IdSettingContentWriter writer = new IdSettingContentWriter(lookupStore, idGenerator, delegate);
+    private final IdSettingContentWriter writer = new IdSettingContentWriter(
+            delegate, lookupBackedContentIdGenerator
+    );
     
     @Test
     public void testCreatingItemGeneratesNewId() {
