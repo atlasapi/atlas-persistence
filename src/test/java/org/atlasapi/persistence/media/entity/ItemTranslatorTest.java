@@ -166,7 +166,7 @@ public class ItemTranslatorTest extends TestCase {
         DBObject dbObject = itemTranslator.toDBObject(null, item);
         
         collection.save(dbObject);
-        Item i = itemTranslator.fromDBObject(collection.findOne(new MongoQueryBuilder().idEquals(item.getCanonicalUri()).build()), null);
+        Item i = itemTranslator.fromDBObject(collection.findOne(new MongoQueryBuilder().idEquals(item.getCanonicalUri()).build()), null, true);
 
         assertEquals(i.getCanonicalUri(), item.getCanonicalUri());
         assertEquals(i.getCurie(), item.getCurie());
@@ -278,7 +278,7 @@ public class ItemTranslatorTest extends TestCase {
         DBObject dbObject = itemTranslator.toDBObject(null, item);
 
         collection.save(dbObject);
-        Item i = itemTranslator.fromDBObject(collection.findOne(new MongoQueryBuilder().idEquals(item.getCanonicalUri()).build()), null);
+        Item i = itemTranslator.fromDBObject(collection.findOne(new MongoQueryBuilder().idEquals(item.getCanonicalUri()).build()), null, true);
 
         assertEquals(item.getShortDescription(), i.getShortDescription());
         assertEquals(item.getMediumDescription(), i.getMediumDescription());

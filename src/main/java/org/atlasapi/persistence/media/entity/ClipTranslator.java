@@ -19,7 +19,7 @@ public class ClipTranslator implements ModelTranslator<Clip> {
         if (clip == null) {
             clip = new Clip();
         }
-        itemTranslator.fromDBObject(dbObject, clip);
+        itemTranslator.fromDBObject(dbObject, clip, true);
         clip.setClipOf((String) dbObject.get("clipOfUri"));
         return clip;
     }

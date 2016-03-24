@@ -26,7 +26,7 @@ public class ContentTranslatorTest {
         List<Event> events = ImmutableList.of(event);
         Content content = createContentWithEvents(events);
         
-        Content translated = translator.fromDBObject(translator.toDBObject(null, content), new Item());
+        Content translated = translator.fromDBObject(translator.toDBObject(null, content), new Item(), true);
         
         EventRef translatedEvent = Iterables.getOnlyElement(translated.events());
         
@@ -39,7 +39,7 @@ public class ContentTranslatorTest {
         List<EventRef> events = ImmutableList.of(event);
         Content content = createContentWithEventRefs(events);
         
-        Content translated = translator.fromDBObject(translator.toDBObject(null, content), new Item());
+        Content translated = translator.fromDBObject(translator.toDBObject(null, content), new Item(), true);
         
         EventRef translatedEvent = Iterables.getOnlyElement(translated.events());
         

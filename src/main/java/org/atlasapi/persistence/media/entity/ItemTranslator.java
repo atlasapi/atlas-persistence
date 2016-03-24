@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.List;
 import java.util.Set;
 
 import org.atlasapi.media.entity.EntityType;
@@ -12,28 +11,24 @@ import org.atlasapi.media.entity.ReleaseDate;
 import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
 import org.atlasapi.media.entity.Song;
 import org.atlasapi.media.entity.Subtitles;
-import org.atlasapi.media.entity.Version;
-import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
+
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.intl.Countries;
+import com.metabroadcast.common.intl.Country;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.intl.Countries;
-import com.metabroadcast.common.intl.Country;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-
-public class ItemTranslator implements ModelTranslator<Item> {
+public class ItemTranslator {
     
 
     private static final Logger log = LoggerFactory.getLogger(ItemTranslator.class);
@@ -88,17 +83,16 @@ public class ItemTranslator implements ModelTranslator<Item> {
     }
     
     public Item fromDB(DBObject dbObject) {
-        return fromDBObject(dbObject, null);
+        return fromDBObject(dbObject, null, true);
     }
-    
-    @Override
-    public Item fromDBObject(DBObject dbObject, Item item) {
+
+    public Item fromDBObject(DBObject dbObject, Item item, boolean hydrateBroadcasts) {
 
         if (item == null) {
             item = (Item) DescribedTranslator.newModel(dbObject);
         }
         
-        contentTranslator.fromDBObject(dbObject, item);
+        contentTranslator.fromDBObject(dbObject, item, hydrateBroadcasts);
         
         item.setIsLongForm((Boolean) dbObject.get(IS_LONG_FORM_KEY));
         item.setBlackAndWhite(TranslatorUtils.toBoolean(dbObject, BLACK_AND_WHITE_KEY));
@@ -181,7 +175,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	    return toDBObject(null, item);
 	}
 
-    @Override
     public DBObject toDBObject(DBObject itemDbo, Item entity) {
         itemDbo = contentTranslator.toDBObject(itemDbo, entity);
         itemDbo.put(TYPE_KEY, EntityType.from(entity).toString());

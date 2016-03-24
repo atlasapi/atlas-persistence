@@ -23,7 +23,7 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
-public class VersionTranslator implements ModelTranslator<Version> {
+public class VersionTranslator {
     
 	private static final String THREE_D_KEY = "threeD";
     static final String ENCODINGS_KEY = "manifestedAs";
@@ -40,9 +40,8 @@ public class VersionTranslator implements ModelTranslator<Version> {
     public VersionTranslator(NumberToShortStringCodec idCodec) {
         this.segmentEventTranslator = new SegmentEventTranslator(idCodec);
     }
-    
-    @Override
-    public Version fromDBObject(DBObject dbObject, Version entity) {
+
+    public Version fromDBObject(DBObject dbObject, Version entity, boolean hydrateBroadcasts) {
         if (entity == null) {
             entity = new Version();
         }
@@ -65,15 +64,25 @@ public class VersionTranslator implements ModelTranslator<Version> {
         } else {
         	entity.setRestriction(new Restriction());
         }
+
+        List<DBObject> list;
+
+        // When resolving schedule requests there is no need to
+        // convert all broadcasts, only to then throw them away. We're
+        // seeing some performance blips which could be related to the
+        // number of broadcasts on some schedule items, so this is an
+        // attempt to reduce load in these cases.
         
-        List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject,BROADCASTS_KEY);
-        if (list != null && ! list.isEmpty()) {
-            Set<Broadcast> broadcasts = Sets.newLinkedHashSet();
-            for (DBObject object: list) {
-                Broadcast broadcast = broadcastTranslator.fromDBObject(object);
-                broadcasts.add(broadcast);
+        if (hydrateBroadcasts) {
+            list = TranslatorUtils.toDBObjectList(dbObject, BROADCASTS_KEY);
+            if (list != null && !list.isEmpty()) {
+                Set<Broadcast> broadcasts = Sets.newLinkedHashSet();
+                for (DBObject object : list) {
+                    Broadcast broadcast = broadcastTranslator.fromDBObject(object);
+                    broadcasts.add(broadcast);
+                }
+                entity.setBroadcasts(broadcasts);
             }
-            entity.setBroadcasts(broadcasts);
         }
         
         list = TranslatorUtils.toDBObjectList(dbObject,ENCODINGS_KEY);
@@ -99,7 +108,6 @@ public class VersionTranslator implements ModelTranslator<Version> {
         return entity;
     }
 
-    @Override
     public DBObject toDBObject(DBObject dbObject, Version entity) {
         dbObject = descriptionTranslator.toDBObject(dbObject, entity);
         

@@ -54,7 +54,7 @@ public class VersionTranslatorTest extends TestCase {
         
         DBObject dbObject = vt.toDBObject(null, version);
         
-        Version v = vt.fromDBObject(dbObject, null);
+        Version v = vt.fromDBObject(dbObject, null, true);
         assertEquals(version.getDuration(), v.getDuration());
         assertEquals(version.getPublishedDuration(), v.getPublishedDuration());
         assertEquals(version.getProvider(), v.getProvider());

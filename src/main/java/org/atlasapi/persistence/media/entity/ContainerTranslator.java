@@ -92,7 +92,7 @@ public class ContainerTranslator {
         if (entity == null) {
             entity = (Container) DescribedTranslator.newModel(dbObject);
         }
-        contentTranslator.fromDBObject(dbObject, entity);
+        contentTranslator.fromDBObject(dbObject, entity, true);
 
         Iterable<ChildRef> childRefs;
         if (dbObject.containsField(CHILDREN_KEY)) {
