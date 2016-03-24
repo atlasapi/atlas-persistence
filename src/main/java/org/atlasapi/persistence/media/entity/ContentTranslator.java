@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class ContentTranslator implements ModelTranslator<Content> {
+public class ContentTranslator {
 
     public static final String PEOPLE = "people";
     public static String CLIPS_KEY = "clips";
@@ -77,8 +77,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     }
 
-    @Override
-    public Content fromDBObject(DBObject dbObject, Content entity) {
+    public Content fromDBObject(DBObject dbObject, Content entity, boolean hydrateBroadcasts) {
         describedTranslator.fromDBObject(dbObject, entity);
 
         decodeClips(dbObject, entity);
@@ -110,7 +109,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
                 if (versionDbo == null) {
                     throw new IllegalStateException("Cannot read item stored with null version: " + entity.getCanonicalUri());
                 }
-                Version version = versionTranslator.fromDBObject(versionDbo, null);
+                Version version = versionTranslator.fromDBObject(versionDbo, null, hydrateBroadcasts);
                 versions.add(version);
             }
             entity.setVersions(versions);
@@ -203,7 +202,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     }
 
-    @Override
     public DBObject toDBObject(DBObject dbObject, Content entity) {
         dbObject = describedTranslator.toDBObject(dbObject, entity);
         encodeClips(dbObject, entity);

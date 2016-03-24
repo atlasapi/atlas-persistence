@@ -46,6 +46,8 @@ import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.testing.StubContentResolver;
+
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -516,7 +518,7 @@ public class MongoScheduleStoreTest {
         when(equivalentContentResolver.resolveUris(
                 (Iterable) argThat(hasItem(isIn(uris))), 
                 argThat(is(appConfig.get())), 
-                argThat(is(Annotation.defaultAnnotations())), 
+                argThat(is(Sets.difference(Annotation.defaultAnnotations(), ImmutableSet.of(Annotation.BROADCASTS)))),
                 eq(false)))
             .thenReturn(EquivalentContent.builder().build());
         
@@ -525,8 +527,8 @@ public class MongoScheduleStoreTest {
         verify(contentResolver, never()).findByCanonicalUris(any(Iterable.class));
         for (String uri : uris) {
             verify(equivalentContentResolver).resolveUris(argThat(hasItems(uri)), 
-                    argThat(is(appConfig.get())), 
-                    argThat(is(Annotation.defaultAnnotations())), 
+                    argThat(is(appConfig.get())),
+                    argThat(is(Sets.difference(Annotation.defaultAnnotations(), ImmutableSet.of(Annotation.BROADCASTS)))),
                     eq(false));
         }
     }

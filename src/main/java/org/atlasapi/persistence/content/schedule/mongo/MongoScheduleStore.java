@@ -77,6 +77,8 @@ import com.mongodb.DBCollection;
 public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
 	private final static Duration MAX_DURATION = Duration.standardDays(14);
+    private final static Set<Annotation> DEFAULT_ANNOTATIONS_WITHOUT_BROADCASTS
+            = Sets.difference(Annotation.defaultAnnotations(), ImmutableSet.of(Annotation.BROADCASTS));
 
 	private final ScheduleEntryBuilder scheduleEntryBuilder;
     private final DBCollection collection;
@@ -377,7 +379,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private Map<String, Maybe<Identified>> findAndMerge(ApplicationConfiguration mergeConfig,
             Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
         ImmutableSet<String> uris = uniqueUris(refs);
-        EquivalentContent resolved = equivalentContentResolver.resolveUris(uris, mergeConfig, Annotation.defaultAnnotations(), false);
+        EquivalentContent resolved = equivalentContentResolver.resolveUris(uris, mergeConfig,
+                DEFAULT_ANNOTATIONS_WITHOUT_BROADCASTS, false);
         ImmutableMap.Builder<String, Maybe<Identified>> result = ImmutableMap.builder();
         for (String uri : uris) {
             Set<Content> equivalents = resolved.get(uri);

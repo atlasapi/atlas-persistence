@@ -197,7 +197,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     private final Function<DBObject, Item> TO_ITEM = new Function<DBObject, Item>() {
         @Override
         public Item apply(DBObject input) {
-            return itemTranslator.fromDBObject(input, null);
+            return itemTranslator.fromDBObject(input, null, true);
         }
     };
 

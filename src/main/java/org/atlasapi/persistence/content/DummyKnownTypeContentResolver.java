@@ -1,9 +1,11 @@
 package org.atlasapi.persistence.content;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.content.ResolvedContent.ResolvedContentBuilder;
 
 import com.google.common.collect.Maps;
@@ -22,7 +24,13 @@ public class DummyKnownTypeContentResolver implements KnownTypeContentResolver {
         
         return results.build();
     }
-    
+
+    @Override
+    public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs,
+            Set<Annotation> activeAnnotations) {
+        return findByLookupRefs(lookupRefs);
+    }
+
     public DummyKnownTypeContentResolver respondTo(Iterable<? extends Identified> content) {
         for (Identified item : content) {
             this.content.put(item.getCanonicalUri(), item);

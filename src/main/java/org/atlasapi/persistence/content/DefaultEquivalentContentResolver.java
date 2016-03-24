@@ -41,19 +41,25 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
     @Override
-    public EquivalentContent resolveUris(Iterable<String> uris, ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations, boolean withAliases) {
+    public EquivalentContent resolveUris(Iterable<String> uris, ApplicationConfiguration appConfig,
+            Set<Annotation> activeAnnotations, boolean withAliases) {
+
         Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris, withAliases);
-        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig);
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig, activeAnnotations);
     }
     
     @Override
-    public EquivalentContent resolveIds(Iterable<Long> ids, ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations) {
+    public EquivalentContent resolveIds(Iterable<Long> ids, ApplicationConfiguration appConfig,
+            Set<Annotation> activeAnnotations) {
+
         Iterable<LookupEntry> entries = lookupResolver.entriesForIds(ids);
         Set<String> uris = Sets.newHashSet();
         for (LookupEntry entry : entries) {
             uris.add(entry.uri());
         }
-        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig);
+        return filterAndResolveEntries(
+                ImmutableSet.copyOf(entries), uris, appConfig,
+                activeAnnotations);
     }
     
     @Override
@@ -64,10 +70,14 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         for (LookupEntry entry : entries) {
             uris.add(entry.uri());
         }
-        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig); 
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig,
+                activeAnnotations
+        );
     }
 
-    protected EquivalentContent filterAndResolveEntries(Set<LookupEntry> entries, Iterable<String> uris, ApplicationConfiguration appConfig) {
+    protected EquivalentContent filterAndResolveEntries(Set<LookupEntry> entries,
+            Iterable<String> uris, ApplicationConfiguration appConfig,
+            Set<Annotation> activeAnnotations) {
         if (Iterables.isEmpty(entries)) {
             return EquivalentContent.empty();
         }
@@ -80,7 +90,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         }
         
         Map<String, LookupEntry> entryIndex = Maps.uniqueIndex(entries, LookupEntry.TO_ID);
-        ResolvedContent resolvedContent = contentResolver.findByLookupRefs(refs);
+        ResolvedContent resolvedContent = contentResolver.findByLookupRefs(refs, activeAnnotations);
         
         EquivalentContent.Builder equivalentContent = EquivalentContent.builder();
         for (String uri : uris) {

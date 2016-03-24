@@ -11,6 +11,7 @@ import java.util.Set;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -48,7 +49,11 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         this.lookupEntryStore = checkNotNull(lookupEntryStore);
     }
 
-    public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
+    @Override
+    public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs, Set<Annotation> activeAnnotations) {
+        boolean hydrateBroadcasts = activeAnnotations == null
+                || activeAnnotations.contains(Annotation.BROADCASTS);
+
         Builder<String, Identified> results = ImmutableMap.builder();
         Set<String> foundUris = Sets.newHashSet();
         Multimap<DBCollection, String> idsGroupedByTable = HashMultimap.create();
@@ -61,7 +66,7 @@ public class MongoContentResolver implements KnownTypeContentResolver {
             DBCursor found = lookupInOneTable.getKey().find(where().idIn(lookupInOneTable.getValue()).build());
             if (found != null) {
                 for (DBObject dbo : found) {
-                    Identified model = toModel(dbo);
+                    Identified model = toModel(dbo, hydrateBroadcasts);
                     if (!foundUris.contains(model.getCanonicalUri())) {
                         results.put(model.getCanonicalUri(), model);
                         foundUris.add(model.getCanonicalUri());
@@ -76,6 +81,11 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         return ResolvedContent.builder().putAll(res).build();
     }
 
+    @Override
+    public ResolvedContent findByLookupRefs(Iterable<LookupRef> lookupRefs) {
+        return findByLookupRefs(lookupRefs, null);
+    }
+
     private void addIdsToResults(ImmutableMap<String, Identified> uriToIdentified) {
         Map<String, Long> idsForCanonicalUris = lookupEntryStore.idsForCanonicalUris(uriToIdentified.keySet());
         
@@ -88,7 +98,7 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         }
     }
 
-    private Identified toModel(DBObject dbo) {
+    private Identified toModel(DBObject dbo, boolean hydrateBroadcasts) {
         if(dbo == null) {
             return null;
         }
@@ -107,7 +117,7 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         	case CLIP:
         	case FILM:
         	case SONG:
-        		return itemTranslator.fromDBObject(dbo, null);
+        		return itemTranslator.fromDBObject(dbo, null, hydrateBroadcasts);
         }
         throw new IllegalArgumentException("Unknown type: " + type);
     }
