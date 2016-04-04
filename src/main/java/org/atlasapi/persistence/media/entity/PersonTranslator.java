@@ -22,9 +22,11 @@ public class PersonTranslator implements ModelTranslator<Person> {
     private static final String BIRTH_DATE_KEY = "birthDate";
     private static final String BIRTH_PLACE_KEY = "birthPlace";
     private static final String QUOTES_KEY = "quotes";
+    private static final String AWARDS = "awards";
     
     private ContentGroupTranslator contentGroupTranslator = new ContentGroupTranslator(false);
     private ChildRefTranslator childRefTranslator = new ChildRefTranslator();
+    private AwardTranslator awardTranslator = new AwardTranslator();
     
     @Override
     public Person fromDBObject(DBObject dbObject, Person entity) {
@@ -38,7 +40,9 @@ public class PersonTranslator implements ModelTranslator<Person> {
         entity.setBirthDate(TranslatorUtils.toDateTime(dbObject, BIRTH_DATE_KEY));
         entity.setBirthPlace(TranslatorUtils.toString(dbObject, BIRTH_PLACE_KEY));
         entity.setQuotes(TranslatorUtils.toSet(dbObject, QUOTES_KEY));
-        
+        if(dbObject.containsField(AWARDS)) {
+            entity.setAwards(awardTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, AWARDS)));
+        }
         contentGroupTranslator.fromDBObject(dbObject, entity);
         
         return entity;
@@ -57,7 +61,7 @@ public class PersonTranslator implements ModelTranslator<Person> {
         
         dbObject.put("type", Person.class.getSimpleName());
         dbObject.removeField(ContentGroupTranslator.CONTENT_URIS_KEY);
-        
+        dbObject.put(AWARDS, awardTranslator.toDBList(entity.getAwards()));
         return dbObject;
     }
     
