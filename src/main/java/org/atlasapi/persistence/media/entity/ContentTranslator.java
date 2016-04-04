@@ -48,6 +48,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private static final String EVENTS_KEY = "events";
     private static final String EDITORIAL_PRIORITY_KEY = "editorialPriority";
     private static final String VERSIONS_KEY = "versions";
+    private static final String AWARDS = "awards";
 
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
@@ -58,6 +59,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     private final SimilarContentRefTranslator similarContentRefTranslator;
     private final VersionTranslator versionTranslator;
     private final EventRefTranslator eventRefTranslator;
+    private final AwardTranslator awardTranslator;
 
     public ContentTranslator(NumberToShortStringCodec idCodec) {
         this(new DescribedTranslator(new IdentifiedTranslator(), new ImageTranslator()), new ClipTranslator(idCodec), new VersionTranslator(idCodec));
@@ -74,6 +76,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
         this.similarContentRefTranslator = new SimilarContentRefTranslator();
         this.versionTranslator = checkNotNull(versionTranslator);
         this.eventRefTranslator = new EventRefTranslator();
+        this.awardTranslator = new AwardTranslator();
 
     }
 
@@ -115,7 +118,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
             entity.setVersions(versions);
         }
-
+        if(dbObject.containsField(AWARDS)) {
+            entity.setAwards(awardTranslator.fromDBObjects(
+                    TranslatorUtils.toDBObjectList(dbObject, AWARDS)));
+        }
         return entity;
     }
 
@@ -236,6 +242,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
             }
             dbObject.put(VERSIONS_KEY, list);
         }
+        dbObject.put(AWARDS, awardTranslator.toDBList(entity.getAwards()));
         return dbObject;
     }
 
