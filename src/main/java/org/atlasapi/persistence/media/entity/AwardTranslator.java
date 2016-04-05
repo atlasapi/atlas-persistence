@@ -33,7 +33,7 @@ public class AwardTranslator {
         award.setOutcome(TranslatorUtils.toString(dbo, OUT_COME));
         award.setTitle(TranslatorUtils.toString(dbo, TITLE));
         award.setDescription(TranslatorUtils.toString(dbo, DESCRIPTION));
-        award.setYear(TranslatorUtils.toString(dbo, YEAR));
+        award.setYear(TranslatorUtils.toInteger(dbo, YEAR));
         return award;
     }
 
