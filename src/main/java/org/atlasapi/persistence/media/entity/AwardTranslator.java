@@ -14,14 +14,14 @@ import com.mongodb.DBObject;
 
 public class AwardTranslator {
 
-    public static final String OUT_COME = "outcome";
+    public static final String OUTCOME = "outcome";
     public static final String TITLE = "title";
     public static final String DESCRIPTION = "description";
     public static final String YEAR = "year";
 
     public DBObject toDBObject(Award award) {
         DBObject dbo = new BasicDBObject();
-        TranslatorUtils.from(dbo, OUT_COME, award.getOutcome());
+        TranslatorUtils.from(dbo, OUTCOME, award.getOutcome());
         TranslatorUtils.from(dbo, TITLE, award.getTitle());
         TranslatorUtils.from(dbo, DESCRIPTION, award.getDescription());
         TranslatorUtils.from(dbo, YEAR, award.getYear());
@@ -30,7 +30,7 @@ public class AwardTranslator {
 
     public Award fromDBObject(DBObject dbo) {
         Award award = new Award();
-        award.setOutcome(TranslatorUtils.toString(dbo, OUT_COME));
+        award.setOutcome(TranslatorUtils.toString(dbo, OUTCOME));
         award.setTitle(TranslatorUtils.toString(dbo, TITLE));
         award.setDescription(TranslatorUtils.toString(dbo, DESCRIPTION));
         award.setYear(TranslatorUtils.toInteger(dbo, YEAR));
