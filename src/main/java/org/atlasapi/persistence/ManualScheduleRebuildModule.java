@@ -19,6 +19,13 @@ import com.metabroadcast.common.scheduling.ScheduledTask;
 import com.metabroadcast.common.scheduling.SimpleScheduler;
 
 @Configuration
+/**
+ * Some adapters do not maintain schedules for their content. These adapters have scheduled
+ * tasks to build the schedule from broadcasts on a periodic basis.
+ *
+ * The tasks that are scheduled to never run can be used to correct a schedule if it becomes
+ * out of synch with the contents' broadcasts.
+ */
 public class ManualScheduleRebuildModule {
 
     private @Autowired SimpleScheduler scheduler;
@@ -39,24 +46,19 @@ public class ManualScheduleRebuildModule {
 	    	.withName("Full Mongo Schedule repopulator");
 	    
 	    scheduler.schedule(everythingRepopulator, fullScheduleRepopulatorScheduled ? RepetitionRules.daily(new LocalTime(3, 15, 0)) : RepetitionRules.NEVER);
-		
-	    ScheduledTask bbcRepopulator = 
-	    	new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC))
-	    	.withName("BBC Mongo Schedule repopulator");
-	    
-        scheduler.schedule(bbcRepopulator, bbcScheduleRepopulatorScheduled ? RepetitionRules.every(Duration.standardHours(2)) : RepetitionRules.NEVER);
-        
-        ScheduledTask bbcFullRepopulator = 
-                new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.BBC), Duration.standardDays(100*365))
-                .withName("Big BBC Mongo Schedule repopulator");
-            
-        scheduler.schedule(bbcFullRepopulator, RepetitionRules.NEVER);
-        
-        ScheduledTask c4Repopulator = 
-        	new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.C4))
+
+        ScheduledTask c4Repopulator =
+        	new FullMongoScheduleRepopulator(
+			        lister,
+			        channelResolver,
+			        scheduleStore,
+			        ImmutableList.<Publisher>of(Publisher.C4)
+	        )
         	.withName("C4 Mongo Schedule repopulator");
         
-        scheduler.schedule(c4Repopulator, c4ScheduleRepopulatorScheduled ? RepetitionRules.every(Duration.standardHours(1)).withOffset(Duration.standardMinutes(30)) : RepetitionRules.NEVER);
+        scheduler.schedule(
+		        c4Repopulator,
+		        c4ScheduleRepopulatorScheduled ? RepetitionRules.every(Duration.standardHours(1)).withOffset(Duration.standardMinutes(30)) : RepetitionRules.NEVER);
         
         ScheduledTask c4PmlsdRepopulator = 
                 new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.C4_PMLSD, Publisher.C4_PMLSD_P06))
