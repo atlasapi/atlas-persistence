@@ -1,5 +1,7 @@
 package org.atlasapi.persistence.event;
 
+import javax.annotation.Nullable;
+
 import org.atlasapi.media.entity.Event;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Topic;
@@ -9,9 +11,10 @@ import org.atlasapi.persistence.media.entity.OrganisationTranslator;
 import org.atlasapi.persistence.media.entity.PersonTranslator;
 import org.atlasapi.persistence.media.entity.TopicTranslator;
 
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
@@ -52,7 +55,7 @@ public class EventTranslator {
         return dbo;
     }
 
-    public Event fromDBObject(DBObject dbo) {
+    public @Nullable Event fromDBObject(@Nullable DBObject dbo) {
         if (dbo == null) {
             return null;
         }
