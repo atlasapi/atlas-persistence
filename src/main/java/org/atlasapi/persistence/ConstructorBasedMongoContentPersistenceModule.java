@@ -396,8 +396,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 return eventResolver.fetch(eventGroup, from);
             }
 
-            @Override public void createOrUpdate(Event event) {
-                eventWriter.createOrUpdate(event);
+            @Override public Event createOrUpdate(Event event) {
+                return eventWriter.createOrUpdate(event);
             }
         };
     }

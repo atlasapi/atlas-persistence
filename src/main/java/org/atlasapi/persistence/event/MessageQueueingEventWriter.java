@@ -1,20 +1,21 @@
 package org.atlasapi.persistence.event;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.math.BigInteger;
 import java.util.UUID;
 
 import org.atlasapi.media.entity.Event;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.google.common.primitives.Longs;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
 import com.metabroadcast.common.time.Timestamper;
+
+import com.google.common.primitives.Longs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MessageQueueingEventWriter implements EventWriter {
 
@@ -39,7 +40,7 @@ public class MessageQueueingEventWriter implements EventWriter {
     }
 
     @Override
-    public void createOrUpdate(Event event) {
+    public Event createOrUpdate(Event event) {
         delegate.createOrUpdate(event);
 
         if(event.getId() != null) {
@@ -48,6 +49,7 @@ public class MessageQueueingEventWriter implements EventWriter {
         else {
             LOG.warn("Update message failed. Missing id for: " + event);
         }
+        return event;
     }
 
     private void enqueueMessageUpdatedEvent(Event event) {

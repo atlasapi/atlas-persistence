@@ -1,13 +1,14 @@
 package org.atlasapi.persistence.event;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import org.atlasapi.media.entity.Event;
 import org.atlasapi.media.entity.Topic;
-import org.joda.time.DateTime;
+
+import com.metabroadcast.common.ids.IdGenerator;
 
 import com.google.common.base.Optional;
-import com.metabroadcast.common.ids.IdGenerator;
+import org.joda.time.DateTime;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 
 public class IdSettingEventStore implements EventStore {
@@ -21,8 +22,8 @@ public class IdSettingEventStore implements EventStore {
     }
     
     @Override
-    public void createOrUpdate(Event event) {
-        delegate.createOrUpdate(generateOrRestoreId(event));
+    public Event createOrUpdate(Event event) {
+        return delegate.createOrUpdate(generateOrRestoreId(event));
     }
 
     @Override

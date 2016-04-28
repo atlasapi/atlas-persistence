@@ -1,5 +1,19 @@
 package org.atlasapi.persistence.event;
 
+import org.atlasapi.media.entity.Event;
+import org.atlasapi.media.entity.Topic;
+
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import org.joda.time.DateTime;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -8,19 +22,6 @@ import static org.atlasapi.persistence.event.EventTranslator.EVENT_GROUPS_KEY;
 import static org.atlasapi.persistence.event.EventTranslator.START_TIME_KEY;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.ID;
-
-import org.atlasapi.media.entity.Event;
-import org.atlasapi.media.entity.Topic;
-import org.joda.time.DateTime;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 
 
 public class MongoEventStore implements EventStore {
@@ -33,9 +34,10 @@ public class MongoEventStore implements EventStore {
     }
     
     @Override
-    public void createOrUpdate(Event event) {
+    public Event createOrUpdate(Event event) {
         checkArgument(event.getId() != null);
         collection.save(translator.toDBObject(event));
+        return event;
     }
 
     @Override
