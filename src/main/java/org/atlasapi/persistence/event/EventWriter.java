@@ -5,5 +5,5 @@ import org.atlasapi.media.entity.Event;
 
 public interface EventWriter {
 
-    void createOrUpdate(Event event);
+    Event createOrUpdate(Event event);
 }

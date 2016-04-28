@@ -354,6 +354,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
     private void removeBroadcasts(Item item) {
         for (Version version : item.getVersions()) {
+            log.trace("Removing {} broadcasts from item {}", version.getBroadcasts().size(), item.getCanonicalUri());
             version.setBroadcasts(ImmutableSet.<Broadcast>of());
         }
     }
