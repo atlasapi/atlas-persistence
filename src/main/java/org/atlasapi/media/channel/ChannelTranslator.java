@@ -44,8 +44,13 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 	public static final String END_DATE = "endDate";
 	public static final String GENRES_KEY = "genres";
     public static final String ADVERTISE_FROM = "advertiseFrom";
+    public static final String SHORT_DESCRIPTION = "shortDescription";
+    public static final String MEDIUM_DESCRIPTION = "mediumDescription";
+    public static final String LONG_DESCRIPTION = "longDescription";
+    public static final String REGION = "region";
+    public static final String CHANNEL_TYPE = "channelType";
 
-	private ModelTranslator<Identified> identifiedTranslator;
+    private ModelTranslator<Identified> identifiedTranslator;
 	private ChannelNumberingTranslator channelNumberingTranslator;
 	private TemporalTitleTranslator temporalTitleTranslator;
 	private final TemporalImageTranslator temporalImageTranslator;
@@ -94,6 +99,14 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		TranslatorUtils.fromLocalDate(dbObject, END_DATE, model.getEndDate());
 		TranslatorUtils.fromSet(dbObject, model.getGenres(), GENRES_KEY);
 		TranslatorUtils.fromDateTime(dbObject, ADVERTISE_FROM, model.getAdvertiseFrom());
+        TranslatorUtils.from(dbObject, SHORT_DESCRIPTION, model.getShortDescription());
+        TranslatorUtils.from(dbObject, MEDIUM_DESCRIPTION, model.getMediumDescription());
+        TranslatorUtils.from(dbObject, LONG_DESCRIPTION, model.getLongDescription());
+        TranslatorUtils.from(dbObject, REGION, model.getRegion());
+        ChannelType channelType = model.getChannelType();
+        if (channelType != null) {
+            TranslatorUtils.from(dbObject, CHANNEL_TYPE, channelType.name());
+        }
 		return dbObject;
 	}
 
@@ -138,6 +151,15 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 		if (dbObject.containsField(GENRES_KEY)) {
 		    model.setGenres(TranslatorUtils.toSet(dbObject, GENRES_KEY));
 		}
+
+        model.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESCRIPTION));
+        model.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESCRIPTION));
+        model.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESCRIPTION));
+        model.setRegion(TranslatorUtils.toString(dbObject, REGION));
+        String channelType = TranslatorUtils.toString(dbObject, CHANNEL_TYPE);
+        if (channelType != null) {
+            model.setChannelType(ChannelType.valueOf(channelType));
+        }
 		
 		return (Channel) identifiedTranslator.fromDBObject(dbObject, model);
 	}
