@@ -59,6 +59,11 @@ public class ChannelTranslatorTest {
             .withRelatedLink(relatedLink)
             .withGenres(genres)
             .withAdvertiseFrom(dateTimeTest)
+            .withShortDescription("short")
+            .withMediumDescription("medium")
+            .withLongDescription("long")
+            .withRegion("region")
+            .withChannelType(ChannelType.CHANNEL)
             .build();
         
         DBObject encoded = channelTranslator.toDBObject(null, channel);
@@ -83,6 +88,11 @@ public class ChannelTranslatorTest {
         assertThat(decoded.getRelatedLinks(), is(equalTo(channel.getRelatedLinks())));
         assertThat(decoded.getGenres(), is(equalTo(genres)));
         assertThat(decoded.getAdvertiseFrom().toDate(), is(equalTo(channel.getAdvertiseFrom().toDate())));
+        assertThat(decoded.getShortDescription(), is(equalTo(channel.getShortDescription())));
+        assertThat(decoded.getMediumDescription(), is(equalTo(channel.getMediumDescription())));
+        assertThat(decoded.getLongDescription(), is(equalTo(channel.getLongDescription())));
+        assertThat(decoded.getRegion(), is(equalTo(channel.getRegion())));
+        assertThat(decoded.getChannelType(), is(equalTo(channel.getChannelType())));
     }
 
 }
