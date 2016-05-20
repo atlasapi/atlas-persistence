@@ -1,15 +1,17 @@
 package org.atlasapi.media.channel;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
-import org.joda.time.DateTime;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import org.joda.time.DateTime;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 
 public class ChannelQuery {
@@ -20,20 +22,25 @@ public class ChannelQuery {
     private final Optional<Set<Long>> channelGroups;
     private final Optional<Set<String>> genres;
     private final Optional<DateTime> advertisedOn;
-
+    private final Optional<Publisher> source;
+    
     public static Builder builder() {
         return new Builder();
     }
-    
-    private ChannelQuery(Optional<Publisher> broadcaster, Optional<MediaType> mediaType, 
+
+    private ChannelQuery(
+            Optional<Publisher> broadcaster, Optional<MediaType> mediaType,
             Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups,
-            Optional<Set<String>> genres, Optional<DateTime> advertisedOn) {
-                this.broadcaster = checkNotNull(broadcaster);
-                this.mediaType = checkNotNull(mediaType);
-                this.availableFrom = checkNotNull(availableFrom);
-                this.channelGroups = checkNotNull(channelGroups);
-                this.genres = checkNotNull(genres);
-                this.advertisedOn = checkNotNull(advertisedOn);
+            Optional<Set<String>> genres, Optional<DateTime> advertisedOn,
+            Optional<Publisher> source
+    ) {
+        this.broadcaster = checkNotNull(broadcaster);
+        this.mediaType = checkNotNull(mediaType);
+        this.availableFrom = checkNotNull(availableFrom);
+        this.channelGroups = checkNotNull(channelGroups);
+        this.genres = checkNotNull(genres);
+        this.advertisedOn = checkNotNull(advertisedOn);
+        this.source = checkNotNull(source);
     }
     
     public Optional<Publisher> getBroadcaster() {
@@ -57,6 +64,10 @@ public class ChannelQuery {
     }
 
     public Optional<DateTime> getAdvertisedOn() { return advertisedOn; };
+
+    public Optional<Publisher> getSource() {
+        return source;
+    }
 
     @Override
     public String toString() {
@@ -101,12 +112,15 @@ public class ChannelQuery {
         private Optional<Set<Long>> channelGroups = Optional.absent();
         private Optional<Set<String>> genres = Optional.absent();
         private Optional<DateTime> advertisedOn = Optional.absent();
+        private Optional<Publisher> source = Optional.absent();
 
         private Builder() {}
         
         public ChannelQuery build() {
-            return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres,
-                    advertisedOn);
+            return new ChannelQuery(
+                    broadcaster, mediaType, availableFrom, channelGroups, genres,
+                    advertisedOn, source
+            );
         }
 
         
@@ -137,6 +151,11 @@ public class ChannelQuery {
 
         public Builder withAdvertisedOn(DateTime advertisedOn) {
             this.advertisedOn = Optional.fromNullable(advertisedOn);
+            return this;
+        }
+
+        public Builder withSource(@Nullable Publisher source) {
+            this.source = Optional.fromNullable(source);
             return this;
         }
     }
