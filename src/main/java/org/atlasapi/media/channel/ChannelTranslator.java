@@ -48,6 +48,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
     public static final String MEDIUM_DESCRIPTION = "mediumDescription";
     public static final String LONG_DESCRIPTION = "longDescription";
     public static final String REGION = "region";
+	public static final String TARGET_REGIONS = "targetRegions";
     public static final String CHANNEL_TYPE = "channelType";
 
     private ModelTranslator<Identified> identifiedTranslator;
@@ -103,6 +104,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         TranslatorUtils.from(dbObject, MEDIUM_DESCRIPTION, model.getMediumDescription());
         TranslatorUtils.from(dbObject, LONG_DESCRIPTION, model.getLongDescription());
         TranslatorUtils.from(dbObject, REGION, model.getRegion());
+		TranslatorUtils.fromSet(dbObject, model.getTargetRegions(),TARGET_REGIONS);
         ChannelType channelType = model.getChannelType();
         if (channelType != null) {
             TranslatorUtils.from(dbObject, CHANNEL_TYPE, channelType.name());
@@ -131,6 +133,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         if (dbObject.containsField(NEW_IMAGES)) {
             model.setImages(temporalImageTranslator.toTemporalImageSet(dbObject, NEW_IMAGES));
         }
+
         
         decodeRelatedLinks(dbObject, model);
 		model.setKey((String) dbObject.get(KEY));
@@ -156,6 +159,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         model.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESCRIPTION));
         model.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESCRIPTION));
         model.setRegion(TranslatorUtils.toString(dbObject, REGION));
+	    model.setTargetRegions(TranslatorUtils.toSet(dbObject, TARGET_REGIONS));
         String channelType = TranslatorUtils.toString(dbObject, CHANNEL_TYPE);
         if (channelType != null) {
             model.setChannelType(ChannelType.valueOf(channelType));
