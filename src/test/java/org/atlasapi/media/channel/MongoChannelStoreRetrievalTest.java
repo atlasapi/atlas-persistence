@@ -167,7 +167,7 @@ public class MongoChannelStoreRetrievalTest {
     public void testRetrievesOldEpisodes() {
         ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime).build();
         Iterable<Channel> channels = store.allChannels(query);
-        assertThat(Iterables.size(channels), is(2));
+        assertThat(Iterables.size(channels), is(1));
     }
 
     @Test
