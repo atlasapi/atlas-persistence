@@ -27,16 +27,16 @@ public class ChannelQuery {
     }
 
     private ChannelQuery(Optional<Publisher> broadcaster, Optional<MediaType> mediaType,
-            Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups,
-            Optional<Set<String>> genres, Optional<DateTime> advertisedOn,
+                         Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups,
+                         Optional<Set<String>> genres, Optional<DateTime> advertisedOn,
                          Optional<Publisher> publisher) {
-                this.broadcaster = checkNotNull(broadcaster);
-                this.mediaType = checkNotNull(mediaType);
-                this.availableFrom = checkNotNull(availableFrom);
-                this.channelGroups = checkNotNull(channelGroups);
-                this.genres = checkNotNull(genres);
-                this.advertisedOn = checkNotNull(advertisedOn);
-                this.publisher = checkNotNull(publisher);
+        this.broadcaster = checkNotNull(broadcaster);
+        this.mediaType = checkNotNull(mediaType);
+        this.availableFrom = checkNotNull(availableFrom);
+        this.channelGroups = checkNotNull(channelGroups);
+        this.genres = checkNotNull(genres);
+        this.advertisedOn = checkNotNull(advertisedOn);
+        this.publisher = checkNotNull(publisher);
     }
 
     public Optional<Publisher> getBroadcaster() {
@@ -59,7 +59,9 @@ public class ChannelQuery {
         return genres;
     }
 
-    public Optional<DateTime> getAdvertisedOn() { return advertisedOn; }
+    public Optional<DateTime> getAdvertisedOn() {
+        return advertisedOn;
+    }
 
     @Override
     public String toString() {
@@ -106,7 +108,8 @@ public class ChannelQuery {
         private Optional<DateTime> advertisedOn = Optional.absent();
         private Optional<Publisher> publisher = Optional.absent();
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public ChannelQuery build() {
             return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres,
