@@ -1,19 +1,24 @@
 package org.atlasapi.persistence.media.entity;
 
+import java.util.List;
+
 import org.atlasapi.media.TransportSubType;
 import org.atlasapi.media.TransportType;
+import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Quality;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class LocationTranslator implements ModelTranslator<Location> {
 	
     public static final String POLICY = "policy";
-    
+
     private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 	private final PolicyTranslator policyTranslator = new PolicyTranslator();
 
@@ -35,8 +40,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         entity.setTransportSubType(readEnum(TransportSubType.class, dbObject, "transportSubType"));
         
         entity.setUri((String) dbObject.get("uri"));
-        entity.setLastUpdated(TranslatorUtils.toDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED));
-        
+
         DBObject policyObject = (DBObject) dbObject.get(POLICY);
         if (policyObject != null) {
         	entity.setPolicy(policyTranslator.fromDBObject(policyObject, new Policy()));
@@ -60,7 +64,7 @@ public class LocationTranslator implements ModelTranslator<Location> {
         TranslatorUtils.from(dbObject, "embedCode", entity.getEmbedCode());
         TranslatorUtils.from(dbObject, "embedId", entity.getEmbedId());
         TranslatorUtils.from(dbObject, "transportIsLive", entity.getTransportIsLive());
-        
+
         if (entity.getTransportType() != null) {
         	TranslatorUtils.from(dbObject, "transportType", entity.getTransportType().toString());
         }
@@ -80,4 +84,5 @@ public class LocationTranslator implements ModelTranslator<Location> {
         }
         return dbObject;
     }
+
 }

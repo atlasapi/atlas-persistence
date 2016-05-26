@@ -21,7 +21,6 @@ public class ChannelQuery {
     private final Optional<DateTime> advertisedOn;
     private final Optional<Publisher> publisher;
     private final Optional<String> uri;
-
     public static Builder builder() {
         return new Builder();
     }
@@ -137,7 +136,6 @@ public class ChannelQuery {
             return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres,
                     advertisedOn, publisher, uri);
         }
-
 
         public Builder withBroadcaster(Publisher broadcaster) {
             this.broadcaster = Optional.fromNullable(broadcaster);

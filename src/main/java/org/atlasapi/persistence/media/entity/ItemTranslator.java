@@ -34,7 +34,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class ItemTranslator implements ModelTranslator<Item> {
-    
 
     private static final Logger log = LoggerFactory.getLogger(ItemTranslator.class);
     

@@ -9,7 +9,9 @@ import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Policy.RevenueContract;
+import org.atlasapi.media.entity.Quality;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.currency.Price;
 import com.metabroadcast.common.intl.Countries;
@@ -25,7 +27,7 @@ public class LocationTranslatorTest extends TestCase {
         Location location = new Location();
         
         location.setAvailable(true);
-        
+
         location.setPolicy(new Policy()
         					.withAvailabilityStart(new SystemClock().now())
         					.withAvailableCountries(Countries.IE, Countries.GB)
@@ -35,7 +37,7 @@ public class LocationTranslatorTest extends TestCase {
         DBObject dbObject = lt.toDBObject(null, location);
         
         assertEquals(location.getAvailable(), dbObject.get("available"));
-    
+
         DBObject policyObject = (DBObject) dbObject.get("policy");
         assertEquals(Sets.newHashSet("GB", "IE"),  Sets.newHashSet(((BasicDBList)  policyObject.get("availableCountries"))));
         assertEquals(RevenueContract.PAY_TO_BUY.key(), policyObject.get("revenueContract"));
@@ -46,7 +48,7 @@ public class LocationTranslatorTest extends TestCase {
     public void testToLocation() {
         Location location = new Location();
         location.setAvailable(true);
-        
+
         location.setPolicy(new Policy()
         	.withAvailabilityStart(new SystemClock().now())
         	.withAvailabilityEnd(new SystemClock().now().plusHours(1))
@@ -79,5 +81,6 @@ public class LocationTranslatorTest extends TestCase {
         assertEquals(location.getTransportType(), resultingLocation.getTransportType());
         assertEquals(location.getTransportIsLive(), resultingLocation.getTransportIsLive());
         assertEquals(location.getUri(), resultingLocation.getUri());
+
     }
 }

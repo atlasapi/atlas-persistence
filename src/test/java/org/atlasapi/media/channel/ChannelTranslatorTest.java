@@ -34,7 +34,7 @@ public class ChannelTranslatorTest {
         Set<Long> variations = ImmutableSet.of(2345L, 2346L, 2347L);
         
         RelatedLink relatedLink = RelatedLink.simulcastLink("simulcast_url").build();
-        
+
         Image image = new Image("image");
         image.setTheme(ImageTheme.LIGHT_OPAQUE);
         
