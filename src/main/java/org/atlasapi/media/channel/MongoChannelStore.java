@@ -9,6 +9,8 @@ import static org.atlasapi.media.channel.ChannelTranslator.AVAILABLE_ON;
 import static org.atlasapi.media.channel.ChannelTranslator.BROADCASTER;
 import static org.atlasapi.media.channel.ChannelTranslator.KEY;
 import static org.atlasapi.media.channel.ChannelTranslator.MEDIA_TYPE;
+import static org.atlasapi.media.channel.ChannelTranslator.PUBLISHER;
+import static org.atlasapi.media.channel.ChannelTranslator.URI;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
 
 import java.util.Map;
@@ -284,7 +286,12 @@ public class MongoChannelStore implements ChannelStore, ServiceChannelStore {
         if (query.getAdvertisedOn().isPresent()) {
             mongoQuery.fieldBeforeOrAt(ADVERTISE_FROM, query.getAdvertisedOn().get());
         }
-
+        if (query.getPublisher().isPresent()) {
+            mongoQuery.fieldEquals(PUBLISHER, query.getPublisher().get().key());
+        }
+        if (query.getUri().isPresent()) {
+            mongoQuery.fieldEquals(URI, query.getUri().get());
+        }
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
 

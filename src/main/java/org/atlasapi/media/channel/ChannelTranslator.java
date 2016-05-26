@@ -50,6 +50,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
     public static final String REGION = "region";
 	public static final String TARGET_REGIONS = "targetRegions";
     public static final String CHANNEL_TYPE = "channelType";
+	public static final String URI = "uri";
 
     private ModelTranslator<Identified> identifiedTranslator;
 	private ChannelNumberingTranslator channelNumberingTranslator;
