@@ -1,5 +1,6 @@
 package org.atlasapi.media.channel;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -10,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Predicate;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
@@ -27,6 +29,8 @@ import com.google.common.collect.Ordering;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+
+import javax.annotation.Nullable;
 
 public class MongoChannelStoreRetrievalTest {
 
@@ -173,5 +177,27 @@ public class MongoChannelStoreRetrievalTest {
         ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime.minusDays(2)).build();
         Iterable<Channel> retrieved = store.allChannels(query);
         assertTrue(Iterables.isEmpty(retrieved));
+    }
+
+    @Test
+    public void testRetrievesChannelByPublisher() {
+        ChannelQuery query = ChannelQuery.builder().withPublisher(Publisher.BBC).build();
+        Iterable<Channel> channels = store.allChannels(query);
+        assertFalse(Iterables.isEmpty(channels));
+        Iterable<Channel> filtered = Iterables.filter(channels, new Predicate<Channel>() {
+            @Override
+            public boolean apply(@Nullable Channel channel) {
+                return !channel.getSource().equals(Publisher.BBC);
+            }
+        });
+        assertTrue(Iterables.isEmpty(filtered));
+    }
+
+    @Test
+    public void testRetrievesChannelByUri() {
+        ChannelQuery query = ChannelQuery.builder().withUri("uri1").build();
+        Iterable<Channel> channels = store.allChannels(query);
+        assertFalse(Iterables.isEmpty(channels));
+        assertTrue(Iterables.getOnlyElement(channels).getUri().equals("uri1"));
     }
 }

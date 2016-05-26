@@ -1,17 +1,5 @@
 package org.atlasapi.media.channel;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
-
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -26,12 +14,23 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -43,6 +42,7 @@ import static org.atlasapi.media.channel.ChannelTranslator.BROADCASTER;
 import static org.atlasapi.media.channel.ChannelTranslator.KEY;
 import static org.atlasapi.media.channel.ChannelTranslator.MEDIA_TYPE;
 import static org.atlasapi.media.channel.ChannelTranslator.PUBLISHER;
+import static org.atlasapi.media.channel.ChannelTranslator.URI;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
 
 public class MongoChannelStore implements ChannelStore, ServiceChannelStore {
@@ -285,6 +285,12 @@ public class MongoChannelStore implements ChannelStore, ServiceChannelStore {
         }
         if (query.getAdvertisedOn().isPresent()) {
             mongoQuery.fieldBeforeOrAt(ADVERTISE_FROM, query.getAdvertisedOn().get());
+        }
+        if (query.getPublisher().isPresent()) {
+            mongoQuery.fieldEquals(PUBLISHER, query.getPublisher().get().key());
+        }
+        if (query.getUri().isPresent()) {
+            mongoQuery.fieldEquals(URI, query.getUri().get());
         }
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
