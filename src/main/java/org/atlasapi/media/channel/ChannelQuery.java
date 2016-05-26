@@ -62,6 +62,10 @@ public class ChannelQuery {
         return advertisedOn;
     }
 
+    public Optional<Publisher> getPublisher() {
+        return publisher;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(ChannelQuery.class)
