@@ -286,10 +286,6 @@ public class MongoChannelStore implements ChannelStore, ServiceChannelStore {
         if (query.getAdvertisedOn().isPresent()) {
             mongoQuery.fieldBeforeOrAt(ADVERTISE_FROM, query.getAdvertisedOn().get());
         }
-        if (query.getSource().isPresent()) {
-            mongoQuery.fieldEquals(PUBLISHER, query.getSource().get().key());
-        }
-
         return Iterables.transform(getOrderedCursor(mongoQuery.build()), DB_TO_CHANNEL_TRANSLATOR);
     }
 

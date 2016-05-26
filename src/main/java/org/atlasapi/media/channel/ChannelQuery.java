@@ -1,15 +1,12 @@
 package org.atlasapi.media.channel;
 
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
-import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.Publisher;
-
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import org.atlasapi.media.entity.MediaType;
+import org.atlasapi.media.entity.Publisher;
 import org.joda.time.DateTime;
+
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -22,52 +19,46 @@ public class ChannelQuery {
     private final Optional<Set<Long>> channelGroups;
     private final Optional<Set<String>> genres;
     private final Optional<DateTime> advertisedOn;
-    private final Optional<Publisher> source;
-    
+    private final Optional<Publisher> publisher;
+
     public static Builder builder() {
         return new Builder();
     }
 
-    private ChannelQuery(
-            Optional<Publisher> broadcaster, Optional<MediaType> mediaType,
+    private ChannelQuery(Optional<Publisher> broadcaster, Optional<MediaType> mediaType,
             Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups,
             Optional<Set<String>> genres, Optional<DateTime> advertisedOn,
-            Optional<Publisher> source
-    ) {
-        this.broadcaster = checkNotNull(broadcaster);
-        this.mediaType = checkNotNull(mediaType);
-        this.availableFrom = checkNotNull(availableFrom);
-        this.channelGroups = checkNotNull(channelGroups);
-        this.genres = checkNotNull(genres);
-        this.advertisedOn = checkNotNull(advertisedOn);
-        this.source = checkNotNull(source);
+                         Optional<Publisher> publisher) {
+                this.broadcaster = checkNotNull(broadcaster);
+                this.mediaType = checkNotNull(mediaType);
+                this.availableFrom = checkNotNull(availableFrom);
+                this.channelGroups = checkNotNull(channelGroups);
+                this.genres = checkNotNull(genres);
+                this.advertisedOn = checkNotNull(advertisedOn);
+                this.publisher = checkNotNull(publisher);
     }
-    
+
     public Optional<Publisher> getBroadcaster() {
         return broadcaster;
     }
-    
+
     public Optional<MediaType> getMediaType() {
         return mediaType;
     }
-    
+
     public Optional<Publisher> getAvailableFrom() {
         return availableFrom;
     }
-    
+
     public Optional<Set<Long>> getChannelGroups() {
         return channelGroups;
     }
-    
+
     public Optional<Set<String>> getGenres() {
         return genres;
     }
 
-    public Optional<DateTime> getAdvertisedOn() { return advertisedOn; };
-
-    public Optional<Publisher> getSource() {
-        return source;
-    }
+    public Optional<DateTime> getAdvertisedOn() { return advertisedOn; }
 
     @Override
     public String toString() {
@@ -80,12 +71,12 @@ public class ChannelQuery {
                 .add("advertiseOn", advertisedOn)
                 .toString();
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hashCode(broadcaster, mediaType, availableFrom, channelGroups, genres);
     }
-    
+
     @Override
     public boolean equals(Object that) {
         if (this == that) {
@@ -100,12 +91,11 @@ public class ChannelQuery {
                     && genres.equals(other.genres)
                     && advertisedOn.equals(other.advertisedOn);
         }
-        
         return false;
     }
-    
+
     public static class Builder {
-        
+
         private Optional<Publisher> broadcaster = Optional.absent();
         private Optional<MediaType> mediaType = Optional.absent();
         private Optional<Publisher> availableFrom = Optional.absent();
@@ -113,37 +103,35 @@ public class ChannelQuery {
         private Optional<Set<String>> genres = Optional.absent();
         private Optional<DateTime> advertisedOn = Optional.absent();
         private Optional<Publisher> source = Optional.absent();
-
+        private Optional<Publisher> publisher = Optional.absent();
         private Builder() {}
-        
+
         public ChannelQuery build() {
-            return new ChannelQuery(
-                    broadcaster, mediaType, availableFrom, channelGroups, genres,
-                    advertisedOn, source
-            );
+            return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres,
+                    advertisedOn, publisher);
         }
 
-        
+
         public Builder withBroadcaster(Publisher broadcaster) {
             this.broadcaster = Optional.fromNullable(broadcaster);
             return this;
         }
-        
+
         public Builder withMediaType(MediaType mediaType) {
             this.mediaType = Optional.fromNullable(mediaType);
             return this;
         }
-        
+
         public Builder withAvailableFrom(Publisher availableFrom) {
             this.availableFrom = Optional.fromNullable(availableFrom);
             return this;
         }
-        
+
         public Builder withChannelGroups(Set<Long> channelGroups) {
             this.channelGroups = Optional.fromNullable(channelGroups);
             return this;
         }
-        
+
         public Builder withGenres(Set<String> genres) {
             this.genres = Optional.fromNullable(genres);
             return this;
@@ -154,8 +142,8 @@ public class ChannelQuery {
             return this;
         }
 
-        public Builder withSource(@Nullable Publisher source) {
-            this.source = Optional.fromNullable(source);
+        public Builder withPublisher(Publisher publisher) {
+            this.publisher = Optional.fromNullable(publisher);
             return this;
         }
     }
