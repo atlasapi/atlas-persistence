@@ -2,6 +2,7 @@ package org.atlasapi.media.channel;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import java.util.Set;
@@ -64,6 +65,7 @@ public class ChannelTranslatorTest {
             .withLongDescription("long")
             .withRegion("region")
             .withChannelType(ChannelType.CHANNEL)
+            .withInteractive(true)
             .build();
         
         DBObject encoded = channelTranslator.toDBObject(null, channel);
@@ -93,6 +95,20 @@ public class ChannelTranslatorTest {
         assertThat(decoded.getLongDescription(), is(equalTo(channel.getLongDescription())));
         assertThat(decoded.getRegion(), is(equalTo(channel.getRegion())));
         assertThat(decoded.getChannelType(), is(equalTo(channel.getChannelType())));
+        assertThat(decoded.getInteractive(), is(equalTo(channel.getInteractive())));
     }
 
+    @Test
+    public void interactiveSetToFalseByDefault() {
+        Channel channel = Channel.builder()
+                .withSource(Publisher.BBC)
+                .withMediaType(MediaType.VIDEO)
+                .build();
+
+        DBObject encoded = channelTranslator.toDBObject(null, channel);
+
+        Channel decoded = channelTranslator.fromDBObject(encoded, null);
+
+        assertFalse(decoded.getInteractive());
+    }
 }
