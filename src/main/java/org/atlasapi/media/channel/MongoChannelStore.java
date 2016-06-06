@@ -1,9 +1,12 @@
 package org.atlasapi.media.channel;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 
@@ -14,6 +17,7 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 
+import com.google.common.base.Equivalence;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -29,6 +33,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +55,15 @@ public class MongoChannelStore implements ServiceChannelStore {
 
     public static final String COLLECTION = "channels";
 
+    private static final Logger log = LoggerFactory.getLogger(MongoChannelStore.class);
     private static final ChannelTranslator translator = new ChannelTranslator();
+
     private static final String NUMBERING_CHANNEL_GROUP_ID = Joiner.on('.')
             .join(ChannelTranslator.NUMBERINGS,
                     ChannelNumberingTranslator.CHANNEL_GROUP_KEY,
                     MongoConstants.ID
             );
+
     private static final Function<DBObject, Channel> DB_TO_CHANNEL_TRANSLATOR = input -> translator.fromDBObject(
             input,
             null
@@ -64,18 +73,31 @@ public class MongoChannelStore implements ServiceChannelStore {
 
     private final ChannelGroupResolver channelGroupResolver;
     private final ChannelGroupWriter channelGroupWriter;
-    private final Logger log = LoggerFactory.getLogger(MongoChannelStore.class);
+    private final Equivalence<Channel> channelEquivalence;
 
     private MongoSequentialIdGenerator idGenerator;
     private SubstitutionTableNumberCodec codec;
 
-    public MongoChannelStore(DatabasedMongo mongo, ChannelGroupResolver channelGroupResolver,
-            ChannelGroupWriter channelGroupWriter) {
+    public MongoChannelStore(
+            DatabasedMongo mongo,
+            ChannelGroupResolver channelGroupResolver,
+            ChannelGroupWriter channelGroupWriter
+    ) {
+        this(mongo, channelGroupResolver, channelGroupWriter, new DefaultEquivalence());
+    }
+
+    public MongoChannelStore(
+            DatabasedMongo mongo,
+            ChannelGroupResolver channelGroupResolver,
+            ChannelGroupWriter channelGroupWriter,
+            Equivalence<Channel> channelEquivalence
+    ) {
         this.channelGroupResolver = channelGroupResolver;
         this.channelGroupWriter = channelGroupWriter;
         this.collection = mongo.collection(COLLECTION);
         this.idGenerator = new MongoSequentialIdGenerator(mongo, COLLECTION);
         this.codec = new SubstitutionTableNumberCodec();
+        this.channelEquivalence = channelEquivalence;
     }
 
     @Override
@@ -142,6 +164,8 @@ public class MongoChannelStore implements ServiceChannelStore {
 
             maintainParentLinks(channel, existing.requireValue());
         }
+
+        setLastUpdated(channel, existing.valueOrNull(), DateTime.now(DateTimeZone.UTC));
 
         ensureParentReference(channel);
 
@@ -235,6 +259,12 @@ public class MongoChannelStore implements ServiceChannelStore {
     @Override
     public void shutdown() {
         /* no-op */
+    }
+
+    private void setLastUpdated(Channel current, @Nullable Channel previous, DateTime now) {
+        if (previous == null || !channelEquivalence.equivalent(current, previous)) {
+            current.setLastUpdated(now);
+        }
     }
 
     private void updateNumberingsOnChannelGroups(Channel channel, Maybe<Channel> existingRecord) {
@@ -387,6 +417,54 @@ public class MongoChannelStore implements ServiceChannelStore {
 
                 channelGroupWriter.createOrUpdate(group);
             }
+        }
+    }
+
+    private static class DefaultEquivalence extends Equivalence<Channel> {
+
+        @Override
+        protected boolean doEquivalent(@Nullable Channel a, @Nullable Channel b) {
+            return a == b
+                    || a != null
+                    && b != null
+                    // Identified
+                    && Objects.equals(a.getId(), b.getId())
+                    && Objects.equals(a.getCanonicalUri(), b.getCanonicalUri())
+                    && Objects.equals(a.getCurie(), b.getCurie())
+                    && Objects.equals(a.getAliasUrls(), b.getAliasUrls())
+                    && Objects.equals(a.getAliases(), b.getAliases())
+                    && Objects.equals(a.getEquivalentTo(), b.getEquivalentTo())
+                    // Channel
+                    && a.getSource() == b.getSource() && Objects.equals(a.getTitle(), b.getTitle())
+                    && Objects.equals(a.getImages(), b.getImages())
+                    && Objects.equals(a.getRelatedLinks(), b.getRelatedLinks())
+                    && a.getMediaType() == b.getMediaType()
+                    && Objects.equals(a.getKey(), b.getKey())
+                    && Objects.equals(a.getHighDefinition(), b.getHighDefinition())
+                    && Objects.equals(a.getRegional(), b.getRegional())
+                    && Objects.equals(a.getAdult(), b.getAdult())
+                    && Objects.equals(a.getTimeshift(), b.getTimeshift())
+                    && a.getBroadcaster() == b.getBroadcaster()
+                    && Objects.equals(a.getAdvertiseFrom(), b.getAdvertiseFrom())
+                    && Objects.equals(a.getAvailableFrom(), b.getAvailableFrom())
+                    && Objects.equals(a.getVariations(), b.getVariations())
+                    && Objects.equals(a.getParent(), b.getParent())
+                    && Objects.equals(a.getChannelNumbers(), b.getChannelNumbers())
+                    && Objects.equals(a.getStartDate(), b.getStartDate())
+                    && Objects.equals(a.getEndDate(), b.getEndDate())
+                    && Objects.equals(a.getGenres(), b.getGenres())
+                    && Objects.equals(a.getShortDescription(), b.getShortDescription())
+                    && Objects.equals(a.getMediumDescription(), b.getMediumDescription())
+                    && Objects.equals(a.getLongDescription(), b.getLongDescription())
+                    && Objects.equals(a.getRegion(), b.getRegion())
+                    && a.getChannelType() == b.getChannelType()
+                    && Objects.equals(a.getTargetRegions(), b.getTargetRegions())
+                    && Objects.equals(a.getInteractive(), b.getInteractive());
+        }
+
+        @Override
+        protected int doHash(Channel channel) {
+            return channel.hashCode();
         }
     }
 }
