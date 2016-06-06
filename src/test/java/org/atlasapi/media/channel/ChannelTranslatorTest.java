@@ -111,4 +111,5 @@ public class ChannelTranslatorTest {
 
         assertFalse(decoded.getInteractive());
     }
+
 }

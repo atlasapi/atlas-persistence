@@ -168,7 +168,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
             model.setChannelType(ChannelType.valueOf(channelType));
         }
 	    model.setInteractive(TranslatorUtils.toBoolean(dbObject, INTERACTIVE));
-
+		
 		return (Channel) identifiedTranslator.fromDBObject(dbObject, model);
 	}
 
