@@ -1,16 +1,17 @@
 package org.atlasapi.persistence.logging;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import org.atlasapi.persistence.logging.AdapterLogEntry.Severity;
-import org.joda.time.DateTime;
-import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.time.DateTimeZones;
+
+import com.google.common.collect.ImmutableList;
+import org.joda.time.DateTime;
+import org.junit.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class MongoLoggingAdapterTest {
 	
@@ -32,19 +33,30 @@ public class MongoLoggingAdapterTest {
 
 		ImmutableList<AdapterLogEntry> found = ImmutableList.copyOf(logger.read());
 
-		AdapterLogEntry latest = found.get(0);
-		
-		assertThat(latest.id(), is("2"));
-		assertThat(latest.timestamp(), is(now));
-		assertThat(latest.description(), is("d2"));
-		assertThat(latest.classNameOfSource(), is("java.lang.String"));
-		assertThat(latest.uri(), is("uri1"));
+		boolean firstLogEntryFound = false;
+		boolean secondLogEntryFound = false;
 
-		AdapterLogEntry oldest = found.get(1);
-		assertThat(oldest.exceptionSummary().className(), is("java.lang.IllegalStateException"));
-		assertThat(oldest.exceptionSummary().message(), is("e1"));
-		assertThat(oldest.exceptionSummary().cause().message(), is("e2"));
-		assertThat(oldest.exceptionSummary().cause().cause().message(), is("e3"));
+		for (AdapterLogEntry entry : found) {
+			if (entry.id().equals("1")) {
+				assertThat(entry.exceptionSummary().className(),
+						is("java.lang.IllegalStateException"));
+				assertThat(entry.exceptionSummary().message(), is("e1"));
+				assertThat(entry.exceptionSummary().cause().message(), is("e2"));
+				assertThat(entry.exceptionSummary().cause().cause().message(), is("e3"));
+
+				firstLogEntryFound = true;
+			} else if (entry.id().equals("2")) {
+				assertThat(entry.timestamp(), is(now));
+				assertThat(entry.description(), is("d2"));
+				assertThat(entry.classNameOfSource(), is("java.lang.String"));
+				assertThat(entry.uri(), is("uri1"));
+
+				secondLogEntryFound = true;
+			}
+		}
+
+		assertThat(firstLogEntryFound, is(true));
+		assertThat(secondLogEntryFound, is(true));
 	}
 	
 	private static Exception nestedExceptionWithTrace(String message) {

@@ -1,5 +1,30 @@
 package org.atlasapi.media.channel;
 
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
+import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.MediaType;
+import org.atlasapi.media.entity.Publisher;
+
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+import org.joda.time.DateTime;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -8,37 +33,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import java.util.List;
-import java.util.Map;
-
-import com.google.common.base.Predicate;
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.MediaType;
-import org.atlasapi.media.entity.Publisher;
-import org.joda.time.DateTime;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-
-import javax.annotation.Nullable;
-
 public class MongoChannelStoreRetrievalTest {
 
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
-    
     private static final ChannelGroupStore channelGroupStore = new MongoChannelGroupStore(mongo);
-    
-    private static final MongoChannelStore store = new MongoChannelStore(mongo, channelGroupStore, channelGroupStore);
+    private static final MongoChannelStore store = new MongoChannelStore(
+            mongo, channelGroupStore, channelGroupStore
+    );
     
     private static Long channelId1;
     private static Long channelId2;
@@ -46,14 +47,25 @@ public class MongoChannelStoreRetrievalTest {
     private static Long channelId4;
     private static Long channelId5;
     private static DateTime dateTime;
+
     @BeforeClass
     public static void setUp() throws InterruptedException {
         dateTime = DateTime.now();
-        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "sport", dateTime, "test/1","test/2")).getId();
-        channelId2 = store.createOrUpdate(channel(2, "uri2", "key2", "not-sport", null, "asdf/1")).getId();
-        channelId3 = store.createOrUpdate(channel(3, "uri3", "key3", "flim", null, "test/3","asdf/2")).getId();
-        channelId4 = store.createOrUpdate(channel(4, "uri4", "key4", "old episode", dateTime.minusDays(1), "test")).getId();
-        channelId5 = store.createOrUpdate(channel(5, "uri5", "key5", "episode", dateTime.plusDays(1), "test")).getId();
+        channelId1 = store.createOrUpdate(
+                channel(1, "uri1", "key1", "sport", dateTime, "test/1","test/2")
+        ).getId();
+        channelId2 = store.createOrUpdate(
+                channel(2, "uri2", "key2", "not-sport", null, "asdf/1")
+        ).getId();
+        channelId3 = store.createOrUpdate(
+                channel(3, "uri3", "key3", "flim", null, "test/3","asdf/2")
+        ).getId();
+        channelId4 = store.createOrUpdate(
+                channel(4, "uri4", "key4", "old episode", dateTime.minusDays(1), "test")
+        ).getId();
+        channelId5 = store.createOrUpdate(
+                channel(5, "uri5", "key5", "episode", dateTime.plusDays(1), "test")
+        ).getId();
 
         Thread.sleep(2000);
     }
@@ -80,7 +92,8 @@ public class MongoChannelStoreRetrievalTest {
         assertTrue(channel.hasValue());
         assertThat(channel.requireValue().getCanonicalUri(), is(equalTo("uri1")));
 
-        assertThat(channel.requireValue().getAdvertiseFrom().getMillis(), is(equalTo(dateTime.getMillis())));
+        assertThat(channel.requireValue().getAdvertiseFrom().getMillis(),
+                is(equalTo(dateTime.getMillis())));
 
     }
 
@@ -124,7 +137,9 @@ public class MongoChannelStoreRetrievalTest {
             }
         }));
         
-        List<Long> expectedIds = Ordering.natural().immutableSortedCopy(Lists.newArrayList(channelId1, channelId2, channelId3, channelId4, channelId5));
+        List<Long> expectedIds = Ordering.natural().immutableSortedCopy(
+                Lists.newArrayList(channelId1, channelId2, channelId3, channelId4, channelId5)
+        );
         
         assertEquals(expectedIds, channelIds);
     }
@@ -167,9 +182,12 @@ public class MongoChannelStoreRetrievalTest {
 
     @Test
     public void testRetrievesOldEpisodes() {
-        ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime).build();
+        ChannelQuery query = ChannelQuery.builder()
+                .withAdvertisedOn(dateTime.minusHours(1))
+                .build();
+
         Iterable<Channel> channels = store.allChannels(query);
-        assertThat(Iterables.size(channels), is(2));
+        assertThat(Iterables.size(channels), is(1));
     }
 
     @Test
