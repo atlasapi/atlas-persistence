@@ -50,6 +50,8 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
     public static final String REGION = "region";
 	public static final String TARGET_REGIONS = "targetRegions";
     public static final String CHANNEL_TYPE = "channelType";
+	public static final String URI = "uri";
+	public static final String INTERACTIVE = "interactive";
 
     private ModelTranslator<Identified> identifiedTranslator;
 	private ChannelNumberingTranslator channelNumberingTranslator;
@@ -109,6 +111,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         if (channelType != null) {
             TranslatorUtils.from(dbObject, CHANNEL_TYPE, channelType.name());
         }
+		TranslatorUtils.from(dbObject, INTERACTIVE, model.getInteractive());
 		return dbObject;
 	}
 
@@ -164,6 +167,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         if (channelType != null) {
             model.setChannelType(ChannelType.valueOf(channelType));
         }
+	    model.setInteractive(TranslatorUtils.toBoolean(dbObject, INTERACTIVE));
 		
 		return (Channel) identifiedTranslator.fromDBObject(dbObject, model);
 	}

@@ -28,12 +28,10 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
         this.delegate = delegate;
         channels = new BackgroundComputingValue<List<Channel>>(Duration.standardMinutes(5), new ChannelsUpdater(delegate));
     }
-
     @Override
     public void start() {
         channels.start();
     }
-
 
     @Override
     public void shutdown() {

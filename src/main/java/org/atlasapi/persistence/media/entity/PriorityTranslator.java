@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.Priority;
 import org.atlasapi.media.entity.PriorityScoreReasons;
 
 import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PriorityTranslator {

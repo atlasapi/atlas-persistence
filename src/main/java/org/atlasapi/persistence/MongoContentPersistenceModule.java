@@ -106,6 +106,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         this.readPreference = readPreference;
     }
 
+
     /**
      * We need both this methods here to initialized the cachedValue of BackgroundComputingValue
      * that will be used by the CachingChannelStore.
@@ -169,6 +170,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public MessageSender<EntityUpdatedMessage> organizationChanges() {
         return persistenceModule().organizationChanges();
     }
+
 
     @Override
     @Bean

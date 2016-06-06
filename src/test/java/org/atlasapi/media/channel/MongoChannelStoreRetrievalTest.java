@@ -1,5 +1,6 @@
 package org.atlasapi.media.channel;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -10,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Predicate;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
@@ -28,6 +30,8 @@ import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
+import javax.annotation.Nullable;
+
 public class MongoChannelStoreRetrievalTest {
 
     private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
@@ -45,7 +49,7 @@ public class MongoChannelStoreRetrievalTest {
     @BeforeClass
     public static void setUp() throws InterruptedException {
         dateTime = DateTime.now();
-        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "sport", null, "test/1","test/2")).getId();
+        channelId1 = store.createOrUpdate(channel(1, "uri1", "key1", "sport", dateTime, "test/1","test/2")).getId();
         channelId2 = store.createOrUpdate(channel(2, "uri2", "key2", "not-sport", null, "asdf/1")).getId();
         channelId3 = store.createOrUpdate(channel(3, "uri3", "key3", "flim", null, "test/3","asdf/2")).getId();
         channelId4 = store.createOrUpdate(channel(4, "uri4", "key4", "old episode", dateTime.minusDays(1), "test")).getId();
@@ -76,10 +80,8 @@ public class MongoChannelStoreRetrievalTest {
         assertTrue(channel.hasValue());
         assertThat(channel.requireValue().getCanonicalUri(), is(equalTo("uri1")));
 
+        assertThat(channel.requireValue().getAdvertiseFrom().getMillis(), is(equalTo(dateTime.getMillis())));
 
-        Maybe<Channel> channel4 = store.fromId(channelId4);
-        assertThat(channel4.requireValue().getAdvertiseFrom().toString(),
-                            is(equalTo(dateTime.minusDays(1).toString())));
     }
 
     @Test
@@ -175,5 +177,27 @@ public class MongoChannelStoreRetrievalTest {
         ChannelQuery query = ChannelQuery.builder().withAdvertisedOn(dateTime.minusDays(2)).build();
         Iterable<Channel> retrieved = store.allChannels(query);
         assertTrue(Iterables.isEmpty(retrieved));
+    }
+
+    @Test
+    public void testRetrievesChannelByPublisher() {
+        ChannelQuery query = ChannelQuery.builder().withPublisher(Publisher.BBC).build();
+        Iterable<Channel> channels = store.allChannels(query);
+        assertFalse(Iterables.isEmpty(channels));
+        Iterable<Channel> filtered = Iterables.filter(channels, new Predicate<Channel>() {
+            @Override
+            public boolean apply(@Nullable Channel channel) {
+                return !channel.getSource().equals(Publisher.BBC);
+            }
+        });
+        assertTrue(Iterables.isEmpty(filtered));
+    }
+
+    @Test
+    public void testRetrievesChannelByUri() {
+        ChannelQuery query = ChannelQuery.builder().withUri("uri1").build();
+        Iterable<Channel> channels = store.allChannels(query);
+        assertFalse(Iterables.isEmpty(channels));
+        assertTrue(Iterables.getOnlyElement(channels).getUri().equals("uri1"));
     }
 }
