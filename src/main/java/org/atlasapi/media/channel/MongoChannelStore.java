@@ -262,7 +262,9 @@ public class MongoChannelStore implements ServiceChannelStore {
     }
 
     private void setLastUpdated(Channel current, @Nullable Channel previous, DateTime now) {
-        if (previous == null || !channelEquivalence.equivalent(current, previous)) {
+        if (previous == null
+                || current.getLastUpdated() == null
+                || !channelEquivalence.equivalent(current, previous)) {
             current.setLastUpdated(now);
         }
     }
