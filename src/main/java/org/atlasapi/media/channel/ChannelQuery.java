@@ -21,6 +21,7 @@ public class ChannelQuery {
     private final Optional<DateTime> advertisedOn;
     private final Optional<Publisher> publisher;
     private final Optional<String> uri;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -114,7 +115,6 @@ public class ChannelQuery {
                     && publisher.equals(other.publisher)
                     && uri.equals(other.uri);
         }
-
         return false;
     }
 
@@ -126,16 +126,17 @@ public class ChannelQuery {
         private Optional<Set<Long>> channelGroups = Optional.absent();
         private Optional<Set<String>> genres = Optional.absent();
         private Optional<DateTime> advertisedOn = Optional.absent();
+        private Optional<Publisher> source = Optional.absent();
         private Optional<Publisher> publisher = Optional.absent();
         private Optional<String> uri = Optional.absent();
 
-        private Builder() {
-        }
+        private Builder() {}
 
         public ChannelQuery build() {
             return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres,
                     advertisedOn, publisher, uri);
         }
+
 
         public Builder withBroadcaster(Publisher broadcaster) {
             this.broadcaster = Optional.fromNullable(broadcaster);
