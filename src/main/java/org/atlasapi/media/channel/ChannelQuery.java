@@ -1,12 +1,13 @@
 package org.atlasapi.media.channel;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Optional;
+import java.util.Set;
+
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
-import org.joda.time.DateTime;
 
-import java.util.Set;
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
+import org.joda.time.DateTime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -21,15 +22,23 @@ public class ChannelQuery {
     private final Optional<DateTime> advertisedOn;
     private final Optional<Publisher> publisher;
     private final Optional<String> uri;
+    private final Optional<ChannelType> channelType;
 
     public static Builder builder() {
         return new Builder();
     }
 
-    private ChannelQuery(Optional<Publisher> broadcaster, Optional<MediaType> mediaType,
-                         Optional<Publisher> availableFrom, Optional<Set<Long>> channelGroups,
-                         Optional<Set<String>> genres, Optional<DateTime> advertisedOn,
-                         Optional<Publisher> publisher, Optional<String> uri) {
+    private ChannelQuery(
+            Optional<Publisher> broadcaster,
+            Optional<MediaType> mediaType,
+            Optional<Publisher> availableFrom,
+            Optional<Set<Long>> channelGroups,
+            Optional<Set<String>> genres,
+            Optional<DateTime> advertisedOn,
+            Optional<Publisher> publisher,
+            Optional<String> uri,
+            Optional<ChannelType> channelType
+    ) {
         this.broadcaster = checkNotNull(broadcaster);
         this.mediaType = checkNotNull(mediaType);
         this.availableFrom = checkNotNull(availableFrom);
@@ -38,6 +47,7 @@ public class ChannelQuery {
         this.advertisedOn = checkNotNull(advertisedOn);
         this.publisher = checkNotNull(publisher);
         this.uri = checkNotNull(uri);
+        this.channelType = checkNotNull(channelType);
     }
 
     public Optional<Publisher> getBroadcaster() {
@@ -72,6 +82,10 @@ public class ChannelQuery {
         return uri;
     }
 
+    public Optional<ChannelType> getChannelType() {
+        return channelType;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(ChannelQuery.class)
@@ -83,6 +97,7 @@ public class ChannelQuery {
                 .add("advertiseOn", advertisedOn)
                 .add("publisher", publisher)
                 .add("uri", uri)
+                .add("channelType", channelType)
                 .toString();
     }
 
@@ -95,7 +110,8 @@ public class ChannelQuery {
                 channelGroups,
                 genres,
                 publisher,
-                uri
+                uri,
+                channelType
         );
     }
 
@@ -113,7 +129,8 @@ public class ChannelQuery {
                     && genres.equals(other.genres)
                     && advertisedOn.equals(other.advertisedOn)
                     && publisher.equals(other.publisher)
-                    && uri.equals(other.uri);
+                    && uri.equals(other.uri)
+                    && channelType.equals(other.channelType);
         }
         return false;
     }
@@ -129,14 +146,23 @@ public class ChannelQuery {
         private Optional<Publisher> source = Optional.absent();
         private Optional<Publisher> publisher = Optional.absent();
         private Optional<String> uri = Optional.absent();
+        private Optional<ChannelType> channelType = Optional.absent();
 
         private Builder() {}
 
         public ChannelQuery build() {
-            return new ChannelQuery(broadcaster, mediaType, availableFrom, channelGroups, genres,
-                    advertisedOn, publisher, uri);
+            return new ChannelQuery(
+                    broadcaster,
+                    mediaType,
+                    availableFrom,
+                    channelGroups,
+                    genres,
+                    advertisedOn,
+                    publisher,
+                    uri,
+                    channelType
+            );
         }
-
 
         public Builder withBroadcaster(Publisher broadcaster) {
             this.broadcaster = Optional.fromNullable(broadcaster);
@@ -175,6 +201,11 @@ public class ChannelQuery {
 
         public Builder withUri(String uri) {
             this.uri = Optional.fromNullable(uri);
+            return this;
+        }
+
+        public Builder withChannelType(ChannelType channelType) {
+            this.channelType = Optional.fromNullable(channelType);
             return this;
         }
     }
