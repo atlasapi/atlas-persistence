@@ -140,9 +140,15 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
             model = Channel.builder().build();
         }
 
-        model.setSource(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER))
-                .requireValue());
-        model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
+        model.setSource(Publisher.fromKey(
+                TranslatorUtils.toString(dbObject, PUBLISHER)
+        ).requireValue());
+
+        String name = TranslatorUtils.toString(dbObject, MEDIA_TYPE);
+        if (name != null) {
+            model.setMediaType(MediaType.valueOf(name));
+        }
+
         if (dbObject.containsField(TITLES)) {
             model.setTitles(temporalTitleTranslator.toTemporalTitleSet(dbObject, TITLES));
         }
