@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class TimestampConfiguration {
 
     @JsonCreator
-    public TimestampConfiguration(@JsonProperty("millis") Long millis) {
+    public TimestampConfiguration(@JsonProperty("millis") long millis) {
     }
     
 }
