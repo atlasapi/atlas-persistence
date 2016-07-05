@@ -8,5 +8,4 @@ public class TimestampConfiguration {
     @JsonCreator
     public TimestampConfiguration(@JsonProperty("millis") Long millis) {
     }
-    
 }
