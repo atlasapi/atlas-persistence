@@ -255,8 +255,10 @@ public class TransitiveLookupWriter implements LookupWriter {
                 LookupRef current = direct.poll();
                 if (!seen.contains(current)) {
                     transitiveSet.add(current);
-                    LookupEntry currentEntry = checkNotNull(entries.get(current.uri()), "No lookup entry for %s", current);
-                    Iterables.addAll(direct, Iterables.filter(neighbours(currentEntry), not(in(transitiveSet))));
+                    if (entries.get(current.uri())!= null) {
+                        LookupEntry currentEntry = entries.get(current.uri());
+                        Iterables.addAll(direct, Iterables.filter(neighbours(currentEntry), not(in(transitiveSet))));
+                    }
                     seen.add(current);
                 }
             }
