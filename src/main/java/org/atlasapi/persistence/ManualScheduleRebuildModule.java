@@ -36,7 +36,6 @@ public class ManualScheduleRebuildModule {
 	
 	private @Value("${schedule.repopulator.full.scheduled}") boolean fullScheduleRepopulatorScheduled;
 	private @Value("${schedule.repopulator.bbc.scheduled}") boolean bbcScheduleRepopulatorScheduled;
-	private @Value("${schedule.repopulator.c4.scheduled}") boolean c4ScheduleRepopulatorScheduled;
 	private @Value("${schedule.repopulator.redux.scheduled}") boolean reduxScheduleRepopulatorScheduled;
 	
 	@PostConstruct
@@ -47,19 +46,6 @@ public class ManualScheduleRebuildModule {
 	    
 	    scheduler.schedule(everythingRepopulator, fullScheduleRepopulatorScheduled ? RepetitionRules.daily(new LocalTime(3, 15, 0)) : RepetitionRules.NEVER);
 
-        ScheduledTask c4Repopulator =
-        	new FullMongoScheduleRepopulator(
-			        lister,
-			        channelResolver,
-			        scheduleStore,
-			        ImmutableList.<Publisher>of(Publisher.C4)
-	        )
-        	.withName("C4 Mongo Schedule repopulator");
-        
-        scheduler.schedule(
-		        c4Repopulator,
-		        c4ScheduleRepopulatorScheduled ? RepetitionRules.every(Duration.standardHours(1)).withOffset(Duration.standardMinutes(30)) : RepetitionRules.NEVER);
-        
         ScheduledTask c4PmlsdRepopulator = 
                 new FullMongoScheduleRepopulator(lister, channelResolver, scheduleStore, ImmutableList.<Publisher>of(Publisher.C4_PMLSD, Publisher.C4_PMLSD_P06))
                 .withName("C4 PMLSD Mongo Schedule repopulator");
