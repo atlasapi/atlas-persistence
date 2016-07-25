@@ -267,7 +267,10 @@ public class TransitiveLookupWriter implements LookupWriter {
             // the same equivalents their entries can be updated here,
             // short-circuiting the top-level loop.
             for (LookupRef lookupRef : transitiveSet) {
-                updatedEntries.add(entries.get(lookupRef.uri()).copyWithEquivalents(transitiveSet));
+                LookupEntry lookupEntry = entries.get(lookupRef.uri());
+                if(lookupEntry != null ) {
+                    updatedEntries.add(lookupEntry.copyWithEquivalents(transitiveSet));
+                }
             }
         }
         return updatedEntries;
