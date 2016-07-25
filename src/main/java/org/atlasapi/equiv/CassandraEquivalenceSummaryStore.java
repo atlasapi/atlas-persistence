@@ -163,12 +163,14 @@ public class CassandraEquivalenceSummaryStore implements EquivalenceSummaryStore
 
     private byte[] serialize(EquivalenceSummary summary) throws Exception {
         ImmutableMultimap<Publisher, ContentRef> equivalents = summary.getEquivalents();
-        ContentRef firstContentRef = equivalents.values().stream().findFirst().get();
         ImmutableMap.Builder<Publisher, PersistentEquivalencesContentRefs> builder = ImmutableMap.builder();
-        for (Map.Entry<Publisher, Collection<ContentRef>> entry : equivalents.asMap()
-                .entrySet()) {
-            PersistentEquivalencesContentRefs contentRefs = getEquivalentContentRefs(firstContentRef, entry);
-            builder.put(entry.getKey(), contentRefs);
+        java.util.Optional<ContentRef> firstContentRef = equivalents.values().stream().findFirst();
+        if (firstContentRef.isPresent()) {
+            for (Map.Entry<Publisher, Collection<ContentRef>> entry : equivalents.asMap()
+                    .entrySet()) {
+                PersistentEquivalencesContentRefs contentRefs = getEquivalentContentRefs(firstContentRef.get(), entry);
+                builder.put(entry.getKey(), contentRefs);
+            }
         }
         PersistenceEquivalenceSummary summaryWithMultimap =
                 new PersistenceEquivalenceSummary.Builder()
