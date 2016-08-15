@@ -155,25 +155,21 @@ public class MongoChannelStore implements ServiceChannelStore {
     @Override
     public Channel createOrUpdate(Channel channel) {
         checkNotNull(channel);
-        Maybe<Channel> existing = Maybe.nothing();
+        checkNotNull(channel.getUri());
+        Maybe<Channel> existing = fromUri(channel.getUri());
 
-        if (channel.getId() == null) {
-            channel.setId(codec.decode(idGenerator.generate()).longValue());
-        } else {
-            existing = fromId(channel.getId());
-            Preconditions.checkState(existing.hasValue(), "Channel not found to update");
-
+        if (existing.hasValue()) {
             maintainParentLinks(channel, existing.requireValue());
+        } else {
+            channel.setId(codec.decode(idGenerator.generate()).longValue());
         }
 
+        updateNumberingsOnChannelGroups(channel, existing);
+        ensureParentReference(channel);
         setLastUpdated(channel, existing.valueOrNull(), DateTime.now(DateTimeZone.UTC));
 
-        ensureParentReference(channel);
-
-        updateNumberingsOnChannelGroups(channel, existing);
-
         collection.update(
-                new BasicDBObject(MongoConstants.ID, channel.getId()),
+                new BasicDBObject(URI, channel.getUri()),
                 translator.toDBObject(null, channel),
                 UPSERT,
                 SINGLE
