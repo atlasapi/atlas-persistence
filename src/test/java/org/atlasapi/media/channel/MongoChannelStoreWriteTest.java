@@ -2,24 +2,35 @@ package org.atlasapi.media.channel;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import junit.framework.TestCase;
 
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.joda.time.DateTime;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
+
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
+@RunWith(MockitoJUnitRunner.class)
 public class MongoChannelStoreWriteTest extends TestCase {
     
     private ChannelGroupStore channelGroupStore;
     private MongoChannelStore channelStore;
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
     
     @Before
     public void setUp() throws InterruptedException {
@@ -183,6 +194,25 @@ public class MongoChannelStoreWriteTest extends TestCase {
         
         assertTrue(group1.getChannelNumberings().isEmpty());
         assertEquals(ImmutableSet.of(currentNumbering), ImmutableSet.copyOf(group2.getChannelNumberings()));
+    }
+
+    @Test
+    public void testWritesWithNoIdThrowsException() {
+        exception.expect(NullPointerException.class);
+        channelStore.createOrUpdate(channel(null, "key1", MediaType.VIDEO, 1l, "test/1"));
+    }
+
+    @Test
+    public void testWritesUpdatesLastUpdated() {
+        Channel channel = channelStore.createOrUpdate(channel(
+                "uri",
+                "key1",
+                MediaType.VIDEO,
+                null,
+                "test/1"
+        ));
+
+        assertNotNull(channel.getLastUpdated());
     }
 
     private Channel channel(String uri, String key, MediaType mediaType, Long parent, String... alias) {
