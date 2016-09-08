@@ -281,14 +281,26 @@ public class MongoScheduleStoreTest {
         ItemRefAndBroadcast itemRefAndBroadcast2 = new ItemRefAndBroadcast(item2, b2);
 
         store.replaceScheduleBlock(Publisher.BBC, BBC_ONE, Arrays.asList(itemRefAndBroadcast1));
-        Schedule schedule1 = store.schedule(broadcast1Start, broadcast2End.plusMinutes(10), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+        Schedule schedule1 = store.schedule(
+                broadcast1Start,
+                broadcast2End.plusMinutes(10),
+                ImmutableSet.of(BBC_ONE),
+                ImmutableSet.of(Publisher.BBC),
+                Optional.<ApplicationConfiguration>absent()
+        );
 
         assertEquals(1, schedule1.scheduleChannels().size());
         ScheduleChannel channel1 = Iterables.getOnlyElement(schedule1.scheduleChannels());
         assertEquals(1, channel1.items().size());
 
         store.replaceScheduleBlock(Publisher.BBC, BBC_ONE, Arrays.asList(itemRefAndBroadcast2));
-        Schedule schedule2 = store.schedule(broadcast1Start, broadcast2End.plusMinutes(10), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+        Schedule schedule2 = store.schedule(
+                broadcast1Start,
+                broadcast2End.plusMinutes(10),
+                ImmutableSet.of(BBC_ONE),
+                ImmutableSet.of(Publisher.BBC),
+                Optional.<ApplicationConfiguration>absent()
+        );
 
         assertEquals(1, schedule2.scheduleChannels().size());
         ScheduleChannel channel2 = Iterables.getOnlyElement(schedule2.scheduleChannels());
