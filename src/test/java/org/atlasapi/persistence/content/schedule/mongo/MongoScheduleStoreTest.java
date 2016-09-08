@@ -218,7 +218,6 @@ public class MongoScheduleStoreTest {
         System.out.println("Completed in "+(System.currentTimeMillis()-when)+" millis");
     }
 
-
     @Test
     public void shouldSaveItemsAndRetrieveSchedule() throws Exception {
         store.writeScheduleFrom(item1);
