@@ -1,22 +1,6 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -46,12 +30,12 @@ import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.testing.StubContentResolver;
-import org.joda.time.DateTime;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.queue.MessagingException;
+import com.metabroadcast.common.time.DateTimeZones;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -62,11 +46,29 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.queue.MessagingException;
-import com.metabroadcast.common.time.DateTimeZones;
+import org.joda.time.DateTime;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isIn;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MongoScheduleStoreTest {
@@ -215,7 +217,8 @@ public class MongoScheduleStoreTest {
     public void tearDown() {
         System.out.println("Completed in "+(System.currentTimeMillis()-when)+" millis");
     }
-    
+
+
     @Test
     public void shouldSaveItemsAndRetrieveSchedule() throws Exception {
         store.writeScheduleFrom(item1);
@@ -249,11 +252,49 @@ public class MongoScheduleStoreTest {
     public void shouldSaveItemsAndRetrieveScheduleWithLoadsOfPublishers() throws Exception {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
-        
+
         Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV), Optional.<ApplicationConfiguration>absent());
         assertSchedule(schedule);
     }
-    
+
+    @Test
+    public void bothItemsShouldExistInTheSameScheduleBucket(){
+        BBC_ONE.setId(1234L);
+
+        DateTime broadcast1Start = now.withMinuteOfHour(5);
+        DateTime broadcast1End = broadcast1Start.plusMinutes(25);
+        Broadcast b1 = new Broadcast(BBC_ONE.getUri(), broadcast1Start, broadcast1End);
+
+        DateTime broadcast2End = broadcast1End.plusMinutes(25);
+        Broadcast b2 = new Broadcast(BBC_ONE.getUri(), broadcast1End, broadcast2End);
+
+        Version v1 = new Version();
+        Version v2 = new Version();
+
+        v1.addBroadcast(b1);
+        v2.addBroadcast(b2);
+
+        item1.addVersion(v1);
+        item2.addVersion(v2);
+
+        ItemRefAndBroadcast itemRefAndBroadcast1 = new ItemRefAndBroadcast(item1, b1);
+        ItemRefAndBroadcast itemRefAndBroadcast2 = new ItemRefAndBroadcast(item2, b2);
+
+        store.replaceScheduleBlock(Publisher.BBC, BBC_ONE, Arrays.asList(itemRefAndBroadcast1));
+        Schedule schedule1 = store.schedule(broadcast1Start, broadcast2End.plusMinutes(10), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+
+        assertEquals(1, schedule1.scheduleChannels().size());
+        ScheduleChannel channel1 = Iterables.getOnlyElement(schedule1.scheduleChannels());
+        assertEquals(1, channel1.items().size());
+
+        store.replaceScheduleBlock(Publisher.BBC, BBC_ONE, Arrays.asList(itemRefAndBroadcast2));
+        Schedule schedule2 = store.schedule(broadcast1Start, broadcast2End.plusMinutes(10), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+
+        assertEquals(1, schedule2.scheduleChannels().size());
+        ScheduleChannel channel2 = Iterables.getOnlyElement(schedule2.scheduleChannels());
+        assertEquals(2, channel2.items().size());
+    }
+
     @Test
     public void shouldReplaceScheduleBlock() throws Exception {
         Channel_4_HD.setId(1234L);

@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
-
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,11 +36,17 @@ import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.ScheduleResolver;
 import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
-import org.joda.time.Interval;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.queue.MessagingException;
+import com.metabroadcast.common.time.SystemClock;
+import com.metabroadcast.common.time.Timestamp;
+import com.metabroadcast.common.time.Timestamper;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -50,6 +54,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -62,17 +67,14 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.base.MorePredicates;
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.queue.MessagingException;
-import com.metabroadcast.common.time.SystemClock;
-import com.metabroadcast.common.time.Timestamp;
-import com.metabroadcast.common.time.Timestamper;
 import com.mongodb.DBCollection;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.joda.time.Interval;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
@@ -227,26 +229,43 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    requiredScheduleEntries.add(firstScheduleEntryKey);
 	    requiredScheduleEntries.add(lastScheduleEntryKey);
 	    Map<String, ScheduleEntry> scheduleEntries = Maps.newHashMap(Maps.uniqueIndex(translator.fromDbObjects(where().idIn(requiredScheduleEntries).find(collection)), ScheduleEntry.KEY));
-	    
+
+
+        Predicate<ItemRefAndBroadcast> predicate = i -> i.getBroadcast()
+                .getTransmissionTime()
+                .isBefore(interval.getStart());
+
+        Predicate<ItemRefAndBroadcast> itemRefAndBroadcastPredicate = i -> !i.getBroadcast()
+                .getTransmissionTime()
+                .isBefore(interval.getEnd());
+
+        // If the first and last period are identical,
+        // retain items that start before the interval or start after the end of the interval
+        if(firstScheduleEntryKey.equals(lastScheduleEntryKey) && scheduleEntries.containsKey(firstScheduleEntryKey)){
+            ScheduleEntry firstEntry = filteredScheduleEntry(
+                    scheduleEntries.get(firstScheduleEntryKey),
+                    Predicates.or(predicate, itemRefAndBroadcastPredicate)
+            );
+            scheduleEntries.put(firstScheduleEntryKey, firstEntry);
+            return scheduleEntries;
+        }
+
 	    // For the first period, retain items that start before the interval 
 	    if(scheduleEntries.containsKey(firstScheduleEntryKey)) {
-		    ScheduleEntry firstEntry = filteredScheduleEntry(scheduleEntries.get(firstScheduleEntryKey), new Predicate<ItemRefAndBroadcast>() {
-				@Override
-				public boolean apply(ItemRefAndBroadcast i) {	
-					return (i.getBroadcast().getTransmissionTime().isBefore(interval.getStart()));
-				}
-			});
+            ScheduleEntry firstEntry = filteredScheduleEntry(
+		            scheduleEntries.get(firstScheduleEntryKey),
+                    predicate
+            );
 		    scheduleEntries.put(firstScheduleEntryKey, firstEntry);
 	    }
 	  
 	    // For the last period, retain items that start on or after the end of the interval
 	    if(scheduleEntries.containsKey(lastScheduleEntryKey)) {
-		    ScheduleEntry lastEntry = filteredScheduleEntry(scheduleEntries.get(lastScheduleEntryKey), new Predicate<ItemRefAndBroadcast>() {
-				@Override
-				public boolean apply(ItemRefAndBroadcast i) {			
-					return ! i.getBroadcast().getTransmissionTime().isBefore(interval.getEnd());
-				}
-			});
+
+            ScheduleEntry lastEntry = filteredScheduleEntry(
+		            scheduleEntries.get(lastScheduleEntryKey),
+                    itemRefAndBroadcastPredicate
+            );
 		    scheduleEntries.put(lastScheduleEntryKey, lastEntry);
 	    }
 	    return scheduleEntries;
