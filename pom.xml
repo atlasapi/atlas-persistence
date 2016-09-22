@@ -151,7 +151,7 @@
         <dependency>
             <groupId>com.metabroadcast.common.queue</groupId>
             <artifactId>common-queue</artifactId>
-            <version>${common.version}</version>
+            <version>${common-queue.version}</version>
         </dependency>
     </dependencies>
 
@@ -186,6 +186,7 @@
     <properties>
         <atlas.version>${project.version}</atlas.version>
         <common.version>1.0-SNAPSHOT</common.version>
+        <common-queue.version>2.0-SNAPSHOT</common-queue.version>
         <spring.version>4.0.9.RELEASE</spring.version>
         <amq.version>5.9.0</amq.version>
         <jacoco.version>0.7.5.201505241946</jacoco.version>
