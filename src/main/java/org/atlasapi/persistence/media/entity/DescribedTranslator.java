@@ -3,8 +3,10 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Distribution;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
@@ -20,6 +22,7 @@ import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
@@ -57,6 +60,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String RATINGS_KEY = "ratings";
     protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     protected static final String ITEM_PRIORITY_KEY = "priority";
+    protected static final String DISTRIBUTION_KEY = "distribution";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
@@ -126,6 +130,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     private final AudienceStatisticsTranslator audienceStatisticsTranslator;
     private final RatingsTranslator ratingsTranslator;
     private final PriorityTranslator priorityTranslator;
+    private final DistributionTranslator distributionTranslator;
 
 	public DescribedTranslator(IdentifiedTranslator identifiedTranslator, ImageTranslator imageTranslator) {
 		this.identifiedTranslator = identifiedTranslator;
@@ -137,6 +142,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         this.ratingsTranslator = new RatingsTranslator();
         this.audienceStatisticsTranslator = new AudienceStatisticsTranslator();
         this.priorityTranslator = new PriorityTranslator();
+        this.distributionTranslator = new DistributionTranslator();
 	}
 	
 	@Override
@@ -230,6 +236,17 @@ public class DescribedTranslator implements ModelTranslator<Described> {
                 }));
     }
 
+    private void decodeDistribution(DBObject dbObject, Described entity) {
+        entity.setDistributions(TranslatorUtils.toIterable(dbObject,
+                DISTRIBUTION_KEY, new Function<DBObject, Distribution>() {
+
+                    @Override
+                    public Distribution apply(DBObject input) {
+                        return distributionTranslator.fromDBObject(input, new Distribution());
+                    }
+                }).or(ImmutableSet.<Distribution>of()));
+    }
+
     private void decodeLocalizedDescriptions(DBObject dbObject, Described entity) {
         List<DBObject> localisedDescriptionsDBO = TranslatorUtils.toDBObjectList(dbObject,
                 LOCALIZED_DESCRIPTIONS_KEY);
@@ -265,7 +282,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
             public Review apply(DBObject dbo) {
                 return reviewTranslator.fromDBObject(dbo);
             }
-            
+
         }).or(ImmutableSet.<Review>of()));
     }
     
@@ -341,6 +358,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         encodeLocalizedTitles(entity, dbObject);
         encodeReviews(dbObject, entity);
         encodeRatings(dbObject, entity);
+        encodeDistribution(dbObject, entity);
         
         return dbObject;
 	}
@@ -400,6 +418,18 @@ public class DescribedTranslator implements ModelTranslator<Described> {
                             return reviewTranslator.toDBObject(new BasicDBObject(), review);
                         }
             
+                });
+    }
+
+    private void encodeDistribution(DBObject dbObject, Described entity) {
+        TranslatorUtils.fromIterable(dbObject, DISTRIBUTION_KEY, entity.getDistributions(),
+                new Function<Distribution, DBObject>() {
+
+                    @Override
+                    public DBObject apply(Distribution distribution) {
+                        return distributionTranslator.toDBObject(new BasicDBObject(), distribution);
+                    }
+
                 });
     }
     
