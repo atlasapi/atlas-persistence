@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.Distribution;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
+import org.atlasapi.media.entity.Language;
 import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.MediaType;
@@ -61,6 +62,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     protected static final String ITEM_PRIORITY_KEY = "priority";
     protected static final String DISTRIBUTION_KEY = "distribution";
+    protected static final String LANGUAGE_KEY = "language";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
@@ -131,6 +133,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     private final RatingsTranslator ratingsTranslator;
     private final PriorityTranslator priorityTranslator;
     private final DistributionTranslator distributionTranslator;
+    private final LanguageTranslator languageTranslator;
 
 	public DescribedTranslator(IdentifiedTranslator identifiedTranslator, ImageTranslator imageTranslator) {
 		this.identifiedTranslator = identifiedTranslator;
@@ -143,6 +146,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         this.audienceStatisticsTranslator = new AudienceStatisticsTranslator();
         this.priorityTranslator = new PriorityTranslator();
         this.distributionTranslator = new DistributionTranslator();
+        this.languageTranslator = new LanguageTranslator();
 	}
 	
 	@Override
@@ -218,6 +222,12 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         decodeLocalizedTitles(dbObject, entity);
         decodeReviews(dbObject, entity);
         decodeRatings(dbObject, entity, entity.getPublisher());
+        decodeDistribution(dbObject, entity);
+
+        if (dbObject.containsField(LANGUAGE_KEY)) {
+            entity.setLanguage(languageTranslator.fromDBObject((DBObject) dbObject.get(LANGUAGE_KEY), new Language()));
+        }
+
 
 		return entity;
 	}
@@ -359,6 +369,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         encodeReviews(dbObject, entity);
         encodeRatings(dbObject, entity);
         encodeDistribution(dbObject, entity);
+
+        if (entity.getLanguage() != null) {
+            languageTranslator.toDBObject(dbObject, entity.getLanguage());
+        }
         
         return dbObject;
 	}
