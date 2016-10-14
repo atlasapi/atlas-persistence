@@ -1,14 +1,20 @@
 package org.atlasapi.persistence.media.entity;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.atlasapi.media.entity.CrewMember;
+import org.atlasapi.media.entity.Distribution;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.Review;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 
 
@@ -18,12 +24,23 @@ public class ReviewTranslator {
     private static final String REVIEW_KEY = "review";
     private static final String TYPE_KEY = "type";
     private static final String PEOPLE_KEY = "people";
+    private CrewMemberTranslator crewMemberTranslator;
+
+    public ReviewTranslator() {
+        crewMemberTranslator = new CrewMemberTranslator();
+    }
     
     public DBObject toDBObject(DBObject dbObject, Review model) {
         TranslatorUtils.fromLocaleToLanguageTag(dbObject, LOCALE_KEY, model.getLocale());
         TranslatorUtils.from(dbObject, REVIEW_KEY, model.getReview());
         TranslatorUtils.from(dbObject, TYPE_KEY, model.getType());
         TranslatorUtils.from(dbObject, PEOPLE_KEY, model.getPeople());
+
+        BasicDBList dbPeople = new BasicDBList();
+        for (CrewMember crewMember : model.getPeople()) {
+            dbPeople.add(crewMemberTranslator.toDBObject(dbObject, crewMember));
+        }
+        dbObject.put(PEOPLE_KEY, dbPeople);
         return dbObject;
     }
 
@@ -31,7 +48,15 @@ public class ReviewTranslator {
         Review review = new Review(TranslatorUtils.toLocaleFromLanguageTag(dbObject, LOCALE_KEY),
                 TranslatorUtils.toString(dbObject, REVIEW_KEY));
         review.setType(TranslatorUtils.toString(dbObject, TYPE_KEY));
-        // TODO: List<CrewMember> needs to be set here
+
+        List<DBObject> crewMembers = TranslatorUtils.toDBObjectList(dbObject, PEOPLE_KEY);
+        List<CrewMember> crewMemberList = new ArrayList<CrewMember>();
+
+        for (DBObject crewMember : crewMembers) {
+            crewMemberList.add(crewMemberTranslator.fromDBObject(crewMember, new CrewMember()));
+        }
+        review.setPeople(crewMemberList);
+
         return review;
     }
 
