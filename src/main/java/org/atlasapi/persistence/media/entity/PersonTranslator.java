@@ -14,6 +14,7 @@ import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.sun.java.accessibility.util.Translator;
 
 public class PersonTranslator implements ModelTranslator<Person> {
     private static final String GIVEN_NAME_KEY = "givenName";
@@ -23,6 +24,13 @@ public class PersonTranslator implements ModelTranslator<Person> {
     private static final String BIRTH_PLACE_KEY = "birthPlace";
     private static final String QUOTES_KEY = "quotes";
     private static final String AWARDS = "awards";
+
+    private static final String PSEUDO_FORENAME = "pseudoForname";
+    private static final String PSEUDO_SURNAME = "pseudoSurname";
+    private static final String ADDITIONAL_INFORMATION = "additionalInformation";
+    private static final String BILLING = "billing";
+    private static final String SOURCE = "source";
+    private static final String SOURCE_TITLE = "sourceTitle";
     
     private ContentGroupTranslator contentGroupTranslator = new ContentGroupTranslator(false);
     private ChildRefTranslator childRefTranslator = new ChildRefTranslator();
@@ -40,6 +48,12 @@ public class PersonTranslator implements ModelTranslator<Person> {
         entity.setBirthDate(TranslatorUtils.toDateTime(dbObject, BIRTH_DATE_KEY));
         entity.setBirthPlace(TranslatorUtils.toString(dbObject, BIRTH_PLACE_KEY));
         entity.setQuotes(TranslatorUtils.toSet(dbObject, QUOTES_KEY));
+        entity.setPseudoForename(TranslatorUtils.toString(dbObject, PSEUDO_FORENAME));
+        entity.setPseudoSurname(TranslatorUtils.toString(dbObject, PSEUDO_SURNAME));
+        entity.setAdditionalInfo(TranslatorUtils.toString(dbObject, ADDITIONAL_INFORMATION));
+        entity.setBilling(TranslatorUtils.toString(dbObject, BILLING));
+        entity.setSource(TranslatorUtils.toString(dbObject, SOURCE));
+        entity.setSourceTitle(TranslatorUtils.toString(dbObject, SOURCE_TITLE));
         if(dbObject.containsField(AWARDS)) {
             entity.setAwards(awardTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, AWARDS)));
         }
@@ -58,6 +72,13 @@ public class PersonTranslator implements ModelTranslator<Person> {
         TranslatorUtils.fromDateTime(dbObject, BIRTH_DATE_KEY, entity.getBirthDate());
         TranslatorUtils.from(dbObject, BIRTH_PLACE_KEY, entity.getBirthPlace());
         TranslatorUtils.fromSet(dbObject, entity.getQuotes(), QUOTES_KEY);
+
+        TranslatorUtils.from(dbObject, PSEUDO_FORENAME, entity.getPseudoForename());
+        TranslatorUtils.from(dbObject, PSEUDO_SURNAME, entity.getPseudoSurname());
+        TranslatorUtils.from(dbObject, ADDITIONAL_INFORMATION, entity.getAdditionalInfo());
+        TranslatorUtils.from(dbObject, BILLING, entity.getBilling());
+        TranslatorUtils.from(dbObject, SOURCE, entity.getSource());
+        TranslatorUtils.from(dbObject, SOURCE_TITLE, entity.getSourceTitle());
         
         dbObject.put("type", Person.class.getSimpleName());
         dbObject.removeField(ContentGroupTranslator.CONTENT_URIS_KEY);
