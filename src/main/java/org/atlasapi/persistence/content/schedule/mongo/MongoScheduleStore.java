@@ -97,7 +97,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         this.contentResolver = contentResolver;
         this.equivalentContentResolver = equivalentContentResolver;
         collection = db.collection("schedule");
-        this.scheduleEntryBuilder = new ScheduleEntryBuilder(channelResolver, Duration.standardDays(28));
+        this.scheduleEntryBuilder = new ScheduleEntryBuilder(channelResolver);
         translator = new ScheduleEntryTranslator(channelResolver);
         this.messageSender = messageSender;
     }
