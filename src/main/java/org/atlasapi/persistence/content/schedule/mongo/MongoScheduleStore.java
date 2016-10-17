@@ -231,7 +231,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    Map<String, ScheduleEntry> scheduleEntries = Maps.newHashMap(Maps.uniqueIndex(translator.fromDbObjects(where().idIn(requiredScheduleEntries).find(collection)), ScheduleEntry.KEY));
 
 
-        Predicate<ItemRefAndBroadcast> beforePredicate = i -> !i.getBroadcast()
+        Predicate<ItemRefAndBroadcast> beforePredicate = i -> i.getBroadcast()
                 .getTransmissionEndTime()
                 .isBefore(interval.getStart());
 
