@@ -232,7 +232,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
 
         Predicate<ItemRefAndBroadcast> beforePredicate = i -> i.getBroadcast()
-                .getTransmissionTime()
+                .getTransmissionEndTime()
                 .isBefore(interval.getStart());
 
         Predicate<ItemRefAndBroadcast> afterPredicate = i -> !i.getBroadcast()
