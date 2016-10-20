@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -15,13 +13,16 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleEntryBuilder;
 import org.atlasapi.persistence.content.schedule.mongo.ScheduleWriter;
-import org.joda.time.Duration;
+
+import com.metabroadcast.common.scheduling.ScheduledTask;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
-import com.metabroadcast.common.scheduling.ScheduledTask;
+import org.joda.time.Duration;
+
+import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
 
 public class FullMongoScheduleRepopulator extends ScheduledTask {
     
@@ -35,7 +36,7 @@ public class FullMongoScheduleRepopulator extends ScheduledTask {
         this.contentLister = contentLister;
         this.scheduleStore = scheduleStore;
         this.publishers = ImmutableList.copyOf(publishers);
-        this.scheduleEntryBuilder = new ScheduleEntryBuilder(channelResolver, maxBroadcastAge);
+        this.scheduleEntryBuilder = new ScheduleEntryBuilder(channelResolver);
     }
     
     public FullMongoScheduleRepopulator(ContentLister contentLister, ChannelResolver channelResolver, ScheduleWriter scheduleStore, Iterable<Publisher> publishers) {
