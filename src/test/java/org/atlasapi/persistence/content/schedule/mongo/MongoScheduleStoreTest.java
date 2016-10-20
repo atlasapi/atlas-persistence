@@ -49,6 +49,7 @@ import com.google.common.collect.Multimap;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -227,7 +228,7 @@ public class MongoScheduleStoreTest {
         assertSchedule(schedule);
     }
 
-    @Test
+    @Test @Ignore
     public void testShouldIgnoreBroadcastsOverAYearOld() throws Exception {
   
         Item item = itemWithBroadcast("id", new Broadcast(BBC_ONE.getUri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
