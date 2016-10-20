@@ -235,9 +235,17 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 .getTransmissionEndTime()
                 .isBefore(interval.getStart());
 
-        Predicate<ItemRefAndBroadcast> afterPredicate = i -> !i.getBroadcast()
+        Predicate<ItemRefAndBroadcast> onBeforePredicate = i -> i.getBroadcast()
+                .getTransmissionEndTime()
+                .isEqual(interval.getStart());
+
+        Predicate<ItemRefAndBroadcast> onAfterPredicate = i -> i.getBroadcast()
                 .getTransmissionTime()
-                .isBefore(interval.getEnd());
+                .isEqual(interval.getEnd());
+
+        Predicate<ItemRefAndBroadcast> afterPredicate = i -> i.getBroadcast()
+                .getTransmissionTime()
+                .isAfter(interval.getEnd());
 
         // If the first and last period are identical,
         // retain items that start before the interval or start after the end of the interval
@@ -245,7 +253,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 && scheduleEntries.containsKey(firstScheduleEntryKey)){
             ScheduleEntry firstEntry = filteredScheduleEntry(
                     scheduleEntries.get(firstScheduleEntryKey),
-                    Predicates.or(beforePredicate, afterPredicate)
+                    Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate)
             );
             scheduleEntries.put(firstScheduleEntryKey, firstEntry);
             return scheduleEntries;
@@ -255,7 +263,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    if(scheduleEntries.containsKey(firstScheduleEntryKey)) {
             ScheduleEntry firstEntry = filteredScheduleEntry(
 		            scheduleEntries.get(firstScheduleEntryKey),
-                    beforePredicate
+                    Predicates.or(onBeforePredicate, beforePredicate)
             );
 		    scheduleEntries.put(firstScheduleEntryKey, firstEntry);
 	    }
@@ -265,7 +273,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
             ScheduleEntry lastEntry = filteredScheduleEntry(
 		            scheduleEntries.get(lastScheduleEntryKey),
-                    afterPredicate
+                    Predicates.or(onAfterPredicate, afterPredicate)
             );
 		    scheduleEntries.put(lastScheduleEntryKey, lastEntry);
 	    }
