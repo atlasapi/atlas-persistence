@@ -612,5 +612,4 @@ public class MongoScheduleStoreTest {
         item.addVersion(version);
         return item;
     }
-
 }
