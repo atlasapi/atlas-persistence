@@ -225,7 +225,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         decodeDistribution(dbObject, entity);
 
         if (dbObject.containsField(LANGUAGE_KEY)) {
-            entity.setLanguage(languageTranslator.fromDBObject((DBObject) dbObject.get(LANGUAGE_KEY), new Language()));
+            entity.setLanguage(languageTranslator.fromDBObject((DBObject) dbObject.get(LANGUAGE_KEY)));
         }
 
 
@@ -248,13 +248,9 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
     private void decodeDistribution(DBObject dbObject, Described entity) {
         entity.setDistributions(TranslatorUtils.toIterable(dbObject,
-                DISTRIBUTION_KEY, new Function<DBObject, Distribution>() {
-
-                    @Override
-                    public Distribution apply(DBObject input) {
-                        return distributionTranslator.fromDBObject(input, new Distribution());
-                    }
-                }).or(ImmutableSet.<Distribution>of()));
+                DISTRIBUTION_KEY, input ->
+                        distributionTranslator.fromDBObject(input)
+        ).or(ImmutableSet.<Distribution>of()));
     }
 
     private void decodeLocalizedDescriptions(DBObject dbObject, Described entity) {
@@ -437,14 +433,9 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
     private void encodeDistribution(DBObject dbObject, Described entity) {
         TranslatorUtils.fromIterable(dbObject, DISTRIBUTION_KEY, entity.getDistributions(),
-                new Function<Distribution, DBObject>() {
-
-                    @Override
-                    public DBObject apply(Distribution distribution) {
-                        return distributionTranslator.toDBObject(new BasicDBObject(), distribution);
-                    }
-
-                });
+                distribution -> distributionTranslator.toDBObject(
+                        new BasicDBObject(), distribution)
+        );
     }
     
 	static Identified newModel(DBObject dbObject) {
