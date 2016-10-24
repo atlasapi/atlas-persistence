@@ -228,7 +228,7 @@ public class MongoScheduleStoreTest {
     }
 
     @Test
-    public void testShouldIgnoreBroadcastsOverAYearOld() throws Exception {
+    public void testShouldNotIgnoreBroadcastsOverAYearOld() throws Exception {
   
         Item item = itemWithBroadcast("id", new Broadcast(BBC_ONE.getUri(), now.withHourOfDay(1).withMinuteOfHour(10), now.withHourOfDay(1).withMinuteOfHour(20)));
         store.writeScheduleFrom(item);
