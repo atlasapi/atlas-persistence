@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Broadcast;
@@ -14,14 +12,17 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.ScheduleEntry;
 import org.atlasapi.media.entity.ScheduleEntry.ItemRefAndBroadcast;
 import org.atlasapi.media.entity.Version;
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
-import org.joda.time.Interval;
+
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.time.DateTimeZones;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.time.DateTimeZones;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.joda.time.Interval;
 
 public class ScheduleEntryBuilder {
     
@@ -39,7 +40,7 @@ public class ScheduleEntryBuilder {
     }
     
     public ScheduleEntryBuilder(ChannelResolver channelResolver) {
-        this(channelResolver, Duration.standardDays(28));
+        this(channelResolver, Duration.standardDays(Long.MAX_VALUE));
     }
     
     public Map<String, ScheduleEntry> toScheduleEntries(Iterable<? extends Item> items) {
