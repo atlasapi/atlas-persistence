@@ -84,6 +84,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
     private @Value("${messaging.destination.event.changes}") String eventChanges;
     private @Value("${messaging.destination.organisation.changes}") String organisationChanges;
+    private @Value("${messaging.destination.equiv.assert}") String equivAssertDest;
     private @Value("${messaging.enabled}") String messagingEnabled;
     private @Value("${mongo.audit.dbname}") String auditDbName;
     private @Value("${mongo.audit.enabled}") boolean auditEnabled;
@@ -137,7 +138,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
                 organisationChanges,
                 Boolean.valueOf(messagingEnabled),
                 auditEnabled,
-                processingConfig
+                processingConfig,
+                equivAssertDest
         );
     }
 

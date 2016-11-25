@@ -16,6 +16,8 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.messaging.v3.JacksonMessageSerializer;
 import org.atlasapi.messaging.v3.MessagingModule;
@@ -25,7 +27,6 @@ import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
-import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.ContentPurger;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
@@ -34,6 +35,7 @@ import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
+import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
@@ -127,6 +129,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     private final boolean messagingEnabled;
     private final String auditDbName;
     private final boolean auditEnabled;
+    private final String equivAssertDest;
 
     // This decides whether to use MongoChannelStore or CachingChannelStore which has
     // additional methods.
@@ -148,7 +151,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
             String organisationChanges,
             boolean messagingEnabled,
             boolean auditEnabled,
-            Parameter processingConfig
+            Parameter processingConfig,
+            String equivAssertDest
     ) {
         this.mongo = checkNotNull(mongo);
         this.db = checkNotNull(db);
@@ -166,6 +170,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         this.messagingEnabled = messagingEnabled;
         this.auditEnabled = checkNotNull(auditEnabled);
         this.processingConfig = checkNotNull(processingConfig);
+        this.equivAssertDest = checkNotNull(equivAssertDest);
     }
 
     public MessageSender<EntityUpdatedMessage> contentChanges() {
@@ -191,6 +196,20 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public MessageSender<EntityUpdatedMessage> organizationChanges() {
         return messagingModule.messageSenderFactory().makeMessageSender(organisationChanges,
                 JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
+    }
+
+    private ContentEquivalenceAssertionMessenger messenger() {
+        return ContentEquivalenceAssertionMessenger.create(
+                messagingModule.messageSenderFactory()
+                        .makeMessageSender(
+                                equivAssertDest,
+                                JacksonMessageSerializer.forType(
+                                        ContentEquivalenceAssertionMessage.class
+                                )
+                        ),
+                new SystemClock(),
+                lookupStore()
+        );
     }
 
     @Override
@@ -224,7 +243,12 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (messagingEnabled) {
-            contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
+            contentWriter = new MessageQueueingContentWriter(
+                    messenger(),
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
         }
 
         contentWriter = new IdSettingContentWriter(
@@ -243,7 +267,12 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (messagingEnabled) {
-            contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
+            contentWriter = new MessageQueueingContentWriter(
+                    messenger(),
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
         }
 
         return contentWriter;
