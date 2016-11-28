@@ -70,24 +70,24 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
 
-    private @Autowired ReadPreference readPreference;
-    private @Autowired Mongo mongo;
-    private @Autowired DatabasedMongo db;
-    private @Autowired AdapterLog log;
-    private @Autowired MessagingModule messagingModule;
+    @Autowired private ReadPreference readPreference;
+    @Autowired private Mongo mongo;
+    @Autowired private DatabasedMongo db;
+    @Autowired private AdapterLog log;
+    @Autowired private MessagingModule messagingModule;
 
     private final Parameter processingConfig = Configurer.get("processing.config");
 
-    private @Value("${messaging.destination.content.changes}") String contentChanges;
-    private @Value("${messaging.destination.topics.changes}") String topicChanges;
-    private @Value("${messaging.destination.schedule.changes}") String scheduleChanges;
-    private @Value("${messaging.destination.content.group.changes}") String contentGroupChanges;
-    private @Value("${messaging.destination.event.changes}") String eventChanges;
-    private @Value("${messaging.destination.organisation.changes}") String organisationChanges;
-    private @Value("${messaging.destination.equiv.assert}") String equivAssertDest;
-    private @Value("${messaging.enabled}") String messagingEnabled;
-    private @Value("${mongo.audit.dbname}") String auditDbName;
-    private @Value("${mongo.audit.enabled}") boolean auditEnabled;
+    @Value("${messaging.destination.content.changes}") private String contentChanges;
+    @Value("${messaging.destination.topics.changes}") private String topicChanges;
+    @Value("${messaging.destination.schedule.changes}") private String scheduleChanges;
+    @Value("${messaging.destination.content.group.changes}") private String contentGroupChanges;
+    @Value("${messaging.destination.event.changes}") private String eventChanges;
+    @Value("${messaging.destination.organisation.changes}") private String organisationChanges;
+    @Value("${messaging.destination.equiv.assert}") private String equivAssertDest;
+    @Value("${messaging.enabled}") private String messagingEnabled;
+    @Value("${mongo.audit.dbname}") private String auditDbName;
+    @Value("${mongo.audit.enabled}") private boolean auditEnabled;
 
     public MongoContentPersistenceModule() {}
 
@@ -212,7 +212,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return persistenceModule().knownTypeContentResolver();
     }
 
-    public @Primary @Bean MongoLookupEntryStore lookupStore() {
+    @Primary
+    @Bean
+    public MongoLookupEntryStore lookupStore() {
         return persistenceModule().lookupStore();
     }
 
@@ -266,7 +268,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Primary
     @Bean
     public PersonStore personStore() {
-
         return persistenceModule().personStore();
     }
 
@@ -287,19 +288,16 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Primary
     @Bean
     public TopicStore topicStore() {
-
         return persistenceModule().topicStore();
     }
 
     @Bean
     public ServiceResolver serviceResolver() {
-
         return persistenceModule().serviceResolver();
     }
 
     @Bean
     public PlayerResolver playerResolver() {
-
         return persistenceModule().playerResolver();
     }
 
@@ -336,13 +334,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Bean
     public EventWriter eventWriter() {
-
         return persistenceModule().eventWriter();
     }
 
     @Bean
     public EventResolver eventResolver() {
-
         return persistenceModule().eventResolver();
     }
 
@@ -376,38 +372,32 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Primary
     @Bean
     public ProductResolver productResolver() {
-
         return persistenceModule().productResolver();
     }
 
     @Bean
     MongoIOProbe mongoIoSetProbe() {
-
         return persistenceModule().mongoIoSetProbe();
     }
 
     @Override
     @Bean
     public PeopleQueryResolver peopleQueryResolver() {
-
         return persistenceModule().peopleQueryResolver();
     }
 
     @Bean
     public ContentPurger contentPurger() {
-
         return persistenceModule().contentPurger();
     }
 
     @Bean
     public PersistenceAuditLog persistenceAuditLog() {
-
         return persistenceModule().persistenceAuditLog();
     }
 
     @Bean
     public MongoProgressStore mongoProgressStore() {
-
         return persistenceModule().mongoProgressStore();
     }
 }

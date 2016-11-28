@@ -39,7 +39,8 @@ public class MessageQueueingContentWriter implements ContentWriter {
     private final ItemTranslator itemTranslator = new ItemTranslator(idCodec);
     private final ContainerTranslator containerTranslator = new ContainerTranslator(idCodec);
     
-    private final SubstitutionTableNumberCodec entityIdCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
+    private final SubstitutionTableNumberCodec entityIdCodec =
+            SubstitutionTableNumberCodec.lowerCaseOnly();
 
     public MessageQueueingContentWriter(
             ContentEquivalenceAssertionMessenger messenger,

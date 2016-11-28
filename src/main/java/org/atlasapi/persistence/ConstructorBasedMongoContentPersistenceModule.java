@@ -114,6 +114,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class ConstructorBasedMongoContentPersistenceModule implements ContentPersistenceModule {
 
+    private static final String LOOKUP = "lookup";
+
     private final ReadPreference readPreference;
     private final Mongo mongo;
     private final DatabasedMongo db;
@@ -288,7 +290,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     public MongoLookupEntryStore lookupStore() {
-        return new MongoLookupEntryStore(db.collection("lookup"),
+        return new MongoLookupEntryStore(db.collection(LOOKUP),
                 persistenceAuditLog(), readPreference);
     }
 
@@ -345,8 +347,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     public PersonStore personStore() {
-        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"),
-                persistenceAuditLog(), readPreference);
+        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(
+                db.collection("peopleLookup"),
+                persistenceAuditLog(),
+                readPreference
+        );
         PersonStore personStore = new MongoPersonStore(db,
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore),
                 personLookupEntryStore,
@@ -393,7 +398,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     @Override
     public SegmentWriter segmentWriter() {
-        return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
+        return new IdSettingSegmentWriter(
+                new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()),
+                segmentResolver(),
+                new MongoSequentialIdGenerator(db, "segment")
+        );
     }
 
     @Override
@@ -440,15 +449,18 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         }
         return eventStore;
     }
-
-    public @Bean EventResolver eventResolver() {
+    @Bean
+    public EventResolver eventResolver() {
         return new MongoEventStore(db);
     }
 
     public OrganisationStore organisationStore() {
 
-        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"),
-                persistenceAuditLog(), readPreference);
+        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(
+                db.collection("organisationLookup"),
+                persistenceAuditLog(),
+                readPreference
+        );
         OrganisationStore organisationStore = new MongoOrganisationStore(db,
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(organisationLookupEntryStore),
                 organisationLookupEntryStore,
@@ -459,7 +471,10 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         );
 
         if (messagingEnabled) {
-            organisationStore = new QueueingOrganisationStore(organizationChanges(),organisationStore);
+            organisationStore = new QueueingOrganisationStore(
+                    organizationChanges(),
+                    organisationStore
+            );
         }
 
         return organisationStore;
@@ -468,7 +483,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public ServiceChannelStore channelStore() {
 
         if (processingConfig == null || !processingConfig.toBoolean()) {
-            return new CachingChannelStore(new MongoChannelStore(db, channelGroupStore(), channelGroupStore()));
+            return new CachingChannelStore(
+                    new MongoChannelStore(db, channelGroupStore(), channelGroupStore())
+            );
         }
         return new MongoChannelStore(db, channelGroupStore(), channelGroupStore());
     }
@@ -479,7 +496,10 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     @Override
     public ProductStore productStore() {
-        return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
+        return new IdSettingProductStore(
+                (ProductStore)productResolver(),
+                new MongoSequentialIdGenerator(db, "product")
+        );
     }
 
     @Override
@@ -493,8 +513,14 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     @Override
     public PeopleQueryResolver peopleQueryResolver() {
-        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup"),
-                persistenceAuditLog(), readPreference));
+        return new EquivalatingPeopleResolver(
+                personStore(),
+                new MongoLookupEntryStore(
+                        db.collection("peopleLookup"),
+                        persistenceAuditLog(),
+                        readPreference
+                )
+        );
     }
 
     public ContentPurger contentPurger() {
@@ -511,7 +537,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public PersistenceAuditLog persistenceAuditLog() {
 
         if (auditEnabled) {
-            return new PerHourAndDayMongoPersistenceAuditLog(new DatabasedMongo(mongo, auditDbName));
+            return new PerHourAndDayMongoPersistenceAuditLog(
+                    new DatabasedMongo(mongo, auditDbName)
+            );
         } else {
             return new NoLoggingPersistenceAuditLog();
         }
