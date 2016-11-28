@@ -16,6 +16,8 @@ import org.atlasapi.media.segment.MongoSegmentResolver;
 import org.atlasapi.media.segment.MongoSegmentWriter;
 import org.atlasapi.media.segment.SegmentResolver;
 import org.atlasapi.media.segment.SegmentWriter;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.messaging.v3.JacksonMessageSerializer;
 import org.atlasapi.messaging.v3.MessagingModule;
@@ -25,7 +27,6 @@ import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentGroupResolver;
 import org.atlasapi.persistence.content.ContentGroupWriter;
-import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.ContentPurger;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
@@ -34,6 +35,7 @@ import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
+import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
@@ -112,6 +114,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class ConstructorBasedMongoContentPersistenceModule implements ContentPersistenceModule {
 
+    private static final String LOOKUP = "lookup";
+
     private final ReadPreference readPreference;
     private final Mongo mongo;
     private final DatabasedMongo db;
@@ -127,6 +131,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     private final boolean messagingEnabled;
     private final String auditDbName;
     private final boolean auditEnabled;
+    private final String equivAssertDest;
 
     // This decides whether to use MongoChannelStore or CachingChannelStore which has
     // additional methods.
@@ -148,7 +153,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
             String organisationChanges,
             boolean messagingEnabled,
             boolean auditEnabled,
-            Parameter processingConfig
+            Parameter processingConfig,
+            String equivAssertDest
     ) {
         this.mongo = checkNotNull(mongo);
         this.db = checkNotNull(db);
@@ -166,6 +172,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         this.messagingEnabled = messagingEnabled;
         this.auditEnabled = checkNotNull(auditEnabled);
         this.processingConfig = checkNotNull(processingConfig);
+        this.equivAssertDest = checkNotNull(equivAssertDest);
     }
 
     public MessageSender<EntityUpdatedMessage> contentChanges() {
@@ -191,6 +198,20 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public MessageSender<EntityUpdatedMessage> organizationChanges() {
         return messagingModule.messageSenderFactory().makeMessageSender(organisationChanges,
                 JacksonMessageSerializer.forType(EntityUpdatedMessage.class));
+    }
+
+    private ContentEquivalenceAssertionMessenger messenger() {
+        return ContentEquivalenceAssertionMessenger.create(
+                messagingModule.messageSenderFactory()
+                        .makeMessageSender(
+                                equivAssertDest,
+                                JacksonMessageSerializer.forType(
+                                        ContentEquivalenceAssertionMessage.class
+                                )
+                        ),
+                new SystemClock(),
+                lookupStore()
+        );
     }
 
     @Override
@@ -224,7 +245,12 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (messagingEnabled) {
-            contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
+            contentWriter = new MessageQueueingContentWriter(
+                    messenger(),
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
         }
 
         contentWriter = new IdSettingContentWriter(
@@ -243,7 +269,12 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (messagingEnabled) {
-            contentWriter = new MessageQueueingContentWriter(contentChanges(), contentWriter);
+            contentWriter = new MessageQueueingContentWriter(
+                    messenger(),
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
         }
 
         return contentWriter;
@@ -259,7 +290,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     public MongoLookupEntryStore lookupStore() {
-        return new MongoLookupEntryStore(db.collection("lookup"),
+        return new MongoLookupEntryStore(db.collection(LOOKUP),
                 persistenceAuditLog(), readPreference);
     }
 
@@ -316,8 +347,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     public PersonStore personStore() {
-        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(db.collection("peopleLookup"),
-                persistenceAuditLog(), readPreference);
+        LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(
+                db.collection("peopleLookup"),
+                persistenceAuditLog(),
+                readPreference
+        );
         PersonStore personStore = new MongoPersonStore(db,
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(personLookupEntryStore),
                 personLookupEntryStore,
@@ -364,7 +398,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     @Override
     public SegmentWriter segmentWriter() {
-        return new IdSettingSegmentWriter(new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()), segmentResolver(), new MongoSequentialIdGenerator(db, "segment"));
+        return new IdSettingSegmentWriter(
+                new MongoSegmentWriter(db, new SubstitutionTableNumberCodec()),
+                segmentResolver(),
+                new MongoSequentialIdGenerator(db, "segment")
+        );
     }
 
     @Override
@@ -411,15 +449,18 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         }
         return eventStore;
     }
-
-    public @Bean EventResolver eventResolver() {
+    @Bean
+    public EventResolver eventResolver() {
         return new MongoEventStore(db);
     }
 
     public OrganisationStore organisationStore() {
 
-        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(db.collection("organisationLookup"),
-                persistenceAuditLog(), readPreference);
+        LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(
+                db.collection("organisationLookup"),
+                persistenceAuditLog(),
+                readPreference
+        );
         OrganisationStore organisationStore = new MongoOrganisationStore(db,
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(organisationLookupEntryStore),
                 organisationLookupEntryStore,
@@ -430,7 +471,10 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         );
 
         if (messagingEnabled) {
-            organisationStore = new QueueingOrganisationStore(organizationChanges(),organisationStore);
+            organisationStore = new QueueingOrganisationStore(
+                    organizationChanges(),
+                    organisationStore
+            );
         }
 
         return organisationStore;
@@ -439,7 +483,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public ServiceChannelStore channelStore() {
 
         if (processingConfig == null || !processingConfig.toBoolean()) {
-            return new CachingChannelStore(new MongoChannelStore(db, channelGroupStore(), channelGroupStore()));
+            return new CachingChannelStore(
+                    new MongoChannelStore(db, channelGroupStore(), channelGroupStore())
+            );
         }
         return new MongoChannelStore(db, channelGroupStore(), channelGroupStore());
     }
@@ -450,7 +496,10 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     @Override
     public ProductStore productStore() {
-        return new IdSettingProductStore((ProductStore)productResolver(), new MongoSequentialIdGenerator(db, "product"));
+        return new IdSettingProductStore(
+                (ProductStore)productResolver(),
+                new MongoSequentialIdGenerator(db, "product")
+        );
     }
 
     @Override
@@ -464,8 +513,14 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     @Override
     public PeopleQueryResolver peopleQueryResolver() {
-        return new EquivalatingPeopleResolver(personStore(), new MongoLookupEntryStore(db.collection("peopleLookup"),
-                persistenceAuditLog(), readPreference));
+        return new EquivalatingPeopleResolver(
+                personStore(),
+                new MongoLookupEntryStore(
+                        db.collection("peopleLookup"),
+                        persistenceAuditLog(),
+                        readPreference
+                )
+        );
     }
 
     public ContentPurger contentPurger() {
@@ -482,7 +537,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public PersistenceAuditLog persistenceAuditLog() {
 
         if (auditEnabled) {
-            return new PerHourAndDayMongoPersistenceAuditLog(new DatabasedMongo(mongo, auditDbName));
+            return new PerHourAndDayMongoPersistenceAuditLog(
+                    new DatabasedMongo(mongo, auditDbName)
+            );
         } else {
             return new NoLoggingPersistenceAuditLog();
         }

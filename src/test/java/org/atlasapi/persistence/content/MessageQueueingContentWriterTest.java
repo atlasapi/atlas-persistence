@@ -1,21 +1,23 @@
 package org.atlasapi.persistence.content;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+
+import com.metabroadcast.common.queue.MessageSender;
+
+import com.google.common.primitives.Longs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.google.common.primitives.Longs;
-import com.metabroadcast.common.queue.MessageSender;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MessageQueueingContentWriterTest {
@@ -23,9 +25,12 @@ public class MessageQueueingContentWriterTest {
     @SuppressWarnings("unchecked")
     private final MessageSender<EntityUpdatedMessage> sender = 
         (MessageSender<EntityUpdatedMessage>) mock(MessageSender.class);
-    private final ContentWriter delegate = mock(ContentWriter.class);    
+    private final ContentWriter delegate = mock(ContentWriter.class);
+    private final ContentResolver resolver = mock(ContentResolver.class);
+    private final ContentEquivalenceAssertionMessenger messenger =
+            mock(ContentEquivalenceAssertionMessenger.class);
     private final MessageQueueingContentWriter writer 
-        = new MessageQueueingContentWriter(sender, delegate);
+        = new MessageQueueingContentWriter(messenger, sender, delegate, resolver);
     
     @Test
     public void testEnqueuesMessageWhenContentChanges() throws Exception {

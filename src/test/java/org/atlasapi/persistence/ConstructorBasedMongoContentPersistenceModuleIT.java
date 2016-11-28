@@ -129,7 +129,8 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
                 "OrganisationChanges",
                 true,
                 true,
-                Parameter.valueOf("false")
+                Parameter.valueOf("false"),
+                "EquivAssert"
         );
 
         moduleWithProcessingConfigTrue = new ConstructorBasedMongoContentPersistenceModule(
@@ -147,7 +148,8 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
                 "OrganisationChanges",
                 true,
                 true,
-                Parameter.valueOf("true")
+                Parameter.valueOf("true"),
+                "EquivAssert"
         );
 
     }
