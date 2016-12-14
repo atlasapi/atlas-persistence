@@ -3,14 +3,12 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Distribution;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
-import org.atlasapi.media.entity.Language;
 import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.MediaType;
@@ -23,7 +21,6 @@ import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;

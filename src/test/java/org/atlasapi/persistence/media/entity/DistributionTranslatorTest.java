@@ -9,6 +9,7 @@ import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +38,7 @@ public class DistributionTranslatorTest {
 
         assertEquals(distribution.getDistributor(), dbo.get(DISTRIBUTOR));
         assertEquals(distribution.getFormat(), dbo.get(FORMAT));
-        assertEquals(distribution.getReleaseDate(), dbo.get(RELEASE_DATE));
+        assertEquals(distribution.getReleaseDate().toDate(), dbo.get(RELEASE_DATE));
     }
 
     @Test
@@ -57,7 +58,7 @@ public class DistributionTranslatorTest {
         return Distribution.builder()
                 .withDistributor("distributor")
                 .withFormat("format")
-                .withReleaseDate(DateTime.now())
+                .withReleaseDate(new DateTime(DateTimeZone.UTC))
                 .build();
 
     }

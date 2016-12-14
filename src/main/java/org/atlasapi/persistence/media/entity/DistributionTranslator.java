@@ -1,12 +1,10 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Distribution;
-import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 
 import com.mongodb.DBObject;
-import org.joda.time.DateTime;
 
 public class DistributionTranslator {
 
@@ -16,7 +14,7 @@ public class DistributionTranslator {
 
     public DBObject toDBObject(DBObject dbObject, Distribution model) {
         TranslatorUtils.from(dbObject, FORMAT, model.getFormat());
-        TranslatorUtils.from(dbObject, RELEASE_DATE, model.getReleaseDate());
+        TranslatorUtils.fromDateTime(dbObject, RELEASE_DATE, model.getReleaseDate());
         TranslatorUtils.from(dbObject, DISTRIBUTOR, model.getDistributor());
 
         return dbObject;
@@ -25,7 +23,7 @@ public class DistributionTranslator {
     public Distribution fromDBObject(DBObject dbObject) {
         return Distribution.builder()
                 .withFormat(TranslatorUtils.toString(dbObject, FORMAT))
-                .withReleaseDate((DateTime) dbObject.get(RELEASE_DATE))
+                .withReleaseDate(TranslatorUtils.toDateTime(dbObject, RELEASE_DATE))
                 .withDistributor(TranslatorUtils.toString(dbObject, DISTRIBUTOR))
                 .build();
     }
