@@ -1,15 +1,15 @@
 package org.atlasapi.persistence.media.entity;
 
-import junit.framework.TestCase;
-
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.BlackoutRestriction;
 import org.atlasapi.media.entity.Broadcast;
-import org.joda.time.Duration;
-import org.joda.time.LocalDate;
 
 import com.metabroadcast.common.time.SystemClock;
+
 import com.mongodb.DBObject;
+import junit.framework.TestCase;
+import org.joda.time.Duration;
+import org.joda.time.LocalDate;
 
 public class BroadcastTranslatorTest extends TestCase {
     BroadcastTranslator brt = new BroadcastTranslator();
@@ -30,6 +30,8 @@ public class BroadcastTranslatorTest extends TestCase {
         broadcast.addAliasUrl("some alias");
         broadcast.addAlias(new Alias("some alias NS", "some alias value"));
         broadcast.setBlackoutRestriction(new BlackoutRestriction(true));
+        broadcast.setRevisedRepeat(true);
+        broadcast.setRepeat(true);
         
         DBObject dbObject = brt.toDBObject(broadcast);
         Broadcast b = brt.fromDBObject(dbObject);
@@ -41,6 +43,8 @@ public class BroadcastTranslatorTest extends TestCase {
         assertFalse(b.getAliasUrls().isEmpty());
         assertFalse(b.getAliases().isEmpty());
         assertTrue(b.getBlackoutRestriction().getAll());
+        assertTrue(b.getRevisedRepeat());
+        assertTrue(b.getRepeat());
     }
     
     public void testBlackoutRestrictionNotSetIfAbsent() {

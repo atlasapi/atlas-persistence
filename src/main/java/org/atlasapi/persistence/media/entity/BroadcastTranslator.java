@@ -1,12 +1,13 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Broadcast;
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
 
 public class BroadcastTranslator  {
 	
@@ -26,6 +27,7 @@ public class BroadcastTranslator  {
 	private static final String SURROUND_KEY = "surround";
 	private static final String LIVE_KEY = "live";
 	private static final String BLACKOUT_RESTRICTION_KEY = "blackoutRestriction";
+	private static final String REVISED_REPEAT = "revisedRepeat";
 	
 	private final AliasTranslator aliasTranslator = new AliasTranslator();
 	private final BlackoutRestrictionTranslator blackoutTranslator = new BlackoutRestrictionTranslator();
@@ -59,6 +61,7 @@ public class BroadcastTranslator  {
         broadcast.setNewSeries(TranslatorUtils.toBoolean(dbObject, NEW_SERIES_KEY));
         broadcast.setNewEpisode(TranslatorUtils.toBoolean(dbObject, NEW_EPISODE_KEY));
         broadcast.setBlackoutRestriction(blackoutTranslator.fromDbObject((DBObject) dbObject.get(BLACKOUT_RESTRICTION_KEY)));
+        broadcast.setRevisedRepeat(TranslatorUtils.toBoolean(dbObject, REVISED_REPEAT));
         
         return broadcast;
     }
@@ -89,6 +92,7 @@ public class BroadcastTranslator  {
         TranslatorUtils.from(dbObject, NEW_SERIES_KEY, entity.getNewSeries());
         TranslatorUtils.from(dbObject, NEW_EPISODE_KEY, entity.getNewEpisode());
         TranslatorUtils.from(dbObject, BLACKOUT_RESTRICTION_KEY, blackoutTranslator.toDbObject(entity.getBlackoutRestriction()));
+        TranslatorUtils.from(dbObject, REVISED_REPEAT, entity.getRevisedRepeat());
         
         return dbObject;
     }
