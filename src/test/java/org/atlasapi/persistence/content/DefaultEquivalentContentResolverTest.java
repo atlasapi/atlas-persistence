@@ -3,13 +3,17 @@ package org.atlasapi.persistence.content;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
-import org.atlasapi.application.v3.SourceStatus;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
+import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
@@ -33,6 +37,7 @@ public class DefaultEquivalentContentResolverTest {
     private DummyKnownTypeContentResolver contentResolver;
     private LookupEntryStore lookupResolver;
     private EquivalentContentResolver equivResolver;
+    private Application application = mock(Application.class);
     
     @Before
     public void setUp() {
@@ -48,13 +53,14 @@ public class DefaultEquivalentContentResolverTest {
         Episode equiv = episode("equiv", 2, Publisher.PA);
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
-        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC);
         Set<Annotation> annotations = Annotation.defaultAnnotations();
-        
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.PA, Publisher.BBC));
+
         lookupResolver.store(entry(subject, ImmutableSet.of(equiv), equiv));
         contentResolver.respondTo(ImmutableSet.of(subject, equiv));
         
-        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, application, annotations, false);
         
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get(equiv.getCanonicalUri()));
@@ -70,14 +76,15 @@ public class DefaultEquivalentContentResolverTest {
         Episode equiv = episode("equiv", 3, Publisher.PA);
         
         Iterable<String> uris = ImmutableSet.of(subject1.getCanonicalUri(), subject2.getCanonicalUri());
-        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC);
         Set<Annotation> annotations = Annotation.defaultAnnotations();
-        
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.PA, Publisher.BBC));
+
         lookupResolver.store(entry(subject1, ImmutableSet.of(equiv), equiv));
         lookupResolver.store(entry(subject2, ImmutableSet.<Content>of()));
         contentResolver.respondTo(ImmutableSet.of(subject1, subject2, equiv));
         
-        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, application, annotations, false);
         
         assertEquals(2, content.asMap().size());
         assertNull(content.asMap().get(equiv.getCanonicalUri()));
@@ -96,17 +103,17 @@ public class DefaultEquivalentContentResolverTest {
         Episode invisible = episode("invisible", 5, Publisher.FIVE);
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
-        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4)
-                .copyWithPrecedence(ImmutableList.of(Publisher.PA, Publisher.BBC, Publisher.C4));
         Set<Annotation> annotations = Annotation.defaultAnnotations();
-        
-        lookupResolver.store(entry(subject, ImmutableSet.of(equiv, invisible), 
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4));
+
+        lookupResolver.store(entry(subject, ImmutableSet.of(equiv, invisible),
                 equiv, filtered, filteredEquiv, invisible));
         lookupResolver.store(entry(filtered, ImmutableSet.of(filteredEquiv),
                 subject, equiv, filteredEquiv));
         contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered, filteredEquiv));
         
-        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, application, annotations, false);
         
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get(equiv.getCanonicalUri()));
@@ -127,17 +134,17 @@ public class DefaultEquivalentContentResolverTest {
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri(),
                 filtered.getCanonicalUri());
-        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4)
-                .copyWithPrecedence(ImmutableList.of(Publisher.PA, Publisher.BBC, Publisher.C4));
         Set<Annotation> annotations = Annotation.defaultAnnotations();
-        
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4));
+
         lookupResolver.store(entry(subject, ImmutableSet.of(equiv), 
             equiv, filtered, filteredEquiv));
         lookupResolver.store(entry(filtered, ImmutableSet.of(filteredEquiv),
             subject, equiv, filteredEquiv));
         contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered, filteredEquiv));
         
-        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, application, annotations, false);
         
         assertEquals(2, content.asMap().size());
         assertNull(content.asMap().get(equiv.getCanonicalUri()));
@@ -157,10 +164,10 @@ public class DefaultEquivalentContentResolverTest {
         
         Iterable<String> uris = ImmutableSet.of(equiv.getCanonicalUri(),
                 filteredEquiv.getCanonicalUri());
-        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4)
-                .copyWithPrecedence(ImmutableList.of(Publisher.PA, Publisher.BBC, Publisher.C4));
         Set<Annotation> annotations = Annotation.defaultAnnotations();
-        
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4));
+
         lookupResolver.store(entry(subject, ImmutableSet.of(equiv), 
                 equiv, filtered, filteredEquiv));
         lookupResolver.store(entry(equiv, ImmutableSet.of(subject), 
@@ -171,7 +178,7 @@ public class DefaultEquivalentContentResolverTest {
                 subject, equiv, filtered));
         contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered, filteredEquiv));
         
-        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, application, annotations, false);
         
         assertEquals(2, content.asMap().size());
         assertNull(content.asMap().get(subject.getCanonicalUri()));
@@ -190,17 +197,17 @@ public class DefaultEquivalentContentResolverTest {
         Episode filtered = episode("filtered", 1, Publisher.PA);
         
         Iterable<String> uris = ImmutableSet.of(subject.getCanonicalUri());
-        ApplicationConfiguration appConfig = configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4)
-                .copyWithPrecedence(ImmutableList.of(Publisher.PA, Publisher.BBC, Publisher.C4));
         Set<Annotation> annotations = Annotation.defaultAnnotations();
-        
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.PA, Publisher.BBC, Publisher.C4));
+
         lookupResolver.store(entry(subject, ImmutableSet.of(equiv, disabled), 
             equiv, filtered, disabled));
         lookupResolver.store(entry(filtered, ImmutableSet.of(equiv),
             subject, equiv, disabled));
         contentResolver.respondTo(ImmutableSet.of(subject, equiv, filtered,disabled));
         
-        EquivalentContent content = equivResolver.resolveUris(uris, appConfig, annotations, false);
+        EquivalentContent content = equivResolver.resolveUris(uris, application, annotations, false);
         
         assertEquals(1, content.asMap().size());
         assertNull(content.asMap().get(equiv.getCanonicalUri()));
@@ -209,11 +216,10 @@ public class DefaultEquivalentContentResolverTest {
     }
 
     private ApplicationConfiguration configWithSources(Publisher... srcs) {
-        ApplicationConfiguration conf = ApplicationConfiguration.defaultConfiguration();
-        for (Publisher src : srcs) {
-            conf = conf.withSource(src, SourceStatus.AVAILABLE_ENABLED);
-        }
-        return conf;
+        return ApplicationConfiguration.builder()
+                .withPrecedence(Arrays.asList(srcs))
+                .withEnabledWriteSources(ImmutableList.of())
+                .build();
     }
 
     private <C extends Content> void checkEquivContent(EquivalentContent content, C subj, C...equivs) {

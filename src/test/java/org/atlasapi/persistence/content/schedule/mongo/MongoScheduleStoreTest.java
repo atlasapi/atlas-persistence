@@ -4,8 +4,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
+import com.metabroadcast.common.stream.MoreCollectors;
+import com.sun.jersey.core.impl.provider.entity.XMLJAXBElementProvider;
+import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Brand;
@@ -37,7 +42,6 @@ import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.queue.MessagingException;
 import com.metabroadcast.common.time.DateTimeZones;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.HashMultimap;
@@ -86,9 +90,12 @@ public class MongoScheduleStoreTest {
         }
         
         @Override
-        public EquivalentContent resolveUris(Iterable<String> uris,
-                ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations,
-                boolean withAliases) {
+        public EquivalentContent resolveUris(
+                Iterable<String> uris,
+                Application application,
+                Set<Annotation> activeAnnotations,
+                boolean withAliases
+        ) {
             EquivalentContent.Builder builder = EquivalentContent.builder();
             for (String uri : uris) {
                 builder.putEquivalents(uri, copy(content.get(uri)));
@@ -97,24 +104,25 @@ public class MongoScheduleStoreTest {
         }
 
         private Iterable<Content> copy(Collection<Content> collection) {
-            return Iterables.transform(collection, new Function<Content, Content>() {
-                @Override
-                public Content apply(Content input) {
-                    return (Content) input.copy();
-                }
-            });
+            return Iterables.transform(collection, input -> (Content) input.copy());
         }
 
         @Override
-        public EquivalentContent resolveIds(Iterable<Long> ids, ApplicationConfiguration appConfig,
-                Set<Annotation> activeAnnotations) {
+        public EquivalentContent resolveIds(
+                Iterable<Long> ids,
+                Application application,
+                Set<Annotation> activeAnnotations
+        ) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public EquivalentContent resolveAliases(Optional<String> namespace,
-                Iterable<String> values, ApplicationConfiguration appConfig,
-                Set<Annotation> activeAnnotations) {
+        public EquivalentContent resolveAliases(
+                Optional<String> namespace,
+                Iterable<String> values,
+                Application application,
+                Set<Annotation> activeAnnotations
+        ) {
             throw new UnsupportedOperationException();
         }
         
@@ -175,6 +183,8 @@ public class MongoScheduleStoreTest {
 
         }
     };
+
+    private Application application = mock(Application.class);
     
     @Before
     public void setUp() throws Exception {
@@ -222,8 +232,11 @@ public class MongoScheduleStoreTest {
     public void shouldSaveItemsAndRetrieveSchedule() throws Exception {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), publishers, Optional.of(application));
         assertSchedule(schedule);
     }
 
@@ -252,7 +265,10 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
 
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV), Optional.<ApplicationConfiguration>absent());
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
+
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), publishers, Optional.of(application));
         assertSchedule(schedule);
     }
 
@@ -280,12 +296,14 @@ public class MongoScheduleStoreTest {
         ItemRefAndBroadcast itemRefAndBroadcast2 = new ItemRefAndBroadcast(item2, b2);
 
         store.replaceScheduleBlock(Publisher.BBC, BBC_ONE, Arrays.asList(itemRefAndBroadcast1));
+        when(application.getConfiguration()).thenReturn(configWithSources(ImmutableSet.of(Publisher.BBC)));
+
         Schedule schedule1 = store.schedule(
                 broadcast1Start,
                 broadcast2End.plusMinutes(10),
                 ImmutableSet.of(BBC_ONE),
                 ImmutableSet.of(Publisher.BBC),
-                Optional.<ApplicationConfiguration>absent()
+                Optional.of(application)
         );
 
         assertEquals(1, schedule1.scheduleChannels().size());
@@ -298,7 +316,7 @@ public class MongoScheduleStoreTest {
                 broadcast2End.plusMinutes(10),
                 ImmutableSet.of(BBC_ONE),
                 ImmutableSet.of(Publisher.BBC),
-                Optional.<ApplicationConfiguration>absent()
+                Optional.of(application)
         );
 
         assertEquals(1, schedule2.scheduleChannels().size());
@@ -338,7 +356,11 @@ public class MongoScheduleStoreTest {
         itemsAndBroadcasts.add(new ItemRefAndBroadcast(item3, b3));
         
         store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, itemsAndBroadcasts);
-        Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
+
+        Schedule schedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), ImmutableSet.of(Channel_4_HD), publishers, Optional.of(application));
         
         assertEquals(1, schedule.scheduleChannels().size());
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
@@ -360,7 +382,7 @@ public class MongoScheduleStoreTest {
         store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, replacementItemAndBcast);
         Schedule updatedSchedule = store.schedule(broadcast1Start, broadcast3End.plusMinutes(10), 
                 ImmutableSet.of(Channel_4_HD), ImmutableSet.of(Publisher.BBC), 
-                Optional.<ApplicationConfiguration>absent());
+                Optional.of(application));
         assertEquals(1, updatedSchedule.scheduleChannels().size());
         ScheduleChannel replacementChannel = Iterables.getOnlyElement(updatedSchedule.scheduleChannels());
         
@@ -398,8 +420,11 @@ public class MongoScheduleStoreTest {
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
-        
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
+
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), publishers, Optional.of(application));
         assertSchedule(schedule);
     }
     
@@ -410,11 +435,14 @@ public class MongoScheduleStoreTest {
         
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), publishers, Optional.of(application));
         assertSchedule(schedule);
         
-        schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+        schedule = store.schedule(now.minusHours(6), now.minusHours(5), ImmutableSet.of(BBC_ONE), publishers, Optional.of(application));
         
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
         Item item1 = Iterables.getOnlyElement(channel.items());
@@ -429,8 +457,11 @@ public class MongoScheduleStoreTest {
         
         store.writeScheduleFrom(copy);
         store.writeScheduleFrom(item2);
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
         
-        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+        Schedule schedule = store.schedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE), publishers, Optional.of(application));
         ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
         Item item1 = Iterables.getOnlyElement(channel.items());
         Broadcast broadcast1 = ScheduleEntry.BROADCAST.apply(item1);
@@ -560,24 +591,24 @@ public class MongoScheduleStoreTest {
         store.writeScheduleFrom(item2);
         store.writeScheduleFrom(item3);
         store.writeScheduleFrom(item4);
-        
-        Optional<ApplicationConfiguration> appConfig = Optional.of(
-            ApplicationConfiguration.defaultConfiguration()
-                .copyWithPrecedence(ImmutableList.<Publisher>of()));
-        
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
+        Optional<Application> applicationOptional = Optional.of(application);
+
         when(equivalentContentResolver.resolveUris(
                 (Iterable) argThat(hasItem(isIn(uris))), 
-                argThat(is(appConfig.get())), 
+                argThat(is(applicationOptional.get())),
                 argThat(is(Annotation.defaultAnnotations())), 
                 eq(false)))
             .thenReturn(EquivalentContent.builder().build());
         
-        store.schedule(now, now.plusHours(48), ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC), appConfig);
+        store.schedule(now, now.plusHours(48), ImmutableSet.of(BBC_ONE, BBC_TWO), publishers, applicationOptional);
         
         verify(contentResolver, never()).findByCanonicalUris(any(Iterable.class));
         for (String uri : uris) {
             verify(equivalentContentResolver).resolveUris(argThat(hasItems(uri)), 
-                    argThat(is(appConfig.get())), 
+                    argThat(is(applicationOptional.get())),
                     argThat(is(Annotation.defaultAnnotations())), 
                     eq(false));
         }
@@ -592,9 +623,20 @@ public class MongoScheduleStoreTest {
         assertSchedule(schedule);
     }
     
-    private void checkCount(DateTime from, MongoScheduleStore store, Set<Channel> channels, int requestedCount, int expectedCount) {
+    private void checkCount(
+            DateTime from,
+            MongoScheduleStore store,
+            Set<Channel> channels,
+            int requestedCount,
+            int expectedCount
+    ) {
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
+
         Schedule schedule = store.schedule(from, requestedCount, 
-                ImmutableSet.copyOf(channels), ImmutableSet.of(Publisher.BBC), Optional.<ApplicationConfiguration>absent());
+                ImmutableSet.copyOf(channels), publishers, Optional.of(application));
+
         for (ScheduleChannel sc : schedule.scheduleChannels()) {
             assertThat(String.format("Schedule for %s should have %s items", sc.channel(), expectedCount),
                     sc.items().size(), is(expectedCount));
@@ -611,5 +653,12 @@ public class MongoScheduleStoreTest {
         
         item.addVersion(version);
         return item;
+    }
+
+    private ApplicationConfiguration configWithSources(Set<Publisher> publishers) {
+        return ApplicationConfiguration.builder()
+                .withPrecedence(publishers.stream().collect(MoreCollectors.toImmutableList()))
+                .withEnabledWriteSources(ImmutableList.of())
+                .build();
     }
 }

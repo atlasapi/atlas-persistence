@@ -67,7 +67,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     @Override
     public Iterable<LookupEntry> entriesForAliases(final Optional<String> namespace, Iterable<String> values) {
         if (namespace.isPresent()) {
-            // create Aliases
+            // createDefault Aliases
             Iterable<Alias> aliases = Iterables.transform(values, new Function<String, Alias>() {
                 @Override
                 public Alias apply(String value) {
