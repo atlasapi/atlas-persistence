@@ -6,7 +6,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.metabroadcast.applications.client.model.internal.Application;
-import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;

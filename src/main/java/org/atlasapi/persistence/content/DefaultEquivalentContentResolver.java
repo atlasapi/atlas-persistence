@@ -7,8 +7,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.metabroadcast.applications.client.model.internal.Application;
-import com.sun.jersey.core.impl.provider.entity.XMLJAXBElementProvider;
-import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
