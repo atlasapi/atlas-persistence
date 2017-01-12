@@ -376,7 +376,44 @@ public class MongoContentWriterTest {
         assertThat(retrievedEpisode.getSeriesRef().getId(), is(2L));
         
     }
-    
+
+    @Test
+    public void testUpdateBrandRefForEpisodes(){
+        Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
+
+        Series series = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        series.setParent(brand);
+
+        Episode episode = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        episode.setContainer(brand);
+        episode.setSeries(series);
+
+        contentWriter.createOrUpdate(brand);
+        contentWriter.createOrUpdate(series);
+        contentWriter.createOrUpdate(episode);
+
+        Episode retrievedEpisode = retrieveEpisode(episode);
+
+        assertEquals(retrievedEpisode.getContainer().getUri(), "brandUri");
+
+        Brand newBrand = new Brand("newBrandUri", "newBrandUri", Publisher.BBC);
+
+        Series newSeries = new Series("seriesUri","seriesCurie", Publisher.BBC);
+        newSeries.setParent(newBrand);
+
+        Episode newEpisode = new Episode("itemUri", "itemCurie", Publisher.BBC);
+        newEpisode.setContainer(newBrand);
+        newEpisode.setSeries(newSeries);
+
+        contentWriter.createOrUpdate(newBrand);
+        contentWriter.createOrUpdate(newSeries);
+        contentWriter.createOrUpdate(newEpisode);
+
+        Episode retrievedNewEpisode = retrieveEpisode(newEpisode);
+
+        assertEquals(retrievedNewEpisode.getContainer().getUri(), "newBrandUri");
+    }
+
     public Brand retrieveBrand(Brand brand) {
         return (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
     }
