@@ -48,6 +48,17 @@ public class PersonTranslator implements ModelTranslator<Person> {
         return entity;
     }
 
+    public DBObject writeUpdate(DBObject dbObject, Person entity) {
+        TranslatorUtils.from(dbObject, GIVEN_NAME_KEY, entity.getGivenName());
+        TranslatorUtils.from(dbObject, FAMILY_NAME_KEY, entity.getFamilyName());
+        TranslatorUtils.from(dbObject, GENDER_KEY, entity.getGender());
+        TranslatorUtils.fromDateTime(dbObject, BIRTH_DATE_KEY, entity.getBirthDate());
+        TranslatorUtils.from(dbObject, BIRTH_PLACE_KEY, entity.getBirthPlace());
+        TranslatorUtils.fromSet(dbObject, entity.getQuotes(), QUOTES_KEY);
+
+        return dbObject;
+    }
+
     @Override
     public DBObject toDBObject(DBObject dbObject, Person entity) {
         dbObject = contentGroupTranslator.toDBObject(dbObject, entity);

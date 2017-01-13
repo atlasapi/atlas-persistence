@@ -22,6 +22,11 @@ public class IdSettingPersonStore implements PersonStore {
     }
 
     @Override
+    public void updatePerson(Person person) {
+        delegate.updatePerson(generateOrRestoreId(person));
+    }
+
+    @Override
     public void updatePersonItems(Person person) {
         delegate.updatePersonItems(generateOrRestoreId(person));
     }
