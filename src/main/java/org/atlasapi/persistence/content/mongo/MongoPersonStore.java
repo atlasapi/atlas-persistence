@@ -102,13 +102,14 @@ public class MongoPersonStore implements PersonStore {
         writeEquivalences(person);
     }
 
+    @Override
     public void updatePerson(Person person) {
         person.setLastUpdated(new DateTime(DateTimeZones.UTC));
         person.setMediaType(null);
 
         DBObject idQuery = translator.idQuery(person.getCanonicalUri()).build();
         persistenceAuditLog.logWrite(person);
-        collection.update(idQuery, translator.writeUpdate(idQuery, person), true, false);
+        collection.update(idQuery, translator.mainPersonFieldsToDBObject(idQuery, person), true, false);
         lookupEntryStore.store(LookupEntry.lookupEntryFrom(person));
         writeEquivalences(person);
     }

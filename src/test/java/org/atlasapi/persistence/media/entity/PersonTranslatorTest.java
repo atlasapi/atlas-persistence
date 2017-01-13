@@ -24,7 +24,7 @@ public class PersonTranslatorTest {
         PersonTranslator personTranslator = new PersonTranslator();
 
         DBObject dbObject = personTranslator.toDBObject(new BasicDBObject(), person);
-        personTranslator.writeUpdate(dbObject, newPerson);
+        personTranslator.mainPersonFieldsToDBObject(dbObject, newPerson);
         Person resultPerson = personTranslator.fromDBObject(dbObject, new Person());
 
         assertEquals(newPerson.getFamilyName(), resultPerson.getFamilyName());
