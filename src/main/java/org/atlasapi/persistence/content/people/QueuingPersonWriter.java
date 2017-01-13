@@ -71,6 +71,8 @@ public class QueuingPersonWriter {
                     if (! processedUris.contains(person.getCanonicalUri())) {
                         if (! store.person(person.getCanonicalUri()).isPresent()) {
                             store.createOrUpdatePerson(person);
+                        } else {
+                            store.updatePerson(person);
                         }
                         processedUris.add(person.getCanonicalUri());
                     }

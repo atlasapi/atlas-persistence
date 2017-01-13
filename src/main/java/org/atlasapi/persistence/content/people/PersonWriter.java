@@ -7,4 +7,6 @@ public interface PersonWriter {
     void updatePersonItems(Person person);
     
     void createOrUpdatePerson(Person person);
+
+    void updatePerson(Person person);
 }
