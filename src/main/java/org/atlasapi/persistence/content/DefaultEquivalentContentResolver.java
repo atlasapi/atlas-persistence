@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.media.entity.Content;
@@ -225,7 +226,17 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             Application application
     ) {
         LookupRef lowestId = null;
-        for (LookupRef lookupRef : Iterables.filter(selectedEquivs, fromSource(application.getConfiguration().getEnabledReadSources().asList().get(0)))) {
+
+        Publisher publisher = application.getConfiguration()
+                .getReadPrecedenceOrdering()
+                .sortedCopy(application.getConfiguration().getEnabledReadSources())
+                .get(0);
+
+        Iterable<LookupRef> lookupRefs = selectedEquivs.stream()
+                .filter(fromSource(publisher)::apply)
+                .collect(Collectors.toList());
+
+        for (LookupRef lookupRef : lookupRefs) {
             lowestId = nullSafeRefById.min(lowestId, lookupRef);
         }
         return lowestId;
@@ -242,8 +253,8 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
 
     private boolean isPrecedentSourceEntry(LookupEntry entry, Application application) {
         return application.getConfiguration()
-                .getEnabledReadSources()
-                .asList()
+                .getReadPrecedenceOrdering()
+                .sortedCopy(application.getConfiguration().getEnabledReadSources())
                 .get(0)
                 .equals(entry.lookupRef().publisher());
     }
