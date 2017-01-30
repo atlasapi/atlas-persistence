@@ -19,6 +19,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 import static com.google.common.collect.Iterables.transform;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ChannelTranslator implements ModelTranslator<Channel> {
 
@@ -147,10 +148,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
                 TranslatorUtils.toString(dbObject, PUBLISHER)
         ).requireValue());
 
-        String name = TranslatorUtils.toString(dbObject, MEDIA_TYPE);
-        if (name != null) {
-            model.setMediaType(MediaType.valueOf(name));
-        }
+        model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
 
         if (dbObject.containsField(TITLES)) {
             model.setTitles(temporalTitleTranslator.toTemporalTitleSet(dbObject, TITLES));
