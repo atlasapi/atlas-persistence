@@ -2,13 +2,11 @@ package org.atlasapi.persistence.content.mongo;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
-import com.metabroadcast.applications.client.model.internal.Application;
-import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
-import org.atlasapi.application.v3.DefaultApplication;
+import org.atlasapi.application.v3.ApplicationConfiguration;
+import org.atlasapi.application.v3.SourceStatus;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
@@ -55,7 +53,6 @@ public class MongoContentPurgerTest {
     
     private final ServiceResolver serviceResolver = mock(ServiceResolver.class);
     private final PlayerResolver playerResolver = mock(PlayerResolver.class);
-    private Application application = mock(Application.class);
  
     @Before
     public void setUp() {
@@ -79,13 +76,6 @@ public class MongoContentPurgerTest {
                                        contentWriter, new MongoContentTables(db), lookupCollection, 
                                        TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore),
                                        TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore));
-
-        when(application.getConfiguration()).thenReturn(
-                ApplicationConfiguration.builder()
-                        .withPrecedence(ImmutableList.of(Publisher.BBC, Publisher.METABROADCAST))
-                        .withEnabledWriteSources(ImmutableList.of())
-                        .build()
-        );
     }
     
     @Test
@@ -105,9 +95,9 @@ public class MongoContentPurgerTest {
         lookup = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableSet.of(BBC_ITEM_URI)));
         assertEquals(1, lookup.explicitEquivalents().size());
         
-        assertEquals(0, contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), application, ImmutableSet.<Annotation>of(), false).get(MB_ITEM_URI).size());
+        assertEquals(0, contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), applicationConfiguration(), ImmutableSet.<Annotation>of(), false).get(MB_ITEM_URI).size());
         
-        Content queried = Iterables.getOnlyElement(contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), application, ImmutableSet.<Annotation>of(), false).get(BBC_ITEM_URI));
+        Content queried = Iterables.getOnlyElement(contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), applicationConfiguration(), ImmutableSet.<Annotation>of(), false).get(BBC_ITEM_URI));
         assertEquals(new Alias(MongoContentPurger.ATLAS_EQUIVALENCE_ALIAS, MB_ITEM_URI), Iterables.getOnlyElement(queried.getAliases()));
        
     }
@@ -128,13 +118,20 @@ public class MongoContentPurgerTest {
         
         mongoContentPurger.restoreEquivalences(Publisher.BBC);
         
-        Set<Content> content = contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), application, ImmutableSet.<Annotation>of(), false).get(BBC_ITEM_URI);
+        Set<Content> content = contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), applicationConfiguration(), ImmutableSet.<Annotation>of(), false).get(BBC_ITEM_URI);
         assertEquals(2, content.size());
         
         assertEquals(0, Iterables.getFirst(content, null).getAliases().size());
         
     }
-
+    
+    private ApplicationConfiguration applicationConfiguration() {
+        return ApplicationConfiguration.defaultConfiguration()
+                                       .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED)
+                                       .withSource(Publisher.METABROADCAST, SourceStatus.AVAILABLE_ENABLED)
+                                       .copyWithPrecedence(ImmutableList.of(Publisher.BBC, Publisher.METABROADCAST));
+    }
+    
     private Item testItem(Publisher publisher, String uri) {
         Item item = ComplexItemTestDataBuilder.complexItem().withUri(uri).build();
         item.setPublisher(publisher);

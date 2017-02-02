@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.output;
 
-import com.metabroadcast.applications.client.model.internal.Application;
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
@@ -11,12 +11,12 @@ import com.google.common.collect.Multimap;
 
 public interface AvailableItemsResolver {
 
-    Iterable<ChildRef> availableItemsFor(Container container, Application application);
+    Iterable<ChildRef> availableItemsFor(Container container, ApplicationConfiguration config);
     
-    Iterable<ChildRef> availableItemsFor(Person person, Application application);
+    Iterable<ChildRef> availableItemsFor(Person person, ApplicationConfiguration config);
     
-    Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Item item, Application application);
+    Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Item item, ApplicationConfiguration config);
 
-    Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Container container, Application application);
+    Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Container container, ApplicationConfiguration config);
 
 }
