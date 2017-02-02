@@ -1,6 +1,5 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.media.channel.CachingChannelStore;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelStore;
@@ -327,11 +326,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public MongoScheduleStore scheduleStore(ChannelStore channelStore) {
         try {
             return new MongoScheduleStore(
-                    db,
-                    channelStore,
-                    contentResolver(),
-                    equivContentResolver(),
-                    scheduleChanges()
+                    db, channelStore, contentResolver(), equivContentResolver(), scheduleChanges()
             );
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -19,7 +19,12 @@ public class DummyChannelResolver implements ChannelResolver {
 	private Map<String, Channel> channels;
 	
 	public DummyChannelResolver(Iterable<Channel> channels) {
-		 this.channels = Maps.uniqueIndex(channels, Channel::getUri);
+		 this.channels = Maps.uniqueIndex(channels, new Function<Channel, String>() {
+			@Override
+			public String apply(Channel input) {
+				return input.getUri();
+			}
+		});
 	}
 	
 	public DummyChannelResolver(Map<String, Channel> channels) {
@@ -29,9 +34,13 @@ public class DummyChannelResolver implements ChannelResolver {
 	@Override
 	public Maybe<Channel> fromKey(final String key) {
 				
-		Iterable<Channel> withKey = Iterables.filter(
-				channels.values(),
-				input -> key.equals(input.getKey())
+		Iterable<Channel> withKey = Iterables.filter(channels.values(), new Predicate<Channel>() {
+
+			@Override
+			public boolean apply(Channel input) {
+				return key.equals(input.getKey());
+			}
+		}
 		);
 		
 		if(Iterables.isEmpty(withKey)) {

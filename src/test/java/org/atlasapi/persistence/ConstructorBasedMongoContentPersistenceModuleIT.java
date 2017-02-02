@@ -2,8 +2,7 @@ package org.atlasapi.persistence;
 
 import java.util.Map;
 
-import com.metabroadcast.applications.client.model.internal.Application;
-import org.atlasapi.application.v3.DefaultApplication;
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
 import org.atlasapi.media.channel.ChannelGroupStore;
@@ -69,7 +68,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.mock;
 
 public class ConstructorBasedMongoContentPersistenceModuleIT {
 
@@ -460,7 +458,7 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
 
         item.setPresentationChannel(channel);
 
-        Application application = mock(Application.class);
+        ApplicationConfiguration applicationConfiguration = ApplicationConfiguration.defaultConfiguration();
 
         scheduleStore.writeScheduleFor(ImmutableList.of(item));
 
@@ -469,7 +467,7 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
                 DateTime.now(),
                 ImmutableList.of(channel),
                 ImmutableList.of(Publisher.BBC),
-                Optional.of(application)
+                Optional.of(applicationConfiguration)
                 );
         Schedule.ScheduleChannel scheduleChannel = Iterables.getOnlyElement(schedule.scheduleChannels());
 

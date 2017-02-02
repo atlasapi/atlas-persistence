@@ -5,9 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import com.metabroadcast.applications.client.model.internal.Application;
+import org.atlasapi.application.v3.ApplicationConfiguration;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -36,60 +35,44 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     private LookupEntryStore lookupResolver;
     private final Ordering<LookupRef> nullSafeRefById = Ordering.natural().onResultOf(LookupRef.TO_ID).nullsLast();
 
-    public DefaultEquivalentContentResolver(
-            KnownTypeContentResolver contentResolver,
-            LookupEntryStore lookupResolver
-    ) {
+    public DefaultEquivalentContentResolver(KnownTypeContentResolver contentResolver, LookupEntryStore lookupResolver) {
         this.contentResolver = contentResolver;
         this.lookupResolver = lookupResolver;
     }
     
     @Override
-    public EquivalentContent resolveUris(
-            Iterable<String> uris,
-            Application application,
-            Set<Annotation> activeAnnotations,
-            boolean withAliases
-    ) {
+    public EquivalentContent resolveUris(Iterable<String> uris, ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations, boolean withAliases) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIdentifiers(uris, withAliases);
-        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, application);
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig);
     }
     
     @Override
-    public EquivalentContent resolveIds(
-            Iterable<Long> ids,
-            Application application,
-            Set<Annotation> activeAnnotations
-    ) {
+    public EquivalentContent resolveIds(Iterable<Long> ids, ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForIds(ids);
         Set<String> uris = Sets.newHashSet();
         for (LookupEntry entry : entries) {
             uris.add(entry.uri());
         }
-        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, application);
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig);
     }
     
     @Override
-    public EquivalentContent resolveAliases(
-            Optional<String> namespace,
-            Iterable<String> values,
-            Application application,
-            Set<Annotation> activeAnnotations
-    ) {
+    public EquivalentContent resolveAliases(Optional<String> namespace, Iterable<String> values,
+            ApplicationConfiguration appConfig, Set<Annotation> activeAnnotations) {
         Iterable<LookupEntry> entries = lookupResolver.entriesForAliases(namespace, values);
         Set<String> uris = Sets.newHashSet();
         for (LookupEntry entry : entries) {
             uris.add(entry.uri());
         }
-        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, application);
+        return filterAndResolveEntries(ImmutableSet.copyOf(entries), uris, appConfig); 
     }
 
-    protected EquivalentContent filterAndResolveEntries(Set<LookupEntry> entries, Iterable<String> uris, Application application) {
+    protected EquivalentContent filterAndResolveEntries(Set<LookupEntry> entries, Iterable<String> uris, ApplicationConfiguration appConfig) {
         if (Iterables.isEmpty(entries)) {
             return EquivalentContent.empty();
         }
         
-        SetMultimap<String, LookupRef> uriToEquivs = byUri(subjsToEquivs(entries, application));
+        SetMultimap<String, LookupRef> uriToEquivs = byUri(subjsToEquivs(entries, appConfig));
         
         ImmutableSet<LookupRef> refs = ImmutableSet.copyOf(uriToEquivs.values());
         if (refs.isEmpty()) {
@@ -105,7 +88,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             Iterable<Content> contents = equivContent(equivRefs, resolvedContent);
             LookupEntry entry = entryIndex.get(uri);
             if (entry != null) {
-                Set<LookupRef> allRefs = equivRefs(contents, entry, application);
+                Set<LookupRef> allRefs = equivRefs(contents, entry, appConfig);
                 for (Content content : contents) {
                     content.setEquivalentTo(allRefs);
                 }
@@ -116,15 +99,15 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
 
     private Set<LookupRef> equivRefs(Iterable<Content> contents, LookupEntry entry,
-            Application application) {
+            ApplicationConfiguration appConfig) {
         Iterable<LookupRef> enabled = Iterables.transform(contents, LookupRef.FROM_DESCRIBED);
-        Set<LookupRef> disabled = removeEnabledSources(entry.equivalents(), application);
+        Set<LookupRef> disabled = removeEnabledSources(entry.equivalents(), appConfig);
         return Sets.union(ImmutableSet.copyOf(enabled), disabled);
     }
 
     private Set<LookupRef> removeEnabledSources(Set<LookupRef> equivalents,
-            Application application) {
-        Predicate<Publisher> isDisabled = Predicates.not(Predicates.in(application.getConfiguration().getEnabledReadSources()));
+            ApplicationConfiguration conf) {
+        Predicate<Publisher> isDisabled = Predicates.not(Predicates.in(conf.getEnabledSources()));
         return ImmutableSet.copyOf(Iterables.filter(equivalents, 
             MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, isDisabled)));
     }
@@ -146,24 +129,21 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
 
-    private SetMultimap<LookupEntry, LookupRef> subjsToEquivs(
-            Iterable<LookupEntry> resolved,
-            Application application
-    ) {
-        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(application.getConfiguration().getEnabledReadSources()));
+    private SetMultimap<LookupEntry, LookupRef> subjsToEquivs(Iterable<LookupEntry> resolved, ApplicationConfiguration appConfig) {
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(appConfig.getEnabledSources()));
 
         SetMultimap<LookupRef, LookupRef> secondaryResolve = HashMultimap.create();
         
         ImmutableSetMultimap.Builder<LookupEntry, LookupRef> subjsToEquivs = ImmutableSetMultimap.builder();
         for (LookupEntry entry : resolved) {
             Set<LookupRef> selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter);
-            if (application.getConfiguration().isPrecedenceEnabled()) {
+            if (appConfig.precedenceEnabled()) {
                 //ensure only one from precedent
                 LookupRef refToSave;
-                if (isPrecedentSourceEntry(entry, application)) {
+                if (isPrecedentSourceEntry(entry, appConfig)) {
                     refToSave = entry.lookupRef();
                 } else {
-                    refToSave = lowestIdFromPrecedentSource(selectedEquivs, application);
+                    refToSave = lowestIdFromPrecedentSource(selectedEquivs, appConfig);
                 }
                 if (refToSave != null) {
                     Iterable<LookupRef> toRemove = othersFromSourceOf(refToSave, selectedEquivs);
@@ -177,10 +157,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
 
     private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
-            SetMultimap<LookupRef, LookupRef> secondaryResolve,
-            ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs,
-            Predicate<LookupRef> sourceFilter
-    ) {
+            SetMultimap<LookupRef, LookupRef> secondaryResolve, ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs, Predicate<LookupRef> sourceFilter) {
         
         Map<LookupRef,LookupEntry> entriesToRemove = Maps.uniqueIndex(
             lookupResolver.entriesForCanonicalUris(Iterables.transform(ImmutableSet.copyOf(secondaryResolve.values()), LookupRef.TO_URI)),
@@ -221,22 +198,10 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         return Sets.union(entry.directEquivalents(), entry.explicitEquivalents());
     }
 
-    private LookupRef lowestIdFromPrecedentSource(
-            Set<LookupRef> selectedEquivs,
-            Application application
-    ) {
+    private LookupRef lowestIdFromPrecedentSource(Set<LookupRef> selectedEquivs,
+            ApplicationConfiguration appConfig) {
         LookupRef lowestId = null;
-
-        Publisher publisher = application.getConfiguration()
-                .getReadPrecedenceOrdering()
-                .sortedCopy(application.getConfiguration().getEnabledReadSources())
-                .get(0);
-
-        Iterable<LookupRef> lookupRefs = selectedEquivs.stream()
-                .filter(fromSource(publisher)::apply)
-                .collect(Collectors.toList());
-
-        for (LookupRef lookupRef : lookupRefs) {
+        for (LookupRef lookupRef : Iterables.filter(selectedEquivs, fromSource(appConfig.precedence().get(0)))) {
             lowestId = nullSafeRefById.min(lowestId, lookupRef);
         }
         return lowestId;
@@ -251,12 +216,8 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                 Predicates.equalTo(src));
     }
 
-    private boolean isPrecedentSourceEntry(LookupEntry entry, Application application) {
-        return application.getConfiguration()
-                .getReadPrecedenceOrdering()
-                .sortedCopy(application.getConfiguration().getEnabledReadSources())
-                .get(0)
-                .equals(entry.lookupRef().publisher());
+    private boolean isPrecedentSourceEntry(LookupEntry entry, ApplicationConfiguration appConfig) {
+        return appConfig.precedence().get(0).equals(entry.lookupRef().publisher());
     }
 
 }

@@ -9,8 +9,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import com.metabroadcast.applications.client.model.internal.Application;
-import org.atlasapi.application.v3.DefaultApplication;
+import javax.annotation.Nullable;
+
+import org.atlasapi.application.v3.ApplicationConfiguration;
+import org.atlasapi.application.v3.SourceStatus;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
@@ -90,13 +92,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private final NumberToShortStringCodec idCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public MongoScheduleStore(
-            DatabasedMongo db,
-            ChannelResolver channelResolver,
-            ContentResolver contentResolver,
-            EquivalentContentResolver equivalentContentResolver,
-            MessageSender<ScheduleUpdateMessage> messageSender
-    ) {
+    public MongoScheduleStore(DatabasedMongo db, ChannelResolver channelResolver, ContentResolver contentResolver, EquivalentContentResolver equivalentContentResolver, MessageSender<ScheduleUpdateMessage> messageSender) {
         this.channelResolver = channelResolver;
         this.contentResolver = contentResolver;
         this.equivalentContentResolver = equivalentContentResolver;
@@ -319,42 +315,31 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
 
     @Override
-    public Schedule schedule(
-            DateTime from,
-            DateTime to,
-            Iterable<Channel> channels,
-            Iterable<Publisher> publishers,
-            Optional<Application> applicationOptional
-    ) {
+    public Schedule schedule(DateTime from, DateTime to, Iterable<Channel> channels, Iterable<Publisher> publishers, Optional<ApplicationConfiguration> mergeConfig) {
         Interval interval = new Interval(from, to);
         if (interval.toDuration().isLongerThan(MAX_DURATION)) {
             throw new IllegalArgumentException("You cannot request more than 2 weeks of schedule");
         }
         List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
 
-        Application application;
-        if(applicationOptional.isPresent()) {
-            application = applicationOptional.get();
-        } else {
-            application = configFor(publishers);
-        }
-        Map<Channel, List<Item>> channelMap = resolveEntries(entries, channels, application);
+        ApplicationConfiguration config = mergeConfig.or(configFor(publishers));
+        Map<Channel, List<Item>> channelMap = resolveEntries(entries, channels, config);
         return scheduleFrom(channelMap, interval);
     }
 
-    private Application configFor(Iterable<Publisher> publishers) {
-        return DefaultApplication.createWithReads(Lists.newArrayList(publishers));
+    private ApplicationConfiguration configFor(Iterable<Publisher> publishers) {
+        ImmutableList<Publisher> sources = ImmutableList.copyOf(publishers);
+        return configWithEverythingDisabled
+            .copyWithPrecedence(sources)
+            .withSources(Maps.toMap(sources, Functions.constant(SourceStatus.AVAILABLE_ENABLED)));
     }
 
-    private Map<Channel, List<Item>> resolveEntries(
-            Iterable<ScheduleEntry> entries,
-            Iterable<Channel> channels,
-            Application application
-    ) {
+    private Map<Channel, List<Item>> resolveEntries(Iterable<ScheduleEntry> entries,
+            Iterable<Channel> channels, ApplicationConfiguration mergeConfig) {
         // TODO this code inefficient, but in future we should avoid hydrating then items
         // unless explicitly requested
         Iterable<Entry<Channel, ItemRefAndBroadcast>> uniqueRefs = uniqueRefs(entries);
-        Map<String, Maybe<Identified>> itemIndex = resolveItems(uniqueRefs, application);
+        Map<String, Maybe<Identified>> itemIndex = resolveItems(uniqueRefs, mergeConfig);
         return toChannelMap(channels, uniqueRefs, itemIndex);
     }
 
@@ -405,29 +390,25 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         }
     }
 
-    private Map<String, Maybe<Identified>> resolveItems(
-            Iterable<Entry<Channel, ItemRefAndBroadcast>> refs,
-            Application mergeApplication
-    ) {
-        return findAndMerge(mergeApplication, refs);
+    private Map<String, Maybe<Identified>> resolveItems(Iterable<Entry<Channel, ItemRefAndBroadcast>> refs, ApplicationConfiguration mergeConfig) {
+        return findAndMerge(mergeConfig, refs);
     }
 
     private ImmutableSet<String> uniqueUris(Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
-        return ImmutableSet.copyOf(Iterables.transform(
-                refs,
-                input -> input.getValue().getItemUri()
+        return ImmutableSet.copyOf(Iterables.transform(refs,
+            new Function<Entry<Channel, ItemRefAndBroadcast>, String>() {
+                @Override
+                public String apply(Entry<Channel, ItemRefAndBroadcast> input) {
+                    return input.getValue().getItemUri();
+                }
+            }
         ));
     }
 
-    private Map<String, Maybe<Identified>> findAndMerge(Application mergeApplication,
+    private Map<String, Maybe<Identified>> findAndMerge(ApplicationConfiguration mergeConfig,
             Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
         ImmutableSet<String> uris = uniqueUris(refs);
-        EquivalentContent resolved = equivalentContentResolver.resolveUris(
-                uris,
-                mergeApplication,
-                Annotation.defaultAnnotations(),
-                false
-        );
+        EquivalentContent resolved = equivalentContentResolver.resolveUris(uris, mergeConfig, Annotation.defaultAnnotations(), false);
         ImmutableMap.Builder<String, Maybe<Identified>> result = ImmutableMap.builder();
         for (String uri : uris) {
             Set<Content> equivalents = resolved.get(uri);
@@ -441,7 +422,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                     .add(find(uri, equivalents))
                     .addAll(equivalents).build()
                     .asList();
-                result.put(uri, Maybe.<Identified>just(merger.merge(mergeApplication, equivList).get(0)));
+                result.put(uri, Maybe.<Identified>just(merger.merge(mergeConfig, equivList).get(0)));
             }
         }
         return result.build();
@@ -464,13 +445,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
      * we repeatedly resolve the next window.
      */
     @Override
-    public Schedule schedule(
-            final DateTime from,
-            int count,
-            Iterable<Channel> channels,
-            Iterable<Publisher> publishers,
-            Optional<Application> applicationOptional
-    ) {
+    public Schedule schedule(final DateTime from, int count, Iterable<Channel> channels,
+            Iterable<Publisher> publishers, Optional<ApplicationConfiguration> mergeConfig) {
 
         DateTime start = from;
         DateTime end = from;
@@ -498,15 +474,9 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             reachedCount = channelsNeedingMore.isEmpty();
             iterations++;
         }
-
-        Application application;
-        if (applicationOptional.isPresent()) {
-            application = applicationOptional.get();
-        } else {
-            application = configFor(publishers);
-        }
-
-        Map<Channel, List<Item>> channelMap = resolveEntries(entries.values(), channels, application);
+        
+        ApplicationConfiguration config = mergeConfig.or(configFor(publishers));
+        Map<Channel, List<Item>> channelMap = resolveEntries(entries.values(), channels, config);
         return scheduleFrom(channelMap, new Interval(from, end));
     }
 
@@ -515,7 +485,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         for (Entry<Channel, List<Item>> entry: channelMap.entrySet()) {
             processedChannelMap.put(entry.getKey(), processChannelItems(entry.getValue(), interval));
         }
-        return Schedule.fromChannelMap(processedChannelMap.build(), interval);
+        Schedule schedule = Schedule.fromChannelMap(processedChannelMap.build(), interval);
+        return schedule;
     }
 
     private List<ScheduleEntry> resolveEntries(Iterable<Channel> channels, DateTime start, DateTime end,
@@ -524,12 +495,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         return translator.fromDbObjects(where().idIn(keys).find(collection));
     }
 
-    private Map<Channel, ScheduleEntry> merge(
-            DateTime from,
-            int count,
-            Map<Channel, ScheduleEntry> existing,
-            List<ScheduleEntry> fetched
-    ) {
+    private Map<Channel, ScheduleEntry> merge(DateTime from, int count, Map<Channel, ScheduleEntry> existing, List<ScheduleEntry> fetched) {
         for (ScheduleEntry scheduleEntry : fetched) {
             ScheduleEntry existingEntry = existing.get(scheduleEntry.channel());
             if (existingEntry != null) {
@@ -544,7 +510,12 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
     private ScheduleEntry after(final DateTime from, ScheduleEntry entry) {
         return entry.withItems(Iterables.filter(entry.getItemRefsAndBroadcasts(),
-                input -> input.getBroadcast().getTransmissionEndTime().isAfter(from)
+            new Predicate<ItemRefAndBroadcast>() {
+                @Override
+                public boolean apply(@Nullable ItemRefAndBroadcast input) {
+                    return input.getBroadcast().getTransmissionEndTime().isAfter(from);
+                }
+            }
         ));
     }
 
@@ -593,59 +564,49 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
     
     private List<Item> orderItems(Iterable<Item> items) {
-        return Ordering.from(ScheduleEntry.START_TIME_AND_DURATION_ITEM_COMPARATOR)
-                .immutableSortedCopy(items);
+        return Ordering.from(ScheduleEntry.START_TIME_AND_DURATION_ITEM_COMPARATOR).immutableSortedCopy(items);
     }
     
-    private static final Function<Broadcast, Interval> TO_BROADCAST = input ->
-            new Interval(input.getTransmissionTime(), input.getTransmissionEndTime());
+    private static final Function<Broadcast, Interval> TO_BROADCAST = new Function<Broadcast, Interval>() {
+        @Override
+        public Interval apply(Broadcast input) {
+            return new Interval(input.getTransmissionTime(), input.getTransmissionEndTime());
+        }
+    };
 
-    private static final Function<Item, Interval> ITEM_TO_BROADCAST_INTERVAL = Functions.compose(
-            TO_BROADCAST,
-            ScheduleEntry.BROADCAST
-    );
+    private static final Function<Item, Interval> ITEM_TO_BROADCAST_INTERVAL = Functions.compose(TO_BROADCAST, ScheduleEntry.BROADCAST);
 
     private final OutputContentMerger merger = new OutputContentMerger();
+
+    private final ApplicationConfiguration configWithEverythingDisabled
+        = ApplicationConfiguration.defaultConfiguration()
+            .copyWithSourceStatuses(Maps.toMap(Publisher.all(), Functions.constant(SourceStatus.UNAVAILABLE)));
 
     private final ContentResolver contentResolver;
     
     private Iterable<Item> filterItems(Iterable<Item> items, final Interval interval) {
-        final Predicate<Item> validBroadcast = MorePredicates.transformingPredicate(
-                ITEM_TO_BROADCAST_INTERVAL,
-                new ScheduleBroadcastFilter(interval)
-        );
+        final Predicate<Item> validBroadcast = MorePredicates.transformingPredicate(ITEM_TO_BROADCAST_INTERVAL, new ScheduleBroadcastFilter(interval));
         
-        return Iterables.transform(
-                ImmutableSet.copyOf(Iterables.transform(
-                        Iterables.filter(items, validBroadcast),
-                        ItemScheduleEntry.ITEM_SCHEDULE_ENTRY
-                        )
-                ),
-                ItemScheduleEntry.ITEM
-        );
+        return Iterables.transform(ImmutableSet.copyOf(Iterables.transform(Iterables.filter(items, validBroadcast), ItemScheduleEntry.ITEM_SCHEDULE_ENTRY)), ItemScheduleEntry.ITEM);
     }
     
     private List<Item> filterLocations(Iterable<Item> items) {
-        return ImmutableList.copyOf(Iterables.transform(items, input -> {
-            for (Version version: input.getVersions()) {
-                for (Encoding encoding: version.getManifestedAs()) {
-                    if (! encoding.getAvailableAt().isEmpty()) {
-                        encoding.setAvailableAt(ImmutableSet.copyOf(Iterables.filter(
-                                encoding.getAvailableAt(),
-                                Location.AVAILABLE_LOCATION))
-                        );
+        return ImmutableList.copyOf(Iterables.transform(items, new Function<Item, Item>() {
+            @Override
+            public Item apply(Item input) {
+                for (Version version: input.getVersions()) {
+                    for (Encoding encoding: version.getManifestedAs()) {
+                        if (! encoding.getAvailableAt().isEmpty()) {
+                            encoding.setAvailableAt(ImmutableSet.copyOf(Iterables.filter(encoding.getAvailableAt(), Location.AVAILABLE_LOCATION)));
+                        }
                     }
                 }
+                return input;
             }
-            return input;
         }));
     }
     
-    private static List<String> keys(
-            Iterable<Interval> intervals,
-            Iterable<Channel> channels,
-            Iterable<Publisher> publishers
-    ) {
+    private static List<String> keys(Iterable<Interval> intervals, Iterable<Channel> channels, Iterable<Publisher> publishers) {
         ImmutableList.Builder<String> keys = ImmutableList.builder();
         for (Interval interval: intervals) {
             for (Channel channel: channels) {
@@ -682,9 +643,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         public boolean equals(Object obj) {
             if (obj instanceof ItemScheduleEntry) {
                 ItemScheduleEntry entry = (ItemScheduleEntry) obj;
-                return startTime().equals(entry.startTime())
-                        && canonicalUri().equals(entry.canonicalUri()
-                );
+                return startTime().equals(entry.startTime()) && canonicalUri().equals(entry.canonicalUri());
             }
             return super.equals(obj);
         }
@@ -694,9 +653,19 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             return Objects.hashCode(startTime(), canonicalUri());
         }
         
-        final static Function<ItemScheduleEntry, Item> ITEM = ItemScheduleEntry::item;
+        final static Function<ItemScheduleEntry, Item> ITEM = new Function<ItemScheduleEntry, Item>() {
+            @Override
+            public Item apply(ItemScheduleEntry input) {
+                return input.item();
+            }
+        };
         
-        final static Function<Item, ItemScheduleEntry> ITEM_SCHEDULE_ENTRY = ItemScheduleEntry::new;
+        final static Function<Item, ItemScheduleEntry> ITEM_SCHEDULE_ENTRY = new Function<Item, ItemScheduleEntry>() {
+            @Override
+            public ItemScheduleEntry apply(Item input) {
+                return new ItemScheduleEntry(input);
+            }
+        };
     }
 
 	void writeScheduleFrom(Item item1) {
