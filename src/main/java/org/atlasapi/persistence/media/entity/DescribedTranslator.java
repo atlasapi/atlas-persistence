@@ -3,11 +3,14 @@ package org.atlasapi.persistence.media.entity;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.atlasapi.media.entity.Described;
+import org.atlasapi.media.entity.Distribution;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Image;
+import org.atlasapi.media.entity.Language;
 import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.MediaType;
@@ -20,6 +23,7 @@ import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
@@ -57,6 +61,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     protected static final String RATINGS_KEY = "ratings";
     protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     protected static final String ITEM_PRIORITY_KEY = "priority";
+    protected static final String DISTRIBUTION_KEY = "distribution";
+    protected static final String LANGUAGE_KEY = "language";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from(new Comparator<LocalizedDescription>() {
@@ -89,8 +95,16 @@ public class DescribedTranslator implements ModelTranslator<Described> {
                 @Override
                 public int compare(Review o1, Review o2) {
                     return ComparisonChain.start()
-                            .compare(localeToLanguageTag(o1.getLocale()), localeToLanguageTag(o2.getLocale()), Ordering.natural().nullsFirst())
-                            .compare(o1.getReview(), o2.getReview(), Ordering.natural().nullsFirst())
+                            .compare(
+                                    localeToLanguageTag(o1.getLocale()),
+                                    localeToLanguageTag(o2.getLocale()),
+                                    Ordering.natural().nullsFirst()
+                            )
+                            .compare(
+                                    o1.getReview(),
+                                    o2.getReview(),
+                                    Ordering.natural().nullsFirst()
+                            )
                             .result();
                 }
             });
@@ -126,10 +140,15 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     private final AudienceStatisticsTranslator audienceStatisticsTranslator;
     private final RatingsTranslator ratingsTranslator;
     private final PriorityTranslator priorityTranslator;
+    private final DistributionTranslator distributionTranslator;
+    private final LanguageTranslator languageTranslator;
 
-	public DescribedTranslator(IdentifiedTranslator identifiedTranslator, ImageTranslator imageTranslator) {
-		this.identifiedTranslator = identifiedTranslator;
-		this.imageTranslator = imageTranslator;
+    public DescribedTranslator(
+            IdentifiedTranslator identifiedTranslator,
+            ImageTranslator imageTranslator
+    ) {
+        this.identifiedTranslator = identifiedTranslator;
+        this.imageTranslator = imageTranslator;
         this.relatedLinkTranslator = new RelatedLinkTranslator();
         this.localizedDescriptionTranslator = new LocalizedDescriptionTranslator();
         this.localizedTitleTranslator = new LocalizedTitleTranslator();
@@ -137,15 +156,18 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         this.ratingsTranslator = new RatingsTranslator();
         this.audienceStatisticsTranslator = new AudienceStatisticsTranslator();
         this.priorityTranslator = new PriorityTranslator();
-	}
-	
-	@Override
+        this.distributionTranslator = new DistributionTranslator();
+        this.languageTranslator = new LanguageTranslator();
+    }
+
+    @Override
 	public Described fromDBObject(DBObject dbObject, Described entity) {
 
 		identifiedTranslator.fromDBObject(dbObject, entity);
 
         decodeRelatedLinks(dbObject, entity);
-        // this is needed in order to translate some Segments which have Object in the description field.
+        // this is needed in order to translate some
+        // Segments which have Object in the description field.
         Object description = dbObject.get(DESCRIPTION_KEY);
         if(description instanceof DBObject) {
             entity.setDescription(TranslatorUtils.toString((DBObject)description, TITLE_KEY));
@@ -161,7 +183,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         }
 
 		entity.setFirstSeen(TranslatorUtils.toDateTime(dbObject, FIRST_SEEN_KEY));
-		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY));
+		entity.setThisOrChildLastUpdated(TranslatorUtils.toDateTime(
+		        dbObject,
+                THIS_OR_CHILD_LAST_UPDATED_KEY
+        ));
 
 		entity.setGenres(TranslatorUtils.toSet(dbObject, GENRES_KEY));
 		entity.setImage((String) dbObject.get(IMAGE_KEY));
@@ -205,13 +230,24 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 		}
 		
 		if (dbObject.containsField(AUDIENCE_STATISTICS_KEY)) {
-		    entity.setAudienceStatistics(audienceStatisticsTranslator.fromDBObject((DBObject) dbObject.get(AUDIENCE_STATISTICS_KEY)));
+		    entity.setAudienceStatistics(
+		            audienceStatisticsTranslator
+                            .fromDBObject((DBObject) dbObject.get(AUDIENCE_STATISTICS_KEY))
+            );
 		}
 		
         decodeLocalizedDescriptions(dbObject, entity);
         decodeLocalizedTitles(dbObject, entity);
         decodeReviews(dbObject, entity);
         decodeRatings(dbObject, entity, entity.getPublisher());
+        decodeDistribution(dbObject, entity);
+
+        if (dbObject.containsField(LANGUAGE_KEY)) {
+            entity.setLanguage(
+                    languageTranslator.fromDBObject((DBObject) dbObject.get(LANGUAGE_KEY))
+            );
+        }
+
 
 		return entity;
 	}
@@ -228,6 +264,14 @@ public class DescribedTranslator implements ModelTranslator<Described> {
                         return localizedTitleTranslator.fromDBObject(input, new LocalizedTitle());
                     }
                 }));
+    }
+
+    private void decodeDistribution(DBObject dbObject, Described entity) {
+        entity.setDistributions(TranslatorUtils.toIterable(
+                dbObject,
+                DISTRIBUTION_KEY,
+                input -> distributionTranslator.fromDBObject(input)
+        ).or(ImmutableSet.<Distribution>of()));
     }
 
     private void decodeLocalizedDescriptions(DBObject dbObject, Described entity) {
@@ -248,7 +292,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     @SuppressWarnings("unchecked")
     private void decodeRelatedLinks(DBObject dbObject, Described entity) {
         if (dbObject.containsField(LINKS_KEY)) {
-            entity.setRelatedLinks(Iterables.transform((Iterable<DBObject>) dbObject.get(LINKS_KEY), new Function<DBObject, RelatedLink>() {
+            entity.setRelatedLinks(
+                    Iterables.transform(
+                            (Iterable<DBObject>) dbObject.get(LINKS_KEY),
+                            new Function<DBObject, RelatedLink>() {
 
                 @Override
                 public RelatedLink apply(DBObject input) {
@@ -259,19 +306,26 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     }
 
     private void decodeReviews(DBObject dbObject, Described entity) {
-        entity.setReviews(TranslatorUtils.toIterable(dbObject, REVIEWS_KEY, new Function<DBObject, Review>() {
+        entity.setReviews(TranslatorUtils.toIterable(
+                dbObject,
+                REVIEWS_KEY,
+                new Function<DBObject, Review>() {
 
             @Override
             public Review apply(DBObject dbo) {
                 return reviewTranslator.fromDBObject(dbo);
             }
-            
+
         }).or(ImmutableSet.<Review>of()));
     }
     
     private void decodeRatings(DBObject dbObject, Described entity, final Publisher publisher) {
         entity.setRatings(
-                TranslatorUtils.toIterable(dbObject, RATINGS_KEY, ratingsTranslator.fromDbo(publisher))
+                TranslatorUtils.toIterable(
+                        dbObject,
+                        RATINGS_KEY,
+                        ratingsTranslator.fromDbo(publisher)
+                )
                 .or(ImmutableSet.<Rating>of())
                 );
     }
@@ -292,7 +346,11 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
         TranslatorUtils.from(dbObject, DESCRIPTION_KEY, entity.getDescription());
         TranslatorUtils.fromDateTime(dbObject, FIRST_SEEN_KEY, entity.getFirstSeen());
-        TranslatorUtils.fromDateTime(dbObject, THIS_OR_CHILD_LAST_UPDATED_KEY, entity.getThisOrChildLastUpdated());
+        TranslatorUtils.fromDateTime(
+                dbObject,
+                THIS_OR_CHILD_LAST_UPDATED_KEY,
+                entity.getThisOrChildLastUpdated()
+        );
         TranslatorUtils.fromSet(dbObject, entity.getGenres(), GENRES_KEY);
         TranslatorUtils.from(dbObject, IMAGE_KEY, entity.getImage());
         TranslatorUtils.fromDateTime(dbObject, LAST_FETCHED_KEY, entity.getLastFetched());
@@ -310,10 +368,16 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         }
         
         if (entity.getMediaType() != null) {
-        	TranslatorUtils.from(dbObject, MEDIA_TYPE_KEY, entity.getMediaType().toString().toLowerCase());
+        	TranslatorUtils.from(
+        	        dbObject, MEDIA_TYPE_KEY, entity.getMediaType().toString().toLowerCase()
+            );
         }
         if (entity.getSpecialization() != null) {
-            TranslatorUtils.from(dbObject, SPECIALIZATION_KEY, entity.getSpecialization().toString().toLowerCase());
+            TranslatorUtils.from(
+                    dbObject,
+                    SPECIALIZATION_KEY,
+                    entity.getSpecialization().toString().toLowerCase()
+            );
         }
         
         BasicDBList images = new BasicDBList();
@@ -341,12 +405,20 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         encodeLocalizedTitles(entity, dbObject);
         encodeReviews(dbObject, entity);
         encodeRatings(dbObject, entity);
+        encodeDistribution(dbObject, entity);
+
+        if (entity.getLanguage() != null) {
+            DBObject languageDbo = new BasicDBObject();
+            languageTranslator.toDBObject(languageDbo, entity.getLanguage());
+            dbObject.put(LANGUAGE_KEY, languageDbo);
+        }
         
         return dbObject;
 	}
     
     private void encodeLocalizedTitles(Described entity, DBObject dbObject) {
-        List<LocalizedTitle> sortedTitles = LOCALIZED_TITLE_ORDERING.sortedCopy(entity.getLocalizedTitles());
+        List<LocalizedTitle> sortedTitles =
+                LOCALIZED_TITLE_ORDERING.sortedCopy(entity.getLocalizedTitles());
         
         BasicDBList dbTitles = new BasicDBList();
         
@@ -358,7 +430,8 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     }
 
     private void encodeLocalizedDescriptions(Described entity, DBObject dbObject) {
-        List<LocalizedDescription> sortedDescriptions = LOCALIZED_DESCRIPTION_ORDERING.sortedCopy(entity.getLocalizedDescriptions());
+        List<LocalizedDescription> sortedDescriptions =
+                LOCALIZED_DESCRIPTION_ORDERING.sortedCopy(entity.getLocalizedDescriptions());
 
         BasicDBList dbDescriptions = new BasicDBList();
 
@@ -392,7 +465,11 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     }
     
     private void encodeReviews(DBObject dbObject, Described entity) {
-        TranslatorUtils.fromIterable(dbObject, REVIEWS_KEY, REVIEW_ORDERING.sortedCopy(entity.getReviews()), 
+        TranslatorUtils.fromIterable(
+                dbObject,
+                REVIEWS_KEY,
+                REVIEW_ORDERING.sortedCopy(entity.getReviews()
+                ),
                 new Function<Review, DBObject>() {
 
                         @Override
@@ -401,6 +478,13 @@ public class DescribedTranslator implements ModelTranslator<Described> {
                         }
             
                 });
+    }
+
+    private void encodeDistribution(DBObject dbObject, Described entity) {
+        TranslatorUtils.fromIterable(dbObject, DISTRIBUTION_KEY, entity.getDistributions(),
+                distribution -> distributionTranslator.toDBObject(
+                        new BasicDBObject(), distribution)
+        );
     }
     
 	static Identified newModel(DBObject dbObject) {

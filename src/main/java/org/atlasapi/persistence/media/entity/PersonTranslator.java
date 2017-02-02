@@ -23,8 +23,16 @@ public class PersonTranslator implements ModelTranslator<Person> {
     private static final String BIRTH_PLACE_KEY = "birthPlace";
     private static final String QUOTES_KEY = "quotes";
     private static final String AWARDS = "awards";
+
+    private static final String PSEUDO_FORENAME_KEY = "pseudoForname";
+    private static final String PSEUDO_SURNAME_KEY = "pseudoSurname";
+    private static final String ADDITIONAL_INFORMATION_KEY = "additionalInformation";
+    private static final String BILLING_KEY = "billing";
+    private static final String SOURCE_KEY = "source";
+    private static final String SOURCE_TITLE_KEY = "sourceTitle";
     
-    private ContentGroupTranslator contentGroupTranslator = new ContentGroupTranslator(false);
+    private ContentGroupTranslator contentGroupTranslator =
+            new ContentGroupTranslator(false);
     private ChildRefTranslator childRefTranslator = new ChildRefTranslator();
     private AwardTranslator awardTranslator = new AwardTranslator();
     
@@ -40,8 +48,16 @@ public class PersonTranslator implements ModelTranslator<Person> {
         entity.setBirthDate(TranslatorUtils.toDateTime(dbObject, BIRTH_DATE_KEY));
         entity.setBirthPlace(TranslatorUtils.toString(dbObject, BIRTH_PLACE_KEY));
         entity.setQuotes(TranslatorUtils.toSet(dbObject, QUOTES_KEY));
+        entity.setPseudoForename(TranslatorUtils.toString(dbObject, PSEUDO_FORENAME_KEY));
+        entity.setPseudoSurname(TranslatorUtils.toString(dbObject, PSEUDO_SURNAME_KEY));
+        entity.setAdditionalInfo(TranslatorUtils.toString(dbObject, ADDITIONAL_INFORMATION_KEY));
+        entity.setBilling(TranslatorUtils.toString(dbObject, BILLING_KEY));
+        entity.setSource(TranslatorUtils.toString(dbObject, SOURCE_KEY));
+        entity.setSourceTitle(TranslatorUtils.toString(dbObject, SOURCE_TITLE_KEY));
         if(dbObject.containsField(AWARDS)) {
-            entity.setAwards(awardTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, AWARDS)));
+            entity.setAwards(
+                    awardTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, AWARDS))
+            );
         }
         contentGroupTranslator.fromDBObject(dbObject, entity);
         
@@ -58,6 +74,13 @@ public class PersonTranslator implements ModelTranslator<Person> {
         TranslatorUtils.fromDateTime(dbObject, BIRTH_DATE_KEY, entity.getBirthDate());
         TranslatorUtils.from(dbObject, BIRTH_PLACE_KEY, entity.getBirthPlace());
         TranslatorUtils.fromSet(dbObject, entity.getQuotes(), QUOTES_KEY);
+
+        TranslatorUtils.from(dbObject, PSEUDO_FORENAME_KEY, entity.getPseudoForename());
+        TranslatorUtils.from(dbObject, PSEUDO_SURNAME_KEY, entity.getPseudoSurname());
+        TranslatorUtils.from(dbObject, ADDITIONAL_INFORMATION_KEY, entity.getAdditionalInfo());
+        TranslatorUtils.from(dbObject, BILLING_KEY, entity.getBilling());
+        TranslatorUtils.from(dbObject, SOURCE_KEY, entity.getSource());
+        TranslatorUtils.from(dbObject, SOURCE_TITLE_KEY, entity.getSourceTitle());
         
         dbObject.put("type", Person.class.getSimpleName());
         dbObject.removeField(ContentGroupTranslator.CONTENT_URIS_KEY);
@@ -66,7 +89,15 @@ public class PersonTranslator implements ModelTranslator<Person> {
     }
     
     public DBObject updateContentUris(Person entity) {
-        return new BasicDBObject(MongoConstants.ADD_TO_SET, new BasicDBObject(ContentGroupTranslator.CONTENT_URIS_KEY, new BasicDBObject("$each", childRefTranslator.toDBList(entity.getContents()))));
+        return new BasicDBObject(
+                MongoConstants.ADD_TO_SET,
+                new BasicDBObject(ContentGroupTranslator.CONTENT_URIS_KEY,
+                        new BasicDBObject(
+                                "$each",
+                                childRefTranslator.toDBList(entity.getContents())
+                        )
+                )
+        );
     }
     
     public List<Person> fromDBObjects(Iterable<DBObject> dbObjects) {

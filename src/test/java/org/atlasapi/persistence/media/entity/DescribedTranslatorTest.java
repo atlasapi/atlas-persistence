@@ -18,13 +18,17 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Language;
 import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.Priority;
 import org.atlasapi.media.entity.PriorityScoreReasons;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Review;
+import org.atlasapi.media.entity.Distribution;
 import org.atlasapi.media.segment.Segment;
+
+import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
@@ -43,7 +47,10 @@ public class DescribedTranslatorTest {
     @Test
     public void testHashCodeSymmetry() {
         
-        stub(identifiedTranslator.toDBObject((DBObject)any(), (Described)any())).toAnswer(new Answer<DBObject>() {
+        stub(identifiedTranslator.toDBObject(
+                (DBObject)any(),
+                (Described)any()
+        )).toAnswer(new Answer<DBObject>() {
             public DBObject answer(InvocationOnMock invocation) {
                 return (DBObject) invocation.getArguments()[0];
             }
@@ -54,8 +61,24 @@ public class DescribedTranslatorTest {
         list.add(ImmutableMap.of("url", "http://another.com/", "type", "unknown"));
         
         BasicDBList descriptionsList = new BasicDBList();
-        descriptionsList.add(ImmutableMap.of("language", "en-GB", "shortDescription", "Desc 1", "description", "Desc 1"));
-        descriptionsList.add(ImmutableMap.of("language", "en-US", "shortDescription", "Desc 2", "mediumDescription", "Desc 2 Medium", "description", "Desc 2 Medium"));
+        descriptionsList.add(ImmutableMap.of(
+                "language",
+                "en-GB",
+                "shortDescription",
+                "Desc 1",
+                "description",
+                "Desc 1"
+        ));
+        descriptionsList.add(ImmutableMap.of(
+                "language",
+                "en-US",
+                "shortDescription",
+                "Desc 2",
+                "mediumDescription",
+                "Desc 2 Medium",
+                "description",
+                "Desc 2 Medium"
+        ));
 
         BasicDBList titlesList = new BasicDBList();
         titlesList.add(ImmutableMap.of("language", "en-GB", "title", "Title 1"));
@@ -81,7 +104,10 @@ public class DescribedTranslatorTest {
         content.setLocalizedDescriptions(localizedDescriptions());
         content.setLocalizedTitles(localizedTitles());
         
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        DescribedTranslator translator = new DescribedTranslator(
+                identifiedTranslator,
+                null
+        );
         
         BasicDBObject dboFromContent = new BasicDBObject();
         translator.toDBObject(dboFromContent, content);
@@ -105,7 +131,10 @@ public class DescribedTranslatorTest {
         content.setLocalizedDescriptions(localizedDescriptions());
         content.setLocalizedTitles(localizedTitles());
         
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        DescribedTranslator translator = new DescribedTranslator(
+                identifiedTranslator,
+                null
+        );
         
         BasicDBObject dboFromContent = new BasicDBObject();
         translator.toDBObject(dboFromContent, content);       
@@ -113,17 +142,22 @@ public class DescribedTranslatorTest {
         assertTrue(dboFromContent.containsField(DescribedTranslator.LOCALIZED_DESCRIPTIONS_KEY));
         assertTrue(dboFromContent.containsField(DescribedTranslator.LOCALIZED_TITLES_KEY));
         
-        BasicDBList dboDescriptions = (BasicDBList) dboFromContent.get(DescribedTranslator.LOCALIZED_DESCRIPTIONS_KEY);
+        BasicDBList dboDescriptions =
+                (BasicDBList) dboFromContent.get(DescribedTranslator.LOCALIZED_DESCRIPTIONS_KEY);
         assertEquals(localizedDescriptions().size(), dboDescriptions.size());
         
-        BasicDBList dboTitles = (BasicDBList) dboFromContent.get(DescribedTranslator.LOCALIZED_TITLES_KEY);
+        BasicDBList dboTitles =
+                (BasicDBList) dboFromContent.get(DescribedTranslator.LOCALIZED_TITLES_KEY);
         assertEquals(localizedTitles().size(), dboTitles.size());    
     }
     
     @Test
     public void testReviewsTranslation() {        
         Content content = new Item();
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        DescribedTranslator translator = new DescribedTranslator(
+                identifiedTranslator,
+                null
+        );
         
         content.setReviews(ImmutableSet.of
                 (new Review(Locale.ENGLISH, "I am an English review."),
@@ -144,11 +178,16 @@ public class DescribedTranslatorTest {
     @Test
     public void testPriorityTranslationFromDb() {
         Content content = new Item();
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        DescribedTranslator translator =
+                new DescribedTranslator(identifiedTranslator, null);
 
         content.setPriority(new Priority(new Double(47.0), new PriorityScoreReasons(
                 ImmutableList.of("Positive reason test 1", "Positive reason test 2"),
-                ImmutableList.of("Negative reason test 1", "Negative reason test 2", "Negative reason test 3")
+                ImmutableList.of(
+                        "Negative reason test 1",
+                        "Negative reason test 2",
+                        "Negative reason test 3"
+                )
         )));
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
@@ -168,13 +207,23 @@ public class DescribedTranslatorTest {
         List<String> negativeScoreReasons = Lists.newArrayList();
         Content content = new Item();
         BasicDBObject dbo = new BasicDBObject();
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        DescribedTranslator translator =
+                new DescribedTranslator(identifiedTranslator, null);
 
         content.setPriority(new Priority(
                 new Double(47.0),
                 new PriorityScoreReasons(
-                        ImmutableList.of("Positive reason test 1","Positive reason test 2","Positive reason test 3"),
-                        ImmutableList.of("Negative reason test 1", "Negative reason test 2", "Negative reason test 3", "Negative reason test 4")
+                        ImmutableList.of(
+                                "Positive reason test 1",
+                                "Positive reason test 2",
+                                "Positive reason test 3"
+                        ),
+                        ImmutableList.of(
+                                "Negative reason test 1",
+                                "Negative reason test 2",
+                                "Negative reason test 3",
+                                "Negative reason test 4"
+                        )
                 )
         ));
         DBObject fromDBO = translator.toDBObject(dbo, content);
@@ -218,7 +267,8 @@ public class DescribedTranslatorTest {
         DBObject description = new BasicDBObject();
         description.put("title", "description title");
         dboObject.put("description", description);
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        DescribedTranslator translator =
+                new DescribedTranslator(identifiedTranslator, null);
 
         translator.fromDBObject(dboObject, segment);
 
@@ -231,7 +281,8 @@ public class DescribedTranslatorTest {
         Segment segment = new Segment();
         DBObject dboObject = new BasicDBObject();
         dboObject.put("description", "description title");
-        DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
+        DescribedTranslator translator =
+                new DescribedTranslator(identifiedTranslator, null);
 
         translator.fromDBObject(dboObject, segment);
 
@@ -280,5 +331,64 @@ public class DescribedTranslatorTest {
 
         return localizedTitles;        
     }
-    
+
+    @Test
+    public void DistributionTranslatedCorrectly() {
+        DescribedTranslator describedTranslator = new DescribedTranslator(
+                identifiedTranslator, null
+        );
+
+        Content content = new Item();
+        Distribution distribution1 = Distribution.builder()
+                .withDistributor("distributor")
+                .withFormat("format")
+                .withReleaseDate(DateTime.now())
+                .build();
+
+        Distribution distribution2 = Distribution.builder()
+                .withDistributor("distributor2")
+                .withFormat("format2")
+                .withReleaseDate(DateTime.now())
+                .build();
+
+        content.setDistributions(ImmutableList.of(distribution1, distribution2));
+
+        DBObject dbo = new BasicDBObject();
+
+        describedTranslator.toDBObject(dbo, content);
+
+        assertTrue(dbo.containsField(DescribedTranslator.DISTRIBUTION_KEY));
+
+        Described contentFromDbo = describedTranslator.fromDBObject(dbo, new Item());
+
+        assertEquals(content.getDistributions(), contentFromDbo.getDistributions());
+    }
+
+    @Test
+    public void LanguagesTranslatedCorrectly() {
+        DescribedTranslator describedTranslator = new DescribedTranslator(
+                identifiedTranslator, null
+        );
+
+        Content content = new Item();
+
+        Language language = Language.builder()
+                .withDisplay("display")
+                .withDubbing("dubbing")
+                .withCode("code")
+                .build();
+
+        content.setLanguage(language);
+
+        DBObject dbo = new BasicDBObject();
+
+        describedTranslator.toDBObject(dbo, content);
+
+        assertTrue(dbo.containsField(DescribedTranslator.LANGUAGE_KEY));
+
+        Described contentFromDbo = describedTranslator.fromDBObject(dbo, new Item());
+
+        assertEquals(content.getLanguage(), contentFromDbo.getLanguage());
+    }
+
 }
