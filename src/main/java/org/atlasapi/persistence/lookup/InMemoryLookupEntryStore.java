@@ -1,14 +1,5 @@
 package org.atlasapi.persistence.lookup;
 
-import java.util.Map;
-
-import org.atlasapi.media.entity.Alias;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.listing.ContentListingProgress;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
-import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-
-import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -17,6 +8,15 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.metabroadcast.common.query.Selection;
+import org.atlasapi.media.entity.Alias;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.listing.ContentListingProgress;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class InMemoryLookupEntryStore implements LookupEntryStore {
 
@@ -68,12 +68,10 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     public Iterable<LookupEntry> entriesForAliases(final Optional<String> namespace, Iterable<String> values) {
         if (namespace.isPresent()) {
             // create Aliases
-            Iterable<Alias> aliases = Iterables.transform(values, new Function<String, Alias>() {
-                @Override
-                public Alias apply(String value) {
-                    return new Alias(namespace.get(), value);
-                }
-            });
+            Iterable<Alias> aliases = StreamSupport.stream(values.spliterator(), false)
+                    .map(value -> new Alias(namespace.get(), value))
+                    .collect(Collectors.toList());
+
             return Iterables.concat(Iterables.filter(Iterables.transform(aliases, Functions.forMap(aliasStore.asMap(), null)), Predicates.notNull()));
         } else {
             return Iterables.concat(Iterables.filter(Iterables.transform(values, Functions.forMap(aliasValueStore.asMap(), null)), Predicates.notNull()));

@@ -1,6 +1,6 @@
 package org.atlasapi.persistence.output;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
+import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
@@ -17,6 +17,6 @@ public interface UpcomingItemsResolver {
     
     Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Container container);
     
-    Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Item container, ApplicationConfiguration config);
+    Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Item container, Application application);
 
 }

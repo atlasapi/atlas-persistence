@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
+import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
@@ -135,16 +135,16 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
     }
     
     @Override
-    public Iterable<ChildRef> availableItemsFor(Container container, ApplicationConfiguration config) {
-        return switchEquivs(availableItemsByPublisherFor(container, config).values(), container.getPublisher());
+    public Iterable<ChildRef> availableItemsFor(Container container, Application application) {
+        return switchEquivs(availableItemsByPublisherFor(container, application).values(), container.getPublisher());
     }
     
     @Override
-    public Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Item item, ApplicationConfiguration config) {
+    public Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Item item, Application application) {
         final DateTime now = clock.now();
         DBObject query = where()
                 .idIn(FluentIterable.from(item.getEquivalentTo())
-                                    .filter(sourceFilter(config.getEnabledSources()))
+                                    .filter(sourceFilter(application.getConfiguration().getEnabledReadSources()))
                                     .transform(LookupRef.TO_URI)
                      )
                 .or(new MongoQueryBuilder().doesNotExist(availabilityEnd),
@@ -155,9 +155,9 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
     }
     
     @Override
-    public Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Container container, ApplicationConfiguration config) {
+    public Multimap<Publisher, ChildRef> availableItemsByPublisherFor(Container container, Application application) {
         final DateTime now = clock.now();
-        return filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(container, config, now)));
+        return filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(container, application, now)));
     }
     
     @Override
@@ -172,7 +172,7 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
      * So if a Person has Item I, resolve LE for I, and I -> (J, K), test
      * (I,J,K), J is available, return I.
      */
-    public Iterable<ChildRef> availableItemsFor(Person person, ApplicationConfiguration config) {
+    public Iterable<ChildRef> availableItemsFor(Person person, Application application) {
         final DateTime now = clock.now();
         return switchEquivs(filterItems(now, sortByAvailabilityStart(availablityWindowsForItemsOf(person, now))).values(), person.getPublisher());
     }
@@ -226,7 +226,7 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
                             Long aid = TranslatorUtils.toLong(availableItem, IdentifiedTranslator.OPAQUE_ID);
                             String type = TranslatorUtils.toString(availableItem, IdentifiedTranslator.TYPE);
                             DateTime lastUpdated = TranslatorUtils.toDateTime(availableItem, IdentifiedTranslator.LAST_UPDATED);
-                            Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(availableItem, 
+                            Publisher publisher = Publisher.fromKey(TranslatorUtils.toString(availableItem,
                                                                     DescribedTranslator.PUBLISHER_KEY)
                                                                    ).requireValue();
                             itemMap.put(publisher, 
@@ -248,9 +248,9 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
     }
 
     // find available items for container and its equivalents from enabled sources
-    private Iterable<DBObject> availablityWindowsForItemsOf(Container container, ApplicationConfiguration config, DateTime time) {
+    private Iterable<DBObject> availablityWindowsForItemsOf(Container container, Application application, DateTime time) {
         DBObject query = where()
-            .fieldIn(containerKey, containerAndEquivalents(container, config))
+            .fieldIn(containerKey, containerAndEquivalents(container, application))
             .or(new MongoQueryBuilder().doesNotExist(availabilityEnd),
                 new MongoQueryBuilder().fieldAfter(availabilityEnd, time))
             //.fieldAfter(availabilityEndKey, time)
@@ -258,10 +258,10 @@ public class MongoAvailableItemsResolver implements AvailableItemsResolver {
         return children.find(query,fields);
     }
 
-    private Iterable<String> containerAndEquivalents(Container container, final ApplicationConfiguration config) {
+    private Iterable<String> containerAndEquivalents(Container container, final Application application) {
         return Iterables.concat(ImmutableSet.of(container.getCanonicalUri()),
                 Iterables.transform(Iterables.filter(
-                        container.getEquivalentTo(), sourceFilter(config.getEnabledSources())), 
+                        container.getEquivalentTo(), sourceFilter(application.getConfiguration().getEnabledReadSources())),
                 LookupRef.TO_URI));
     }
 

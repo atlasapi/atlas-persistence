@@ -5,11 +5,14 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
-import org.atlasapi.application.v3.SourceStatus;
+import com.google.common.collect.ImmutableList;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
+import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Encoding;
@@ -67,6 +70,10 @@ public class MongoAvailableItemsResolverTest {
     
     private final Episode e1 = episode("e1", equivalent, location("e1l1", dateTime(0), dateTime(10)));
     private final Episode e2 = episode("e2", equivalent, location("e2l2", null, null)); // Availability start/end of null implies always available
+
+    private Application application = mock(Application.class);
+    private ApplicationConfiguration configWithoutPA;
+    private ApplicationConfiguration configWithPA;
     
     @Before
     public void setUp() {
@@ -82,38 +89,34 @@ public class MongoAvailableItemsResolverTest {
         
         primary.setEquivalentTo(ImmutableSet.of(LookupRef.from(equivalent)));
         p2.setEquivalentTo(ImmutableSet.of(LookupRef.from(p1)));
+
+        configWithoutPA = ApplicationConfiguration.builder()
+                .withPrecedence(ImmutableList.of())
+                .withEnabledWriteSources(ImmutableList.of())
+                .build();
+
+        configWithPA = ApplicationConfiguration.builder()
+                .withPrecedence(ImmutableList.of(Publisher.PA))
+                .withEnabledWriteSources(ImmutableList.of())
+                .build();
     }
     
     @Test
     public void testResolvesChildrenOfEquivalentBrandsAsTheItemsOfThePrimaryBrand() {
         clock.jumpTo(dateTime(5));
-        ApplicationConfiguration noPaConfig = ApplicationConfiguration.defaultConfiguration();
-        Set<ChildRef> childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, noPaConfig));
+
+        when(application.getConfiguration()).thenReturn(configWithoutPA);
+
+        Set<ChildRef> childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, application));
         ChildRef childRef = Iterables.getOnlyElement(childRefs);
         assertEquals(p1.getCanonicalUri(), childRef.getUri());
 
-        ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
-                .enable(Publisher.PA);
-        childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, withPaConfig));
+        when(application.getConfiguration()).thenReturn(configWithPA);
+
+        childRefs = ImmutableSet.copyOf(resolver.availableItemsFor(primary, application));
         assertThat(childRefs.size(), is(2));
         assertThat(Iterables.transform(childRefs, ChildRef.TO_URI), hasItems(p1.getCanonicalUri(), p2.getCanonicalUri()));
         
-    }
-    
-    @Test
-    public void testResolvesEquivalentItemsForAvailabilityCheck() {
-        clock.jumpTo(dateTime(5));
-        ApplicationConfiguration withPaAndBbcConfig = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED)
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
-        
-        assertEquals(1, resolver.availableItemsByPublisherFor(p2, withPaAndBbcConfig).values().size());
-        
-        ApplicationConfiguration withPaConfig = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED)
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_DISABLED);
-        
-        assertEquals(0, resolver.availableItemsByPublisherFor(p2, withPaConfig).values().size());
     }
 
     private void writeEquivalences(Episode a, Episode b) {

@@ -14,6 +14,8 @@ import static org.mockito.Mockito.mock;
 import java.util.Arrays;
 import java.util.List;
 
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.common.query.Selection;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
@@ -61,6 +63,7 @@ public class MongoContentListerTest {
 
     private static final ServiceResolver serviceResolver = mock(ServiceResolver.class);
     private static final PlayerResolver playerResolver = mock(PlayerResolver.class);
+    private static final ContentQuery matchEverythingContentQuery = new ContentQuery(ImmutableList.of(), Selection.ALL, mock(Application.class));
     
     private static final DateTime tenthOfTheTenth = new DateTime(2011,10,10,00,00,00,000,DateTimeZones.UTC);
     private static final DateTime ELEVENTH_OF_THE_TENTH = new DateTime(2011,10,11,00,00,00,000,DateTimeZones.UTC);
@@ -114,15 +117,15 @@ public class MongoContentListerTest {
     @Test
     public void testTopicListing() {
         
-        ImmutableSet<Content> contents = ImmutableSet.copyOf(lister.contentForTopic(1l, ContentQuery.MATCHES_EVERYTHING));
+        ImmutableSet<Content> contents = ImmutableSet.copyOf(lister.contentForTopic(1l, matchEverythingContentQuery));
         assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item2,bbcBrand,c4Brand))));
         
         
-        contents = ImmutableSet.copyOf(lister.contentForTopic(2l, ContentQuery.MATCHES_EVERYTHING));
+        contents = ImmutableSet.copyOf(lister.contentForTopic(2l, matchEverythingContentQuery));
         assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,bbcBrand))));
         
         
-        contents = ImmutableSet.copyOf(lister.contentForTopic(3l, ContentQuery.MATCHES_EVERYTHING));
+        contents = ImmutableSet.copyOf(lister.contentForTopic(3l, matchEverythingContentQuery));
         assertThat(contents, is(equalTo(ImmutableSet.<Content>of(bbcItem1,c4Item1,c4Item2,c4Brand))));
         
     }
@@ -198,7 +201,7 @@ public class MongoContentListerTest {
     @Test
     public void testContentForEventIds() {
         List<Content> contents = ImmutableList.copyOf(lister.contentForEvent(
-                Arrays.asList(1234L, 12345L), ContentQuery.MATCHES_EVERYTHING));
+                Arrays.asList(1234L, 12345L), matchEverythingContentQuery));
         assertEquals(contents.get(0).getCanonicalUri(), "bbcItem1" );
         assertEquals(contents.get(1).getCanonicalUri(), "bbcItem2");
 
