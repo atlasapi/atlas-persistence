@@ -7,7 +7,7 @@ import static com.metabroadcast.common.persistence.translator.TranslatorUtils.to
 
 import java.util.Collection;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
+import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.EntityType;
@@ -78,16 +78,16 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
     }
     
     @Override
-    public Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Item item, ApplicationConfiguration config) {
+    public Multimap<Publisher, ChildRef> upcomingItemsByPublisherFor(Item item, Application application) {
         final DateTime now = clock.now();
-        return filterToChildRef(now, broadcastEndsForEquivalentTo(item, config));
+        return filterToChildRef(now, broadcastEndsForEquivalentTo(item, application));
     }
     
-    private Iterable<DBObject> broadcastEndsForEquivalentTo(Item item, ApplicationConfiguration config) {
+    private Iterable<DBObject> broadcastEndsForEquivalentTo(Item item, Application application) {
         final DateTime now = clock.now();
         DBObject query = where()
                 .idIn(FluentIterable.from(item.getEquivalentTo())
-                                    .filter(sourceFilter(config.getEnabledSources()))
+                                    .filter(sourceFilter(application.getConfiguration().getEnabledReadSources()))
                                     .transform(LookupRef.TO_URI)
                      )
                 .fieldAfter(transmissionEndTime, now)
@@ -101,8 +101,10 @@ public class MongoUpcomingItemsResolver implements UpcomingItemsResolver {
         return filterToChildRef(now, broadcastEndsForItemsOf(person, now)).values();
     }
 
-    private Multimap<Publisher, ChildRef> filterToChildRef(final DateTime now,
-            Iterable<DBObject> broadcastEnds) {
+    private Multimap<Publisher, ChildRef> filterToChildRef(
+            final DateTime now,
+            Iterable<DBObject> broadcastEnds
+    ) {
         
         Builder<Publisher, ChildRef> builder = ImmutableMultimap.builder();
         

@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
+import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -45,33 +45,33 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     }
     
     @Override
-    public Optional<Person> person(String uri, ApplicationConfiguration configuration) {
-        List<Person> people = people(ImmutableList.of(uri), configuration);
+    public Optional<Person> person(String uri, Application application) {
+        List<Person> people = people(ImmutableList.of(uri), application);
         return Optional.fromNullable(Iterables.getOnlyElement(people, null));
     }
 
     @Override
-    public Optional<Person> person(Long id, ApplicationConfiguration configuration) {
-        List<Person> people = peopleByIds(ImmutableList.of(id), configuration);
+    public Optional<Person> person(Long id, Application application) {
+        List<Person> people = peopleByIds(ImmutableList.of(id), application);
         return Optional.fromNullable(Iterables.getOnlyElement(people, null));
     }
     
     @Override
-    public Iterable<Person> people(Iterable<Publisher> publishers, ApplicationConfiguration config, 
+    public Iterable<Person> people(Iterable<Publisher> publishers, Application application,
             Selection selection) {
         
         Iterable<LookupEntry> entries = peopleLookupEntryStore.entriesForPublishers(publishers, selection);
         Map<String, LookupEntry> entriesIndex = Maps.uniqueIndex(entries, Functions.compose(LookupRef.TO_URI, LookupEntry.TO_SELF));
         
-        Map<String, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, config), Identified.TO_URI);
+        Map<String, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, application), Identified.TO_URI);
         
         ListMultimap<String, Person> idToPeople = keysToPeople(entriesIndex, peopleIndex, LookupRef.TO_URI);
-        return findOrMerge(peopleIndex.keySet(), idToPeople, Identified.TO_URI, config);
+        return findOrMerge(peopleIndex.keySet(), idToPeople, Identified.TO_URI, application);
     }
     
     @Override
     /*
-     * Find people for URIs by resolving entries for those URIs to create an
+     * Find people for URIs by resolving entries for those URIs to createDefault an
      * entry index. 
      * All required people are resolved from the set of all
      * equivalents of the resolved entries, creating an index of required
@@ -79,40 +79,40 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
      * The requested URIs are transformed to people equivalence sets and
      * merged as necessary.
      */
-    public List<Person> people(Iterable<String> uris, final ApplicationConfiguration config) {
+    public List<Person> people(Iterable<String> uris, final Application application) {
 
         Iterable<LookupEntry> entries = peopleLookupEntryStore.entriesForIdentifiers(uris, true);
         Map<String, LookupEntry> entriesIndex = Maps.uniqueIndex(entries, LookupEntry.TO_ID);
         
-        Map<String, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, config), Identified.TO_URI);
+        Map<String, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, application), Identified.TO_URI);
         
         ListMultimap<String, Person> urisToPeople = keysToPeople(entriesIndex, peopleIndex, LookupRef.TO_URI);
-        return findOrMerge(uris, urisToPeople, Identified.TO_URI, config);
+        return findOrMerge(uris, urisToPeople, Identified.TO_URI, application);
     }
     
 
-    public List<Person> peopleByIds(Iterable<Long> ids, final ApplicationConfiguration config) {
+    public List<Person> peopleByIds(Iterable<Long> ids, final Application application) {
         
         Iterable<LookupEntry> entries = peopleLookupEntryStore.entriesForIds(ids);
         Map<Long, LookupEntry> entriesIndex = Maps.uniqueIndex(entries, Functions.compose(LookupRef.TO_ID, LookupEntry.TO_SELF));
         
-        Map<Long, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, config), Identified.TO_ID);
+        Map<Long, Person> peopleIndex = Maps.uniqueIndex(peopleForEntries(entriesIndex, application), Identified.TO_ID);
         
         ListMultimap<Long, Person> idToPeople = keysToPeople(entriesIndex, peopleIndex, LookupRef.TO_ID);
-        return findOrMerge(ids, idToPeople, Identified.TO_ID, config);
+        return findOrMerge(ids, idToPeople, Identified.TO_ID, application);
     }
 
     private <T> List<Person> findOrMerge(Iterable<T> keys, ListMultimap<T, Person> keyToPeople,
-            Function<? super Person, T> personToKey, ApplicationConfiguration config) {
-        return config.precedenceEnabled() ? merge(keys, keyToPeople, config) 
+            Function<? super Person, T> personToKey, Application application) {
+        return application.getConfiguration().isPrecedenceEnabled() ? merge(keys, keyToPeople, application)
                                           : find(keys, keyToPeople, personToKey);
     }
     
-    private <T> List<Person> merge(Iterable<T> keys, ListMultimap<T, Person> keyToPeople, ApplicationConfiguration config) {
+    private <T> List<Person> merge(Iterable<T> keys, ListMultimap<T, Person> keyToPeople, Application application) {
         Builder<Person> result = ImmutableList.builder();
         for (T key : keys) {
             List<Person> people = keyToPeople.get(key);
-            Person person = merge(people, config);
+            Person person = merge(people, application);
             if (person != null) {
                 result.add(person);
             }
@@ -133,12 +133,12 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
     }
     
     private <T> Iterable<Person> peopleForEntries(Map<T, LookupEntry> entriesIndex,
-            ApplicationConfiguration config) {
+            Application application) {
         if (entriesIndex.isEmpty()) {
             return ImmutableList.of();
         }
         Iterable<Set<LookupRef>> entryRefs = Iterables.transform(entriesIndex.values(),LookupEntry.TO_EQUIVS);
-        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(config.getEnabledSources()));
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(application.getConfiguration().getEnabledReadSources()));
         Iterable<LookupRef> enabledRefs = Iterables.filter(Iterables.concat(entryRefs), sourceFilter);
         return peopleResolver.people(enabledRefs);
     }
@@ -157,11 +157,11 @@ public class EquivalatingPeopleResolver implements PeopleQueryResolver {
         return result.build();
     }
 
-    private Person merge(List<Person> people, ApplicationConfiguration configuration) {
+    private Person merge(List<Person> people, Application application) {
         if (people == null || people.isEmpty()) {
             return null;
         }
-        return Iterables.getFirst(outputContentMerger.merge(configuration, people), null);
+        return Iterables.getFirst(outputContentMerger.merge(application, people), null);
     }
 
     private <T> Person find(T key, List<Person> people, Function<? super Person, T> personToKey) {

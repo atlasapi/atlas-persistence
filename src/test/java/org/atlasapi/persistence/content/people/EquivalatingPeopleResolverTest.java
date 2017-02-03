@@ -13,14 +13,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.atlasapi.application.v3.ApplicationConfiguration;
-import org.atlasapi.application.v3.SourceStatus;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Person;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.PeopleResolver;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -35,6 +36,26 @@ public class EquivalatingPeopleResolverTest {
     private final LookupEntryStore entryStore = mock(LookupEntryStore.class);
     private final EquivalatingPeopleResolver resolver
         = new EquivalatingPeopleResolver(peopleResolver, entryStore);
+    private Application appWithPrecedence = mock(Application.class);
+    private Application appWithNoPrecedence = mock(Application.class);
+
+    @Before
+    public void setUp() {
+        when(appWithPrecedence.getConfiguration()).thenReturn(
+                ApplicationConfiguration.builder()
+                        .withPrecedence(ImmutableList.of(Publisher.BBC))
+                        .withEnabledWriteSources(ImmutableList.of())
+                        .build()
+        );
+
+        when(appWithNoPrecedence.getConfiguration()).thenReturn(
+                ApplicationConfiguration.builder()
+                        .withNoPrecedence(ImmutableList.of(Publisher.BBC))
+                        .withEnabledWriteSources(ImmutableList.of())
+                        .build()
+        );
+
+    }
     
     @Test
     public void testResolvingPersonByUri() {
@@ -47,9 +68,7 @@ public class EquivalatingPeopleResolverTest {
         when(peopleResolver.people(argThat(hasItems(primaryEntry.lookupRef()))))
             .thenReturn(ImmutableList.of(primary));
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
-        Optional<Person> person = resolver.person(primary.getCanonicalUri(), config);
+        Optional<Person> person = resolver.person(primary.getCanonicalUri(), appWithPrecedence);
         
         assertThat(person.get(), is(primary));
     }
@@ -69,9 +88,7 @@ public class EquivalatingPeopleResolverTest {
         when(peopleResolver.people(argThat(hasItems(equivRef))))
             .thenReturn(ImmutableList.of(equiv));
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
-        Optional<Person> person = resolver.person(primary.getCanonicalUri(), config);
+        Optional<Person> person = resolver.person(primary.getCanonicalUri(), appWithNoPrecedence);
         
         assertFalse(person.isPresent());
     }
@@ -91,10 +108,7 @@ public class EquivalatingPeopleResolverTest {
         when(peopleResolver.people(argThat(hasItems(equivRef))))
             .thenReturn(ImmutableList.of(equiv));
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED)
-                .copyWithPrecedence(ImmutableList.of(Publisher.BBC));
-        Optional<Person> person = resolver.person(primary.getCanonicalUri(), config);
+        Optional<Person> person = resolver.person(primary.getCanonicalUri(), appWithPrecedence);
         
         assertTrue(person.isPresent());
         assertThat(person.get().getCanonicalUri(), is(equiv.getCanonicalUri()));
@@ -112,9 +126,7 @@ public class EquivalatingPeopleResolverTest {
         when(peopleResolver.people(argThat(hasItems(primaryEntry.lookupRef()))))
             .thenReturn(ImmutableList.of(primary));
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
-        Optional<Person> person = resolver.person(primary.getId(), config);
+        Optional<Person> person = resolver.person(primary.getId(), appWithPrecedence);
         
         assertThat(person.get(), is(primary));
     }
@@ -140,9 +152,7 @@ public class EquivalatingPeopleResolverTest {
         when(peopleResolver.people(argThat(hasItems(equivRef))))
             .thenReturn(ImmutableList.of(equiv));
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
-        Optional<Person> person = resolver.person(primary.getId(), config);
+        Optional<Person> person = resolver.person(primary.getId(), appWithNoPrecedence);
         
         assertFalse(person.isPresent());
     }
@@ -162,10 +172,7 @@ public class EquivalatingPeopleResolverTest {
         when(peopleResolver.people(argThat(hasItems(equivRef))))
             .thenReturn(ImmutableList.of(equiv));
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED)
-                .copyWithPrecedence(ImmutableList.of(Publisher.BBC));
-        Optional<Person> person = resolver.person(primary.getId(), config);
+        Optional<Person> person = resolver.person(primary.getId(), appWithPrecedence);
         
         assertTrue(person.isPresent());
         assertThat(person.get().getCanonicalUri(), is(equiv.getCanonicalUri()));
@@ -187,9 +194,8 @@ public class EquivalatingPeopleResolverTest {
         when(peopleResolver.people(argThat(hasItems(primaryEntry.lookupRef()))))
             .thenReturn(ImmutableList.of(primary, equiv));
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
-        Iterable<Person> persons = resolver.people(ImmutableList.of(primary.getCanonicalUri()), config);
+        Iterable<Person> persons = resolver.people(ImmutableList.of(primary.getCanonicalUri()),
+                appWithPrecedence);
         
         Person person = Iterables.getOnlyElement(persons);
         assertThat(person, is(primary));
@@ -211,10 +217,9 @@ public class EquivalatingPeopleResolverTest {
 
         when(peopleResolver.people(argThat(hasItems(primaryEntry.lookupRef()))))
             .thenReturn(ImmutableList.of(primary));
-        
-        ApplicationConfiguration noPaConfig = ApplicationConfiguration.defaultConfiguration()
-                .withSource(Publisher.BBC, SourceStatus.AVAILABLE_ENABLED);
-        Iterable<Person> persons = resolver.people(ImmutableList.of(primary.getCanonicalUri()), noPaConfig);
+
+        Iterable<Person> persons = resolver.people(ImmutableList.of(primary.getCanonicalUri()),
+                appWithPrecedence);
         
         Person person = Iterables.getOnlyElement(persons);
         assertThat(person, is(primary));
@@ -228,8 +233,8 @@ public class EquivalatingPeopleResolverTest {
         when(entryStore.entriesForIdentifiers(argThat(hasItems(uriWithNoEntry)),anyBoolean()))
             .thenReturn(ImmutableList.<LookupEntry>of());
         
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration();
-        Iterable<Person> persons = resolver.people(ImmutableList.of(uriWithNoEntry), config);
+        Iterable<Person> persons = resolver.people(ImmutableList.of(uriWithNoEntry),
+                appWithPrecedence);
       
         assertTrue(Iterables.isEmpty(persons));
         
@@ -249,9 +254,9 @@ public class EquivalatingPeopleResolverTest {
 
         when(peopleResolver.people(anyLookupRefs()))
             .thenReturn(ImmutableList.<Person>of());
-        
-        ApplicationConfiguration config = ApplicationConfiguration.defaultConfiguration();
-        Iterable<Person> persons = resolver.people(ImmutableList.of(disabledSourcePerson.getCanonicalUri()), config);
+
+        Iterable<Person> persons = resolver.people(ImmutableList.of(disabledSourcePerson.getCanonicalUri()),
+                appWithPrecedence);
         
         assertTrue(Iterables.isEmpty(persons));
         
