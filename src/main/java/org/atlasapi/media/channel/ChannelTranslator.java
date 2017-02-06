@@ -11,6 +11,7 @@ import org.atlasapi.persistence.media.entity.RelatedLinkTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.mongodb.BasicDBList;
@@ -68,6 +69,8 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Channel model) {
+        checkNotNull(model.getMediaType());
+
         dbObject = new BasicDBObject();
 
         identifiedTranslator.toDBObject(dbObject, model);
