@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
+//@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraEquivalenceSummaryStoreTest {
 
     private CassandraEquivalenceSummaryStore store;

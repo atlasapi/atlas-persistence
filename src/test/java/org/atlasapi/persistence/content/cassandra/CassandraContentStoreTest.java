@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Ignore;
 
-@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
+//@Ignore(value="Enable if running a local Cassandra instance with Atlas schema.")
 public class CassandraContentStoreTest {
     
     //private static final String CASSANDRA_HOST = "cassandra1.owl.atlas.mbst.tv";
