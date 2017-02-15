@@ -108,7 +108,6 @@ public class ContentListingCriteria {
             ContentListingCriteria other = (ContentListingCriteria) that;
             return this.progress.equals(other.progress) &&
                     this.publishers.equals(other.publishers) &&
-                    this.progress.equals(other.progress) &&
                     this.categories.equals(other.categories);
         }
         return false;
