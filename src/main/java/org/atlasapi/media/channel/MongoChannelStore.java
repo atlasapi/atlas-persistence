@@ -45,6 +45,8 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.media.channel.ChannelTranslator.ADVERTISE_FROM;
 import static org.atlasapi.media.channel.ChannelTranslator.AVAILABLE_ON;
 import static org.atlasapi.media.channel.ChannelTranslator.BROADCASTER;
+import static org.atlasapi.media.channel.ChannelTranslator.IDS_NAMESPACE;
+import static org.atlasapi.media.channel.ChannelTranslator.IDS_VALUE;
 import static org.atlasapi.media.channel.ChannelTranslator.KEY;
 import static org.atlasapi.media.channel.ChannelTranslator.MEDIA_TYPE;
 import static org.atlasapi.media.channel.ChannelTranslator.PUBLISHER;
@@ -240,6 +242,12 @@ public class MongoChannelStore implements ServiceChannelStore {
         }
         if (query.getUri().isPresent()) {
             mongoQuery.fieldEquals(URI, query.getUri().get());
+        }
+        if (query.getAliasNamespace().isPresent()) {
+            mongoQuery.fieldEquals(IDS_NAMESPACE, query.getAliasNamespace().get());
+        }
+        if (query.getAliasValue().isPresent()) {
+            mongoQuery.fieldEquals(IDS_VALUE, query.getAliasValue().get());
         }
         return Iterables.transform(
                 getOrderedCursor(mongoQuery.build()),
