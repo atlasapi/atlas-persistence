@@ -66,6 +66,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
         TranslatorUtils.fromSet(dbObject, entity.getAliasUrls(), ALIASES);
 
+        // We store the Identified aliases as ids in Mongo
+        // because the current aliases field in Mongo refers to aliasUrls
         TranslatorUtils.from(dbObject, IDS, aliasTranslator.toDBList(entity.getAliases()));
 
         TranslatorUtils.from(dbObject, EQUIVALENT_TO, toDBObject(entity.getEquivalentTo()));
