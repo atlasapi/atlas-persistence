@@ -19,6 +19,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 import static com.google.common.collect.Iterables.transform;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ChannelTranslator implements ModelTranslator<Channel> {
 
@@ -82,7 +83,11 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 
         encodeRelatedLinks(dbObject, model);
 
-        TranslatorUtils.from(dbObject, MEDIA_TYPE, model.getMediaType().name());
+        TranslatorUtils.from(
+                dbObject,
+                MEDIA_TYPE,
+                model.getMediaType() != null ? model.getMediaType().name() : null
+        );
         TranslatorUtils.from(dbObject, PUBLISHER, model.getSource().key());
         TranslatorUtils.from(dbObject, HIGH_DEFINITION, model.getHighDefinition());
         TranslatorUtils.from(dbObject, REGIONAL, model.getRegional());
@@ -139,9 +144,12 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
             model = Channel.builder().build();
         }
 
-        model.setSource(Publisher.fromKey(TranslatorUtils.toString(dbObject, PUBLISHER))
-                .requireValue());
+        model.setSource(Publisher.fromKey(
+                TranslatorUtils.toString(dbObject, PUBLISHER)
+        ).requireValue());
+
         model.setMediaType(MediaType.valueOf(TranslatorUtils.toString(dbObject, MEDIA_TYPE)));
+
         if (dbObject.containsField(TITLES)) {
             model.setTitles(temporalTitleTranslator.toTemporalTitleSet(dbObject, TITLES));
         }
