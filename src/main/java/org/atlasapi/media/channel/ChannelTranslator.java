@@ -52,8 +52,6 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
     public static final String CHANNEL_TYPE = "channelType";
     public static final String URI = "uri";
     public static final String INTERACTIVE = "interactive";
-    public static final String IDS_NAMESPACE = "ids.namespace";
-    public static final String IDS_VALUE = "ids.value";
 
     private ModelTranslator<Identified> identifiedTranslator;
     private ChannelNumberingTranslator channelNumberingTranslator;

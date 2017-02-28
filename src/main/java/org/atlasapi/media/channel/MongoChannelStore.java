@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
@@ -16,6 +17,7 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.stream.MoreCollectors;
 
 import com.google.common.base.Equivalence;
 import com.google.common.base.Joiner;
@@ -45,13 +47,13 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.media.channel.ChannelTranslator.ADVERTISE_FROM;
 import static org.atlasapi.media.channel.ChannelTranslator.AVAILABLE_ON;
 import static org.atlasapi.media.channel.ChannelTranslator.BROADCASTER;
-import static org.atlasapi.media.channel.ChannelTranslator.IDS_NAMESPACE;
-import static org.atlasapi.media.channel.ChannelTranslator.IDS_VALUE;
 import static org.atlasapi.media.channel.ChannelTranslator.KEY;
 import static org.atlasapi.media.channel.ChannelTranslator.MEDIA_TYPE;
 import static org.atlasapi.media.channel.ChannelTranslator.PUBLISHER;
 import static org.atlasapi.media.channel.ChannelTranslator.URI;
 import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.CANONICAL_URL;
+import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.IDS_NAMESPACE;
+import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.IDS_VALUE;
 
 public class MongoChannelStore implements ServiceChannelStore {
 
@@ -223,6 +225,19 @@ public class MongoChannelStore implements ServiceChannelStore {
             }
         }
         return ImmutableMap.copyOf(channelMap);
+    }
+
+    // this method fetches channels by its aliases that are stored as ids in Mongo
+    @Override
+    public Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery) {
+        MongoQueryBuilder queryBuilder = new MongoQueryBuilder();
+
+        queryBuilder.fieldEquals(IDS_NAMESPACE, channelQuery.getAliasNamespace().get());
+        queryBuilder.fieldEquals(IDS_VALUE, channelQuery.getAliasValue().get());
+
+        return StreamSupport.stream(getOrderedCursor(queryBuilder.build()).spliterator(), false)
+                .map(DB_TO_CHANNEL_TRANSLATOR)
+                .collect(MoreCollectors.toImmutableList());
     }
 
     private DBCursor getOrderedCursor(DBObject query) {

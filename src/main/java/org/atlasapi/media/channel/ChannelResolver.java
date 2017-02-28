@@ -29,4 +29,6 @@ public interface ChannelResolver {
      */
     Map<String, Channel> forAliases(String aliasPrefix);
 
+    Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery);
+
 }
