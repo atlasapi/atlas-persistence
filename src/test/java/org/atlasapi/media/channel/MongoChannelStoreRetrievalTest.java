@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
@@ -217,5 +218,23 @@ public class MongoChannelStoreRetrievalTest {
         Iterable<Channel> channels = store.allChannels(query);
         assertFalse(Iterables.isEmpty(channels));
         assertTrue(Iterables.getOnlyElement(channels).getUri().equals("uri1"));
+    }
+
+    @Test
+    public void testRetrievesChannelByAlias() {
+        Alias alias = new Alias("dragons", "everywhere");
+
+        Channel channelWithAlias = channel(6, "uri6", "key6", "episode", dateTime.plusDays(1), "testAlias");
+        channelWithAlias.setAliases(ImmutableList.of(alias));
+        store.createOrUpdate(channelWithAlias);
+
+        ChannelQuery query = ChannelQuery.builder()
+                .withAliasNamespace("dragons")
+                .withAliasValue("everywhere")
+                .build();
+        Iterable<Channel> channels = store.forKeyPairAlias(query);
+
+        assertFalse(Iterables.isEmpty(channels));
+        assertTrue(Iterables.getOnlyElement(channels).getAliases().contains(alias));
     }
 }
