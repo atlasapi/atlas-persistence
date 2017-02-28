@@ -11,7 +11,6 @@ import org.joda.time.DateTime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-
 public class ChannelQuery {
 
     private final Optional<Publisher> broadcaster;
@@ -22,11 +21,8 @@ public class ChannelQuery {
     private final Optional<DateTime> advertisedOn;
     private final Optional<Publisher> publisher;
     private final Optional<String> uri;
-    private final Optional<ChannelType> channelType;
-
-    public static Builder builder() {
-        return new Builder();
-    }
+    private final Optional<String> aliasNamespace;
+    private final Optional<String> aliasValue;
 
     private ChannelQuery(
             Optional<Publisher> broadcaster,
@@ -37,7 +33,8 @@ public class ChannelQuery {
             Optional<DateTime> advertisedOn,
             Optional<Publisher> publisher,
             Optional<String> uri,
-            Optional<ChannelType> channelType
+            Optional<String> aliasNamespace,
+            Optional<String> aliasValue
     ) {
         this.broadcaster = checkNotNull(broadcaster);
         this.mediaType = checkNotNull(mediaType);
@@ -47,7 +44,12 @@ public class ChannelQuery {
         this.advertisedOn = checkNotNull(advertisedOn);
         this.publisher = checkNotNull(publisher);
         this.uri = checkNotNull(uri);
-        this.channelType = checkNotNull(channelType);
+        this.aliasNamespace = checkNotNull(aliasNamespace);
+        this.aliasValue = checkNotNull(aliasValue);
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     public Optional<Publisher> getBroadcaster() {
@@ -82,23 +84,12 @@ public class ChannelQuery {
         return uri;
     }
 
-    public Optional<ChannelType> getChannelType() {
-        return channelType;
+    public Optional<String> getAliasNamespace() {
+        return aliasNamespace;
     }
 
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(ChannelQuery.class)
-                .add("broadcaster", broadcaster)
-                .add("mediaType", mediaType)
-                .add("availableFrom", availableFrom)
-                .add("channelGroups", channelGroups)
-                .add("genres", genres)
-                .add("advertiseOn", advertisedOn)
-                .add("publisher", publisher)
-                .add("uri", uri)
-                .add("channelType", channelType)
-                .toString();
+    public Optional<String> getAliasValue() {
+        return aliasValue;
     }
 
     @Override
@@ -111,7 +102,8 @@ public class ChannelQuery {
                 genres,
                 publisher,
                 uri,
-                channelType
+                aliasNamespace,
+                aliasNamespace
         );
     }
 
@@ -130,9 +122,26 @@ public class ChannelQuery {
                     && advertisedOn.equals(other.advertisedOn)
                     && publisher.equals(other.publisher)
                     && uri.equals(other.uri)
-                    && channelType.equals(other.channelType);
+                    && aliasNamespace.equals(other.aliasNamespace)
+                    && aliasValue.equals(other.aliasValue);
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(ChannelQuery.class)
+                .add("broadcaster", broadcaster)
+                .add("mediaType", mediaType)
+                .add("availableFrom", availableFrom)
+                .add("channelGroups", channelGroups)
+                .add("genres", genres)
+                .add("advertiseOn", advertisedOn)
+                .add("publisher", publisher)
+                .add("uri", uri)
+                .add("aliasNamespace", aliasNamespace)
+                .add("aliasValue", aliasValue)
+                .toString();
     }
 
     public static class Builder {
@@ -146,22 +155,10 @@ public class ChannelQuery {
         private Optional<Publisher> source = Optional.absent();
         private Optional<Publisher> publisher = Optional.absent();
         private Optional<String> uri = Optional.absent();
-        private Optional<ChannelType> channelType = Optional.absent();
+        private Optional<String> aliasNamespace = Optional.absent();
+        private Optional<String> aliasValue = Optional.absent();
 
-        private Builder() {}
-
-        public ChannelQuery build() {
-            return new ChannelQuery(
-                    broadcaster,
-                    mediaType,
-                    availableFrom,
-                    channelGroups,
-                    genres,
-                    advertisedOn,
-                    publisher,
-                    uri,
-                    channelType
-            );
+        private Builder() {
         }
 
         public Builder withBroadcaster(Publisher broadcaster) {
@@ -204,9 +201,29 @@ public class ChannelQuery {
             return this;
         }
 
-        public Builder withChannelType(ChannelType channelType) {
-            this.channelType = Optional.fromNullable(channelType);
+        public Builder withAliasNamespace(String aliasNamespace) {
+            this.aliasNamespace = Optional.fromNullable(aliasNamespace);
             return this;
+        }
+
+        public Builder withAliasValue(String aliasValue) {
+            this.aliasValue = Optional.fromNullable(aliasValue);
+            return this;
+        }
+
+        public ChannelQuery build() {
+            return new ChannelQuery(
+                    broadcaster,
+                    mediaType,
+                    availableFrom,
+                    channelGroups,
+                    genres,
+                    advertisedOn,
+                    publisher,
+                    uri,
+                    aliasNamespace,
+                    aliasValue
+            );
         }
     }
 }
