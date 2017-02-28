@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 
 import org.joda.time.Duration;
 import org.slf4j.Logger;
@@ -17,6 +18,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.caching.BackgroundComputingValue;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.stream.MoreCollectors;
+
+import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.IDS_NAMESPACE;
+import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.IDS_VALUE;
 
 public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
 
@@ -119,6 +125,12 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
             }
         }
         return ImmutableMap.copyOf(channelMap);
+    }
+
+    // this method fetches channels by its aliases that are stored as ids in Mongo
+    @Override
+    public Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery) {
+        return delegate.forKeyPairAlias(channelQuery);
     }
 
     private static class ChannelsUpdater implements Callable<List<Channel>> {
