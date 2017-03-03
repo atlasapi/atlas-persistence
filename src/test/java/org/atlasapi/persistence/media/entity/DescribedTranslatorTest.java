@@ -125,10 +125,10 @@ public class DescribedTranslatorTest {
         Content content = new Item();
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
         
-        content.setReviews(ImmutableSet.of
-                (new Review(Locale.ENGLISH, "I am an English review."),
-                        new Review(Locale.FRENCH, "Je suis un examen en français.")
-                ));
+        content.setReviews(ImmutableSet.of(
+                Review.builder().withLocale(Locale.ENGLISH).withReview("I am an English review.").build(),
+                Review.builder().withLocale(Locale.FRENCH).withReview("Je suis un examen en français.").build()
+        ));
         
         BasicDBObject dbo = new BasicDBObject();
         translator.toDBObject(dbo, content);
