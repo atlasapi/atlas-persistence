@@ -103,7 +103,7 @@ public class ChannelQuery {
                 publisher,
                 uri,
                 aliasNamespace,
-                aliasNamespace
+                aliasValue
         );
     }
 
