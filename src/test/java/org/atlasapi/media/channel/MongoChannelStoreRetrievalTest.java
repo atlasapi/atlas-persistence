@@ -2,7 +2,6 @@ package org.atlasapi.media.channel;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.atlasapi.media.entity.Alias;
@@ -13,6 +12,7 @@ import org.atlasapi.media.entity.Publisher;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.stream.MoreCollectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -80,15 +80,21 @@ public class MongoChannelStoreRetrievalTest {
         Thread.sleep(2000);
     }
 
-    private static Channel channel(long id, String uri, String key, String genre,
-            DateTime advertisedFrom, String... aliasUrls) {
+    private static Channel channel(
+            long id,
+            String uri,
+            String key,
+            String genre,
+            DateTime advertisedFrom,
+            String... aliasUrls
+    ) {
         Channel channel = new Channel();
         channel.setCanonicalUri(uri);
         channel.setAliasUrls(ImmutableSet.copyOf(aliasUrls));
         channel.setSource(Publisher.BBC);
         channel.setMediaType(MediaType.VIDEO);
         channel.setKey(key);
-        channel.setAvailableFrom(ImmutableSet.<Publisher>of());
+        channel.setAvailableFrom(ImmutableSet.of());
         channel.setGenres(ImmutableSet.of(genre));
         channel.setAdvertiseFrom(advertisedFrom);
         return channel;
@@ -143,14 +149,20 @@ public class MongoChannelStoreRetrievalTest {
         Iterable<Channel> channels = store.all();
 
         List<Long> channelIds = ImmutableList.copyOf(
-                Iterables.transform(
-                        channels,
-                        input -> input.getId()
-                )
+                StreamSupport.stream(channels.spliterator(), false)
+                        .map(Identified::getId)
+                        .collect(MoreCollectors.toImmutableList())
         );
 
         List<Long> expectedIds = Ordering.natural().immutableSortedCopy(
-                Lists.newArrayList(channelId1, channelId2, channelId3, channelId4, channelId5, channelWithAliasId)
+                Lists.newArrayList(
+                        channelId1,
+                        channelId2,
+                        channelId3,
+                        channelId4,
+                        channelId5,
+                        channelWithAliasId
+                )
         );
 
         assertEquals(expectedIds, channelIds);
@@ -212,12 +224,14 @@ public class MongoChannelStoreRetrievalTest {
     @Test
     public void testRetrievesChannelByPublisher() {
         ChannelQuery query = ChannelQuery.builder().withPublisher(Publisher.BBC).build();
+
         Iterable<Channel> channels = store.allChannels(query);
+
         assertFalse(Iterables.isEmpty(channels));
-        Iterable<Channel> filtered = Iterables.filter(
-                channels,
-                channel -> !channel.getSource().equals(Publisher.BBC)
-        );
+
+        Iterable<Channel> filtered = StreamSupport.stream(channels.spliterator(), false)
+                .filter(channel -> !channel.getSource().equals(Publisher.BBC))
+                .collect(MoreCollectors.toImmutableList());
         assertTrue(Iterables.isEmpty(filtered));
     }
 
