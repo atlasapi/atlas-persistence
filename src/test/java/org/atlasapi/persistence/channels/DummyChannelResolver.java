@@ -76,5 +76,10 @@ public class DummyChannelResolver implements ChannelResolver {
     public Iterable<Channel> allChannels(ChannelQuery query) {
         throw new UnsupportedOperationException();
     }
+
+	@Override
+	public Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery) {
+		throw new UnsupportedOperationException();
+	}
 	
 }

@@ -22,6 +22,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 
     public static final String ALIASES = "aliases";
     public static final String IDS = "ids";
+    public static final String IDS_NAMESPACE = "ids.namespace";
+    public static final String IDS_VALUE = "ids.value";
     public static final String LAST_UPDATED = "lastUpdated";
     public static final String EQUIVALENT_TO = "equivalent";
     public static final String ID = MongoConstants.ID;
@@ -29,16 +31,14 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     public static final String TYPE = "type";
     public static final String PUBLISHER = "publisher";
     public static final String OPAQUE_ID = "aid";
-
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
-    private static final Function<DBObject, LookupRef> equivalentFromDbo =
-            input -> lookupRefTranslator.fromDBObject(input, null);
-
-    private static Function<LookupRef, DBObject> equivalentToDbo =
-            input -> lookupRefTranslator.toDBObject(null, input);
-
+    private static final Function<DBObject, LookupRef> equivalentFromDbo = input -> lookupRefTranslator
+            .fromDBObject(input, null);
+    private static Function<LookupRef, DBObject> equivalentToDbo = input -> lookupRefTranslator.toDBObject(
+            null,
+            input
+    );
     private final AliasTranslator aliasTranslator = new AliasTranslator();
-
     private boolean useAtlasIdAsId;
 
     public IdentifiedTranslator() {
@@ -104,20 +104,24 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     }
 
     private Set<LookupRef> equivalentsFrom(DBObject dbObject) {
-        return Sets.newHashSet(Iterables.transform(TranslatorUtils.toDBObjectList(
-                dbObject,
-                EQUIVALENT_TO
-        ), equivalentFromDbo));
+        return Sets.newHashSet(Iterables.transform(
+                TranslatorUtils.toDBObjectList(
+                        dbObject,
+                        EQUIVALENT_TO
+                ),
+                equivalentFromDbo
+        ));
     }
 
     private BasicDBList toDBObject(Set<LookupRef> equivalentTo) {
         BasicDBList list = new BasicDBList();
+
         Iterables.addAll(list, Iterables.transform(equivalentTo, equivalentToDbo));
+
         return list;
     }
 
     public void removeFieldsForHash(DBObject dbObject) {
         dbObject.removeField(LAST_UPDATED);
-
     }
 }
