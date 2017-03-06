@@ -2,6 +2,8 @@ package org.atlasapi.media.channel;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Identified;
@@ -43,6 +45,8 @@ public class MongoChannelStoreRetrievalTest {
     private static Long channelId3;
     private static Long channelId4;
     private static Long channelId5;
+    private static Long channelWithAliasId;
+    private static Channel channelWithAlias;
     private static DateTime dateTime;
 
     @BeforeClass
@@ -63,6 +67,15 @@ public class MongoChannelStoreRetrievalTest {
         channelId5 = store.createOrUpdate(
                 channel(5, "uri5", "key5", "episode", dateTime.plusDays(1), "test")
         ).getId();
+        channelWithAlias = channel(
+                6,
+                "uri6",
+                "key6",
+                "episode",
+                dateTime.plusDays(1),
+                "testAlias"
+        );
+        channelWithAliasId = store.createOrUpdate(channelWithAlias).getId();
 
         Thread.sleep(2000);
     }
@@ -115,7 +128,7 @@ public class MongoChannelStoreRetrievalTest {
 
         Iterable<Channel> channels = store.all();
 
-        assertThat(Iterables.size(channels), is(5));
+        assertThat(Iterables.size(channels), is(6));
 
         Map<String, Channel> channelMap = Maps.uniqueIndex(channels, Identified.TO_URI);
         assertThat(channelMap.get("uri1").getId(), is(channelId1));
@@ -137,7 +150,7 @@ public class MongoChannelStoreRetrievalTest {
         );
 
         List<Long> expectedIds = Ordering.natural().immutableSortedCopy(
-                Lists.newArrayList(channelId1, channelId2, channelId3, channelId4, channelId5)
+                Lists.newArrayList(channelId1, channelId2, channelId3, channelId4, channelId5, channelWithAliasId)
         );
 
         assertEquals(expectedIds, channelIds);
@@ -220,14 +233,6 @@ public class MongoChannelStoreRetrievalTest {
     public void testRetrievesChannelByAlias() {
         Alias alias = new Alias("dragons", "everywhere");
 
-        Channel channelWithAlias = channel(
-                6,
-                "uri6",
-                "key6",
-                "episode",
-                dateTime.plusDays(1),
-                "testAlias"
-        );
         channelWithAlias.setAliases(ImmutableList.of(alias));
         store.createOrUpdate(channelWithAlias);
 
