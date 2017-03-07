@@ -345,7 +345,10 @@ public class DescribedTranslator implements ModelTranslator<Described> {
         BasicDBList dbDescriptions = new BasicDBList();
 
         sortedDescriptions.forEach(description ->
-                localizedDescriptionTranslator.toDBObject(new BasicDBObject(), description)
+                dbDescriptions.add(localizedDescriptionTranslator.toDBObject(
+                        new BasicDBObject(),
+                        description
+                ))
         );
 
         dbObject.put(LOCALIZED_DESCRIPTIONS_KEY, dbDescriptions);
