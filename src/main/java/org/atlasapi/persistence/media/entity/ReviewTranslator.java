@@ -5,6 +5,7 @@ import org.atlasapi.media.entity.Review;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 import org.atlasapi.media.entity.ReviewType;
+import org.joda.time.DateTime;
 
 public class ReviewTranslator {
 
@@ -28,6 +29,9 @@ public class ReviewTranslator {
     }
 
     public Review fromDBObject(DBObject dbObject) {
+
+        DateTime dateTime = TranslatorUtils.toDateTime(dbObject, DATE_KEY);
+
         return Review.builder()
                 .withLocale(TranslatorUtils.toLocaleFromLanguageTag(dbObject, LOCALE_KEY))
                 .withReview(TranslatorUtils.toString(dbObject, REVIEW_KEY))
@@ -35,7 +39,7 @@ public class ReviewTranslator {
                 .withAuthor(TranslatorUtils.toString(dbObject, AUTHOR_KEY))
                 .withAuthorInitials(TranslatorUtils.toString(dbObject, AUTHOR_INITIALS_KEY))
                 .withRating(TranslatorUtils.toString(dbObject, RATING_KEY))
-                .withDate(TranslatorUtils.toDateTime(dbObject, DATE_KEY).toDate())
+                .withDate(dateTime != null ? dateTime.toDate() : null)
                 .build();
     }
 
