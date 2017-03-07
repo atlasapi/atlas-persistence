@@ -20,7 +20,7 @@ public class ReviewTranslator {
     public DBObject toDBObject(DBObject dbObject, Review model) {
         TranslatorUtils.fromLocaleToLanguageTag(dbObject, LOCALE_KEY, model.getLocale());
         TranslatorUtils.from(dbObject, REVIEW_KEY, model.getReview());
-        TranslatorUtils.from(dbObject, REVIEW_TYPE_KEY, model.getReviewType());
+        TranslatorUtils.from(dbObject, REVIEW_TYPE_KEY, model.getReviewTypeKey());
         TranslatorUtils.from(dbObject, AUTHOR_KEY, model.getAuthor());
         TranslatorUtils.from(dbObject, AUTHOR_INITIALS_KEY, model.getAuthorInitials());
         TranslatorUtils.from(dbObject, RATING_KEY, model.getRating());
@@ -35,7 +35,7 @@ public class ReviewTranslator {
         return Review.builder()
                 .withLocale(TranslatorUtils.toLocaleFromLanguageTag(dbObject, LOCALE_KEY))
                 .withReview(TranslatorUtils.toString(dbObject, REVIEW_KEY))
-                .withReviewType(ReviewType.fromKey(TranslatorUtils.toString(dbObject, REVIEW_TYPE_KEY)))
+                .withReviewTypeKey(TranslatorUtils.toString(dbObject, REVIEW_TYPE_KEY))
                 .withAuthor(TranslatorUtils.toString(dbObject, AUTHOR_KEY))
                 .withAuthorInitials(TranslatorUtils.toString(dbObject, AUTHOR_INITIALS_KEY))
                 .withRating(TranslatorUtils.toString(dbObject, RATING_KEY))
