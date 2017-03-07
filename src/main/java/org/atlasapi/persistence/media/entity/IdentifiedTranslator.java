@@ -31,6 +31,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     public static final String TYPE = "type";
     public static final String PUBLISHER = "publisher";
     public static final String OPAQUE_ID = "aid";
+
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
     private static final Function<DBObject, LookupRef> equivalentFromDbo = input -> lookupRefTranslator
             .fromDBObject(input, null);
@@ -66,6 +67,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         TranslatorUtils.from(dbObject, CURIE, entity.getCurie());
         TranslatorUtils.fromSet(dbObject, entity.getAliasUrls(), ALIASES);
 
+        // We store the Identified aliases as ids in Mongo
+        // because the current aliases field in Mongo refers to aliasUrls
         TranslatorUtils.from(dbObject, IDS, aliasTranslator.toDBList(entity.getAliases()));
 
         TranslatorUtils.from(dbObject, EQUIVALENT_TO, toDBObject(entity.getEquivalentTo()));
