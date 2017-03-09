@@ -22,6 +22,7 @@ import org.atlasapi.media.entity.LocalizedDescription;
 import org.atlasapi.media.entity.LocalizedTitle;
 import org.atlasapi.media.entity.Priority;
 import org.atlasapi.media.entity.PriorityScoreReasons;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Review;
 import org.atlasapi.media.segment.Segment;
@@ -126,8 +127,16 @@ public class DescribedTranslatorTest {
         DescribedTranslator translator = new DescribedTranslator(identifiedTranslator, null);
         
         content.setReviews(ImmutableSet.of(
-                Review.builder().withLocale(Locale.ENGLISH).withReview("I am an English review.").build(),
-                Review.builder().withLocale(Locale.FRENCH).withReview("Je suis un examen en français.").build()
+                Review.builder()
+                        .withLocale(Locale.ENGLISH)
+                        .withReview("I am an English review.")
+                        .withPublisherKey(Publisher.METABROADCAST.key())
+                        .build(),
+                Review.builder()
+                        .withLocale(Locale.FRENCH)
+                        .withReview("Je suis un examen en français.")
+                        .withPublisherKey(Publisher.METABROADCAST.key())
+                        .build()
         ));
         
         BasicDBObject dbo = new BasicDBObject();
