@@ -97,7 +97,7 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     }
 
     @Override
-    public void deleteChannelGroupById(int channelGroupId) {
+    public void deleteChannelGroupById(long channelGroupId) {
         checkNotNull(channelGroupId);
         channelGroups.remove(new BasicDBObject(MongoConstants.ID, channelGroupId));
     }

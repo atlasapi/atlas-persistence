@@ -4,5 +4,5 @@ public interface ChannelGroupWriter {
     
     ChannelGroup createOrUpdate(ChannelGroup channelGroup);
 
-    void deleteChannelGroupById(int channelGroupId);
+    void deleteChannelGroupById(long channelGroupId);
 }
