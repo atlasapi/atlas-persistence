@@ -96,6 +96,12 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
         return group;
     }
 
+    @Override
+    public void deleteChannelGroupById(int channelGroupId) {
+        checkNotNull(channelGroupId);
+        channelGroups.remove(new BasicDBObject(MongoConstants.ID, channelGroupId));
+    }
+
     private void removeOldReferences(ChannelGroup newGroup, ChannelGroup existingGroup) {
         if (newGroup instanceof Region) {
             Region existingRegion = (Region)existingGroup;
