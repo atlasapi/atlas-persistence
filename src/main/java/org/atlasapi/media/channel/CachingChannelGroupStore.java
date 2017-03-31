@@ -87,4 +87,9 @@ public class CachingChannelGroupStore implements ChannelGroupStore {
         return delegate.channelGroupFor(canonicalUri);
     }
 
+    @Override
+    public void deleteChannelGroupById(long channelGroupId) {
+        delegate.deleteChannelGroupById(channelGroupId);
+    }
+
 }
