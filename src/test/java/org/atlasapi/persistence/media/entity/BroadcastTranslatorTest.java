@@ -32,6 +32,8 @@ public class BroadcastTranslatorTest extends TestCase {
         broadcast.setBlackoutRestriction(new BlackoutRestriction(true));
         broadcast.setRevisedRepeat(true);
         broadcast.setRepeat(true);
+        broadcast.setContinuation(true);
+        broadcast.setNewOneOff(true);
         
         DBObject dbObject = brt.toDBObject(broadcast);
         Broadcast b = brt.fromDBObject(dbObject);
@@ -45,6 +47,8 @@ public class BroadcastTranslatorTest extends TestCase {
         assertTrue(b.getBlackoutRestriction().getAll());
         assertTrue(b.getRevisedRepeat());
         assertTrue(b.getRepeat());
+        assertTrue(b.getContinuation());
+        assertTrue(b.getNewOneOff());
     }
     
     public void testBlackoutRestrictionNotSetIfAbsent() {
