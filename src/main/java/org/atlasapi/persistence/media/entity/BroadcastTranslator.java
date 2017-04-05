@@ -28,6 +28,8 @@ public class BroadcastTranslator  {
 	private static final String LIVE_KEY = "live";
 	private static final String BLACKOUT_RESTRICTION_KEY = "blackoutRestriction";
 	private static final String REVISED_REPEAT = "revisedRepeat";
+    private static final String CONTINUATION = "continuation";
+    private static final String NEW_ONE_OFF = "newOneOff";
 	
 	private final AliasTranslator aliasTranslator = new AliasTranslator();
 	private final BlackoutRestrictionTranslator blackoutTranslator = new BlackoutRestrictionTranslator();
@@ -62,6 +64,8 @@ public class BroadcastTranslator  {
         broadcast.setNewEpisode(TranslatorUtils.toBoolean(dbObject, NEW_EPISODE_KEY));
         broadcast.setBlackoutRestriction(blackoutTranslator.fromDbObject((DBObject) dbObject.get(BLACKOUT_RESTRICTION_KEY)));
         broadcast.setRevisedRepeat(TranslatorUtils.toBoolean(dbObject, REVISED_REPEAT));
+        broadcast.setContinuation(TranslatorUtils.toBoolean(dbObject, CONTINUATION));
+        broadcast.setNewOneOff(TranslatorUtils.toBoolean(dbObject, NEW_ONE_OFF));
         
         return broadcast;
     }
@@ -93,6 +97,8 @@ public class BroadcastTranslator  {
         TranslatorUtils.from(dbObject, NEW_EPISODE_KEY, entity.getNewEpisode());
         TranslatorUtils.from(dbObject, BLACKOUT_RESTRICTION_KEY, blackoutTranslator.toDbObject(entity.getBlackoutRestriction()));
         TranslatorUtils.from(dbObject, REVISED_REPEAT, entity.getRevisedRepeat());
+        TranslatorUtils.from(dbObject, CONTINUATION, entity.getContinuation());
+        TranslatorUtils.from(dbObject, NEW_ONE_OFF, entity.getNewOneOff());
         
         return dbObject;
     }
