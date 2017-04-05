@@ -16,5 +16,4 @@ public interface ChannelGroupResolver {
      
      Iterable<ChannelGroup> channelGroupsFor(Channel channel);
 
-     void deleteChannelGroupById(long channelGroupId);
 }
