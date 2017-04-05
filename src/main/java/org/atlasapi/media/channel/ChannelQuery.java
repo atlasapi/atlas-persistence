@@ -23,6 +23,11 @@ public class ChannelQuery {
     private final Optional<String> uri;
     private final Optional<String> aliasNamespace;
     private final Optional<String> aliasValue;
+    private final Optional<ChannelType> channelType;
+
+    public static Builder builder() {
+        return new Builder();
+    }
 
     private ChannelQuery(
             Optional<Publisher> broadcaster,
@@ -34,7 +39,8 @@ public class ChannelQuery {
             Optional<Publisher> publisher,
             Optional<String> uri,
             Optional<String> aliasNamespace,
-            Optional<String> aliasValue
+            Optional<String> aliasValue,
+            Optional<ChannelType> channelType
     ) {
         this.broadcaster = checkNotNull(broadcaster);
         this.mediaType = checkNotNull(mediaType);
@@ -46,10 +52,7 @@ public class ChannelQuery {
         this.uri = checkNotNull(uri);
         this.aliasNamespace = checkNotNull(aliasNamespace);
         this.aliasValue = checkNotNull(aliasValue);
-    }
-
-    public static Builder builder() {
-        return new Builder();
+        this.channelType = checkNotNull(channelType);
     }
 
     public Optional<Publisher> getBroadcaster() {
@@ -92,6 +95,27 @@ public class ChannelQuery {
         return aliasValue;
     }
 
+    public Optional<ChannelType> getChannelType() {
+        return channelType;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(ChannelQuery.class)
+                .add("broadcaster", broadcaster)
+                .add("mediaType", mediaType)
+                .add("availableFrom", availableFrom)
+                .add("channelGroups", channelGroups)
+                .add("genres", genres)
+                .add("advertiseOn", advertisedOn)
+                .add("publisher", publisher)
+                .add("uri", uri)
+                .add("channelType", channelType)
+                .add("aliasNamespace", aliasNamespace)
+                .add("aliasValue", aliasValue)
+                .toString();
+    }
+
     @Override
     public int hashCode() {
         return Objects.hashCode(
@@ -103,7 +127,8 @@ public class ChannelQuery {
                 publisher,
                 uri,
                 aliasNamespace,
-                aliasValue
+                aliasValue,
+                channelType
         );
     }
 
@@ -123,25 +148,10 @@ public class ChannelQuery {
                     && publisher.equals(other.publisher)
                     && uri.equals(other.uri)
                     && aliasNamespace.equals(other.aliasNamespace)
-                    && aliasValue.equals(other.aliasValue);
+                    && aliasValue.equals(other.aliasValue)
+                    && channelType.equals(other.channelType);
         }
         return false;
-    }
-
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(ChannelQuery.class)
-                .add("broadcaster", broadcaster)
-                .add("mediaType", mediaType)
-                .add("availableFrom", availableFrom)
-                .add("channelGroups", channelGroups)
-                .add("genres", genres)
-                .add("advertiseOn", advertisedOn)
-                .add("publisher", publisher)
-                .add("uri", uri)
-                .add("aliasNamespace", aliasNamespace)
-                .add("aliasValue", aliasValue)
-                .toString();
     }
 
     public static class Builder {
@@ -157,9 +167,9 @@ public class ChannelQuery {
         private Optional<String> uri = Optional.absent();
         private Optional<String> aliasNamespace = Optional.absent();
         private Optional<String> aliasValue = Optional.absent();
+        private Optional<ChannelType> channelType = Optional.absent();
 
-        private Builder() {
-        }
+        private Builder() {}
 
         public Builder withBroadcaster(Publisher broadcaster) {
             this.broadcaster = Optional.fromNullable(broadcaster);
@@ -211,6 +221,11 @@ public class ChannelQuery {
             return this;
         }
 
+        public Builder withChannelType(ChannelType channelType) {
+            this.channelType = Optional.fromNullable(channelType);
+            return this;
+        }
+
         public ChannelQuery build() {
             return new ChannelQuery(
                     broadcaster,
@@ -222,7 +237,8 @@ public class ChannelQuery {
                     publisher,
                     uri,
                     aliasNamespace,
-                    aliasValue
+                    aliasValue,
+                    channelType
             );
         }
     }
