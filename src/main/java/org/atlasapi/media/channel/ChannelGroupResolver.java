@@ -15,4 +15,5 @@ public interface ChannelGroupResolver {
      Iterable<ChannelGroup> channelGroups();
      
      Iterable<ChannelGroup> channelGroupsFor(Channel channel);
+
 }
