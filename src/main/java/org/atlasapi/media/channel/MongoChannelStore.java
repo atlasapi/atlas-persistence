@@ -185,6 +185,9 @@ public class MongoChannelStore implements ServiceChannelStore {
         if (query.getAliasValue().isPresent()) {
             mongoQuery.fieldEquals(IDS_VALUE, query.getAliasValue().get());
         }
+        if (query.getChannelType().isPresent()) {
+            mongoQuery.fieldEquals(CHANNEL_TYPE, query.getChannelType().get().name());
+        }
         return Iterables.transform(
                 getOrderedCursor(mongoQuery.build()),
                 DB_TO_CHANNEL_TRANSLATOR::apply

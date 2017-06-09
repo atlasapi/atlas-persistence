@@ -18,12 +18,12 @@ public class BroadcastTranslator  {
 	private static final String TRANSMISSION_TIME_KEY = "transmissionTime";
     private static final String ACTUAL_TRANSMISSION_TIME_KEY = "actualTransmissionTime";
     private static final String ACTUAL_TRANSMISSION_END_TIME_KEY = "actualTransmissionEndTime";
-	private static final String REPEAT_KEY = "repeat";
+    private static final String REPEAT_KEY = "repeat";
 	private static final String SUBTITLED_KEY = "subtitled";
 	private static final String SIGNED_KEY = "signed";
 	private static final String AUDIO_DESCRIBED_KEY = "audioDescribed";
 	private static final String HD_KEY = "highDefinition";
-	private static final String WIDESCREEN_KEY = "widescreen";
+    private static final String WIDESCREEN_KEY = "widescreen";
 	private static final String SURROUND_KEY = "surround";
 	private static final String LIVE_KEY = "live";
 	private static final String BLACKOUT_RESTRICTION_KEY = "blackoutRestriction";
