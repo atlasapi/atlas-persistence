@@ -97,6 +97,7 @@ public class MongoChannelStoreRetrievalTest {
         channel.setAvailableFrom(ImmutableSet.of());
         channel.setGenres(ImmutableSet.of(genre));
         channel.setAdvertiseFrom(advertisedFrom);
+        channel.setSameAs(ImmutableSet.of());
         return channel;
     }
 
