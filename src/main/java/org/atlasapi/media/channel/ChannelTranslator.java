@@ -45,6 +45,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
     public static final String END_DATE = "endDate";
     public static final String GENRES_KEY = "genres";
     public static final String ADVERTISE_FROM = "advertiseFrom";
+    public static final String ADVERTISE_TO = "advertiseTo";
     public static final String SHORT_DESCRIPTION = "shortDescription";
     public static final String MEDIUM_DESCRIPTION = "mediumDescription";
     public static final String LONG_DESCRIPTION = "longDescription";
@@ -53,12 +54,14 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
     public static final String CHANNEL_TYPE = "channelType";
     public static final String URI = "uri";
     public static final String INTERACTIVE = "interactive";
+    public static final String SAME_AS = "sameAs";
 
     private ModelTranslator<Identified> identifiedTranslator;
     private ChannelNumberingTranslator channelNumberingTranslator;
     private TemporalTitleTranslator temporalTitleTranslator;
     private final TemporalImageTranslator temporalImageTranslator;
     private RelatedLinkTranslator relatedLinkTranslator;
+    private final ChannelRefTranslator channelRefTranslator;
 
     public ChannelTranslator() {
         this.identifiedTranslator = new IdentifiedTranslator(true);
@@ -66,6 +69,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         this.temporalTitleTranslator = new TemporalTitleTranslator();
         this.temporalImageTranslator = new TemporalImageTranslator();
         this.relatedLinkTranslator = new RelatedLinkTranslator();
+        this.channelRefTranslator = new ChannelRefTranslator();
     }
 
     @Override
@@ -80,6 +84,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         temporalImageTranslator.fromTemporalImageSet(dbObject, NEW_IMAGES, model.getAllImages());
         // TODO remove this once migration is complete
         setPreviousOldChannelImagesField(dbObject, IMAGES, model.getAllImages());
+        channelRefTranslator.fromChannelRefSet(dbObject, SAME_AS, model.getSameAs());
 
         encodeRelatedLinks(dbObject, model);
 
@@ -121,6 +126,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         TranslatorUtils.fromLocalDate(dbObject, END_DATE, model.getEndDate());
         TranslatorUtils.fromSet(dbObject, model.getGenres(), GENRES_KEY);
         TranslatorUtils.fromDateTime(dbObject, ADVERTISE_FROM, model.getAdvertiseFrom());
+        TranslatorUtils.fromDateTime(dbObject, ADVERTISE_TO, model.getAdvertiseTo());
         TranslatorUtils.from(dbObject, SHORT_DESCRIPTION, model.getShortDescription());
         TranslatorUtils.from(dbObject, MEDIUM_DESCRIPTION, model.getMediumDescription());
         TranslatorUtils.from(dbObject, LONG_DESCRIPTION, model.getLongDescription());
@@ -159,6 +165,9 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         if (dbObject.containsField(NEW_IMAGES)) {
             model.setImages(temporalImageTranslator.toTemporalImageSet(dbObject, NEW_IMAGES));
         }
+        if (dbObject.containsField(SAME_AS)) {
+            model.setSameAs(channelRefTranslator.toChannelRefSet(dbObject, SAME_AS));
+        }
 
         decodeRelatedLinks(dbObject, model);
         model.setKey((String) dbObject.get(KEY));
@@ -184,6 +193,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         model.setStartDate(TranslatorUtils.toLocalDate(dbObject, START_DATE));
         model.setEndDate(TranslatorUtils.toLocalDate(dbObject, END_DATE));
         model.setAdvertiseFrom(TranslatorUtils.toDateTime(dbObject, ADVERTISE_FROM));
+        model.setAdvertiseTo(TranslatorUtils.toDateTime(dbObject, ADVERTISE_TO));
         if (dbObject.containsField(GENRES_KEY)) {
             model.setGenres(TranslatorUtils.toSet(dbObject, GENRES_KEY));
         }
