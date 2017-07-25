@@ -2,6 +2,7 @@ package org.atlasapi.media.channel;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
@@ -53,7 +54,7 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
     @Deprecated
     public Maybe<Channel> fromKey(String key) {
         for (Channel channel : channels.get()) {
-            if (channel.getKey().equals(key)) { 
+            if (Objects.nonNull(channel.getKey()) && channel.getKey().equals(key)) {
                 return Maybe.just(channel);
             }
         }
