@@ -1,11 +1,13 @@
 package org.atlasapi.media.channel;
 
+import org.atlasapi.media.entity.MediaType;
+import org.atlasapi.media.entity.Publisher;
+
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -15,37 +17,51 @@ import static org.junit.Assert.assertTrue;
 
 public class CachingChannelStoreTest {
 
-    private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
-    private static final ChannelGroupStore channelGroupStore = new MongoChannelGroupStore(mongo);
-    private static final MongoChannelStore store = new MongoChannelStore(
-            mongo, channelGroupStore, channelGroupStore
-    );
-
-    private CachingChannelStore channelStore;
+    private CachingChannelStore cachingChannelStore;
 
     @Before
     public void setUp() {
-        DBCollection channels = mongo.collection("channels");
-        BasicDBObject channel1 = new BasicDBObject("key", "channel1");
-        BasicDBObject channel2 = new BasicDBObject("key", "channel2");
-        channels.insert(channel1, channel2);
+        DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+        ChannelGroupStore channelGroupStore = new MongoChannelGroupStore(mongo);
+        MongoChannelStore mongoChannelStore = new MongoChannelStore(
+                mongo,
+                channelGroupStore,
+                channelGroupStore
+        );
 
-        channelStore = new CachingChannelStore(store);
+        Channel channelWithKey = createChannel("key", "channel", null, "alias");
+        mongoChannelStore.createOrUpdate(channelWithKey);
+        Channel channelWithNullKey = createChannel("nullKey", null, null, "alias");
+        mongoChannelStore.createOrUpdate(channelWithNullKey);
+
+        cachingChannelStore = new CachingChannelStore(mongoChannelStore);
+    }
+
+    private Channel createChannel(String uri, String key, Long parent, String... alias) {
+        Channel channel = Channel.builder()
+                .withUri(uri)
+                .withKey(key)
+                .withSource(Publisher.PA)
+                .withMediaType(MediaType.VIDEO)
+                .withParent(parent)
+                .build();
+        channel.setAliasUrls(ImmutableSet.copyOf(alias));
+        return channel;
     }
 
     @Test
     public void resolveChannelFromKey() {
-        Maybe<Channel> channel2 = channelStore.fromKey("channel2");
+        Maybe<Channel> channel = cachingChannelStore.fromKey("channel");
 
-        assertTrue(channel2.hasValue());
-        assertEquals(channel2.requireValue().getKey(), "channel2");
+        assertTrue(channel.hasValue());
+        assertEquals(channel.requireValue().getKey(), "channel");
     }
 
     @Test
     public void avoidNpeWhenResolveChannelFromNullKey() {
-        Maybe<Channel> channel3 = channelStore.fromKey("channel3");
+        Maybe<Channel> channelWithNoKey = cachingChannelStore.fromKey("noKeyChannel");
 
-        assertFalse(channel3.hasValue());
-        assertEquals(channel3.requireValue().getKey(), null);
+        assertFalse(channelWithNoKey.hasValue());
+        assertEquals(channelWithNoKey.requireValue().getKey(), null);
     }
 }
