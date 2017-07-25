@@ -54,7 +54,7 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
     @Deprecated
     public Maybe<Channel> fromKey(String key) {
         for (Channel channel : channels.get()) {
-            if (Objects.nonNull(channel.getKey()) && channel.getKey().equals(key)) {
+            if (Objects.equals(channel.getKey(), key)) {
                 return Maybe.just(channel);
             }
         }
