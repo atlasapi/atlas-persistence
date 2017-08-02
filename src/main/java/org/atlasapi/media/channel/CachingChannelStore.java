@@ -89,7 +89,7 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
         return channels.get()
                 .stream()
                 .filter(input -> Iterables.contains(ids, input.getId()))
-                .collect(Collectors.toList());
+                .collect(MoreCollectors.toImmutableList());
     }
 
     @Override
