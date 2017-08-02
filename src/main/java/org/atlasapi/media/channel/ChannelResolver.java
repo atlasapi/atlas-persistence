@@ -31,4 +31,6 @@ public interface ChannelResolver {
 
     Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery);
 
+    void refreshCache();
+
 }

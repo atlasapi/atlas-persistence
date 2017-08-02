@@ -450,6 +450,11 @@ public class MongoChannelStore implements ServiceChannelStore {
         /* no-op */
     }
 
+    @Override
+    public void refreshCache() {
+        throw new UnsupportedOperationException("Store does not have cache");
+    }
+
     private static class DefaultEquivalence extends Equivalence<Channel> {
 
         @Override

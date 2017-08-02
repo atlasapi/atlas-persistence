@@ -81,5 +81,10 @@ public class DummyChannelResolver implements ChannelResolver {
 	public Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+    public void refreshCache() {
+	    throw new UnsupportedOperationException("Store does not have a cache");
+    }
 	
 }
