@@ -11,9 +11,13 @@ public interface ChannelResolver {
 
     Maybe<Channel> fromId(long id);
 
+    Maybe<Channel> fromIdSkipCache(long id);
+
     Maybe<Channel> fromUri(String uri);
 
     Iterable<Channel> forIds(Iterable<Long> ids);
+
+    Iterable<Channel> forIdsSkipCache(Iterable<Long> ids);
 
     Iterable<Channel> all();
 

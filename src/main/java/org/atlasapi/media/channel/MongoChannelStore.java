@@ -127,6 +127,11 @@ public class MongoChannelStore implements ServiceChannelStore {
     }
 
     @Override
+    public Maybe<Channel> fromIdSkipCache(long id) {
+        throw new UnsupportedOperationException("Channel store does not have a cache");
+    }
+
+    @Override
     public Maybe<Channel> fromUri(final String uri) {
         return Maybe.fromPossibleNullValue(
                 translator.fromDBObject(
@@ -142,6 +147,11 @@ public class MongoChannelStore implements ServiceChannelStore {
                 getOrderedCursor(where().longIdIn(ids).build()),
                 DB_TO_CHANNEL_TRANSLATOR::apply
         );
+    }
+
+    @Override
+    public Iterable<Channel> forIdsSkipCache(Iterable<Long> ids) {
+        throw new UnsupportedOperationException("Channel store does not have a cache");
     }
 
     @Override
