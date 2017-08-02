@@ -81,5 +81,4 @@ public class DummyChannelResolver implements ChannelResolver {
 	public Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery) {
 		throw new UnsupportedOperationException();
 	}
-	
 }

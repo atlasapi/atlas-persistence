@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.joda.time.Duration;
@@ -33,7 +34,10 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
     
     public CachingChannelStore(ChannelStore delegate) {
         this.delegate = delegate;
-        channels = new BackgroundComputingValue<List<Channel>>(Duration.standardMinutes(5), new ChannelsUpdater(delegate));
+        channels = new BackgroundComputingValue<>(
+                Duration.standardMinutes(5),
+                new ChannelsUpdater(delegate)
+        );
     }
     @Override
     public void start() {
@@ -83,12 +87,10 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
 
     @Override
     public Iterable<Channel> forIds(final Iterable<Long> ids) {
-        return Iterables.filter(channels.get(), new Predicate<Channel>() {
-                @Override
-                public boolean apply(Channel input) {
-                    return Iterables.contains(ids, input.getId());
-                }
-            });
+        return channels.get()
+                .stream()
+                .filter(input -> Iterables.contains(ids, input.getId()))
+                .collect(MoreCollectors.toImmutableList());
     }
 
     @Override
@@ -109,6 +111,11 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
             }
         }
         return Maybe.nothing();
+    }
+
+    @Override
+    public void refreshCache() {
+        channels.refreshCache();
     }
 
     @Override

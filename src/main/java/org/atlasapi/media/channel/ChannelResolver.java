@@ -31,4 +31,7 @@ public interface ChannelResolver {
 
     Iterable<Channel> forKeyPairAlias(ChannelQuery channelQuery);
 
+    default void refreshCache() {
+        /* no-op */
+    }
 }
