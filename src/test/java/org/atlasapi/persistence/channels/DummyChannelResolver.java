@@ -48,6 +48,11 @@ public class DummyChannelResolver implements ChannelResolver {
 	}
 
 	@Override
+	public Maybe<Channel> fromIdSkipCache(long id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public Maybe<Channel> fromUri(String uri) {
 	    return Maybe.fromPossibleNullValue(channels.get(uri));
 	}
@@ -66,6 +71,11 @@ public class DummyChannelResolver implements ChannelResolver {
     public Iterable<Channel> forIds(Iterable<Long> ids) {
         throw new UnsupportedOperationException();
     }
+
+	@Override
+	public Iterable<Channel> forIdsSkipCache(Iterable<Long> ids) {
+		throw new UnsupportedOperationException();
+	}
 
     @Override
     public Maybe<Channel> forAlias(String alias) {

@@ -63,9 +63,22 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
 
     @Override
     public Maybe<Channel> fromId(long id) {
-        for (Channel channel : channels.get()) {
-            if (channel.getId().equals(id)) { 
-                return Maybe.just(channel);
+        return fromId(id, false);
+    }
+
+    @Override
+    public Maybe<Channel> fromIdSkipCache(long id) {
+        return fromId(id, true);
+    }
+
+    public Maybe<Channel> fromId(long id, boolean skipCache) {
+        if (skipCache) {
+            delegate.fromId(id);
+        } else {
+            for (Channel channel : channels.get()) {
+                if (channel.getId().equals(id)) {
+                    return Maybe.just(channel);
+                }
             }
         }
         return Maybe.nothing();
@@ -83,12 +96,21 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
 
     @Override
     public Iterable<Channel> forIds(final Iterable<Long> ids) {
-        return Iterables.filter(channels.get(), new Predicate<Channel>() {
-                @Override
-                public boolean apply(Channel input) {
-                    return Iterables.contains(ids, input.getId());
-                }
-            });
+        return forIds(ids, false);
+    }
+
+    @Override
+    public Iterable<Channel> forIdsSkipCache(Iterable<Long> ids) {
+        return forIds(ids, true);
+    }
+
+    private Iterable<Channel> forIds(Iterable<Long> ids, boolean skipCache) {
+        if (skipCache) {
+            return delegate.forIds(ids);
+        } else {
+            return Iterables.filter(channels.get(),
+                    input -> Iterables.contains(ids, input.getId()));
+        }
     }
 
     @Override
