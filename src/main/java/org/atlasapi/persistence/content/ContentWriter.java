@@ -16,11 +16,12 @@ package org.atlasapi.persistence.content;
 
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.reporting.telescope.OwlTelescopeProxy;
 
 public interface ContentWriter {
 
-	Item createOrUpdate(Item item);
+	Item createOrUpdate(Item item, OwlTelescopeProxy telescopeProxy);
 	
-	void createOrUpdate(Container container);
+	void createOrUpdate(Container container, OwlTelescopeProxy telescopeProxy);
 
 }

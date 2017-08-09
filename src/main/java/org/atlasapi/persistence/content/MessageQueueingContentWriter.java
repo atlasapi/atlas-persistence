@@ -24,6 +24,8 @@ import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.atlasapi.reporting.telescope.OwlTelescopeProxy;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MessageQueueingContentWriter implements ContentWriter {
@@ -66,27 +68,27 @@ public class MessageQueueingContentWriter implements ContentWriter {
     }
 
     @Override
-    public Item createOrUpdate(Item item) {
-        Item writtenItem = contentWriter.createOrUpdate(item);
+    public Item createOrUpdate(Item item, OwlTelescopeProxy telescopeProxy) {
+        Item writtenItem = contentWriter.createOrUpdate(item, telescopeProxy);
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
             log.debug("{} not changed", item.getCanonicalUri());
             return writtenItem;
         }
-        enqueueMessageUpdatedMessage(item);
+        enqueueMessageUpdatedMessage(item, telescopeProxy);
         return writtenItem;
     }
 
     @Override
-    public void createOrUpdate(Container container) {
-        contentWriter.createOrUpdate(container);
+    public void createOrUpdate(Container container, OwlTelescopeProxy telescopeProxy) {
+        contentWriter.createOrUpdate(container, telescopeProxy);
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             log.debug("{} un-changed", container.getCanonicalUri());
             return;
         }
-        enqueueMessageUpdatedMessage(container);
+        enqueueMessageUpdatedMessage(container, telescopeProxy);
     }
 
-    private void enqueueMessageUpdatedMessage(final Content content) {
+    private void enqueueMessageUpdatedMessage(final Content content, OwlTelescopeProxy telescopeProxy) {
         try {
             if(!content.getEquivalentTo().isEmpty()){
                 ImmutableList<Content> adjacents = content.getEquivalentTo()
@@ -111,19 +113,21 @@ public class MessageQueueingContentWriter implements ContentWriter {
                 );
             }
             sender.sendMessage(
-                    createEntityUpdatedMessage(content), Longs.toByteArray(content.getId())
+                    createEntityUpdatedMessage(content, telescopeProxy), Longs.toByteArray(content.getId())
             );
         } catch (Exception e) {
             log.error("update message failed: " + content, e);
         }
     }
 
-    private EntityUpdatedMessage createEntityUpdatedMessage(Content content) {
-        return new EntityUpdatedMessage(
+    private EntityUpdatedMessage createEntityUpdatedMessage(Content content, OwlTelescopeProxy telescopeProxy) {
+        return EntityUpdatedMessage.create(
                 UUID.randomUUID().toString(),
                 clock.timestamp(),
                 entityIdCodec.encode(BigInteger.valueOf(content.getId())),
                 content.getClass().getSimpleName().toLowerCase(),
-                content.getPublisher().key());
+                content.getPublisher().key(),
+                telescopeProxy
+        );
     }
 }
