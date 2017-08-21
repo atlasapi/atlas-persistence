@@ -90,8 +90,17 @@ public class ScheduleEntryBuilder {
         
         long startMillis = millisBackToNearestBin(start);
         long endMillis = end.getMillis();
-        ImmutableList.Builder<Interval> intervals = ImmutableList.builder();
 
+        //it is not the place of this function to impose restrictions, but if the difference is
+        //huge, it is highly probably that something went wrong and the loop below will
+        //create an out of memory situation anyway. Prevent that by throwing an exception that has
+        //higher chances of being handled.
+        if(endMillis - startMillis > 31537000000l){ //a year and a bit
+            log.error("Cannot create intervals for a total duration greater than a year");
+            throw new IllegalArgumentException("Cannot create intervals for a total duration greater than a year. This is to protect us from out of memory errors");
+        }
+
+        ImmutableList.Builder<Interval> intervals = ImmutableList.builder();
         while (startMillis < endMillis) {
             Interval interval = new Interval(new DateTime(startMillis, DateTimeZones.UTC), new DateTime(startMillis + BIN_MILLIS - 1, DateTimeZones.UTC));
             intervals.add(interval);
