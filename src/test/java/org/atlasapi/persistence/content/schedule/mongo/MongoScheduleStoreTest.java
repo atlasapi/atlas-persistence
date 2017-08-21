@@ -614,6 +614,32 @@ public class MongoScheduleStoreTest {
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testAbnormallYears(){
+        ImmutableSet<Channel> channels = ImmutableSet.of(BBC_ONE);
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+
+        //test for badly parsed dates
+        DateTime from = new DateTime("20170808");
+        DateTime to = from.plusDays(1);
+        store.unmergedSchedule(from,to,channels,publishers);
+
+        from = now.plus(1);
+        to = from.plus(MongoScheduleStore.MAX_DURATION);
+        store.unmergedSchedule(from,to,channels,publishers);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGreaterThanAllowedPeriods(){
+        ImmutableSet<Channel> channels = ImmutableSet.of(BBC_ONE);
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
+
+        //an hour more than the max period allowed
+        DateTime from = now.plus(1);
+        DateTime to = from.plus(MongoScheduleStore.MAX_DURATION).plusHours(1);
+        store.unmergedSchedule(from,to,channels,publishers);
+    }
+
     @Test
     public void testResolvingUnmergedSchedule() {
         store.writeScheduleFrom(item1);

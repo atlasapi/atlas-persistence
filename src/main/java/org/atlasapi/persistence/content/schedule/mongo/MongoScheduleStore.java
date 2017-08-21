@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.channel.Channel;
@@ -35,6 +34,7 @@ import org.atlasapi.persistence.content.ScheduleResolver;
 import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 
+import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
@@ -69,6 +69,7 @@ import com.mongodb.DBCollection;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Interval;
+import org.joda.time.format.PeriodFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,8 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
-	private final static Duration MAX_DURATION = Duration.standardDays(14);
+	public static final Duration MAX_DURATION = Duration.standardDays(14);
+    public static final int MAX_ALLOWED_YEAR = 2100;
 
 	private final ScheduleEntryBuilder scheduleEntryBuilder;
     private final DBCollection collection;
@@ -297,10 +299,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	@Override
 	public Schedule unmergedSchedule(DateTime from, DateTime to, Iterable<Channel> channels,
 	        Iterable<Publisher> publishers) {
-	    Interval interval = new Interval(from, to);
-        if (interval.toDuration().isLongerThan(MAX_DURATION)) {
-            throw new IllegalArgumentException("You cannot request more than 2 weeks of schedule");
-        }
+
+        Interval interval = getInterval(from,  to);
         List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
         Iterable<Entry<Channel, ItemRefAndBroadcast>> uniqueRefs = uniqueRefs(entries);
         Map<String, Maybe<Identified>> itemIndex = resolveItems(uniqueRefs);
@@ -326,10 +326,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             Iterable<Publisher> publishers,
             Optional<Application> applicationOptional
     ) {
-        Interval interval = new Interval(from, to);
-        if (interval.toDuration().isLongerThan(MAX_DURATION)) {
-            throw new IllegalArgumentException("You cannot request more than 2 weeks of schedule");
-        }
+        Interval interval = getInterval(from, to);
         List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
 
         Application application;
@@ -340,6 +337,23 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         }
         Map<Channel, List<Item>> channelMap = resolveEntries(entries, channels, application);
         return scheduleFrom(channelMap, interval);
+    }
+
+    private Interval getInterval(DateTime from, DateTime to){
+        //if the date is mistakenly given as 20170808, it will parsed to a normal date for the year
+        //20170808. This will pass the normal interval test below, but it does not convert normally
+        //to milliseconds which is how we use this, resulting in requesting a couple of million
+        //years and an out of memory error.
+        if (from.getYear() > MAX_ALLOWED_YEAR || to.getYear() > MAX_ALLOWED_YEAR) {
+            throw new IllegalArgumentException("You cannot request schedule for after year "+MAX_ALLOWED_YEAR);
+        }
+        Interval interval = new Interval(from, to);
+        if (interval.toDuration().isLongerThan(MAX_DURATION)) {
+            throw new IllegalArgumentException("You cannot request more than "
+                                               + PeriodFormat.getDefault().print(MAX_DURATION.toPeriod())
+                                               + " of schedule");
+        }
+        return interval;
     }
 
     private Application configFor(Iterable<Publisher> publishers) {
