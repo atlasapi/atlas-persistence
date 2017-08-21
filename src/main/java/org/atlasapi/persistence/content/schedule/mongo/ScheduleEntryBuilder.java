@@ -30,7 +30,7 @@ public class ScheduleEntryBuilder {
     private final Log log = LogFactory.getLog(ScheduleEntryBuilder.class);
     
     private static final long BIN_MILLIS = Duration.standardHours(1).getMillis();
-    private static final long MAX_ALLOWED_TOTAL_INTERVAL = Duration.standardDays(370).toPeriod().getMillis();
+    private static final long MAX_ALLOWED_TOTAL_INTERVAL = Duration.standardDays(370).getMillis();
     
     private final Duration maxBroadcastAge;
 
