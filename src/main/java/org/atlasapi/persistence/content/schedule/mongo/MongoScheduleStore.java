@@ -77,7 +77,8 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
 public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
-	public final static Duration MAX_DURATION = Duration.standardDays(14);
+	public static final Duration MAX_DURATION = Duration.standardDays(14);
+    public static final int MAX_ALLOWED_YEAR = 2100;
 
 	private final ScheduleEntryBuilder scheduleEntryBuilder;
     private final DBCollection collection;
@@ -343,8 +344,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         //20170808. This will pass the normal interval test below, but it does not convert normally
         //to milliseconds which is how we use this, resulting in requesting a couple of million
         //years and an out of memory error.
-        if (from.getYear() > 2100 || to.getYear() > 2100) {
-            throw new IllegalArgumentException("You cannot request schedule for after 2100");
+        if (from.getYear() > MAX_ALLOWED_YEAR || to.getYear() > MAX_ALLOWED_YEAR) {
+            throw new IllegalArgumentException("You cannot request schedule for after year "+MAX_ALLOWED_YEAR);
         }
         Interval interval = new Interval(from, to);
         if (interval.toDuration().isLongerThan(MAX_DURATION)) {
