@@ -33,6 +33,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
     public static final String REGIONAL = "regional";
     public static final String ADULT = "adult";
     public static final String TIMESHIFT = "timeshift";
+    public static final String IS_TIMESHIFTED = "isTimeshifted";
     public static final String KEY = "key";
     public static final String IMAGE = "image";
     public static final String IMAGES = "images";
@@ -98,6 +99,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         TranslatorUtils.from(dbObject, REGIONAL, model.getRegional());
         TranslatorUtils.from(dbObject, ADULT, model.getAdult());
         TranslatorUtils.fromDuration(dbObject, TIMESHIFT, model.getTimeshift());
+        TranslatorUtils.from(dbObject, IS_TIMESHIFTED, model.isTimeshifted());
         TranslatorUtils.from(
                 dbObject,
                 BROADCASTER,
@@ -175,6 +177,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         model.setRegional(TranslatorUtils.toBoolean(dbObject, REGIONAL));
         model.setAdult(TranslatorUtils.toBoolean(dbObject, ADULT));
         model.setTimeshift(TranslatorUtils.toDuration(dbObject, TIMESHIFT));
+        model.setIsTimeshifted(TranslatorUtils.toBoolean(dbObject, IS_TIMESHIFTED));
         model.setAvailableFrom(Iterables.transform(
                 TranslatorUtils.toSet(dbObject, AVAILABLE_ON),
                 Publisher.FROM_KEY

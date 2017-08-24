@@ -83,6 +83,7 @@ public class ChannelTranslatorTest {
         assertThat(decoded.getRegional(), is(equalTo(channel.getRegional())));
         assertThat(decoded.getAdult(), is(equalTo(channel.getAdult())));
         assertThat(decoded.getTimeshift(), is(equalTo(channel.getTimeshift())));
+        assertThat(decoded.isTimeshifted(), is(equalTo(channel.isTimeshifted())));
         assertThat(decoded.getImages(), is(equalTo(channel.getImages())));
         assertThat(decoded.getParent(), is(equalTo(channel.getParent())));
         assertThat(decoded.getVariations(), is(equalTo(channel.getVariations())));
