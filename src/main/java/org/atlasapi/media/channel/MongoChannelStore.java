@@ -474,6 +474,7 @@ public class MongoChannelStore implements ServiceChannelStore {
                     && Objects.equals(a.getRegional(), b.getRegional())
                     && Objects.equals(a.getAdult(), b.getAdult())
                     && Objects.equals(a.getTimeshift(), b.getTimeshift())
+                    && Objects.equals(a.isTimeshifted(), b.isTimeshifted())
                     && a.getBroadcaster() == b.getBroadcaster()
                     && Objects.equals(a.getAdvertiseFrom(), b.getAdvertiseFrom())
                     && Objects.equals(a.getAvailableFrom(), b.getAvailableFrom())
