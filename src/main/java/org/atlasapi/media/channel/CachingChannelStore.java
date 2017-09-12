@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,6 +135,25 @@ public class CachingChannelStore implements ChannelStore, ServiceChannelStore {
             }
         }
         return ImmutableMap.copyOf(channelMap);
+    }
+
+    @Override
+    public Multimap<String, Channel> allForAliases(String aliasPrefix) {
+        final Pattern prefixPattern = Pattern.compile(String.format(
+                "^%s",
+                Pattern.quote(aliasPrefix)
+        ));
+
+        ImmutableMultimap.Builder<String, Channel> channelMap = ImmutableMultimap.builder();
+        for (Channel channel : all()) {
+            for (String alias : Iterables.filter(
+                    channel.getAliasUrls(),
+                    Predicates.contains(prefixPattern)
+            )) {
+                channelMap.put(alias, channel);
+            }
+        }
+        return channelMap.build();
     }
 
     // this method fetches channels by its aliases that are stored as ids in Mongo

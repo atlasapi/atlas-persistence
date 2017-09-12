@@ -1,18 +1,15 @@
 package org.atlasapi.persistence.channels;
 
-import java.util.Collection;
-import java.util.Map;
-
-import org.atlasapi.media.channel.Channel;
-import org.atlasapi.media.channel.ChannelQuery;
-import org.atlasapi.media.channel.ChannelResolver;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.metabroadcast.common.base.Maybe;
+import org.atlasapi.media.channel.Channel;
+import org.atlasapi.media.channel.ChannelQuery;
+import org.atlasapi.media.channel.ChannelResolver;
+
+import java.util.Collection;
+import java.util.Map;
 
 public class DummyChannelResolver implements ChannelResolver {
 

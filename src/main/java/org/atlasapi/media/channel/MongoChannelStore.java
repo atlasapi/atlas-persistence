@@ -5,10 +5,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableMultimap;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 
 import com.metabroadcast.common.base.Maybe;
@@ -229,6 +231,25 @@ public class MongoChannelStore implements ServiceChannelStore {
             }
         }
         return ImmutableMap.copyOf(channelMap);
+    }
+
+    @Override
+    public Multimap<String, Channel> allForAliases(String aliasPrefix) {
+        final Pattern prefixPattern = Pattern.compile(String.format(
+                "^%s",
+                Pattern.quote(aliasPrefix)
+        ));
+
+        ImmutableMultimap.Builder<String, Channel> channelMap = ImmutableMultimap.builder();
+        for (Channel channel : all()) {
+            for (String alias : Iterables.filter(
+                    channel.getAliasUrls(),
+                    Predicates.contains(prefixPattern)
+            )) {
+                channelMap.put(alias, channel);
+            }
+        }
+        return channelMap.build();
     }
 
     // this method fetches channels by its aliases that are stored as ids in Mongo
