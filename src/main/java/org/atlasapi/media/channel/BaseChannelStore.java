@@ -13,8 +13,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public abstract class BaseChannelStore implements ChannelStore {
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());   //NOSONAR: log
 
+    @Override
     public Map<String, Channel> forAliases(String aliasPrefix) {
         final Pattern prefixPattern = Pattern.compile(String.format(
                 "^%s",
@@ -40,6 +41,7 @@ public abstract class BaseChannelStore implements ChannelStore {
         return ImmutableMap.copyOf(channelMap);
     }
 
+    @Override
     public Multimap<String, Channel> allForAliases(String aliasPrefix) {
         final Pattern prefixPattern = Pattern.compile(String.format(
                 "^%s",

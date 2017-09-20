@@ -1,18 +1,17 @@
 package org.atlasapi.media.channel;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
+import com.metabroadcast.common.stream.MoreCollectors;
 
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CachingChannelGroupStore implements ChannelGroupStore {
 
@@ -28,12 +27,15 @@ public class CachingChannelGroupStore implements ChannelGroupStore {
                             }
                             
                             @Override
-                            public Map<Long, Optional<ChannelGroup>> loadAll(Iterable<? extends Long> keys) {
-                                Builder<Long, Optional<ChannelGroup>> builder = ImmutableMap.builder();
-                                for (ChannelGroup g : delegate.channelGroupsFor(keys)) {
-                                    builder.put(g.getId(), Optional.of(g));
-                                }
-                                return builder.build();
+                            public Map<Long, Optional<ChannelGroup>> loadAll(
+                                    Iterable<? extends Long> keys
+                            ) {
+                                return StreamSupport.stream(
+                                        delegate.channelGroupsFor(keys).spliterator(), false
+                                ).collect(MoreCollectors.toImmutableMap(
+                                        ChannelGroup::getId,
+                                        Optional::of
+                                ));
                             }
                             
                         });

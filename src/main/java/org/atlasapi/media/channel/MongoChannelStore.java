@@ -58,10 +58,8 @@ public class MongoChannelStore extends BaseChannelStore implements ServiceChanne
                     MongoConstants.ID
             );
 
-    private static final Function<DBObject, Channel> DB_TO_CHANNEL_TRANSLATOR = input -> translator.fromDBObject(
-            input,
-            null
-    );
+    private static final Function<DBObject, Channel> DB_TO_CHANNEL_TRANSLATOR =
+            input -> translator.fromDBObject(input, null);
 
     private final DBCollection collection;
 
@@ -336,11 +334,11 @@ public class MongoChannelStore extends BaseChannelStore implements ServiceChanne
         if (channel.getParent() != null) {
             Optional<Channel> optParent = fromId(channel.getParent()).toGuavaOptional();
             if (!optParent.isPresent()) {
-                    throw new IllegalArgumentException(String.format(
-                            "Parent channel with id %s not found for channel with id %s",
-                            channel.getParent(),
-                            channel.getId()
-                    ));
+                throw new IllegalArgumentException(String.format(
+                        "Parent channel with id %s not found for channel with id %s",
+                        channel.getParent(),
+                        channel.getId()
+                ));
             }
 
             Channel parent = optParent.get();
