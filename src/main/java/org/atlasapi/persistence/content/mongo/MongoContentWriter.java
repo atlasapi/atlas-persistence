@@ -285,7 +285,7 @@ public class MongoContentWriter implements ContentWriter {
         MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.ID, container.getCanonicalUri());
 
         BasicDBObject op = set(containerDbo);
-        unset(containerDbo, op, KEYS_TO_REMOVE);
+        unset(containerDbo, op);
         collection.update(where.build(), op, true, false);
 
         lookupStore.ensureLookup(container);
@@ -301,9 +301,9 @@ public class MongoContentWriter implements ContentWriter {
      * there is no prototype object from which to unset fields, we
      * maintain a list of keys to perform unsets on.
      */
-    private void unset(DBObject dbo, BasicDBObject op, Set<String> keysToRemove) {
+    private void unset(DBObject dbo, BasicDBObject op) {
         BasicDBObject toRemove = new BasicDBObject();
-        for (String key : keysToRemove) {
+        for (String key : getKeysToRemove()) {
             if (!dbo.containsField(key)) {
                 toRemove.put(key, 1);
             }
@@ -370,7 +370,7 @@ public class MongoContentWriter implements ContentWriter {
         public InnerMongoContentWriter(Iterable<String> keysToRemove) {
             super(MongoContentWriter.this);
             this.keysToRemove = Iterables.concat(KEYS_TO_REMOVE, keysToRemove);
-        }n
+        }
 
         @Override
         public Iterable<String> getKeysToRemove() {
