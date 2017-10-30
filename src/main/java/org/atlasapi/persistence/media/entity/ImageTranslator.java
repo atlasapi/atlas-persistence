@@ -15,16 +15,16 @@ import com.mongodb.DBObject;
 
 public class ImageTranslator implements ModelTranslator<Image> {
 
-    private static final String AVAILABILITY_START = "availabilityStart";
-    private static final String AVAILABILITY_END = "availabilityEnd";
-    private static final String HEIGHT = "height";
-    private static final String WIDTH = "width";
-    private static final String IMAGE_TYPE = "type";
-    private static final String COLOR = "color";
-    private static final String THEME = "theme";
-    private static final String ASPECT_RATIO = "aspectRatio";
-    private static final String MIME_TYPE = "mimeType";
-    private static final String HAS_TITLE_ART = "hasTitleArt";
+    public static final String AVAILABILITY_START = "availabilityStart";
+    public static final String AVAILABILITY_END = "availabilityEnd";
+    public static final String HEIGHT = "height";
+    public static final String WIDTH = "width";
+    public static final String IMAGE_TYPE = "type";
+    public static final String COLOR = "color";
+    public static final String THEME = "theme";
+    public static final String ASPECT_RATIO = "aspectRatio";
+    public static final String MIME_TYPE = "mimeType";
+    public static final String HAS_TITLE_ART = "hasTitleArt";
 
     private IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
 
