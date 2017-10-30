@@ -34,7 +34,7 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     private static final String SPECIALIZATION_KEY = "specialization";
     private static final String PRESENTATION_CHANNEL_KEY = "presentationChannel";
     public static final String IMAGES_KEY = "images";
-    public static final String IMAGE_KEY = "image";
+    private static final String IMAGE_KEY = "image";
     private static final String GENRES_KEY = "genres";
     private static final String FIRST_SEEN_KEY = "firstSeen";
     private static final String DESCRIPTION_KEY = "description";
