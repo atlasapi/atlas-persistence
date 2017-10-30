@@ -56,7 +56,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 
 public class MongoContentWriter implements ContentWriter {
 
-    private static final Set<String> KEYS_TO_REMOVE = ImmutableSet.of(DescribedTranslator.LINKS_KEY, DescribedTranslator.IMAGE_KEY);
+    private static final Set<String> KEYS_TO_REMOVE = ImmutableSet.of(DescribedTranslator.LINKS_KEY);
     private final Logger log = LoggerFactory.getLogger(MongoContentWriter.class);
     
     private final Clock clock;
