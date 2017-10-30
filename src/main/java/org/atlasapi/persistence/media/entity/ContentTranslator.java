@@ -38,17 +38,17 @@ public class ContentTranslator implements ModelTranslator<Content> {
     public static final String PEOPLE = "people";
     public static String CLIPS_KEY = "clips";
     public static String TOPICS_KEY = "topics";
-    private static final String PHRASES_KEY = "phrases";
-    private static String CONTENT_GROUP_KEY = "contentGroups";
-    private static final String CERTIFICATES_KEY = "certificates";
-    private static final String LANGUAGES_KEY = "languages";
-    private static final String YEAR_KEY = "year";
-    private static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
-    private static final String SIMILAR_CONTENT_KEY = "similar";
-    private static final String EVENTS_KEY = "events";
-    private static final String EDITORIAL_PRIORITY_KEY = "editorialPriority";
-    private static final String VERSIONS_KEY = "versions";
-    private static final String AWARDS = "awards";
+    public static final String PHRASES_KEY = "phrases";
+    public static String CONTENT_GROUP_KEY = "contentGroups";
+    public static final String CERTIFICATES_KEY = "certificates";
+    public static final String LANGUAGES_KEY = "languages";
+    public static final String YEAR_KEY = "year";
+    public static final String GENERIC_DESCRIPTION_KEY = "genericDescription";
+    public static final String SIMILAR_CONTENT_KEY = "similar";
+    public static final String EVENTS_KEY = "events";
+    public static final String EDITORIAL_PRIORITY_KEY = "editorialPriority";
+    public static final String VERSIONS_KEY = "versions";
+    public static final String AWARDS = "awards";
 
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;

@@ -27,19 +27,19 @@ import com.mongodb.DBObject;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
-    private static final String TAGS_KEY = "tags";
-    private static final String THUMBNAIL_KEY = "thumbnail";
-    private static final String TITLE_KEY = "title";
+    public static final String TAGS_KEY = "tags";
+    public static final String THUMBNAIL_KEY = "thumbnail";
+    public static final String TITLE_KEY = "title";
     public static final String MEDIA_TYPE_KEY = "mediaType";
-    private static final String SPECIALIZATION_KEY = "specialization";
-    private static final String PRESENTATION_CHANNEL_KEY = "presentationChannel";
+    public static final String SPECIALIZATION_KEY = "specialization";
+    public static final String PRESENTATION_CHANNEL_KEY = "presentationChannel";
     public static final String IMAGES_KEY = "images";
     public static final String IMAGE_KEY = "image";
-    private static final String GENRES_KEY = "genres";
-    private static final String FIRST_SEEN_KEY = "firstSeen";
-    private static final String DESCRIPTION_KEY = "description";
+    public static final String GENRES_KEY = "genres";
+    public static final String FIRST_SEEN_KEY = "firstSeen";
+    public static final String DESCRIPTION_KEY = "description";
     public static final String PUBLISHER_KEY = "publisher";
-    private static final String SCHEDULE_ONLY_KEY = "scheduleOnly";
+    public static final String SCHEDULE_ONLY_KEY = "scheduleOnly";
     public static final String THIS_OR_CHILD_LAST_UPDATED_KEY = "thisOrChildLastUpdated";
     public static final String TYPE_KEY = "type";
 	public static final String LAST_FETCHED_KEY = "lastFetched";
@@ -48,12 +48,12 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String LONG_DESC_KEY = "longDescription";
     public static final String ACTIVELY_PUBLISHED_KEY = "activelyPublished";
     public static final String LINKS_KEY = "links";
-    protected static final String LOCALIZED_DESCRIPTIONS_KEY = "descriptions";
-    protected static final String LOCALIZED_TITLES_KEY = "titles";
-    protected static final String REVIEWS_KEY = "reviews";
-    protected static final String RATINGS_KEY = "ratings";
-    protected static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
-    protected static final String ITEM_PRIORITY_KEY = "priority";
+    public static final String LOCALIZED_DESCRIPTIONS_KEY = "descriptions";
+    public static final String LOCALIZED_TITLES_KEY = "titles";
+    public static final String REVIEWS_KEY = "reviews";
+    public static final String RATINGS_KEY = "ratings";
+    public static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
+    public static final String ITEM_PRIORITY_KEY = "priority";
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from((o1, o2) -> ComparisonChain.start()

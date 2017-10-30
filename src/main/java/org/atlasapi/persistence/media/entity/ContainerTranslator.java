@@ -29,8 +29,8 @@ public class ContainerTranslator {
     public static final String CONTAINER = "container";
 	public static final String CONTAINER_ID = "containerId";
     public static final String CHILDREN_KEY = "childRefs";
-    private static final String SERIES_NUMBER_KEY = "seriesNumber";
-    private static final String TOTAL_EPISODES = "totalEpisodes";
+    public static final String SERIES_NUMBER_KEY = "seriesNumber";
+    public static final String TOTAL_EPISODES = "totalEpisodes";
 
     public static final String FULL_SERIES_KEY = "series";
 
