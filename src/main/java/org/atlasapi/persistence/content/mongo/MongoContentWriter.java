@@ -291,7 +291,7 @@ public class MongoContentWriter implements ContentWriter {
         lookupStore.ensureLookup(container);
     }
 
-    public Iterable<String> getKeysToRemove() {
+    protected Iterable<String> getKeysToRemove() {
         return KEYS_TO_REMOVE;
     }
 
@@ -373,7 +373,7 @@ public class MongoContentWriter implements ContentWriter {
         }
 
         @Override
-        public Iterable<String> getKeysToRemove() {
+        protected Iterable<String> getKeysToRemove() {
             return keysToRemove;
         }
     }
