@@ -176,7 +176,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                                           : resolveAndFilter(secondaryResolve, subjsToEquivs.build(), sourceFilter);
     }
 
-    private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
+    protected ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
             SetMultimap<LookupRef, LookupRef> secondaryResolve,
             ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs,
             Predicate<LookupRef> sourceFilter
