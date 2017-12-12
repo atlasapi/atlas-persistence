@@ -146,7 +146,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     }
     
 
-    private SetMultimap<LookupEntry, LookupRef> subjsToEquivs(
+    protected SetMultimap<LookupEntry, LookupRef> subjsToEquivs(
             Iterable<LookupEntry> resolved,
             Application application
     ) {
@@ -176,7 +176,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                                           : resolveAndFilter(secondaryResolve, subjsToEquivs.build(), sourceFilter);
     }
 
-    protected ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
+    private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
             SetMultimap<LookupRef, LookupRef> secondaryResolve,
             ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs,
             Predicate<LookupRef> sourceFilter
