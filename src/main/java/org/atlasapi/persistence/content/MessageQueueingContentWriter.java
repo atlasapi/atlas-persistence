@@ -67,12 +67,18 @@ public class MessageQueueingContentWriter implements ContentWriter {
 
     @Override
     public Item createOrUpdate(Item item) {
+        long startTime = System.nanoTime();
+        log.info("TIMER MQ entered. {} {}",item.getId(), Thread.currentThread().getName());
         Item writtenItem = contentWriter.createOrUpdate(item);
+        log.info("TIMER MQ Delegate finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
+
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
             log.debug("{} not changed", item.getCanonicalUri());
             return writtenItem;
         }
         enqueueMessageUpdatedMessage(item);
+
+        log.info("TIMER MQ local work finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         return writtenItem;
     }
 
