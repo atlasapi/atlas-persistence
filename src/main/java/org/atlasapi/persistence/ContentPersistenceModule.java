@@ -26,6 +26,8 @@ public interface ContentPersistenceModule {
 	ContentWriter contentWriter();
 
 	ContentWriter nonIdSettingContentWriter();
+
+	ContentWriter nonIdNoLockSettingContentWriter();
 	
 	ItemsPeopleWriter itemsPeopleWriter();
 	

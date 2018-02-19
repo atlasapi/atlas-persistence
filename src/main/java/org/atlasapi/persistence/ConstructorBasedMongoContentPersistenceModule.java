@@ -74,6 +74,7 @@ import org.atlasapi.persistence.event.MongoEventStore;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.NoLockTransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
@@ -282,6 +283,26 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     @Override
+    public ContentWriter nonIdNoLockSettingContentWriter() {
+        ContentWriter contentWriter = new MongoContentWriter(
+                db, lookupStore(), persistenceAuditLog(),
+                playerResolver(), serviceResolver(), new SystemClock()
+        );
+
+        contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+        if (messagingEnabled) {
+            contentWriter = new MessageQueueingContentWriter(
+                    messenger(),
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
+        }
+
+        return contentWriter;
+    }
+
+    @Override
     public ContentResolver contentResolver() {
         return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
     }
@@ -309,6 +330,12 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"),
                 persistenceAuditLog(), ReadPreference.primary());
         return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
+    }
+
+    protected LookupWriter explicitNoLockLookupWriter() {
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"),
+                persistenceAuditLog(), ReadPreference.primary());
+        return NoLockTransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
     }
 
     public LookupWriter generatedLookupWriter() {

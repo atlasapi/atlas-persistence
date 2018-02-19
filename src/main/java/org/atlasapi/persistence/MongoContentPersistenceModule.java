@@ -69,6 +69,7 @@ import org.springframework.context.annotation.Primary;
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
+    public static final String NON_ID_NO_LOCK_SETTING_CONTENT_WRITER = "nonIdNoLockSettingContentWriter";
 
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
@@ -197,6 +198,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean(name = NON_ID_SETTING_CONTENT_WRITER)
     public ContentWriter nonIdSettingContentWriter() {
         return persistenceModule().nonIdSettingContentWriter();
+    }
+
+    @Override
+    @Bean(name = NON_ID_NO_LOCK_SETTING_CONTENT_WRITER)
+    public ContentWriter nonIdNoLockSettingContentWriter() {
+        return persistenceModule().nonIdNoLockSettingContentWriter();
     }
 
     @Override
