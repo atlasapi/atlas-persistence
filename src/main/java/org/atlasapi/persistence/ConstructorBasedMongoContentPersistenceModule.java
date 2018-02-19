@@ -289,7 +289,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 playerResolver(), serviceResolver(), new SystemClock()
         );
 
-        contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+        contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitNoLockLookupWriter());
         if (messagingEnabled) {
             contentWriter = new MessageQueueingContentWriter(
                     messenger(),
