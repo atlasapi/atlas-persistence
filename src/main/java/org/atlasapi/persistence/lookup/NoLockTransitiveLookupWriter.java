@@ -35,6 +35,15 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.collect.Iterables.transform;
 
+/**
+ * This class was created because the transitiveLookup writer was identified as one of the
+ * bottleneck points when trying to create new content through the atlas endpoints. Since there
+ * are multiple endpoints the locking mechanism was not properly working anyway, so it was disabled.
+ *
+ * Provisional tests showed that this has not speed things up considerably if at all. The
+ * implications of bypassing the locking mechanism remain unknown. This class is retained for
+ * future reference/work.
+ */
 public class NoLockTransitiveLookupWriter implements LookupWriter {
 
     private static final Logger log = LoggerFactory.getLogger(NoLockTransitiveLookupWriter.class);
@@ -74,6 +83,9 @@ public class NoLockTransitiveLookupWriter implements LookupWriter {
                 sources
         );
         log.info("TIMER NOL TW wrote lookup "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+        if((System.nanoTime() - startTime)/1000000 > 1000){
+            log.info("TIMER SLOW NOL");
+        }
         return setOptional;
     }
     
