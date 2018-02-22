@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 public class EquivalenceWritingContentWriter implements ContentWriter {
 
     private static final Logger log = LoggerFactory.getLogger(EquivalenceWritingContentWriter.class);
+    private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
 
     private final ContentWriter delegate;
     private final LookupWriter equivalenceWriter;
@@ -28,12 +29,13 @@ public class EquivalenceWritingContentWriter implements ContentWriter {
 
     @Override
     public Item createOrUpdate(Item item) {
-        Long startTime = System.nanoTime();
-        log.info("TIMER EQ entered. {} {}",item.getId(), Thread.currentThread().getName());
+        Long lastTime = System.nanoTime();
+        timerLog.debug("TIMER EQ entered. {} {}",item.getId(), Thread.currentThread().getName());
         Item writtenItem = delegate.createOrUpdate(item);
-        log.info("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
+        timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
+        lastTime = System.nanoTime();
         writeEquivalences(item);
-        log.info("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
+        timerLog.debug("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         return writtenItem;
     }
 
@@ -57,12 +59,13 @@ public class EquivalenceWritingContentWriter implements ContentWriter {
 
     @Override
     public void createOrUpdate(Container container) {
-        Long startTime = System.nanoTime();
-        log.info("TIMER EQ entered. {} {}",container.getId(), Thread.currentThread().getName());
+        Long lastTime = System.nanoTime();
+        timerLog.debug("TIMER EQ entered. {} {}",container.getId(), Thread.currentThread().getName());
         delegate.createOrUpdate(container);
-        log.info("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",container.getId(), Thread.currentThread().getName());
+        timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
+        lastTime = System.nanoTime();
         writeEquivalences(container);
-        log.info("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",container.getId(), Thread.currentThread().getName());
+        timerLog.debug("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
     }
 
 }

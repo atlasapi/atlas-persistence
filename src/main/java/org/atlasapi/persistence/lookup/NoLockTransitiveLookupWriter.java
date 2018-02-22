@@ -47,6 +47,7 @@ import static com.google.common.collect.Iterables.transform;
 public class NoLockTransitiveLookupWriter implements LookupWriter {
 
     private static final Logger log = LoggerFactory.getLogger(NoLockTransitiveLookupWriter.class);
+    private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
     private static final int maxSetSize = 150;
 
     private final LookupEntryStore entryStore;
@@ -75,16 +76,16 @@ public class NoLockTransitiveLookupWriter implements LookupWriter {
     @Override
     public Optional<Set<LookupEntry>> writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> sources) {
         long startTime = System.nanoTime();
-        log.info("TIMER NOL TW entered. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER NOL TW entered. {}", Thread.currentThread().getName());
         Iterable<String> neighbourUris = Iterables.transform(filterContentsources(equivalents, sources), TO_URI);
         Optional<Set<LookupEntry>> setOptional = writeLookup(
                 subject.getCanonicalUri(),
                 ImmutableSet.copyOf(neighbourUris),
                 sources
         );
-        log.info("TIMER NOL TW wrote lookup "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER NOL TW wrote lookup "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {}", Thread.currentThread().getName());
         if((System.nanoTime() - startTime)/1000000 > 1000){
-            log.info("TIMER SLOW NOL");
+            timerLog.debug("TIMER SLOW NOL");
         }
         return setOptional;
     }

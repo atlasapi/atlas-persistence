@@ -29,6 +29,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class MessageQueueingContentWriter implements ContentWriter {
 
     private static final Logger log = LoggerFactory.getLogger(MessageQueueingContentWriter.class);
+    private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
+
     private final MessageSender<EntityUpdatedMessage> sender;
     private final ContentWriter contentWriter;
     private final ContentResolver contentResolver;
@@ -67,18 +69,18 @@ public class MessageQueueingContentWriter implements ContentWriter {
 
     @Override
     public Item createOrUpdate(Item item) {
-        long startTime = System.nanoTime();
-        log.info("TIMER MQ entered. {} {}",item.getId(), Thread.currentThread().getName());
+        long lastTime = System.nanoTime();
+        timerLog.debug("TIMER MQ entered. {} {}",item.getId(), Thread.currentThread().getName());
         Item writtenItem = contentWriter.createOrUpdate(item);
-        log.info("TIMER MQ Delegate finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-
+        timerLog.debug("TIMER MQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
+        lastTime = System.nanoTime();
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
             log.debug("{} not changed", item.getCanonicalUri());
             return writtenItem;
         }
         enqueueMessageUpdatedMessage(item);
 
-        log.info("TIMER MQ local work finished "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
+        timerLog.debug("TIMER MQ local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         return writtenItem;
     }
 

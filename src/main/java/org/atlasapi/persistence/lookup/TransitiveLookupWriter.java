@@ -41,6 +41,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     private static final GroupLock<String> lock = GroupLock.<String>natural();
     
     private static final Logger log = LoggerFactory.getLogger(TransitiveLookupWriter.class);
+    private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
     private static final int maxSetSize = 150;
     
     private final LookupEntryStore entryStore;
@@ -70,7 +71,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     public Optional<Set<LookupEntry>> writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> sources) {
 
         long startTime = System.nanoTime();
-        log.info("TIMER L TW 1 entered. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 1 entered. {}", Thread.currentThread().getName());
 
         Iterable<String> neighbourUris = Iterables.transform(filterContentsources(equivalents, sources), TO_URI);
         Optional<Set<LookupEntry>> setOptional = writeLookup(
@@ -78,9 +79,9 @@ public class TransitiveLookupWriter implements LookupWriter {
                 ImmutableSet.copyOf(neighbourUris),
                 sources
         );
-        log.info("TIMER L TW 1 wrote lookup "+Long.toString((System.nanoTime() - startTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 1 wrote lookup {}ms. {}", Long.toString((System.nanoTime() - startTime)/1000000), Thread.currentThread().getName());
         if((System.nanoTime() - startTime)/1000000 > 1000){
-            log.info("TIMER L TW SLOW");
+            timerLog.debug("TIMER L TW SLOW");
         }
         return setOptional;
     }
@@ -98,7 +99,7 @@ public class TransitiveLookupWriter implements LookupWriter {
 
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
-        log.info("TIMER L TW 2 doing write lookup. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 2 doing write lookup. {}", Thread.currentThread().getName());
         Preconditions.checkNotNull(emptyToNull(subjectUri), "null subject");
         
         ImmutableSet<String> newNeighboursUris = ImmutableSet.copyOf(equivalentUris);
@@ -106,20 +107,20 @@ public class TransitiveLookupWriter implements LookupWriter {
         Set<String> transitiveSetsUris = null;
         try {
             synchronized (lock) {
-                log.info("TIMER L TW 2 acquired the lock object."+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW 2 acquired the lock object. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 int loop = 0;
                 while((transitiveSetsUris = tryLockAllIds(subjectAndNeighbours)) == null) {
-                    log.info("TIMER L TW 2 failed to lock ids (loop "+loop++ +"). "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+                    timerLog.debug("TIMER L TW 2 failed to lock ids (loop "+loop++ +"). {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                     lock.unlock(subjectAndNeighbours);
-                    log.info("TIMER L TW 2 unlocked "+subjectAndNeighbours.size()+" (loop "+loop++ +"). "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+                    timerLog.debug("TIMER L TW 2 unlocked "+subjectAndNeighbours.size()+" (loop "+loop++ +"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                     lock.wait();
-                    log.info("TIMER L TW 2 wait finished (loop "+loop++ +"). "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+                    timerLog.debug("TIMER L TW 2 wait finished (loop "+loop++ +"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                 }
-                log.info("TIMER L TW 2 all ids locked (loop "+loop +"). "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW 2 all ids locked (loop "+loop +"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                 lastTime = System.nanoTime();
             }
             
@@ -133,18 +134,17 @@ public class TransitiveLookupWriter implements LookupWriter {
             log.error(String.format("%s: %s", subjectUri, newNeighboursUris), e);
             return Optional.absent();
         } finally {
-            log.info("TIMER L TW Finally block reached. "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+            timerLog.debug("TIMER L TW Finally block reached. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
             lastTime = System.nanoTime();
             synchronized (lock) {
-                log.info("TIMER L TW Finally acquired the lock object."+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW Finally acquired the lock object.{}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 lock.unlock(subjectAndNeighbours);
-                log.info("TIMER L TW Finally unlocked subjet and neighbours ("+subjectAndNeighbours.size()+")."+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW Finally unlocked subjet and neighbours ("+subjectAndNeighbours.size()+").{}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 if (transitiveSetsUris != null) {
                     lock.unlock(transitiveSetsUris);
-                    log.info("TIMER L TW Finally unlocked transitive uris ("+transitiveSetsUris.size()+")."+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
-                    lastTime = System.nanoTime();
+                    timerLog.debug("TIMER L TW Finally unlocked transitive uris ("+transitiveSetsUris.size()+").{}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                 }
                 lock.notifyAll();
             }
@@ -155,10 +155,10 @@ public class TransitiveLookupWriter implements LookupWriter {
             Set<String> transitiveSetsUris, Set<Publisher> sources) {
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
-        log.info("TIMER L TW 4 updating all entries {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 4 updating all entries {}", Thread.currentThread().getName());
         LookupEntry subject = entryFor(subjectUri);
 
-        log.info("TIMER L TW 4 got lookup for main entry. "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 4 got lookup for main entry. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
         lastTime = System.nanoTime();
 
         checkNotNull(subject, "No entry for %s", subjectUri);
@@ -170,7 +170,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         // entries for all members in all transitive sets involved
         Map<String, LookupEntry> entryIndex = resolveTransitiveSets(transitiveSetsUris);
 
-        log.info("TIMER L TW 4 Resolved transitive sets ("+entryIndex.size()+"). "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 4 Resolved transitive sets ("+entryIndex.size()+"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
         lastTime = System.nanoTime();
         Set<LookupEntry> newNeighbours = newSubjectNeighbours(newNeighboursUris, entryIndex);
         
@@ -185,8 +185,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             entryStore.store(entry);
         }
 
-        log.info("TIMER L TW 4 Saved entries to db. "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
-        lastTime = System.nanoTime();
+        timerLog.debug("TIMER L TW 4 Saved entries to db. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000),Thread.currentThread().getName());
         
         return Optional.of(newLookups);
     }
@@ -216,19 +215,18 @@ public class TransitiveLookupWriter implements LookupWriter {
     private Set<String> tryLockAllIds(Set<String> neighboursUris) throws InterruptedException {
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
-        log.info("TIMER L TW 3 Trying to lock all ids. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 3 Trying to lock all ids. {}", Thread.currentThread().getName());
         if (!lock.tryLock(neighboursUris)) {
-            log.info("TIMER L TW 3 Failed. "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+            timerLog.debug("TIMER L TW 3 Failed. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
             lastTime = System.nanoTime();
             return null;
         }
 
-        log.info("TIMER L TW 3 all ids locked. "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 3 all ids locked. {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000),  Thread.currentThread().getName());
         lastTime = System.nanoTime();
         Set<LookupEntry> entries = entriesFor(neighboursUris);
 
-        log.info("TIMER L TW 3 got all entries from the DB ("+entries.size()+"). "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {}", Thread.currentThread().getName());
-        lastTime = System.nanoTime();
+        timerLog.debug("TIMER L TW 3 got all entries from the DB ("+entries.size()+"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
 
         Iterable<LookupRef> transitiveSetRefs = Iterables.concat(Iterables.transform(entries, LookupEntry.TO_EQUIVS));
         Set<String> transitiveSetUris = ImmutableSet.copyOf(Iterables.transform(transitiveSetRefs, LookupRef.TO_URI));

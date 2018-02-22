@@ -32,6 +32,7 @@ import com.mongodb.DBObject;
 
 public class ChildRefWriter {
 
+    private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
     private static final Logger log = LoggerFactory.getLogger(ChildRefWriter.class);
             
     private final DBCollection containers;
@@ -113,7 +114,11 @@ public class ChildRefWriter {
         
         log.debug("Container {} hash changed so writing to db. There are {} ChildRefs", 
                 container.getCanonicalUri(), container.getChildRefs().size());
+        Long startTime = System.nanoTime();
+        timerLog.debug("TIMER CCR saving {}. {}", String.format("%s kids=%s equiv=%s to %s",container.getCanonicalUri(), container.getChildRefs().size(), container.getEquivalentTo().size(),collection.getName()), Thread.currentThread().getName());
         collection.save(containerTranslator.toDBO(container, true));
+        timerLog.debug("TIMER CCR saving took {}ms. {}", (System.nanoTime() - startTime)/1000000, Thread.currentThread().getName());
+
     }
 
     private DateTime laterOf(DateTime left, DateTime right) {
