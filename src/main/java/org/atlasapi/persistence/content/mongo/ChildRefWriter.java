@@ -9,6 +9,7 @@ import static org.atlasapi.persistence.media.entity.ContainerTranslator.CHILDREN
 import java.util.List;
 import java.util.Set;
 
+import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
@@ -45,6 +46,8 @@ public class ChildRefWriter {
         this.containers = mongoTables.collectionFor(ContentCategory.CONTAINER);
         this.programmeGroups = mongoTables.collectionFor(ContentCategory.PROGRAMME_GROUP);
         this.containerTranslator = new ContainerTranslator(new SubstitutionTableNumberCodec());
+        this.containers.setReadPreference(ReadPreference.primary());
+        this.programmeGroups.setReadPreference(ReadPreference.primary());
     }
 
     public void includeEpisodeInSeriesAndBrand(Episode episode) {
