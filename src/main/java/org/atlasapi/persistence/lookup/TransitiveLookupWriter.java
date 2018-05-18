@@ -1,21 +1,5 @@
 package org.atlasapi.persistence.lookup;
 
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
-import org.atlasapi.equiv.ContentRef;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
-import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.atlasapi.util.GroupLock;
-
-import com.metabroadcast.common.base.MorePredicates;
-import com.metabroadcast.common.collect.MoreSets;
-
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
@@ -27,8 +11,21 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.collect.MoreSets;
+import org.atlasapi.equiv.ContentRef;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.util.GroupLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.in;
@@ -127,8 +124,8 @@ public class TransitiveLookupWriter implements LookupWriter {
             return updateEntries(subjectUri, newNeighboursUris, transitiveSetsUris, sources);
             
         } catch(OversizeTransitiveSetException otse) {
-            log.info(String.format("Oversize set: %s + %s: %s", 
-                    subjectUri, newNeighboursUris, otse.getMessage()));
+            log.info(String.format("Oversize set for %s : %s",
+                    subjectUri, otse.getMessage()));
             return Optional.absent();
         } catch(InterruptedException e) {
             log.error(String.format("%s: %s", subjectUri, newNeighboursUris), e);
