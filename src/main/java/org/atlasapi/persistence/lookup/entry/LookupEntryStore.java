@@ -7,7 +7,6 @@ import org.atlasapi.persistence.content.listing.ContentListingProgress;
 
 import com.google.common.base.Optional;
 import com.metabroadcast.common.query.Selection;
-import org.joda.time.DateTime;
 
 public interface LookupEntryStore {
 
@@ -54,6 +53,4 @@ public interface LookupEntryStore {
             ContentListingProgress progress);
 
     Map<String, Long> idsForCanonicalUris(Iterable<String> uris);
-
-    Iterable<LookupEntry> updatedSince(DateTime dateTime);
 }
