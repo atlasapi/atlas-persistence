@@ -10,11 +10,9 @@ import com.google.common.collect.Multimap;
 import com.metabroadcast.common.query.Selection;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.joda.time.DateTime;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -93,11 +91,6 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     @Override
     public Iterable<LookupEntry> allEntriesForPublishers(Iterable<Publisher> publishers,
             ContentListingProgress progress) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterable<LookupEntry> updatedSince(DateTime dateTime) {
         throw new UnsupportedOperationException();
     }
 }
