@@ -97,7 +97,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     }
 
     @Override
-    public Iterable<LookupEntry> updatedSince(DateTime dateTime) {
+    public Iterable<LookupEntry> updatedSince(Publisher publisher, DateTime dateTime) {
         throw new UnsupportedOperationException();
     }
 }
