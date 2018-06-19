@@ -55,5 +55,5 @@ public interface LookupEntryStore {
 
     Map<String, Long> idsForCanonicalUris(Iterable<String> uris);
 
-    Iterable<LookupEntry> updatedSince(DateTime dateTime);
+    Iterable<LookupEntry> updatedSince(Publisher publisher, DateTime dateTime);
 }

@@ -13,7 +13,6 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.media.entity.LookupRef.TO_URI;
-import static org.atlasapi.media.entity.Publisher.AMAZON_UNBOX;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
@@ -26,6 +25,8 @@ import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
@@ -278,12 +279,14 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     @Override
-    public Iterable<LookupEntry> updatedSince(DateTime dateTime) {
+    public Iterable<LookupEntry> updatedSince(Publisher publisher, DateTime dateTime) {
         DBObject query = where()
                 .fieldAfter("updated", dateTime)
-                .fieldEquals("self.publisher", Publisher.AMAZON_UNBOX.key())
+                .fieldEquals("self.publisher", publisher.key())
                 .build();
 
-        return Iterables.transform(lookup.find(query), translator.FROM_DBO);
+        return StreamSupport.stream(lookup.find(query).spliterator(), false)
+                .map(translator.FROM_DBO::apply)
+                .collect(Collectors.toList());
     }
 }
