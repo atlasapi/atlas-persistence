@@ -283,6 +283,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         DBObject query = where()
                 .fieldAfter("updated", dateTime)
                 .fieldEquals("self.publisher", publisher.key())
+                .fieldNotEqualTo("activelyPublished", false)
                 .build();
 
         return StreamSupport.stream(lookup.find(query).spliterator(), false)
