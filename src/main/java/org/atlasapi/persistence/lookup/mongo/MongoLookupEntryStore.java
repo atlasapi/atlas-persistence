@@ -25,6 +25,8 @@ import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
@@ -38,6 +40,7 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,5 +276,18 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
         LookupEntry entry = Iterables.getOnlyElement(progressedToEntry);
         queryBuilder.fieldGreaterThan(OPAQUE_ID, entry.id());
+    }
+
+    @Override
+    public Iterable<LookupEntry> updatedSince(Publisher publisher, DateTime dateTime) {
+        DBObject query = where()
+                .fieldAfter("updated", dateTime)
+                .fieldEquals("self.publisher", publisher.key())
+                .fieldNotEqualTo("activelyPublished", false)
+                .build();
+
+        return StreamSupport.stream(lookup.find(query).spliterator(), false)
+                .map(translator.FROM_DBO::apply)
+                .collect(Collectors.toList());
     }
 }
