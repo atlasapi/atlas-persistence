@@ -13,6 +13,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.media.entity.LookupRef.TO_URI;
+import static org.atlasapi.media.entity.Publisher.AMAZON_UNBOX;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
@@ -38,6 +39,7 @@ import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,5 +275,15 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
         LookupEntry entry = Iterables.getOnlyElement(progressedToEntry);
         queryBuilder.fieldGreaterThan(OPAQUE_ID, entry.id());
+    }
+
+    @Override
+    public Iterable<LookupEntry> updatedSince(DateTime dateTime) {
+        DBObject query = where()
+                .fieldAfter("updated", dateTime)
+                .fieldEquals("self.publisher", Publisher.AMAZON_UNBOX.key())
+                .build();
+
+        return Iterables.transform(lookup.find(query), translator.FROM_DBO);
     }
 }
