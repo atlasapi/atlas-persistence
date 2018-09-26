@@ -49,6 +49,7 @@ public class ContentTranslator implements ModelTranslator<Content> {
     public static final String EDITORIAL_PRIORITY_KEY = "editorialPriority";
     public static final String VERSIONS_KEY = "versions";
     public static final String AWARDS = "awards";
+    private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
 
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;
@@ -95,6 +96,8 @@ public class ContentTranslator implements ModelTranslator<Content> {
         entity.setGenericDescription(TranslatorUtils.toBoolean(dbObject, GENERIC_DESCRIPTION_KEY));
         entity.setSimilarContent(similarContentRefTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, SIMILAR_CONTENT_KEY)));
         entity.setEditorialPriority(TranslatorUtils.toInteger(dbObject, EDITORIAL_PRIORITY_KEY));
+
+        entity.setCountriesOfOrigin(Countries.fromCodes(TranslatorUtils.toSet(dbObject, COUNTRIES_OF_ORIGIN_KEY)));
 
         List<DBObject> list = TranslatorUtils.toDBObjectList(dbObject, PEOPLE);
         if (list != null && ! list.isEmpty()) {
@@ -222,6 +225,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
         TranslatorUtils.from(dbObject, YEAR_KEY, entity.getYear());
         TranslatorUtils.from(dbObject, GENERIC_DESCRIPTION_KEY, entity.getGenericDescription());
         TranslatorUtils.from(dbObject, EDITORIAL_PRIORITY_KEY, entity.getEditorialPriority());
+
+        if (! entity.getCountriesOfOrigin().isEmpty()) {
+            TranslatorUtils.fromIterable(dbObject, Countries.toCodes(entity.getCountriesOfOrigin()), COUNTRIES_OF_ORIGIN_KEY);
+        }
         
         TranslatorUtils.from(dbObject, SIMILAR_CONTENT_KEY, similarContentRefTranslator.toDBList(entity.getSimilarContent()));
         if (! entity.people().isEmpty()) {

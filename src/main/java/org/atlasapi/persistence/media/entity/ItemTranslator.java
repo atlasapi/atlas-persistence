@@ -56,7 +56,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
 	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
 	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
-	private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
 
 	private final ContentTranslator contentTranslator;
 
@@ -101,7 +100,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         
         item.setIsLongForm((Boolean) dbObject.get(IS_LONG_FORM_KEY));
         item.setBlackAndWhite(TranslatorUtils.toBoolean(dbObject, BLACK_AND_WHITE_KEY));
-        item.setCountriesOfOrigin(Countries.fromCodes(TranslatorUtils.toSet(dbObject, COUNTRIES_OF_ORIGIN_KEY)));
         if (dbObject.containsField(FILM_RELEASES_KEY)) {
             item.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
         }
@@ -188,11 +186,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
 
-        
         TranslatorUtils.from(itemDbo, BLACK_AND_WHITE_KEY, entity.getBlackAndWhite());
-        if (! entity.getCountriesOfOrigin().isEmpty()) {
-            TranslatorUtils.fromIterable(itemDbo, Countries.toCodes(entity.getCountriesOfOrigin()), COUNTRIES_OF_ORIGIN_KEY);
-        }
 		
         if(entity.getContainer() != null) {
             itemDbo.put(CONTAINER, entity.getContainer().getUri());
