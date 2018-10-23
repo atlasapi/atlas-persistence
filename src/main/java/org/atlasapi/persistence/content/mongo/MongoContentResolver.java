@@ -8,11 +8,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.mongodb.BasicDBObject;
+import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
@@ -110,5 +117,28 @@ public class MongoContentResolver implements KnownTypeContentResolver {
         		return itemTranslator.fromDBObject(dbo, null);
         }
         throw new IllegalArgumentException("Unknown type: " + type);
+    }
+
+    /**
+     * DON'T USE THIS!!!
+     * Very slow. Using temporarily in ExactTitleGenerator as a direct db query for short titles.
+     */
+    @Deprecated
+    public ResolvedContent getExactTitleMatches(Content content) {
+        BasicDBObject object = new BasicDBObject();
+        object.append("publisher", content.getPublisher().key());
+        object.append("title", content.getTitle());
+
+
+        LookupRef ref = LookupRef.from(content);
+        DBCursor cursor = contentTables.collectionFor(ref.category()).find(object);
+
+        ResolvedContent.ResolvedContentBuilder builder = ResolvedContent.builder();
+        while(cursor.hasNext()) {
+            Identified iden = toModel(cursor.next());
+            builder.put(iden.getCanonicalUri(), iden);
+        }
+
+        return builder.build();
     }
 }
