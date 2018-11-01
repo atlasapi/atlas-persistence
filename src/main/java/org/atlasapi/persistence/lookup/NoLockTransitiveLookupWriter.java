@@ -104,7 +104,7 @@ public class NoLockTransitiveLookupWriter implements LookupWriter {
         Set<String> subjectAndNeighbours = MoreSets.add(newNeighboursUris, subjectUri);
         Set<String> transitiveSetsUris = null;
         try {
-            transitiveSetsUris = getTransitiveSetUris(subjectAndNeighbours);
+            transitiveSetsUris = getTransitiveSetUris(subjectUri, subjectAndNeighbours);
             return updateEntries(subjectUri, newNeighboursUris, transitiveSetsUris, sources);
             
         } catch(OversizeTransitiveSetException otse) {
@@ -152,15 +152,23 @@ public class NoLockTransitiveLookupWriter implements LookupWriter {
         return Maps.newHashMap(Maps.uniqueIndex(entriesFor(transitiveSetUris), LookupEntry.TO_ID));
     }
 
-    private Set<String> getTransitiveSetUris(Set<String> neighboursUris) {
+    private Set<String> getTransitiveSetUris(String subjectUri, Set<String> neighboursUris) {
 
         Set<LookupEntry> entries = entriesFor(neighboursUris);
+        LookupEntry subjectEntry = entries.stream()
+                .filter(entry -> entry.uri().equals(subjectUri))
+                .findFirst()
+                .get();
         Iterable<LookupRef> transitiveSetRefs = Iterables.concat(Iterables.transform(entries, LookupEntry.TO_EQUIVS));
         Set<String> transitiveSetUris = ImmutableSet.copyOf(Iterables.transform(transitiveSetRefs, LookupRef.TO_URI));
         // We allow oversize sets if this is being written as an explicit equivalence, 
         // since a user has explicitly asked us to make the assertion, so we must
         // honour it
-        if (!explicit && transitiveSetUris.size() > maxSetSize) {
+        // If we will shrink the transitive set by reducing the size of the direct equivalences then we allow this as well
+        if (!explicit
+                && transitiveSetUris.size() > maxSetSize
+                && neighboursUris.size() >= subjectEntry.directEquivalents().size()
+                ) {
             throw new OversizeTransitiveSetException(transitiveSetUris.size());
         }
         return transitiveSetUris;

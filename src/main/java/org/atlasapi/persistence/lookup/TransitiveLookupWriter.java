@@ -107,7 +107,7 @@ public class TransitiveLookupWriter implements LookupWriter {
                 timerLog.debug("TIMER L TW 2 acquired the lock object. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 int loop = 0;
-                while((transitiveSetsUris = tryLockAllIds(subjectAndNeighbours)) == null) {
+                while((transitiveSetsUris = tryLockAllIds(subjectUri, subjectAndNeighbours)) == null) {
                     timerLog.debug("TIMER L TW 2 failed to lock ids (loop "+loop++ +"). {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                     lock.unlock(subjectAndNeighbours);
@@ -209,7 +209,7 @@ public class TransitiveLookupWriter implements LookupWriter {
      * locking needs to re-attempted. Non-null return is a set containing all
      * URIs in all transitive sets relevant to this update.
      */
-    private Set<String> tryLockAllIds(Set<String> neighboursUris) throws InterruptedException {
+    private Set<String> tryLockAllIds(String subjectUri, Set<String> neighboursUris) throws InterruptedException {
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
         timerLog.debug("TIMER L TW 3 Trying to lock all ids. {}", Thread.currentThread().getName());
@@ -222,6 +222,10 @@ public class TransitiveLookupWriter implements LookupWriter {
         timerLog.debug("TIMER L TW 3 all ids locked. {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000),  Thread.currentThread().getName());
         lastTime = System.nanoTime();
         Set<LookupEntry> entries = entriesFor(neighboursUris);
+        LookupEntry subjectEntry = entries.stream()
+                .filter(entry -> entry.uri().equals(subjectUri))
+                .findFirst()
+                .get();
 
         timerLog.debug("TIMER L TW 3 got all entries from the DB ("+entries.size()+"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
 
@@ -230,7 +234,11 @@ public class TransitiveLookupWriter implements LookupWriter {
         // We allow oversize sets if this is being written as an explicit equivalence, 
         // since a user has explicitly asked us to make the assertion, so we must
         // honour it
-        if (!explicit && transitiveSetUris.size() > maxSetSize) {
+        // If we will shrink the transitive set by reducing the size of the direct equivalences then we allow this as well
+        if (!explicit
+                && transitiveSetUris.size() > maxSetSize
+                && neighboursUris.size() >= subjectEntry.directEquivalents().size()
+                ) {
             throw new OversizeTransitiveSetException(transitiveSetUris.size());
         }
         Iterable<String> urisToLock = Iterables.filter(transitiveSetUris, not(in(neighboursUris)));
