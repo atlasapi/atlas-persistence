@@ -92,8 +92,18 @@ public class TransitiveLookupWriter implements LookupWriter {
             }
         });
     }
-    
+
     public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> sources) {
+        LookupEntry subjectEntry = entryFor(subjectUri);
+        return writeLookup(subjectUri, subjectEntry, equivalentUris, sources);
+    }
+
+    public Optional<Set<LookupEntry>> writeLookup(
+            final String subjectUri,
+            LookupEntry subjectEntry,
+            Iterable<String> equivalentUris,
+            final Set<Publisher> sources
+    ) {
 
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
@@ -104,7 +114,6 @@ public class TransitiveLookupWriter implements LookupWriter {
         Set<String> subjectAndNeighbours = MoreSets.add(newNeighboursUris, subjectUri);
         Set<String> transitiveSetsUris = null;
 
-        LookupEntry subjectEntry = entryFor(subjectUri);
         Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().stream()
                 .map(LookupRef::uri)
                 .collect(MoreCollectors.toImmutableSet());
@@ -115,7 +124,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         if(strictSubset
                 && !directUriIntersection.equals(subjectAndNeighbours) //if equal we only need to update once
                 ) {
-            writeLookup(subjectUri, directUriIntersection, sources);
+            writeLookup(subjectUri, subjectEntry, directUriIntersection, sources);
             strictSubset = false; //for the entire set of neighbours
         }
         //Carry on with the entire set of neighbours
