@@ -13,6 +13,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.collect.MoreSets;
+import com.metabroadcast.common.stream.MoreCollectors;
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
@@ -103,8 +104,25 @@ public class NoLockTransitiveLookupWriter implements LookupWriter {
         ImmutableSet<String> newNeighboursUris = ImmutableSet.copyOf(equivalentUris);
         Set<String> subjectAndNeighbours = MoreSets.add(newNeighboursUris, subjectUri);
         Set<String> transitiveSetsUris = null;
+
+        LookupEntry subjectEntry = entryFor(subjectUri);
+        Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().stream()
+                .map(LookupRef::uri)
+                .collect(MoreCollectors.toImmutableSet());
+        Set<String> directUriIntersection = Sets.intersection(subjectAndNeighbours, existingSubjectDirectUris);
+        boolean strictSubset = !directUriIntersection.equals(existingSubjectDirectUris);
+        //If we break some existing direct equivalences, update these first in case we
+        //reduce the size of the transitive equiv set
+        if(strictSubset
+                && !directUriIntersection.equals(subjectAndNeighbours) //if equal we only need to update once
+                ) {
+            writeLookup(subjectUri, directUriIntersection, sources);
+            strictSubset = false; //for the entire set of neighbours
+        }
+        //Carry on with the entire set of neighbours
+
         try {
-            transitiveSetsUris = getTransitiveSetUris(subjectUri, subjectAndNeighbours);
+            transitiveSetsUris = getTransitiveSetUris(subjectAndNeighbours, strictSubset);
             return updateEntries(subjectUri, newNeighboursUris, transitiveSetsUris, sources);
             
         } catch(OversizeTransitiveSetException otse) {
@@ -152,22 +170,18 @@ public class NoLockTransitiveLookupWriter implements LookupWriter {
         return Maps.newHashMap(Maps.uniqueIndex(entriesFor(transitiveSetUris), LookupEntry.TO_ID));
     }
 
-    private Set<String> getTransitiveSetUris(String subjectUri, Set<String> neighboursUris) {
+    private Set<String> getTransitiveSetUris(Set<String> neighboursUris, boolean strictSubset) {
 
         Set<LookupEntry> entries = entriesFor(neighboursUris);
-        LookupEntry subjectEntry = entries.stream()
-                .filter(entry -> entry.uri().equals(subjectUri))
-                .findFirst()
-                .get();
         Iterable<LookupRef> transitiveSetRefs = Iterables.concat(Iterables.transform(entries, LookupEntry.TO_EQUIVS));
         Set<String> transitiveSetUris = ImmutableSet.copyOf(Iterables.transform(transitiveSetRefs, LookupRef.TO_URI));
         // We allow oversize sets if this is being written as an explicit equivalence, 
         // since a user has explicitly asked us to make the assertion, so we must
         // honour it
-        // If we will shrink the transitive set by reducing the size of the direct equivalences then we allow this as well
+        // If we will shrink the direct equivalences then we allow this as well
         if (!explicit
                 && transitiveSetUris.size() > maxSetSize
-                && neighboursUris.size() >= subjectEntry.directEquivalents().size()
+                && !strictSubset
                 ) {
             throw new OversizeTransitiveSetException(transitiveSetUris.size());
         }
