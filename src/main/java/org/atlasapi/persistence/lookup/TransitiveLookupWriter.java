@@ -40,7 +40,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     
     private static final Logger log = LoggerFactory.getLogger(TransitiveLookupWriter.class);
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
-    private static final int maxSetSize = 120; //TODO revert to 150 after testing
+    private static final int maxSetSize = 150;
     
     private final LookupEntryStore entryStore;
     private final boolean explicit;
