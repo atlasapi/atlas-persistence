@@ -120,7 +120,7 @@ public class NoLockTransitiveLookupWriter implements LookupWriter {
                 .collect(MoreCollectors.toImmutableSet());
         Set<String> directUriIntersection = Sets.intersection(subjectAndNeighbours, existingSubjectDirectUris);
         boolean strictSubset = !directUriIntersection.equals(existingSubjectDirectUris);
-        //If we break some existing direct equivalences, update these first in case we
+        //If we break some existing direct equivalences, update these first so we can
         //reduce the size of the transitive equiv set
         if(strictSubset
                 && !directUriIntersection.equals(subjectAndNeighbours) //if equal we only need to update once
