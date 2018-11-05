@@ -13,6 +13,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.collect.MoreSets;
+import com.metabroadcast.common.stream.MoreCollectors;
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
@@ -91,8 +92,18 @@ public class TransitiveLookupWriter implements LookupWriter {
             }
         });
     }
-    
+
     public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> sources) {
+        LookupEntry subjectEntry = entryFor(subjectUri);
+        return writeLookup(subjectUri, subjectEntry, equivalentUris, sources);
+    }
+
+    public Optional<Set<LookupEntry>> writeLookup(
+            final String subjectUri,
+            LookupEntry subjectEntry,
+            Iterable<String> equivalentUris,
+            final Set<Publisher> sources
+    ) {
 
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
@@ -102,12 +113,28 @@ public class TransitiveLookupWriter implements LookupWriter {
         ImmutableSet<String> newNeighboursUris = ImmutableSet.copyOf(equivalentUris);
         Set<String> subjectAndNeighbours = MoreSets.add(newNeighboursUris, subjectUri);
         Set<String> transitiveSetsUris = null;
+
+        Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().stream()
+                .map(LookupRef::uri)
+                .collect(MoreCollectors.toImmutableSet());
+        Set<String> directUriIntersection = Sets.intersection(subjectAndNeighbours, existingSubjectDirectUris);
+        boolean strictSubset = !directUriIntersection.equals(existingSubjectDirectUris);
+        //If we break some existing direct equivalences, update these first so we can
+        //reduce the size of the transitive equiv set
+        if(strictSubset
+                && !directUriIntersection.equals(subjectAndNeighbours) //if equal we only need to update once
+                ) {
+            writeLookup(subjectUri, subjectEntry, directUriIntersection, sources);
+            strictSubset = false; //for the entire set of neighbours
+        }
+        //Carry on with the entire set of neighbours
+
         try {
             synchronized (lock) {
                 timerLog.debug("TIMER L TW 2 acquired the lock object. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 int loop = 0;
-                while((transitiveSetsUris = tryLockAllIds(subjectAndNeighbours)) == null) {
+                while((transitiveSetsUris = tryLockAllIds(subjectAndNeighbours, strictSubset)) == null) {
                     timerLog.debug("TIMER L TW 2 failed to lock ids (loop "+loop++ +"). {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                     lock.unlock(subjectAndNeighbours);
@@ -209,7 +236,7 @@ public class TransitiveLookupWriter implements LookupWriter {
      * locking needs to re-attempted. Non-null return is a set containing all
      * URIs in all transitive sets relevant to this update.
      */
-    private Set<String> tryLockAllIds(Set<String> neighboursUris) throws InterruptedException {
+    private Set<String> tryLockAllIds(Set<String> neighboursUris, boolean strictSubset) throws InterruptedException {
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
         timerLog.debug("TIMER L TW 3 Trying to lock all ids. {}", Thread.currentThread().getName());
@@ -230,7 +257,11 @@ public class TransitiveLookupWriter implements LookupWriter {
         // We allow oversize sets if this is being written as an explicit equivalence, 
         // since a user has explicitly asked us to make the assertion, so we must
         // honour it
-        if (!explicit && transitiveSetUris.size() > maxSetSize) {
+        // If we will shrink the direct equivalences then we allow this as well
+        if (!explicit
+                && transitiveSetUris.size() > maxSetSize
+                && !strictSubset
+                ) {
             throw new OversizeTransitiveSetException(transitiveSetUris.size());
         }
         Iterable<String> urisToLock = Iterables.filter(transitiveSetUris, not(in(neighboursUris)));
