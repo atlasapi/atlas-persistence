@@ -80,7 +80,9 @@ public class ScheduleEntryBuilder {
 	
 		        if (entries.containsKey(key)) {
 		            ScheduleEntry entry = entries.get(key);
-		            entry.withItems(Iterables.concat(entry.getItemRefsAndBroadcasts(), ImmutableList.of(itemAndBroadcast)));
+		            // I think here we should not keep the current entry broadcasts, but only the new ones
+//		            entry.withItems(Iterables.concat(entry.getItemRefsAndBroadcasts(), ImmutableList.of(itemAndBroadcast)));
+                    entry.withItems(ImmutableList.copyOf(ImmutableList.of(itemAndBroadcast)));
 		        } else {
 		            ScheduleEntry entry = new ScheduleEntry(interval, channel, publisher, ImmutableList.of(itemAndBroadcast));
 		            entries.put(key, entry);
