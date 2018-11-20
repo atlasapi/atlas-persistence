@@ -1,27 +1,21 @@
 package org.atlasapi.media.channel;
 
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import com.metabroadcast.common.stream.MoreCollectors;
-
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.metabroadcast.common.stream.MoreCollectors;
+
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CachingChannelGroupStore implements ChannelGroupStore {
 
-    private static final Logger log = LoggerFactory.getLogger(CachingChannelGroupStore.class);
-
-    private final LoadingCache<Long, Optional<ChannelGroup>> groupsByIdCache =
+    private final LoadingCache<Long, Optional<ChannelGroup>> groupsByIdCache = 
             CacheBuilder.newBuilder()
                         .expireAfterWrite(5, TimeUnit.MINUTES)
                         .maximumSize(500)
@@ -73,24 +67,11 @@ public class CachingChannelGroupStore implements ChannelGroupStore {
 
     @Override
     public Iterable<ChannelGroup> channelGroupsFor(Iterable<? extends Long> ids) {
-        return StreamSupport.stream(ids.spliterator(), false)
-                .map(id -> {
-                    try {
-                        Optional<ChannelGroup> cacheChannelGroup = groupsByIdCache.get(id);
-                        if (cacheChannelGroup.isPresent()) {
-                            return cacheChannelGroup.get();
-                        }
-                    } catch (ExecutionException e) {
-                        log.debug("Failed to get channel group from cache for ID {}", id);
-                    }
-                    Optional<ChannelGroup> dbChannelGroup = delegate.channelGroupFor(id);
-                    if (dbChannelGroup.isPresent()) {
-                        return dbChannelGroup.get();
-                    }
-                    throw new IllegalArgumentException(String.format("Channel Group not found for %s", id));
-                })
-                .collect(Collectors.toList());
-        //            return Optional.presentInstances(groupsByIdCache.getAll(ids).values());
+        try {
+            return Optional.presentInstances(groupsByIdCache.getAll(ids).values());
+        } catch (ExecutionException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
