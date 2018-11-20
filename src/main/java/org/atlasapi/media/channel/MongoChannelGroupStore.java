@@ -43,7 +43,12 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     public Optional<ChannelGroup> channelGroupFor(Long id) {
         return Optional.fromNullable(translator.fromDBObject(channelGroups.findOne(id), null));
     }
-    
+
+    @Override
+    public void invalidateCache(Long id) {
+        //this is not a caching store, so unlike me, there's nothing to do here.
+    }
+
     @Override
     public Optional<ChannelGroup> channelGroupFor(String canonicalUri) {
         return Optional.fromNullable(translator.fromDBObject(

@@ -61,6 +61,11 @@ public class CachingChannelGroupStore implements ChannelGroupStore {
     }
 
     @Override
+    public void invalidateCache(Long id) {
+        groupsByIdCache.invalidate(id);
+    }
+
+    @Override
     public Iterable<ChannelGroup> channelGroupsFor(Iterable<? extends Long> ids) {
         try {
             return Optional.presentInstances(groupsByIdCache.getAll(ids).values());
