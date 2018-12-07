@@ -1,8 +1,12 @@
 package org.atlasapi.persistence.content;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.isNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -10,9 +14,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
+import com.metabroadcast.common.base.MorePredicates;
 import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
@@ -215,6 +223,39 @@ public class DefaultEquivalentContentResolverTest {
         checkEquivContent(content, subject, equiv);
     }
 
+    @Test
+    public void annotationIgnoresReadableTransativeEquivsIndirectlyFromNonReadableEquivs() {
+        DefaultEquivalentContentResolver resolver = (DefaultEquivalentContentResolver) equivResolver;
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.BARB_OVERRIDES, Publisher.BARB_MASTER, Publisher.BARB_TRANSMISSIONS));
+
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(application.getConfiguration().getEnabledReadSources()));
+
+        Episode subject = episode("e1", 1, Publisher.BARB_OVERRIDES);
+        Episode expEquivRead = episode("e2", 2, Publisher.BARB_MASTER);
+        Episode expEquivReadTransRead = episode("e2-1", 3, Publisher.BARB_TRANSMISSIONS);
+        Episode expEquivReadTransNoRead = episode("e2-3", 4, Publisher.BARB_X_MASTER);
+        Episode expEquivNoRead = episode("e3", 5, Publisher.BARB_X_MASTER);
+        Episode expEquivNoReadTransRead = episode("e3-1", 6, Publisher.BARB_TRANSMISSIONS);
+        Episode expEquivNoReadTransNoRead = episode("e3-2", 7, Publisher.BARB_X_MASTER);
+
+        lookupResolver.store(entry(subject, expEquivNoRead, expEquivRead));
+        lookupResolver.store(entry(expEquivRead, expEquivReadTransNoRead, expEquivReadTransRead));
+        lookupResolver.store(entry(expEquivNoReadTransRead, expEquivNoReadTransNoRead, expEquivNoReadTransRead));
+
+        Set<LookupRef> refs = ImmutableSet.of(subject, expEquivRead, expEquivNoRead)
+                .stream()
+                .map(LookupRef::from)
+                .collect(Collectors.toSet());
+
+        Set<LookupRef> processedRefs = resolver.stepThroughEquivs(refs, sourceFilter);
+
+        assertThat(processedRefs.size(), is(3));
+        assertTrue(processedRefs.contains(LookupRef.from(subject)));
+        assertTrue(processedRefs.contains(LookupRef.from(expEquivRead)));
+        assertTrue(processedRefs.contains(LookupRef.from(expEquivReadTransRead)));
+    }
+
     private ApplicationConfiguration configWithSources(Publisher... srcs) {
         return ApplicationConfiguration.builder()
                 .withPrecedence(Arrays.asList(srcs))
@@ -237,6 +278,11 @@ public class DefaultEquivalentContentResolverTest {
         return LookupEntry.lookupEntryFrom(c)
             .copyWithDirectEquivalents(Iterables.transform(direct, LookupRef.FROM_DESCRIBED))
             .copyWithEquivalents(Collections2.transform(ImmutableSet.copyOf(equivs), LookupRef.FROM_DESCRIBED));
+    }
+
+    private LookupEntry entry(Content c, Content... equivs) {
+        return LookupEntry.lookupEntryFrom(c)
+                .copyWithExplicitEquivalents(Collections2.transform(ImmutableSet.copyOf(equivs), LookupRef.FROM_DESCRIBED));
     }
     
     private Episode episode(String uri, long id, Publisher src) {

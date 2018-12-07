@@ -6,7 +6,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
@@ -164,10 +166,13 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         
         ImmutableSetMultimap.Builder<LookupEntry, LookupRef> subjsToEquivs = ImmutableSetMultimap.builder();
         for (LookupEntry entry : resolved) {
-            Set<LookupRef> equivs = activeAnnotations.contains(RESPECT_API_KEY_FOR_EQUIV_LIST) ? entry.explicitEquivalents()
-                                                                                               : entry.equivalents();
+            Set<LookupRef> selectedEquivs;
 
-            Set<LookupRef> selectedEquivs = Sets.filter(equivs, sourceFilter);
+            if (activeAnnotations.contains(RESPECT_API_KEY_FOR_EQUIV_LIST)) {
+                selectedEquivs = stepThroughEquivs(entry.explicitEquivalents(), sourceFilter);
+            } else {
+                selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter);
+            }
 
             if (application.getConfiguration().isPrecedenceEnabled()) {
                 //ensure only one from precedent
@@ -186,6 +191,45 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         }
         return secondaryResolve.isEmpty() ? subjsToEquivs.build()
                                           : resolveAndFilter(secondaryResolve, subjsToEquivs.build(), sourceFilter);
+    }
+
+    // Steps through and filters the explicit equiv set to avoid collecting any transitive equivs from sources
+    // not allowed from the api key
+    @VisibleForTesting
+    Set<LookupRef> stepThroughEquivs(Set<LookupRef> lookupRefs, Predicate<LookupRef> sourceFilter) {
+        return stepThroughEquivsInternal(lookupRefs, ImmutableSet.of(), sourceFilter);
+    }
+
+    private Set<LookupRef> stepThroughEquivsInternal(
+            Set<LookupRef> nextEquivs,
+            Set<LookupRef> collectedEquivs,
+            Predicate<LookupRef> sourceFilter
+    ) {
+        if (nextEquivs.isEmpty()) {
+            return collectedEquivs;
+        }
+
+        Set<LookupRef> filteredRefs = nextEquivs.stream()
+                .filter(sourceFilter::apply)
+                .collect(Collectors.toSet());
+
+        Iterable<LookupEntry> resolvedEntries = lookupResolver.entriesForCanonicalUris(
+                Iterables.transform(filteredRefs, LookupRef::uri)
+        );
+
+        Set<LookupRef> combinedRefs = ImmutableSet.<LookupRef>builder()
+                .addAll(filteredRefs)
+                .addAll(collectedEquivs)
+                .build();
+
+        Set<LookupRef> newEntries = StreamSupport.stream(resolvedEntries.spliterator(), false)
+                .flatMap(entry -> entry.explicitEquivalents().stream())
+                .distinct()
+                .filter(sourceFilter::apply)
+                .filter(ref -> !combinedRefs.contains(ref))
+                .collect(Collectors.toSet());
+
+        return stepThroughEquivsInternal(newEntries, combinedRefs, sourceFilter);
     }
 
     private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
