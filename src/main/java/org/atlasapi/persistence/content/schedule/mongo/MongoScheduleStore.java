@@ -338,6 +338,10 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             );
             existingItemsAndBroadcasts.forEach(existingIAB -> {
                 Broadcast existingBroadcast = existingIAB.getBroadcast();
+                if (existingBroadcast.getSourceId().equals(updateBroadcast.getSourceId())) {
+                    return;
+                }
+
                 Interval existingBroadcastInterval = new Interval(
                         existingBroadcast.getTransmissionTime(),
                         existingBroadcast.getTransmissionEndTime()
