@@ -32,7 +32,6 @@ import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.ScheduleResolver;
-import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 
@@ -279,7 +278,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             ScheduleEntry firstEntry = filteredScheduleEntry(
                     scheduleEntries.get(firstScheduleEntryKey),
                     Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate),
-                    updateItemsAndBroadcasts
+                    updateItemsAndBroadcasts,
+                    publisher
             );
             scheduleEntries.put(firstScheduleEntryKey, firstEntry);
             return scheduleEntries;
@@ -290,7 +290,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             ScheduleEntry firstEntry = filteredScheduleEntry(
 		            scheduleEntries.get(firstScheduleEntryKey),
                     Predicates.or(onBeforePredicate, beforePredicate),
-                    updateItemsAndBroadcasts
+                    updateItemsAndBroadcasts,
+                    publisher
             );
 		    scheduleEntries.put(firstScheduleEntryKey, firstEntry);
 	    }
@@ -301,7 +302,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             ScheduleEntry lastEntry = filteredScheduleEntry(
 		            scheduleEntries.get(lastScheduleEntryKey),
                     Predicates.or(onAfterPredicate, afterPredicate),
-                    updateItemsAndBroadcasts
+                    updateItemsAndBroadcasts,
+                    publisher
             );
 		    scheduleEntries.put(lastScheduleEntryKey, lastEntry);
 	    }
@@ -309,12 +311,15 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	}
     
 	private ScheduleEntry filteredScheduleEntry(
-	        ScheduleEntry entry,
+            ScheduleEntry entry,
             Predicate<ItemRefAndBroadcast> filterPredicate,
-            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts
+            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
+            Publisher publisher
     )  {
         ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts = entry.getItemRefsAndBroadcasts();
-        unpublishOverlappingBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
+        if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
+            unpublishOverlappingBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
+        }
         Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(existingItemsAndBroadcasts, filterPredicate);
 		ScheduleEntry filteredEntry = new ScheduleEntry(entry.interval(), entry.channel(), entry.publisher(), filteredBroadcasts);
 		return filteredEntry;

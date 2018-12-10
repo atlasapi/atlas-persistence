@@ -357,6 +357,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                     db,
                     channelStore,
                     contentResolver(),
+                    contentWriter(),
                     equivContentResolver(),
                     scheduleChanges()
             );
