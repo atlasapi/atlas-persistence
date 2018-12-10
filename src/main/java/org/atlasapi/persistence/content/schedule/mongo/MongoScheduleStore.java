@@ -319,14 +319,14 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     )  {
         ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts = entry.getItemRefsAndBroadcasts();
         if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
-            unpublishOverlappingBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
+            deleteStaleBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
         }
         Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(existingItemsAndBroadcasts, filterPredicate);
 		ScheduleEntry filteredEntry = new ScheduleEntry(entry.interval(), entry.channel(), entry.publisher(), filteredBroadcasts);
 		return filteredEntry;
     }
 
-    private void unpublishOverlappingBroadcasts(
+    private void deleteStaleBroadcasts(
             Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
             ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts
     ) {
@@ -348,14 +348,14 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                     )
                             .get(existingIAB.getItemUri())
                             .requireValue();
-                    Set<Broadcast> updatedBroadcasts = existingItemWithStaleBroadcast.getVersions()
+                    Version version = existingItemWithStaleBroadcast.getVersions()
                             .iterator()
-                            .next()
-                            .getBroadcasts()
+                            .next();
+                    Set<Broadcast> updatedBroadcasts = version.getBroadcasts()
                             .stream()
                             .filter(broadcast -> !broadcast.getSourceId().equals(existingBroadcast.getSourceId()))
                             .collect(Collectors.toSet());
-                    existingItemWithStaleBroadcast.getVersions().iterator().next().setBroadcasts(updatedBroadcasts);
+                    version.setBroadcasts(updatedBroadcasts);
                     contentWriter.createOrUpdate(existingItemWithStaleBroadcast);
                 }
             });
