@@ -351,7 +351,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                             .next()
                             .getBroadcasts()
                             .forEach(broadcast -> {
-                                if (broadcast.getSourceId().equals(updateBroadcast.getSourceId())) {
+                                if (broadcast.getSourceId().equals(existingBroadcast.getSourceId())) {
                                     broadcast.setIsActivelyPublished(false);
                                 }
                             });
