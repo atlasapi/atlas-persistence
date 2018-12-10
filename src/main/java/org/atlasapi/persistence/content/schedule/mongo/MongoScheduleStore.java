@@ -27,10 +27,12 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
 import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.content.ContentResolver;
+import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.ScheduleResolver;
+import org.atlasapi.persistence.content.mongo.MongoContentWriter;
 import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
 
@@ -87,6 +89,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private final EquivalentContentResolver equivalentContentResolver;
     private final ChannelResolver channelResolver;
 
+    private final ContentWriter contentWriter;
+
     private final MessageSender<ScheduleUpdateMessage> messageSender;
     private final Timestamper timestamper = new SystemClock();
     private final NumberToShortStringCodec idCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
@@ -96,11 +100,13 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             DatabasedMongo db,
             ChannelResolver channelResolver,
             ContentResolver contentResolver,
+            ContentWriter contentWriter,
             EquivalentContentResolver equivalentContentResolver,
             MessageSender<ScheduleUpdateMessage> messageSender
     ) {
         this.channelResolver = channelResolver;
         this.contentResolver = contentResolver;
+        this.contentWriter = contentWriter;
         this.equivalentContentResolver = equivalentContentResolver;
         collection = db.collection("schedule");
         this.scheduleEntryBuilder = new ScheduleEntryBuilder(
@@ -135,10 +141,18 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
 
     @Override
-    public void replaceScheduleBlock(Publisher publisher, Channel channel, Iterable<ItemRefAndBroadcast> itemsAndBroadcasts) {
-        
+    public void replaceScheduleBlock(
+            Publisher publisher,
+            Channel channel,
+            Iterable<ItemRefAndBroadcast> itemsAndBroadcasts
+    ) {
         Interval interval = checkAndGetScheduleInterval(itemsAndBroadcasts, true, channel);
-        Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(channel, publisher, interval);
+        Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(
+                channel,
+                publisher,
+                interval,
+                itemsAndBroadcasts
+        );
         
         for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
             scheduleEntryBuilder.toScheduleEntryFromBroadcast(channel, publisher, itemAndBroadcast, entries);
@@ -225,10 +239,12 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 current.getSourceId(), current.getTransmissionTime().toString());
     }
     
-	private Map<String, ScheduleEntry> getAdjacentScheduleEntries(Channel channel,
-			Publisher publisher,
-			final Interval interval) {
-		
+	private Map<String, ScheduleEntry> getAdjacentScheduleEntries(
+	        Channel channel,
+            Publisher publisher,
+            final Interval interval,
+            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts
+    ) {
         List<Interval> intervals = scheduleEntryBuilder.intervalsFor(interval.getStart(), interval.getEnd()); 
         Set<String> requiredScheduleEntries = Sets.<String>newHashSet();
 
@@ -262,7 +278,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 && scheduleEntries.containsKey(firstScheduleEntryKey)){
             ScheduleEntry firstEntry = filteredScheduleEntry(
                     scheduleEntries.get(firstScheduleEntryKey),
-                    Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate)
+                    Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate),
+                    updateItemsAndBroadcasts
             );
             scheduleEntries.put(firstScheduleEntryKey, firstEntry);
             return scheduleEntries;
@@ -272,7 +289,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    if(scheduleEntries.containsKey(firstScheduleEntryKey)) {
             ScheduleEntry firstEntry = filteredScheduleEntry(
 		            scheduleEntries.get(firstScheduleEntryKey),
-                    Predicates.or(onBeforePredicate, beforePredicate)
+                    Predicates.or(onBeforePredicate, beforePredicate),
+                    updateItemsAndBroadcasts
             );
 		    scheduleEntries.put(firstScheduleEntryKey, firstEntry);
 	    }
@@ -282,18 +300,60 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
             ScheduleEntry lastEntry = filteredScheduleEntry(
 		            scheduleEntries.get(lastScheduleEntryKey),
-                    Predicates.or(onAfterPredicate, afterPredicate)
+                    Predicates.or(onAfterPredicate, afterPredicate),
+                    updateItemsAndBroadcasts
             );
 		    scheduleEntries.put(lastScheduleEntryKey, lastEntry);
 	    }
 	    return scheduleEntries;
 	}
     
-	private ScheduleEntry filteredScheduleEntry(ScheduleEntry entry, Predicate<ItemRefAndBroadcast> filterPredicate)  {
-	
-		Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(entry.getItemRefsAndBroadcasts(), filterPredicate);
+	private ScheduleEntry filteredScheduleEntry(
+	        ScheduleEntry entry,
+            Predicate<ItemRefAndBroadcast> filterPredicate,
+            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts
+    )  {
+        ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts = entry.getItemRefsAndBroadcasts();
+        unpublishOverlappingBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
+        Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(existingItemsAndBroadcasts, filterPredicate);
 		ScheduleEntry filteredEntry = new ScheduleEntry(entry.interval(), entry.channel(), entry.publisher(), filteredBroadcasts);
 		return filteredEntry;
+    }
+
+    private void unpublishOverlappingBroadcasts(
+            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
+            ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts
+    ) {
+        updateItemsAndBroadcasts.forEach(updateIAB -> {
+            Broadcast updateBroadcast = updateIAB.getBroadcast();
+            Interval updateBroadcastInterval = new Interval(
+                    updateBroadcast.getTransmissionTime(),
+                    updateBroadcast.getTransmissionEndTime()
+            );
+            existingItemsAndBroadcasts.forEach(existingIAB -> {
+                Broadcast existingBroadcast = existingIAB.getBroadcast();
+                Interval existingBroadcastInterval = new Interval(
+                        existingBroadcast.getTransmissionTime(),
+                        existingBroadcast.getTransmissionEndTime()
+                );
+                if (existingBroadcastInterval.overlaps(updateBroadcastInterval)) {
+                    Item existingItemWithStaleBroadcast = (Item) contentResolver.findByCanonicalUris(
+                            Collections.singleton(existingIAB.getItemUri()))
+                            .get(existingIAB.getItemUri())
+                            .requireValue();
+                    existingItemWithStaleBroadcast.getVersions()
+                            .iterator()
+                            .next()
+                            .getBroadcasts()
+                            .forEach(broadcast -> {
+                                if (broadcast.getSourceId().equals(updateBroadcast.getSourceId())) {
+                                    broadcast.setIsActivelyPublished(false);
+                                }
+                            });
+                    contentWriter.createOrUpdate(existingItemWithStaleBroadcast);
+                }
+            });
+        });
     }
 	
 	@Override
