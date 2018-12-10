@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.equiv.OutputContentMerger;
@@ -343,18 +344,18 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 );
                 if (existingBroadcastInterval.overlaps(updateBroadcastInterval)) {
                     Item existingItemWithStaleBroadcast = (Item) contentResolver.findByCanonicalUris(
-                            Collections.singleton(existingIAB.getItemUri()))
+                            Collections.singleton(existingIAB.getItemUri())
+                    )
                             .get(existingIAB.getItemUri())
                             .requireValue();
-                    existingItemWithStaleBroadcast.getVersions()
+                    Set<Broadcast> updatedBroadcasts = existingItemWithStaleBroadcast.getVersions()
                             .iterator()
                             .next()
                             .getBroadcasts()
-                            .forEach(broadcast -> {
-                                if (broadcast.getSourceId().equals(existingBroadcast.getSourceId())) {
-                                    broadcast.setIsActivelyPublished(false);
-                                }
-                            });
+                            .stream()
+                            .filter(broadcast -> !broadcast.getSourceId().equals(existingBroadcast.getSourceId()))
+                            .collect(Collectors.toSet());
+                    existingItemWithStaleBroadcast.getVersions().iterator().next().setBroadcasts(updatedBroadcasts);
                     contentWriter.createOrUpdate(existingItemWithStaleBroadcast);
                 }
             });
