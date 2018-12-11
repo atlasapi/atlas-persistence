@@ -239,6 +239,14 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     @Override
+    public ContentWriter mongoContentWriter() {
+        return new MongoContentWriter(
+                db, lookupStore(), persistenceAuditLog(),
+                playerResolver(), serviceResolver(), new SystemClock()
+        );
+    }
+
+    @Override
     public ContentWriter contentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(
                 db, lookupStore(), persistenceAuditLog(),
@@ -357,6 +365,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                     db,
                     channelStore,
                     contentResolver(),
+                    mongoContentWriter(),
                     equivContentResolver(),
                     scheduleChanges()
             );

@@ -27,6 +27,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
 import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.content.ContentResolver;
+import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.ResolvedContent;
@@ -87,6 +88,8 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private final EquivalentContentResolver equivalentContentResolver;
     private final ChannelResolver channelResolver;
 
+    private final ContentWriter contentWriter;
+
     private final MessageSender<ScheduleUpdateMessage> messageSender;
     private final Timestamper timestamper = new SystemClock();
     private final NumberToShortStringCodec idCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
@@ -96,11 +99,13 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             DatabasedMongo db,
             ChannelResolver channelResolver,
             ContentResolver contentResolver,
+            ContentWriter contentWriter,
             EquivalentContentResolver equivalentContentResolver,
             MessageSender<ScheduleUpdateMessage> messageSender
     ) {
         this.channelResolver = channelResolver;
         this.contentResolver = contentResolver;
+        this.contentWriter = contentWriter;
         this.equivalentContentResolver = equivalentContentResolver;
         collection = db.collection("schedule");
         this.scheduleEntryBuilder = new ScheduleEntryBuilder(
@@ -135,10 +140,18 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
 
     @Override
-    public void replaceScheduleBlock(Publisher publisher, Channel channel, Iterable<ItemRefAndBroadcast> itemsAndBroadcasts) {
-        
+    public void replaceScheduleBlock(
+            Publisher publisher,
+            Channel channel,
+            Iterable<ItemRefAndBroadcast> itemsAndBroadcasts
+    ) {
         Interval interval = checkAndGetScheduleInterval(itemsAndBroadcasts, true, channel);
-        Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(channel, publisher, interval);
+        Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(
+                channel,
+                publisher,
+                interval,
+                itemsAndBroadcasts
+        );
         
         for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
             scheduleEntryBuilder.toScheduleEntryFromBroadcast(channel, publisher, itemAndBroadcast, entries);
@@ -225,10 +238,12 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 current.getSourceId(), current.getTransmissionTime().toString());
     }
     
-	private Map<String, ScheduleEntry> getAdjacentScheduleEntries(Channel channel,
-			Publisher publisher,
-			final Interval interval) {
-		
+	private Map<String, ScheduleEntry> getAdjacentScheduleEntries(
+	        Channel channel,
+            Publisher publisher,
+            final Interval interval,
+            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts
+    ) {
         List<Interval> intervals = scheduleEntryBuilder.intervalsFor(interval.getStart(), interval.getEnd()); 
         Set<String> requiredScheduleEntries = Sets.<String>newHashSet();
 
@@ -262,7 +277,9 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 && scheduleEntries.containsKey(firstScheduleEntryKey)){
             ScheduleEntry firstEntry = filteredScheduleEntry(
                     scheduleEntries.get(firstScheduleEntryKey),
-                    Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate)
+                    Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate),
+                    updateItemsAndBroadcasts,
+                    publisher
             );
             scheduleEntries.put(firstScheduleEntryKey, firstEntry);
             return scheduleEntries;
@@ -272,7 +289,9 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    if(scheduleEntries.containsKey(firstScheduleEntryKey)) {
             ScheduleEntry firstEntry = filteredScheduleEntry(
 		            scheduleEntries.get(firstScheduleEntryKey),
-                    Predicates.or(onBeforePredicate, beforePredicate)
+                    Predicates.or(onBeforePredicate, beforePredicate),
+                    updateItemsAndBroadcasts,
+                    publisher
             );
 		    scheduleEntries.put(firstScheduleEntryKey, firstEntry);
 	    }
@@ -282,21 +301,85 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
             ScheduleEntry lastEntry = filteredScheduleEntry(
 		            scheduleEntries.get(lastScheduleEntryKey),
-                    Predicates.or(onAfterPredicate, afterPredicate)
+                    Predicates.or(onAfterPredicate, afterPredicate),
+                    updateItemsAndBroadcasts,
+                    publisher
             );
 		    scheduleEntries.put(lastScheduleEntryKey, lastEntry);
 	    }
 	    return scheduleEntries;
 	}
     
-	private ScheduleEntry filteredScheduleEntry(ScheduleEntry entry, Predicate<ItemRefAndBroadcast> filterPredicate)  {
-	
-		Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(entry.getItemRefsAndBroadcasts(), filterPredicate);
+	private ScheduleEntry filteredScheduleEntry(
+            ScheduleEntry entry,
+            Predicate<ItemRefAndBroadcast> filterPredicate,
+            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
+            Publisher publisher
+    )  {
+        ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts = entry.getItemRefsAndBroadcasts();
+
+        // Re-ingesting particular episodes that contain old broadcasts that have been replaced in
+        // the EBS schedule files causes inconsistent Owl schedules. These old broadcasts get re
+        // added in the schedule entries through some kafka magic. Therefore, we need to delete
+        // these old broadcasts every time we update the schedule and only keep the latest broadcasts
+        if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
+            deleteStaleEbsBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
+        }
+
+        Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(existingItemsAndBroadcasts, filterPredicate);
 		ScheduleEntry filteredEntry = new ScheduleEntry(entry.interval(), entry.channel(), entry.publisher(), filteredBroadcasts);
 		return filteredEntry;
     }
-	
-	@Override
+
+    private void deleteStaleEbsBroadcasts(
+            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
+            ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts
+    ) {
+        updateItemsAndBroadcasts.forEach(updateIAB -> {
+            Broadcast updateBroadcast = updateIAB.getBroadcast();
+            Interval updateBroadcastInterval = new Interval(
+                    updateBroadcast.getTransmissionTime(),
+                    updateBroadcast.getTransmissionEndTime()
+            );
+            existingItemsAndBroadcasts.forEach(existingIAB -> {
+                Broadcast existingBroadcast = existingIAB.getBroadcast();
+                if (existingBroadcast.getSourceId().equals(updateBroadcast.getSourceId())) {
+                    return;
+                }
+
+                Interval existingBroadcastInterval = new Interval(
+                        existingBroadcast.getTransmissionTime(),
+                        existingBroadcast.getTransmissionEndTime()
+                );
+                if (existingBroadcastInterval.overlaps(updateBroadcastInterval)) {
+                    Item existingItemWithoutStaleBroadcast = removeStaleBroadcast(
+                            existingIAB.getItemUri(),
+                            existingBroadcast.getSourceId()
+                    );
+                    contentWriter.createOrUpdate(existingItemWithoutStaleBroadcast);
+                }
+            });
+        });
+    }
+
+    private Item removeStaleBroadcast(
+            String existingItemUri,
+            String existingBroadcastSourceId
+    ) {
+        Item existingItemToUpdate = (Item) contentResolver.findByCanonicalUris(
+                Collections.singleton(existingItemUri)
+        )
+                .get(existingItemUri)
+                .requireValue();
+        existingItemToUpdate.getVersions()
+                .iterator()
+                .next()
+                .getBroadcasts()
+                .removeIf(broadcast -> broadcast.getSourceId().equals(existingBroadcastSourceId));
+        return existingItemToUpdate;
+    }
+
+    @Override
 	public Schedule unmergedSchedule(DateTime from, DateTime to, Iterable<Channel> channels,
 	        Iterable<Publisher> publishers) {
 

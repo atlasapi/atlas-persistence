@@ -28,6 +28,8 @@ public interface ContentPersistenceModule {
 	ContentWriter nonIdSettingContentWriter();
 
 	ContentWriter nonIdNoLockSettingContentWriter();
+
+	ContentWriter mongoContentWriter();
 	
 	ItemsPeopleWriter itemsPeopleWriter();
 	

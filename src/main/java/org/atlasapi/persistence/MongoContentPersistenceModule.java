@@ -188,6 +188,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     @Override
+    @Bean
+    public ContentWriter mongoContentWriter() {
+        return persistenceModule().mongoContentWriter();
+    }
+
+    @Override
     @Primary
     @Bean
     public ContentWriter contentWriter() {
