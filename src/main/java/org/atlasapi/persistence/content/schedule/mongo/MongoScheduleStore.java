@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.equiv.OutputContentMerger;
@@ -318,15 +317,21 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             Publisher publisher
     )  {
         ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts = entry.getItemRefsAndBroadcasts();
+
+        // Re-ingesting particular episodes that contain old broadcasts that have been replaced in
+        // the EBS schedule files causes inconsistent Owl schedules. These old broadcasts get re
+        // added in the schedule entries through some kafka magic. Therefore, we need to delete
+        // these old broadcasts every time we update the schedule and only keep the latest broadcasts
         if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
-            deleteStaleBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
+            deleteStaleEbsBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
         }
+
         Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(existingItemsAndBroadcasts, filterPredicate);
 		ScheduleEntry filteredEntry = new ScheduleEntry(entry.interval(), entry.channel(), entry.publisher(), filteredBroadcasts);
 		return filteredEntry;
     }
 
-    private void deleteStaleBroadcasts(
+    private void deleteStaleEbsBroadcasts(
             Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
             ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts
     ) {
@@ -347,26 +352,34 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                         existingBroadcast.getTransmissionEndTime()
                 );
                 if (existingBroadcastInterval.overlaps(updateBroadcastInterval)) {
-                    Item existingItemWithStaleBroadcast = (Item) contentResolver.findByCanonicalUris(
-                            Collections.singleton(existingIAB.getItemUri())
-                    )
-                            .get(existingIAB.getItemUri())
-                            .requireValue();
-                    Version version = existingItemWithStaleBroadcast.getVersions()
-                            .iterator()
-                            .next();
-                    Set<Broadcast> updatedBroadcasts = version.getBroadcasts()
-                            .stream()
-                            .filter(broadcast -> !broadcast.getSourceId().equals(existingBroadcast.getSourceId()))
-                            .collect(Collectors.toSet());
-                    version.setBroadcasts(updatedBroadcasts);
-                    contentWriter.createOrUpdate(existingItemWithStaleBroadcast);
+                    Item existingItemWithoutStaleBroadcast = removeStaleBroadcast(
+                            existingIAB.getItemUri(),
+                            existingBroadcast.getSourceId()
+                    );
+                    contentWriter.createOrUpdate(existingItemWithoutStaleBroadcast);
                 }
             });
         });
     }
-	
-	@Override
+
+    private Item removeStaleBroadcast(
+            String existingItemUri,
+            String existingBroadcastSourceId
+    ) {
+        Item existingItemToUpdate = (Item) contentResolver.findByCanonicalUris(
+                Collections.singleton(existingItemUri)
+        )
+                .get(existingItemUri)
+                .requireValue();
+        existingItemToUpdate.getVersions()
+                .iterator()
+                .next()
+                .getBroadcasts()
+                .removeIf(broadcast -> broadcast.getSourceId().equals(existingBroadcastSourceId));
+        return existingItemToUpdate;
+    }
+
+    @Override
 	public Schedule unmergedSchedule(DateTime from, DateTime to, Iterable<Channel> channels,
 	        Iterable<Publisher> publishers) {
 
