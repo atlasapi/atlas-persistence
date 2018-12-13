@@ -8,8 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.metabroadcast.applications.client.model.internal.Application;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
@@ -18,6 +16,10 @@ import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.common.base.MorePredicates;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -30,7 +32,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
-import com.metabroadcast.common.base.MorePredicates;
 
 import static org.atlasapi.output.Annotation.RESPECT_API_KEY_FOR_EQUIV_LIST;
 
@@ -169,7 +170,11 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             Set<LookupRef> selectedEquivs;
 
             if (activeAnnotations.contains(RESPECT_API_KEY_FOR_EQUIV_LIST)) {
-                selectedEquivs = stepThroughEquivs(entry.explicitEquivalents(), sourceFilter);
+                selectedEquivs = stepThroughEquivs(
+                        Sets.union(
+                                entry.explicitEquivalents(),
+                                entry.directEquivalents()),
+                        sourceFilter);
             } else {
                 selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter);
             }
@@ -223,7 +228,10 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                 .build();
 
         Set<LookupRef> newEntries = StreamSupport.stream(resolvedEntries.spliterator(), false)
-                .flatMap(entry -> entry.explicitEquivalents().stream())
+                .flatMap(entry ->
+                        Sets.union(
+                                entry.explicitEquivalents(),
+                                entry.directEquivalents()).stream())
                 .distinct()
                 .filter(sourceFilter::apply)
                 .filter(ref -> !combinedRefs.contains(ref))
