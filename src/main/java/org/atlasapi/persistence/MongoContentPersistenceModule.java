@@ -138,7 +138,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
                 eventChanges,
                 organisationChanges,
                 Boolean.valueOf(messagingEnabled),
-                auditEnabled,
+                false,
                 processingConfig,
                 equivAssertDest
         );
