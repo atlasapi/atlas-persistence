@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.equiv.OutputContentMerger;
@@ -259,11 +260,15 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         // added in the schedule entries through some kafka magic. Therefore, we need to delete
         // these old broadcasts every time we update the schedule and only keep the latest broadcasts
         if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
-            scheduleEntries.values()
-                    .forEach(scheduleEntry -> deleteStaleEbsBroadcasts(
+            List<ScheduleEntry> allScheduleEntries = getAllScheduleEntriesFromRequest(
+                    channel,
+                    publisher,
+                    intervals
+            );
+            allScheduleEntries.forEach(scheduleEntry -> deleteStaleEbsBroadcasts(
                             updateItemsAndBroadcasts,
                             scheduleEntry.getItemRefsAndBroadcasts()
-                    ));
+            ));
         }
 
         Predicate<ItemRefAndBroadcast> beforePredicate = i -> i.getBroadcast()
@@ -314,8 +319,19 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    }
 	    return scheduleEntries;
 	}
-    
-	private ScheduleEntry filteredScheduleEntry(
+
+    private List<ScheduleEntry> getAllScheduleEntriesFromRequest(
+            Channel channel,
+            Publisher publisher,
+            List<Interval> intervals
+    ) {
+        List<String> allScheduleEntryKeys = intervals.stream()
+                .map(i -> ScheduleEntry.toKey(i, channel, publisher))
+                .collect(Collectors.toList());
+        return translator.fromDbObjects(where().idIn(allScheduleEntryKeys).find(collection));
+    }
+
+    private ScheduleEntry filteredScheduleEntry(
             ScheduleEntry entry,
             Predicate<ItemRefAndBroadcast> filterPredicate
     )  {
