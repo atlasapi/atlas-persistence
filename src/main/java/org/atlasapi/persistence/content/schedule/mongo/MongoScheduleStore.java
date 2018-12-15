@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.equiv.OutputContentMerger;
@@ -254,6 +255,21 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    requiredScheduleEntries.add(lastScheduleEntryKey);
 	    Map<String, ScheduleEntry> scheduleEntries = Maps.newHashMap(Maps.uniqueIndex(translator.fromDbObjects(where().idIn(requiredScheduleEntries).find(collection)), ScheduleEntry.KEY));
 
+        // Re-ingesting particular episodes that contain old broadcasts that have been replaced in
+        // the EBS schedule files causes inconsistent Owl schedules. These old broadcasts get re
+        // added in the schedule entries through some kafka magic. Therefore, we need to delete
+        // these old broadcasts every time we update the schedule and only keep the latest broadcasts
+        if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
+            List<ScheduleEntry> allScheduleEntries = getAllScheduleEntriesFromRequest(
+                    channel,
+                    publisher,
+                    intervals
+            );
+            allScheduleEntries.forEach(scheduleEntry -> deleteStaleEbsBroadcasts(
+                            updateItemsAndBroadcasts,
+                            scheduleEntry.getItemRefsAndBroadcasts()
+            ));
+        }
 
         Predicate<ItemRefAndBroadcast> beforePredicate = i -> i.getBroadcast()
                 .getTransmissionEndTime()
@@ -277,9 +293,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 && scheduleEntries.containsKey(firstScheduleEntryKey)){
             ScheduleEntry firstEntry = filteredScheduleEntry(
                     scheduleEntries.get(firstScheduleEntryKey),
-                    Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate),
-                    updateItemsAndBroadcasts,
-                    publisher
+                    Predicates.or(onBeforePredicate, beforePredicate, onAfterPredicate, afterPredicate)
             );
             scheduleEntries.put(firstScheduleEntryKey, firstEntry);
             return scheduleEntries;
@@ -289,9 +303,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    if(scheduleEntries.containsKey(firstScheduleEntryKey)) {
             ScheduleEntry firstEntry = filteredScheduleEntry(
 		            scheduleEntries.get(firstScheduleEntryKey),
-                    Predicates.or(onBeforePredicate, beforePredicate),
-                    updateItemsAndBroadcasts,
-                    publisher
+                    Predicates.or(onBeforePredicate, beforePredicate)
             );
 		    scheduleEntries.put(firstScheduleEntryKey, firstEntry);
 	    }
@@ -301,33 +313,38 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 
             ScheduleEntry lastEntry = filteredScheduleEntry(
 		            scheduleEntries.get(lastScheduleEntryKey),
-                    Predicates.or(onAfterPredicate, afterPredicate),
-                    updateItemsAndBroadcasts,
-                    publisher
+                    Predicates.or(onAfterPredicate, afterPredicate)
             );
 		    scheduleEntries.put(lastScheduleEntryKey, lastEntry);
 	    }
 	    return scheduleEntries;
 	}
-    
-	private ScheduleEntry filteredScheduleEntry(
+
+    private List<ScheduleEntry> getAllScheduleEntriesFromRequest(
+            Channel channel,
+            Publisher publisher,
+            List<Interval> intervals
+    ) {
+        List<String> allScheduleEntryKeys = intervals.stream()
+                .map(i -> ScheduleEntry.toKey(i, channel, publisher))
+                .collect(Collectors.toList());
+        return translator.fromDbObjects(where().idIn(allScheduleEntryKeys).find(collection));
+    }
+
+    private ScheduleEntry filteredScheduleEntry(
             ScheduleEntry entry,
-            Predicate<ItemRefAndBroadcast> filterPredicate,
-            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
-            Publisher publisher
+            Predicate<ItemRefAndBroadcast> filterPredicate
     )  {
-        ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts = entry.getItemRefsAndBroadcasts();
-
-        // Re-ingesting particular episodes that contain old broadcasts that have been replaced in
-        // the EBS schedule files causes inconsistent Owl schedules. These old broadcasts get re
-        // added in the schedule entries through some kafka magic. Therefore, we need to delete
-        // these old broadcasts every time we update the schedule and only keep the latest broadcasts
-        if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
-            deleteStaleEbsBroadcasts(updateItemsAndBroadcasts, existingItemsAndBroadcasts);
-        }
-
-        Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(existingItemsAndBroadcasts, filterPredicate);
-		ScheduleEntry filteredEntry = new ScheduleEntry(entry.interval(), entry.channel(), entry.publisher(), filteredBroadcasts);
+        Iterable<ItemRefAndBroadcast> filteredBroadcasts = Collections2.filter(
+                entry.getItemRefsAndBroadcasts(),
+                filterPredicate
+        );
+        ScheduleEntry filteredEntry = new ScheduleEntry(
+                entry.interval(),
+                entry.channel(),
+                entry.publisher(),
+                filteredBroadcasts
+        );
 		return filteredEntry;
     }
 
