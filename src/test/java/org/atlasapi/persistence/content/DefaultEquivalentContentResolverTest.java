@@ -1,27 +1,12 @@
 package org.atlasapi.persistence.content;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.isNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.metabroadcast.applications.client.model.internal.Application;
-import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
-import com.metabroadcast.common.base.MorePredicates;
-import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
@@ -31,14 +16,28 @@ import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.lookup.InMemoryLookupEntryStore;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.junit.Before;
-import org.junit.Test;
 
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
+import com.metabroadcast.common.base.MorePredicates;
+
+import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DefaultEquivalentContentResolverTest {
 
@@ -229,7 +228,9 @@ public class DefaultEquivalentContentResolverTest {
 
         when(application.getConfiguration()).thenReturn(configWithSources(Publisher.BARB_OVERRIDES, Publisher.BARB_MASTER, Publisher.BARB_TRANSMISSIONS));
 
-        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(application.getConfiguration().getEnabledReadSources()));
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(
+                LookupRef.TO_SOURCE,
+                Predicates.in(application.getConfiguration().getEnabledReadSources()))::apply;
 
         Episode subject = episode("e1", 1, Publisher.BARB_OVERRIDES);
         Episode expEquivRead = episode("e2", 2, Publisher.BARB_MASTER);
@@ -239,16 +240,12 @@ public class DefaultEquivalentContentResolverTest {
         Episode expEquivNoReadTransRead = episode("e3-1", 6, Publisher.BARB_TRANSMISSIONS);
         Episode expEquivNoReadTransNoRead = episode("e3-2", 7, Publisher.BARB_X_MASTER);
 
-        lookupResolver.store(entry(subject, expEquivNoRead, expEquivRead));
+        LookupEntry subjEntry = entry(subject, expEquivNoRead, expEquivRead);
+        lookupResolver.store(subjEntry);
         lookupResolver.store(entry(expEquivRead, expEquivReadTransNoRead, expEquivReadTransRead));
         lookupResolver.store(entry(expEquivNoReadTransRead, expEquivNoReadTransNoRead, expEquivNoReadTransRead));
 
-        Set<LookupRef> refs = ImmutableSet.of(subject, expEquivRead, expEquivNoRead)
-                .stream()
-                .map(LookupRef::from)
-                .collect(Collectors.toSet());
-
-        Set<LookupRef> processedRefs = resolver.stepThroughEquivs(refs, sourceFilter);
+        Set<LookupRef> processedRefs = resolver.getEquivSetByFollowingLinks(subjEntry, sourceFilter);
 
         assertThat(processedRefs.size(), is(3));
         assertTrue(processedRefs.contains(LookupRef.from(subject)));

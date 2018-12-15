@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.content;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,6 +33,8 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.atlasapi.output.Annotation.RESPECT_API_KEY_FOR_EQUIV_LIST;
 
@@ -40,6 +43,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     private KnownTypeContentResolver contentResolver;
     private LookupEntryStore lookupResolver;
     private final Ordering<LookupRef> nullSafeRefById = Ordering.natural().onResultOf(LookupRef.TO_ID).nullsLast();
+    private final Logger log = LoggerFactory.getLogger(DefaultEquivalentContentResolver.class);
 
     public DefaultEquivalentContentResolver(
             KnownTypeContentResolver contentResolver,
@@ -161,7 +165,9 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             Application application,
             Set<Annotation> activeAnnotations
     ) {
-        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, Predicates.in(application.getConfiguration().getEnabledReadSources()));
+        java.util.function.Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(
+                LookupRef.TO_SOURCE,
+                Predicates.in(application.getConfiguration().getEnabledReadSources()))::apply;
 
         SetMultimap<LookupRef, LookupRef> secondaryResolve = HashMultimap.create();
         
@@ -169,15 +175,12 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         for (LookupEntry entry : resolved) {
             Set<LookupRef> selectedEquivs;
 
-            if (activeAnnotations.contains(RESPECT_API_KEY_FOR_EQUIV_LIST)) {
-                selectedEquivs = stepThroughEquivs(
-                        Sets.union(
-                                entry.explicitEquivalents(),
-                                entry.directEquivalents()),
-                        sourceFilter);
-            } else {
-                selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter);
-            }
+            // Keep in mind that the code will later reduce that to a single thing from the
+            // precedent source, this means that even though RESPECT_API_KEY_FOR_EQUIV_LIST
+            // is here for consistency, if you do not include the
+            // ALLOW_MULTIPLE_FROM_SAME_PUBLISHER_IN_EQUIV_LIST annotation, results
+            // will be weird.
+            selectedEquivs = getEquivList(activeAnnotations, sourceFilter, entry);
 
             if (application.getConfiguration().isPrecedenceEnabled()) {
                 //ensure only one from precedent
@@ -198,52 +201,79 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                                           : resolveAndFilter(secondaryResolve, subjsToEquivs.build(), sourceFilter);
     }
 
-    // Steps through and filters the explicit equiv set to avoid collecting any transitive equivs from sources
-    // not allowed from the api key
-    @VisibleForTesting
-    Set<LookupRef> stepThroughEquivs(Set<LookupRef> lookupRefs, Predicate<LookupRef> sourceFilter) {
-        return stepThroughEquivsInternal(lookupRefs, ImmutableSet.of(), sourceFilter);
+    protected Set<LookupRef> getEquivList(Set<Annotation> activeAnnotations,
+            java.util.function.Predicate<LookupRef> sourceFilter, LookupEntry entry) {
+        Set<LookupRef> selectedEquivs;
+        if (activeAnnotations.contains(RESPECT_API_KEY_FOR_EQUIV_LIST)) {
+            selectedEquivs = getEquivSetByFollowingLinks(entry, sourceFilter);
+        } else {
+            selectedEquivs = Sets.filter(entry.equivalents(), sourceFilter::test);
+        }
+        return selectedEquivs;
     }
 
-    private Set<LookupRef> stepThroughEquivsInternal(
-            Set<LookupRef> nextEquivs,
-            Set<LookupRef> collectedEquivs,
-            Predicate<LookupRef> sourceFilter
+    // Steps through and filters the explicit equiv set to avoid collecting any
+    // transitive equivs from sources not allowed from the api key. This is a very expensive call
+    // as it needs to resolve the whole equiv set.
+    @VisibleForTesting
+    Set<LookupRef> getEquivSetByFollowingLinks(
+            LookupEntry startingContent,
+            java.util.function.Predicate<LookupRef> sourceFilter
     ) {
-        if (nextEquivs.isEmpty()) {
-            return collectedEquivs;
+
+        int linkDepth = 0; // for monitoring
+        int resolutionsRequired = 0;
+
+        Set<LookupRef> nextLinks = getExplicitAndDirectEquiv(startingContent);
+        Set<LookupRef> collectedEquivs = new HashSet<>();
+
+        while (!nextLinks.isEmpty()) {
+            linkDepth++;
+            resolutionsRequired += nextLinks.size();
+            //filter for allowed sources
+            Set<LookupRef> filteredRefs = nextLinks.stream()
+                    .filter(sourceFilter)
+                    .collect(Collectors.toSet());
+
+            collectedEquivs.addAll(filteredRefs);
+
+            //then resolve them
+            Iterable<LookupEntry> resolvedEntries = lookupResolver.entriesForCanonicalUris(
+                    Iterables.transform(filteredRefs, LookupRef::uri)
+            );
+
+            //and do the same for the next set, until there are no more links to follow.
+            nextLinks = StreamSupport.stream(resolvedEntries.spliterator(), false)
+                    .flatMap(entry -> getExplicitAndDirectEquiv(entry).stream())
+                    .distinct()
+                    .filter(sourceFilter)
+                    .filter(ref -> !collectedEquivs.contains(ref))
+                    .collect(Collectors.toSet());
         }
 
-        Set<LookupRef> filteredRefs = nextEquivs.stream()
-                .filter(sourceFilter::apply)
-                .collect(Collectors.toSet());
+        //arbitrary warning, as we do not currently know the actual impact of this.
+        if(linkDepth >= 5 || resolutionsRequired >= 20) {
+            log.warn("Large set has to be resolved in order to calculate the owl equiv set that"
+                     + " respects the API key, id:" + startingContent.id()
+                     + ", linkDepth:" + linkDepth
+                     + ", totalResolutions:" + resolutionsRequired
+            );
+        }
 
-        Iterable<LookupEntry> resolvedEntries = lookupResolver.entriesForCanonicalUris(
-                Iterables.transform(filteredRefs, LookupRef::uri)
+        return collectedEquivs;
+    }
+
+    private Set<LookupRef> getExplicitAndDirectEquiv(LookupEntry startingContent) {
+        return Sets.union(
+                startingContent.explicitEquivalents(),
+                startingContent.directEquivalents()
         );
-
-        Set<LookupRef> combinedRefs = ImmutableSet.<LookupRef>builder()
-                .addAll(filteredRefs)
-                .addAll(collectedEquivs)
-                .build();
-
-        Set<LookupRef> newEntries = StreamSupport.stream(resolvedEntries.spliterator(), false)
-                .flatMap(entry ->
-                        Sets.union(
-                                entry.explicitEquivalents(),
-                                entry.directEquivalents()).stream())
-                .distinct()
-                .filter(sourceFilter::apply)
-                .filter(ref -> !combinedRefs.contains(ref))
-                .collect(Collectors.toSet());
-
-        return stepThroughEquivsInternal(newEntries, combinedRefs, sourceFilter);
     }
 
     private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
             SetMultimap<LookupRef, LookupRef> secondaryResolve,
             ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs,
-            Predicate<LookupRef> sourceFilter
+            java.util.function.Predicate<LookupRef> sourceFilter
     ) {
         
         Map<LookupRef,LookupEntry> entriesToRemove = Maps.uniqueIndex(
@@ -267,12 +297,12 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                 }
             }
             //ensure we always get the thing we actually asked for.
-            if (sourceFilter.apply(subjToEquivs.getKey().lookupRef())) {
+            if (sourceFilter.test(subjToEquivs.getKey().lookupRef())) {
                 filteredEquivs.add(subjToEquivs.getKey().lookupRef());
             }
             //and its exclusive enabled adjacent.
             filteredEquivs.addAll(Sets.difference(
-                Sets.filter(allAdjacents(subjToEquivs.getKey()), sourceFilter), 
+                Sets.filter(allAdjacents(subjToEquivs.getKey()), sourceFilter::test),
                 secondaryResolve.get(subjToEquivs.getKey().lookupRef())
             ));
             filtered.putAll(subjToEquivs.getKey(), filteredEquivs);
