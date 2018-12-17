@@ -13,7 +13,7 @@ import org.atlasapi.persistence.lookup.LookupWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EquivalenceWritingContentWriter implements EquivalentContentWriter {
+public class EquivalenceWritingContentWriter implements EquivalenceContentWriter {
 
     private static final Logger log = LoggerFactory.getLogger(EquivalenceWritingContentWriter.class);
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
@@ -32,19 +32,19 @@ public class EquivalenceWritingContentWriter implements EquivalentContentWriter 
     }
 
     @Override
-    public Item createOrUpdate(Item item, boolean writeEquivalentsIfEmpty) {
+    public Item createOrUpdate(Item item, boolean writeEquivalencesIfEmpty) {
         Long lastTime = System.nanoTime();
         timerLog.debug("TIMER EQ entered. {} {}",item.getId(), Thread.currentThread().getName());
         Item writtenItem = delegate.createOrUpdate(item);
         timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         lastTime = System.nanoTime();
-        writeEquivalences(item, writeEquivalentsIfEmpty);
+        writeEquivalences(item, writeEquivalencesIfEmpty);
         timerLog.debug("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         return writtenItem;
     }
 
-    private void writeEquivalences(Content content, boolean writeEmptyEquivalents) {
-        if (writeEmptyEquivalents || !content.getEquivalentTo().isEmpty()) {
+    private void writeEquivalences(Content content, boolean writeEquivalencesIfEmpty) {
+        if (writeEquivalencesIfEmpty || !content.getEquivalentTo().isEmpty()) {
             ImmutableSet<Publisher> publishers = publishers(content);
             Iterable<ContentRef> equivalentUris = Iterables.transform(content.getEquivalentTo(),
                 new Function<LookupRef, ContentRef>() {
@@ -67,13 +67,13 @@ public class EquivalenceWritingContentWriter implements EquivalentContentWriter 
     }
 
     @Override
-    public void createOrUpdate(Container container, boolean writeEquivalentsIfEmpty) {
+    public void createOrUpdate(Container container, boolean writeEquivalencesIfEmpty) {
         Long lastTime = System.nanoTime();
         timerLog.debug("TIMER EQ entered. {} {}",container.getId(), Thread.currentThread().getName());
         delegate.createOrUpdate(container);
         timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
         lastTime = System.nanoTime();
-        writeEquivalences(container, writeEquivalentsIfEmpty);
+        writeEquivalences(container, writeEquivalencesIfEmpty);
         timerLog.debug("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
     }
 

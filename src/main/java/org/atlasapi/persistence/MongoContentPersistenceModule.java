@@ -25,8 +25,8 @@ import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentPurger;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.EquivalenceContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
-import org.atlasapi.persistence.content.EquivalentContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
@@ -201,7 +201,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Override
     @Bean(name = NON_ID_SETTING_CONTENT_WRITER)
-    public EquivalentContentWriter nonIdSettingContentWriter() {
+    public EquivalenceContentWriter nonIdSettingContentWriter() {
         return persistenceModule().nonIdSettingContentWriter();
     }
 

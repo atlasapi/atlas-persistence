@@ -92,9 +92,9 @@ public class MessageQueueingContentWriter implements ContentWriter {
         enqueueMessageUpdatedMessage(container, false);
     }
 
-    protected void enqueueMessageUpdatedMessage(final Content content, boolean messageIfEmptyEquivalents) {
+    protected void enqueueMessageUpdatedMessage(final Content content, boolean messageIfEmptyEquivalences) {
         try {
-            if(messageIfEmptyEquivalents || !content.getEquivalentTo().isEmpty()){
+            if(messageIfEmptyEquivalences || !content.getEquivalentTo().isEmpty()){
                 ImmutableList<Content> adjacents = content.getEquivalentTo()
                         .stream()
                         .map(lookupRef -> contentResolver

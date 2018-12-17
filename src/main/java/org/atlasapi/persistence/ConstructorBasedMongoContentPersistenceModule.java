@@ -42,15 +42,15 @@ import org.atlasapi.persistence.content.ContentPurger;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.DefaultEquivalentContentResolver;
+import org.atlasapi.persistence.content.EquivalenceContentWriter;
 import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
-import org.atlasapi.persistence.content.EquivalentContentWriter;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
-import org.atlasapi.persistence.content.MessageQueueingEquivalentContentWriter;
+import org.atlasapi.persistence.content.MessageQueueingEquivalenceContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.listing.MongoProgressStore;
@@ -270,23 +270,23 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     @Override
-    public EquivalentContentWriter nonIdSettingContentWriter() {
+    public EquivalenceContentWriter nonIdSettingContentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(
                 db, lookupStore(), persistenceAuditLog(),
                 playerResolver(), serviceResolver(), new SystemClock()
         );
 
-        EquivalentContentWriter equivalentContentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+        EquivalenceContentWriter equivalenceContentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (messagingEnabled) {
-            equivalentContentWriter = new MessageQueueingEquivalentContentWriter(
+            equivalenceContentWriter = new MessageQueueingEquivalenceContentWriter(
                     messenger(),
                     contentChanges(),
-                    equivalentContentWriter,
+                    equivalenceContentWriter,
                     contentResolver()
             );
         }
 
-        return equivalentContentWriter;
+        return equivalenceContentWriter;
     }
 
     @Override
