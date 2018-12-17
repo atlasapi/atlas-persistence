@@ -1,8 +1,14 @@
 package org.atlasapi.persistence.content;
 
-import java.math.BigInteger;
-import java.util.UUID;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Longs;
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.stream.MoreCollectors;
+import com.metabroadcast.common.time.SystemClock;
+import com.metabroadcast.common.time.Timestamper;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
@@ -10,19 +16,11 @@ import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
-
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.stream.MoreCollectors;
-import com.metabroadcast.common.time.SystemClock;
-import com.metabroadcast.common.time.Timestamper;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.math.BigInteger;
+import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -78,7 +76,7 @@ public class MessageQueueingContentWriter implements ContentWriter {
             log.debug("{} not changed", item.getCanonicalUri());
             return writtenItem;
         }
-        enqueueMessageUpdatedMessage(item);
+        enqueueMessageUpdatedMessage(item, false);
 
         timerLog.debug("TIMER MQ local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         return writtenItem;
@@ -91,12 +89,12 @@ public class MessageQueueingContentWriter implements ContentWriter {
             log.debug("{} un-changed", container.getCanonicalUri());
             return;
         }
-        enqueueMessageUpdatedMessage(container);
+        enqueueMessageUpdatedMessage(container, false);
     }
 
-    private void enqueueMessageUpdatedMessage(final Content content) {
+    protected void enqueueMessageUpdatedMessage(final Content content, boolean messageIfEmptyEquivalents) {
         try {
-            if(!content.getEquivalentTo().isEmpty()){
+            if(messageIfEmptyEquivalents || !content.getEquivalentTo().isEmpty()){
                 ImmutableList<Content> adjacents = content.getEquivalentTo()
                         .stream()
                         .map(lookupRef -> contentResolver
