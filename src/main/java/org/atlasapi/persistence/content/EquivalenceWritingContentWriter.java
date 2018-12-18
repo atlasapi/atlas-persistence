@@ -13,6 +13,8 @@ import org.atlasapi.persistence.lookup.LookupWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
+
 public class EquivalenceWritingContentWriter implements EquivalenceContentWriter {
 
     private static final Logger log = LoggerFactory.getLogger(EquivalenceWritingContentWriter.class);
@@ -28,24 +30,27 @@ public class EquivalenceWritingContentWriter implements EquivalenceContentWriter
 
     @Override
     public Item createOrUpdate(Item item) {
-        return createOrUpdate(item, false);
+        return createOrUpdate(item, publishers(item), false);
     }
 
     @Override
-    public Item createOrUpdate(Item item, boolean writeEquivalencesIfEmpty) {
+    public Item createOrUpdate(Item item, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
         Long lastTime = System.nanoTime();
         timerLog.debug("TIMER EQ entered. {} {}",item.getId(), Thread.currentThread().getName());
         Item writtenItem = delegate.createOrUpdate(item);
         timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         lastTime = System.nanoTime();
-        writeEquivalences(item, writeEquivalencesIfEmpty);
+        writeEquivalences(item, writeEquivalencesIfEmpty, publishers);
         timerLog.debug("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         return writtenItem;
     }
 
-    private void writeEquivalences(Content content, boolean writeEquivalencesIfEmpty) {
+    private void writeEquivalences(
+            Content content,
+            boolean writeEquivalencesIfEmpty,
+            Iterable<Publisher> publishers
+    ) {
         if (writeEquivalencesIfEmpty || !content.getEquivalentTo().isEmpty()) {
-            ImmutableSet<Publisher> publishers = publishers(content);
             Iterable<ContentRef> equivalentUris = Iterables.transform(content.getEquivalentTo(),
                 new Function<LookupRef, ContentRef>() {
                     @Override
@@ -53,27 +58,34 @@ public class EquivalenceWritingContentWriter implements EquivalenceContentWriter
                         return new ContentRef(input.uri(), input.publisher(), null);
                     }
                 });
-            equivalenceWriter.writeLookup(ContentRef.valueOf(content), equivalentUris, publishers);
+            equivalenceWriter.writeLookup(
+                    ContentRef.valueOf(content),
+                    equivalentUris,
+                    ImmutableSet.copyOf(publishers)
+            );
         }
     }
 
     private ImmutableSet<Publisher> publishers(Content content) {
-        return ImmutableSet.<Publisher>builder().add(content.getPublisher()).addAll(Iterables.transform(content.getEquivalentTo(), LookupRef.TO_SOURCE)).build();
+        return ImmutableSet.<Publisher>builder()
+                .add(content.getPublisher())
+                .addAll(Iterables.transform(content.getEquivalentTo(), LookupRef.TO_SOURCE))
+                .build();
     }
 
     @Override
     public void createOrUpdate(Container container) {
-        createOrUpdate(container, false);
+        createOrUpdate(container, publishers(container), false);
     }
 
     @Override
-    public void createOrUpdate(Container container, boolean writeEquivalencesIfEmpty) {
+    public void createOrUpdate(Container container, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
         Long lastTime = System.nanoTime();
         timerLog.debug("TIMER EQ entered. {} {}",container.getId(), Thread.currentThread().getName());
         delegate.createOrUpdate(container);
         timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
         lastTime = System.nanoTime();
-        writeEquivalences(container, writeEquivalencesIfEmpty);
+        writeEquivalences(container, writeEquivalencesIfEmpty, publishers);
         timerLog.debug("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
     }
 

@@ -5,10 +5,13 @@ import com.metabroadcast.common.time.SystemClock;
 import com.metabroadcast.common.time.Timestamper;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -50,10 +53,10 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
     }
 
     @Override
-    public Item createOrUpdate(Item item, boolean writeEquivalencesIfEmpty) {
+    public Item createOrUpdate(Item item, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
         long lastTime = System.nanoTime();
         timerLog.debug("TIMER MQ entered. {} {}",item.getId(), Thread.currentThread().getName());
-        Item writtenItem = equivalenceContentWriter.createOrUpdate(item, writeEquivalencesIfEmpty);
+        Item writtenItem = equivalenceContentWriter.createOrUpdate(item, publishers, writeEquivalencesIfEmpty);
         timerLog.debug("TIMER MQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         lastTime = System.nanoTime();
         if (!item.hashChanged(itemTranslator.hashCodeOf(item))) {
@@ -67,8 +70,8 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
     }
 
     @Override
-    public void createOrUpdate(Container container, boolean writeEquivalencesIfEmpty) {
-        equivalenceContentWriter.createOrUpdate(container, writeEquivalencesIfEmpty);
+    public void createOrUpdate(Container container, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
+        equivalenceContentWriter.createOrUpdate(container, publishers, writeEquivalencesIfEmpty);
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             log.debug("{} un-changed", container.getCanonicalUri());
             return;

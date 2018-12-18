@@ -2,6 +2,9 @@ package org.atlasapi.persistence.content;
 
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Publisher;
+
+import java.util.Set;
 
 /**
  * This interface was created to allow writing an empty equivalence set without having to change all other ContentWriter
@@ -10,8 +13,8 @@ import org.atlasapi.media.entity.Item;
  */
 public interface EquivalenceContentWriter extends ContentWriter {
 
-	Item createOrUpdate(Item item, boolean writeEquivalencesIfEmpty);
+	Item createOrUpdate(Item item, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
 	
-	void createOrUpdate(Container container, boolean writeEquivalencesIfEmpty);
+	void createOrUpdate(Container container, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
 
 }
