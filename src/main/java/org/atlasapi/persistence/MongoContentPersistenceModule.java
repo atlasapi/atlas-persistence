@@ -1,8 +1,14 @@
 package org.atlasapi.persistence;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.metabroadcast.common.ids.IdGenerator;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
+import com.metabroadcast.common.properties.Configurer;
+import com.metabroadcast.common.properties.Parameter;
+import com.metabroadcast.common.queue.MessageSender;
+import com.mongodb.Mongo;
+import com.mongodb.ReadPreference;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ServiceChannelStore;
 import org.atlasapi.media.product.ProductResolver;
@@ -19,6 +25,7 @@ import org.atlasapi.persistence.content.ContentGroupWriter;
 import org.atlasapi.persistence.content.ContentPurger;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.EquivalenceContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
@@ -41,17 +48,6 @@ import org.atlasapi.persistence.service.ServiceResolver;
 import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
-
-import com.metabroadcast.common.ids.IdGenerator;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
-import com.metabroadcast.common.properties.Configurer;
-import com.metabroadcast.common.properties.Parameter;
-import com.metabroadcast.common.queue.MessageSender;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.mongodb.Mongo;
-import com.mongodb.ReadPreference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -59,6 +55,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 /**
  * This is the Spring version of the MongoContentPersistenceModule.
@@ -202,7 +201,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Override
     @Bean(name = NON_ID_SETTING_CONTENT_WRITER)
-    public ContentWriter nonIdSettingContentWriter() {
+    public EquivalenceContentWriter nonIdSettingContentWriter() {
         return persistenceModule().nonIdSettingContentWriter();
     }
 

@@ -1,6 +1,16 @@
 package org.atlasapi.persistence;
 
-import org.atlasapi.application.v3.DefaultApplication;
+import com.google.common.base.Optional;
+import com.metabroadcast.common.ids.IdGenerator;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
+import com.metabroadcast.common.properties.Parameter;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.Mongo;
+import com.mongodb.ReadPreference;
+import com.mongodb.WriteConcern;
 import org.atlasapi.media.channel.CachingChannelStore;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ChannelStore;
@@ -32,6 +42,7 @@ import org.atlasapi.persistence.content.ContentPurger;
 import org.atlasapi.persistence.content.ContentResolver;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.DefaultEquivalentContentResolver;
+import org.atlasapi.persistence.content.EquivalenceContentWriter;
 import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
@@ -39,6 +50,7 @@ import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
+import org.atlasapi.persistence.content.MessageQueueingEquivalenceContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.listing.MongoProgressStore;
@@ -88,19 +100,6 @@ import org.atlasapi.persistence.topic.MessageQueueingTopicWriter;
 import org.atlasapi.persistence.topic.TopicCreatingTopicResolver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
-
-import com.metabroadcast.common.ids.IdGenerator;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
-import com.metabroadcast.common.properties.Parameter;
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.time.SystemClock;
-
-import com.google.common.base.Optional;
-import com.mongodb.Mongo;
-import com.mongodb.ReadPreference;
-import com.mongodb.WriteConcern;
 import org.joda.time.DateTime;
 import org.springframework.context.annotation.Bean;
 
@@ -271,23 +270,23 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     @Override
-    public ContentWriter nonIdSettingContentWriter() {
+    public EquivalenceContentWriter nonIdSettingContentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(
                 db, lookupStore(), persistenceAuditLog(),
                 playerResolver(), serviceResolver(), new SystemClock()
         );
 
-        contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+        EquivalenceContentWriter equivalenceContentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
         if (messagingEnabled) {
-            contentWriter = new MessageQueueingContentWriter(
+            equivalenceContentWriter = new MessageQueueingEquivalenceContentWriter(
                     messenger(),
                     contentChanges(),
-                    contentWriter,
+                    equivalenceContentWriter,
                     contentResolver()
             );
         }
 
-        return contentWriter;
+        return equivalenceContentWriter;
     }
 
     @Override
