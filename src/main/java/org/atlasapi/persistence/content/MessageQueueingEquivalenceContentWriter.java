@@ -1,6 +1,5 @@
 package org.atlasapi.persistence.content;
 
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
 import com.metabroadcast.common.time.Timestamper;
@@ -8,8 +7,6 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
-import org.atlasapi.persistence.media.entity.ContainerTranslator;
-import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +22,6 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
 
     private final EquivalenceContentWriter equivalenceContentWriter;
-    private final SubstitutionTableNumberCodec idCodec = new SubstitutionTableNumberCodec();
-    private final ItemTranslator itemTranslator = new ItemTranslator(idCodec);
-    private final ContainerTranslator containerTranslator = new ContainerTranslator(idCodec);
-
 
     public MessageQueueingEquivalenceContentWriter(
             ContentEquivalenceAssertionMessenger messenger,
