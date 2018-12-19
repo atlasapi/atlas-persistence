@@ -150,8 +150,7 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         Map<String, ScheduleEntry> entries = getAdjacentScheduleEntries(
                 channel,
                 publisher,
-                interval,
-                itemsAndBroadcasts
+                interval
         );
         
         for(ItemRefAndBroadcast itemAndBroadcast : itemsAndBroadcasts) {
@@ -240,10 +239,9 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     }
     
 	private Map<String, ScheduleEntry> getAdjacentScheduleEntries(
-	        Channel channel,
+            Channel channel,
             Publisher publisher,
-            final Interval interval,
-            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts
+            final Interval interval
     ) {
         List<Interval> intervals = scheduleEntryBuilder.intervalsFor(interval.getStart(), interval.getEnd()); 
         Set<String> requiredScheduleEntries = Sets.<String>newHashSet();
@@ -254,22 +252,6 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    requiredScheduleEntries.add(firstScheduleEntryKey);
 	    requiredScheduleEntries.add(lastScheduleEntryKey);
 	    Map<String, ScheduleEntry> scheduleEntries = Maps.newHashMap(Maps.uniqueIndex(translator.fromDbObjects(where().idIn(requiredScheduleEntries).find(collection)), ScheduleEntry.KEY));
-
-        // Re-ingesting particular episodes that contain old broadcasts that have been replaced in
-        // the EBS schedule files causes inconsistent Owl schedules. These old broadcasts get re
-        // added in the schedule entries through some kafka magic. Therefore, we need to delete
-        // these old broadcasts every time we update the schedule and only keep the latest broadcasts
-        if (publisher.key().equals(Publisher.BT_SPORT_EBS.key())) {
-            List<ScheduleEntry> allScheduleEntries = getAllScheduleEntriesFromRequest(
-                    channel,
-                    publisher,
-                    intervals
-            );
-            allScheduleEntries.forEach(scheduleEntry -> deleteStaleEbsBroadcasts(
-                            updateItemsAndBroadcasts,
-                            scheduleEntry.getItemRefsAndBroadcasts()
-            ));
-        }
 
         Predicate<ItemRefAndBroadcast> beforePredicate = i -> i.getBroadcast()
                 .getTransmissionEndTime()
@@ -320,17 +302,6 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
 	    return scheduleEntries;
 	}
 
-    private List<ScheduleEntry> getAllScheduleEntriesFromRequest(
-            Channel channel,
-            Publisher publisher,
-            List<Interval> intervals
-    ) {
-        List<String> allScheduleEntryKeys = intervals.stream()
-                .map(i -> ScheduleEntry.toKey(i, channel, publisher))
-                .collect(Collectors.toList());
-        return translator.fromDbObjects(where().idIn(allScheduleEntryKeys).find(collection));
-    }
-
     private ScheduleEntry filteredScheduleEntry(
             ScheduleEntry entry,
             Predicate<ItemRefAndBroadcast> filterPredicate
@@ -346,54 +317,6 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 filteredBroadcasts
         );
 		return filteredEntry;
-    }
-
-    private void deleteStaleEbsBroadcasts(
-            Iterable<ItemRefAndBroadcast> updateItemsAndBroadcasts,
-            ImmutableSet<ItemRefAndBroadcast> existingItemsAndBroadcasts
-    ) {
-        updateItemsAndBroadcasts.forEach(updateIAB -> {
-            Broadcast updateBroadcast = updateIAB.getBroadcast();
-            Interval updateBroadcastInterval = new Interval(
-                    updateBroadcast.getTransmissionTime(),
-                    updateBroadcast.getTransmissionEndTime()
-            );
-            existingItemsAndBroadcasts.forEach(existingIAB -> {
-                Broadcast existingBroadcast = existingIAB.getBroadcast();
-                if (existingBroadcast.getSourceId().equals(updateBroadcast.getSourceId())) {
-                    return;
-                }
-
-                Interval existingBroadcastInterval = new Interval(
-                        existingBroadcast.getTransmissionTime(),
-                        existingBroadcast.getTransmissionEndTime()
-                );
-                if (existingBroadcastInterval.overlaps(updateBroadcastInterval)) {
-                    Item existingItemWithoutStaleBroadcast = removeStaleBroadcast(
-                            existingIAB.getItemUri(),
-                            existingBroadcast.getSourceId()
-                    );
-                    contentWriter.createOrUpdate(existingItemWithoutStaleBroadcast);
-                }
-            });
-        });
-    }
-
-    private Item removeStaleBroadcast(
-            String existingItemUri,
-            String existingBroadcastSourceId
-    ) {
-        Item existingItemToUpdate = (Item) contentResolver.findByCanonicalUris(
-                Collections.singleton(existingItemUri)
-        )
-                .get(existingItemUri)
-                .requireValue();
-        existingItemToUpdate.getVersions()
-                .iterator()
-                .next()
-                .getBroadcasts()
-                .removeIf(broadcast -> broadcast.getSourceId().equals(existingBroadcastSourceId));
-        return existingItemToUpdate;
     }
 
     @Override
