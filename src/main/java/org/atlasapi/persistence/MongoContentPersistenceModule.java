@@ -69,6 +69,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
     public static final String NON_ID_NO_LOCK_SETTING_CONTENT_WRITER = "nonIdNoLockSettingContentWriter";
+    public static final String CONTENT_CHANGES_PRODUCER = "contentChangesProducer";
 
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
@@ -143,7 +144,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         );
     }
 
-    @Bean
+    @Bean(name = CONTENT_CHANGES_PRODUCER)
     @Lazy(true)
     public MessageSender<EntityUpdatedMessage> contentChanges() {
         return persistenceModule().contentChanges();
