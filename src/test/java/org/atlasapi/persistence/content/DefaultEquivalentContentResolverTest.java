@@ -244,6 +244,7 @@ public class DefaultEquivalentContentResolverTest {
         lookupResolver.store(subjEntry);
         lookupResolver.store(entry(expEquivRead, expEquivReadTransNoRead, expEquivReadTransRead));
         lookupResolver.store(entry(expEquivNoReadTransRead, expEquivNoReadTransNoRead, expEquivNoReadTransRead));
+        lookupResolver.store(entry(expEquivReadTransRead));
 
         Set<LookupRef> processedRefs = resolver.getEquivSetByFollowingLinks(subjEntry, sourceFilter);
 
