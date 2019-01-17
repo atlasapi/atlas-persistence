@@ -1,25 +1,5 @@
 package org.atlasapi.persistence.content;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.output.Annotation;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
-import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-
-import com.metabroadcast.applications.client.model.internal.Application;
-import com.metabroadcast.common.base.MorePredicates;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -33,8 +13,27 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.stream.MoreCollectors;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.output.Annotation;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.atlasapi.output.Annotation.RESPECT_API_KEY_FOR_EQUIV_LIST;
 
@@ -225,7 +224,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         int resolutionsRequired = 0;
 
         Set<LookupRef> nextLinks = getExplicitAndDirectEquiv(startingContent);
-        Set<LookupRef> collectedEquivs = new HashSet<>();
+        Map<LookupRef, Boolean> collectedEquivsAndPublishedState = new HashMap<>();
 
         while (!nextLinks.isEmpty()) {
             linkDepth++;
@@ -235,19 +234,22 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                     .filter(sourceFilter)
                     .collect(Collectors.toSet());
 
-            collectedEquivs.addAll(filteredRefs);
-
             //then resolve them
             Iterable<LookupEntry> resolvedEntries = lookupResolver.entriesForCanonicalUris(
                     Iterables.transform(filteredRefs, LookupRef::uri)
             );
 
+            for(LookupEntry entry : resolvedEntries) {
+                collectedEquivsAndPublishedState.putIfAbsent(entry.lookupRef(), entry.activelyPublished());
+            }
+
             //and do the same for the next set, until there are no more links to follow.
             nextLinks = StreamSupport.stream(resolvedEntries.spliterator(), false)
+                    .filter(LookupEntry::activelyPublished)
                     .flatMap(entry -> getExplicitAndDirectEquiv(entry).stream())
                     .distinct()
                     .filter(sourceFilter)
-                    .filter(ref -> !collectedEquivs.contains(ref))
+                    .filter(ref -> !collectedEquivsAndPublishedState.containsKey(ref))
                     .collect(Collectors.toSet());
         }
 
@@ -260,7 +262,9 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             );
         }
 
-        return collectedEquivs;
+        return collectedEquivsAndPublishedState.keySet().stream()
+                .filter(collectedEquivsAndPublishedState::get) //filter to just published
+                .collect(MoreCollectors.toImmutableSet());
     }
 
     private Set<LookupRef> getExplicitAndDirectEquiv(LookupEntry startingContent) {
