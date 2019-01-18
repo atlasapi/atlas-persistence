@@ -254,6 +254,64 @@ public class DefaultEquivalentContentResolverTest {
         assertTrue(processedRefs.contains(LookupRef.from(expEquivReadTransRead)));
     }
 
+    @Test
+    public void annotationIgnoresUnpublishedEquivs() {
+        DefaultEquivalentContentResolver resolver = (DefaultEquivalentContentResolver) equivResolver;
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.BARB_OVERRIDES, Publisher.BARB_MASTER, Publisher.BARB_TRANSMISSIONS));
+
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(
+                LookupRef.TO_SOURCE,
+                Predicates.in(application.getConfiguration().getEnabledReadSources()))::apply;
+
+        Episode subject = episode("e1", 1, Publisher.BARB_OVERRIDES);
+        Episode expEquiv = episode("e1-1", 2, Publisher.BARB_MASTER);
+        Episode expEquivChild = episode("e1-1-1", 3, Publisher.BARB_TRANSMISSIONS);
+        Episode expEquivUnpublished= episode("e1-2", 5, Publisher.BARB_MASTER);
+        Episode expEquivChildOfUnpublished = episode("e1-2-1", 6, Publisher.BARB_TRANSMISSIONS);
+        expEquivUnpublished.setActivelyPublished(false);
+
+        LookupEntry subjEntry = entry(subject, expEquiv, expEquivUnpublished);
+        lookupResolver.store(subjEntry);
+        lookupResolver.store(entry(expEquiv, expEquivChild));
+        lookupResolver.store(entry(expEquivUnpublished, expEquivChildOfUnpublished));
+        lookupResolver.store(entry(expEquivChild));
+        lookupResolver.store(entry(expEquivChildOfUnpublished));
+
+        Set<LookupRef> processedRefs = resolver.getEquivSetByFollowingLinks(subjEntry, sourceFilter);
+
+        assertThat(processedRefs.size(), is(3));
+        assertTrue(processedRefs.contains(LookupRef.from(subject)));
+        assertTrue(processedRefs.contains(LookupRef.from(expEquiv)));
+        assertTrue(processedRefs.contains(LookupRef.from(expEquivChild)));
+    }
+
+    @Test
+    public void annotationOnlyReturnsSingleContentIfContentUnpublished() {
+        DefaultEquivalentContentResolver resolver = (DefaultEquivalentContentResolver) equivResolver;
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.BARB_OVERRIDES, Publisher.BARB_MASTER, Publisher.BARB_TRANSMISSIONS));
+
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(
+                LookupRef.TO_SOURCE,
+                Predicates.in(application.getConfiguration().getEnabledReadSources()))::apply;
+
+        Episode subject = episode("e1", 1, Publisher.BARB_OVERRIDES);
+        Episode expEquiv = episode("e1-1", 2, Publisher.BARB_MASTER);
+        Episode expEquivChild = episode("e1-1-1", 3, Publisher.BARB_TRANSMISSIONS);
+        subject.setActivelyPublished(false);
+
+        LookupEntry subjEntry = entry(subject, expEquiv, expEquivChild);
+        lookupResolver.store(subjEntry);
+        lookupResolver.store(entry(expEquiv, expEquivChild));
+        lookupResolver.store(entry(expEquivChild));
+
+        Set<LookupRef> processedRefs = resolver.getEquivSetByFollowingLinks(subjEntry, sourceFilter);
+
+        assertThat(processedRefs.size(), is(1));
+        assertTrue(processedRefs.contains(LookupRef.from(subject)));
+    }
+
     private ApplicationConfiguration configWithSources(Publisher... srcs) {
         return ApplicationConfiguration.builder()
                 .withPrecedence(Arrays.asList(srcs))
