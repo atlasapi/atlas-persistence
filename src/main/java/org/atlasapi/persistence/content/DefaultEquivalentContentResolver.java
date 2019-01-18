@@ -289,7 +289,10 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         }
 
         return collectedEquivsAndPublishedState.keySet().stream()
-                .filter(collectedEquivsAndPublishedState::get) //filter to just published
+                .filter(ref ->
+                        ref.equals(startingContent.lookupRef())  //always include yourself, even if unpublished
+                                || collectedEquivsAndPublishedState.get(ref) //filter to just published
+                )
                 .collect(MoreCollectors.toImmutableSet());
     }
 
