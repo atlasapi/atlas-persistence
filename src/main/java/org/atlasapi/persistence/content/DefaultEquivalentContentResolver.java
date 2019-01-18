@@ -5,7 +5,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
@@ -16,37 +15,27 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.common.base.MorePredicates;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.stream.MoreCollectors;
-import com.metabroadcast.common.time.SystemClock;
-import com.metabroadcast.common.time.Timestamper;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.atlasapi.output.Annotation.RESPECT_API_KEY_FOR_EQUIV_LIST;
-import static org.atlasapi.persistence.MongoContentPersistenceModule.CONTENT_CHANGES_PRODUCER;
 
 public class DefaultEquivalentContentResolver implements EquivalentContentResolver {
 
@@ -54,10 +43,6 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
     private LookupEntryStore lookupResolver;
     private final Ordering<LookupRef> nullSafeRefById = Ordering.natural().onResultOf(LookupRef.TO_ID).nullsLast();
     private final Logger log = LoggerFactory.getLogger(DefaultEquivalentContentResolver.class);
-
-    @Autowired @Qualifier(CONTENT_CHANGES_PRODUCER) private MessageSender<EntityUpdatedMessage> contentChangesProducer;
-    private final SubstitutionTableNumberCodec entityIdCodec = SubstitutionTableNumberCodec.lowerCaseOnly();
-    private final Timestamper clock = new SystemClock();
 
     public DefaultEquivalentContentResolver(
             KnownTypeContentResolver contentResolver,
@@ -262,11 +247,6 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
 
             for(LookupEntry entry : resolvedEntries) {
                 collectedEquivsAndPublishedState.putIfAbsent(entry.lookupRef(), entry.activelyPublished());
-                if(!entry.activelyPublished()) {
-                    //try to have equiv run on this content again so it might be removed from the equiv set next time
-                    //it is queried
-                    triggerEquivalenceUpdate(entry.lookupRef());
-                }
             }
 
             //and do the same for the next set, until there are no more links to follow.
@@ -384,27 +364,6 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                 .sortedCopy(application.getConfiguration().getEnabledReadSources())
                 .get(0)
                 .equals(entry.lookupRef().publisher());
-    }
-
-    //write a message on the content changes queue in order for equivalence to be run again
-    private void triggerEquivalenceUpdate(LookupRef lookupRef) {
-        ResolvedContent resolvedContent = contentResolver.findByLookupRefs(ImmutableList.of(lookupRef));
-        if (resolvedContent.getFirstValue().hasValue()) {
-            Identified identified = resolvedContent.getFirstValue().requireValue();
-            try {
-                contentChangesProducer.sendMessage(
-                        new EntityUpdatedMessage(
-                                UUID.randomUUID().toString(),
-                                clock.timestamp(),
-                                entityIdCodec.encode(BigInteger.valueOf(lookupRef.id())),
-                                identified.getClass().getSimpleName().toLowerCase(),
-                                lookupRef.publisher().key()
-                        )
-                );
-            } catch (Exception e) {
-                log.error("update message failed: " + identified, e);
-            }
-        }
     }
 
 }
