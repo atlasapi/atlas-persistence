@@ -238,20 +238,26 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         int linkDepth = 0; // for monitoring
         int resolutionsRequired = 0;
 
-        Set<LookupRef> nextLinks = getExplicitAndDirectEquiv(startingContent);
         Map<LookupRef, Boolean> collectedEquivsAndPublishedState = new HashMap<>();
+        collectedEquivsAndPublishedState.putIfAbsent(startingContent.lookupRef(), startingContent.activelyPublished());
+
+        Set<LookupRef> nextLinks;
+        if(startingContent.activelyPublished()) {
+            nextLinks = getExplicitAndDirectEquiv(startingContent).stream()
+                    .filter(sourceFilter)
+                    .filter(ref -> !collectedEquivsAndPublishedState.containsKey(ref))
+                    .collect(MoreCollectors.toImmutableSet());
+        } else {
+            nextLinks = ImmutableSet.of();
+        }
 
         while (!nextLinks.isEmpty()) {
             linkDepth++;
             resolutionsRequired += nextLinks.size();
-            //filter for allowed sources
-            Set<LookupRef> filteredRefs = nextLinks.stream()
-                    .filter(sourceFilter)
-                    .collect(Collectors.toSet());
 
             //then resolve them
             Iterable<LookupEntry> resolvedEntries = lookupResolver.entriesForCanonicalUris(
-                    Iterables.transform(filteredRefs, LookupRef::uri)
+                    Iterables.transform(nextLinks, LookupRef::uri)
             );
 
             for(LookupEntry entry : resolvedEntries) {
@@ -270,7 +276,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                     .distinct()
                     .filter(sourceFilter)
                     .filter(ref -> !collectedEquivsAndPublishedState.containsKey(ref))
-                    .collect(Collectors.toSet());
+                    .collect(MoreCollectors.toImmutableSet());
         }
 
         //arbitrary warning, as we do not currently know the actual impact of this.
