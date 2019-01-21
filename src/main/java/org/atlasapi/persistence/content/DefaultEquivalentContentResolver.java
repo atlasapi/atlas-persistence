@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
@@ -224,39 +225,34 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         int resolutionsRequired = 0;
 
         Map<LookupRef, Boolean> collectedEquivsAndPublishedState = new HashMap<>();
-        collectedEquivsAndPublishedState.putIfAbsent(startingContent.lookupRef(), startingContent.activelyPublished());
 
-        Set<LookupRef> nextLinks;
-        if(startingContent.activelyPublished()) {
-            nextLinks = getExplicitAndDirectEquiv(startingContent).stream()
-                    .filter(sourceFilter)
-                    .filter(ref -> !collectedEquivsAndPublishedState.containsKey(ref))
-                    .collect(MoreCollectors.toImmutableSet());
-        } else {
-            nextLinks = ImmutableSet.of();
-        }
+        Iterable<LookupEntry> resolvedEntries = ImmutableList.of(startingContent);
 
-        while (!nextLinks.isEmpty()) {
-            linkDepth++;
-            resolutionsRequired += nextLinks.size();
-
-            //then resolve them
-            Iterable<LookupEntry> resolvedEntries = lookupResolver.entriesForCanonicalUris(
-                    Iterables.transform(nextLinks, LookupRef::uri)
-            );
-
+        boolean equivsExhausted = false;
+        while (!equivsExhausted) {
             for(LookupEntry entry : resolvedEntries) {
                 collectedEquivsAndPublishedState.putIfAbsent(entry.lookupRef(), entry.activelyPublished());
             }
 
-            //and do the same for the next set, until there are no more links to follow.
-            nextLinks = StreamSupport.stream(resolvedEntries.spliterator(), false)
+            //get links to resolve from the next equiv sets, until there are no more links to follow.
+            Set<LookupRef> nextLinks = StreamSupport.stream(resolvedEntries.spliterator(), false)
                     .filter(LookupEntry::activelyPublished)
                     .flatMap(entry -> getExplicitAndDirectEquiv(entry).stream())
                     .distinct()
                     .filter(sourceFilter)
                     .filter(ref -> !collectedEquivsAndPublishedState.containsKey(ref))
                     .collect(MoreCollectors.toImmutableSet());
+
+            if(nextLinks.isEmpty()) {
+                equivsExhausted = true; //no more links to follow
+            } else {
+                resolutionsRequired += nextLinks.size();
+                linkDepth++;
+                //then resolve them
+                resolvedEntries = lookupResolver.entriesForCanonicalUris(
+                        Iterables.transform(nextLinks, LookupRef::uri)
+                );
+            }
         }
 
         //arbitrary warning, as we do not currently know the actual impact of this.
