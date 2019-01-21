@@ -1,30 +1,11 @@
 package org.atlasapi.persistence.content;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Identified;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.output.Annotation;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
-import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-
-import com.metabroadcast.applications.client.model.internal.Application;
-import com.metabroadcast.common.base.MorePredicates;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
@@ -33,8 +14,27 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.stream.MoreCollectors;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Identified;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.output.Annotation;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.atlasapi.output.Annotation.RESPECT_API_KEY_FOR_EQUIV_LIST;
 
@@ -224,31 +224,35 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
         int linkDepth = 0; // for monitoring
         int resolutionsRequired = 0;
 
-        Set<LookupRef> nextLinks = getExplicitAndDirectEquiv(startingContent);
-        Set<LookupRef> collectedEquivs = new HashSet<>();
+        Map<LookupRef, Boolean> collectedEquivsAndPublishedState = new HashMap<>();
 
-        while (!nextLinks.isEmpty()) {
-            linkDepth++;
-            resolutionsRequired += nextLinks.size();
-            //filter for allowed sources
-            Set<LookupRef> filteredRefs = nextLinks.stream()
-                    .filter(sourceFilter)
-                    .collect(Collectors.toSet());
+        Iterable<LookupEntry> resolvedEntries = ImmutableList.of(startingContent);
 
-            collectedEquivs.addAll(filteredRefs);
+        boolean equivsExhausted = false;
+        while (!equivsExhausted) {
+            for(LookupEntry entry : resolvedEntries) {
+                collectedEquivsAndPublishedState.putIfAbsent(entry.lookupRef(), entry.activelyPublished());
+            }
 
-            //then resolve them
-            Iterable<LookupEntry> resolvedEntries = lookupResolver.entriesForCanonicalUris(
-                    Iterables.transform(filteredRefs, LookupRef::uri)
-            );
-
-            //and do the same for the next set, until there are no more links to follow.
-            nextLinks = StreamSupport.stream(resolvedEntries.spliterator(), false)
+            //get links to resolve from the next equiv sets, until there are no more links to follow.
+            Set<LookupRef> nextLinks = StreamSupport.stream(resolvedEntries.spliterator(), false)
+                    .filter(LookupEntry::activelyPublished)
                     .flatMap(entry -> getExplicitAndDirectEquiv(entry).stream())
                     .distinct()
                     .filter(sourceFilter)
-                    .filter(ref -> !collectedEquivs.contains(ref))
-                    .collect(Collectors.toSet());
+                    .filter(ref -> !collectedEquivsAndPublishedState.containsKey(ref))
+                    .collect(MoreCollectors.toImmutableSet());
+
+            if(nextLinks.isEmpty()) {
+                equivsExhausted = true; //no more links to follow
+            } else {
+                resolutionsRequired += nextLinks.size();
+                linkDepth++;
+                //then resolve them
+                resolvedEntries = lookupResolver.entriesForCanonicalUris(
+                        Iterables.transform(nextLinks, LookupRef::uri)
+                );
+            }
         }
 
         //arbitrary warning, as we do not currently know the actual impact of this.
@@ -260,7 +264,9 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             );
         }
 
-        return collectedEquivs;
+        return collectedEquivsAndPublishedState.keySet().stream()
+                .filter(collectedEquivsAndPublishedState::get) //filter to just published
+                .collect(MoreCollectors.toImmutableSet());
     }
 
     private Set<LookupRef> getExplicitAndDirectEquiv(LookupEntry startingContent) {

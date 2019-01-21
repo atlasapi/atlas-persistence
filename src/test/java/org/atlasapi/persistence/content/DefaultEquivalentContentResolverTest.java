@@ -1,12 +1,14 @@
 package org.atlasapi.persistence.content;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
+import com.metabroadcast.common.base.MorePredicates;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
@@ -16,19 +18,14 @@ import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.lookup.InMemoryLookupEntryStore;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-
-import com.metabroadcast.applications.client.model.internal.Application;
-import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
-import com.metabroadcast.common.base.MorePredicates;
-
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -244,6 +241,7 @@ public class DefaultEquivalentContentResolverTest {
         lookupResolver.store(subjEntry);
         lookupResolver.store(entry(expEquivRead, expEquivReadTransNoRead, expEquivReadTransRead));
         lookupResolver.store(entry(expEquivNoReadTransRead, expEquivNoReadTransNoRead, expEquivNoReadTransRead));
+        lookupResolver.store(entry(expEquivReadTransRead));
 
         Set<LookupRef> processedRefs = resolver.getEquivSetByFollowingLinks(subjEntry, sourceFilter);
 
@@ -251,6 +249,63 @@ public class DefaultEquivalentContentResolverTest {
         assertTrue(processedRefs.contains(LookupRef.from(subject)));
         assertTrue(processedRefs.contains(LookupRef.from(expEquivRead)));
         assertTrue(processedRefs.contains(LookupRef.from(expEquivReadTransRead)));
+    }
+
+    @Test
+    public void annotationIgnoresUnpublishedEquivs() {
+        DefaultEquivalentContentResolver resolver = (DefaultEquivalentContentResolver) equivResolver;
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.BARB_OVERRIDES, Publisher.BARB_MASTER, Publisher.BARB_TRANSMISSIONS));
+
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(
+                LookupRef.TO_SOURCE,
+                Predicates.in(application.getConfiguration().getEnabledReadSources()))::apply;
+
+        Episode subject = episode("e1", 1, Publisher.BARB_OVERRIDES);
+        Episode expEquiv = episode("e1-1", 2, Publisher.BARB_MASTER);
+        Episode expEquivChild = episode("e1-1-1", 3, Publisher.BARB_TRANSMISSIONS);
+        Episode expEquivUnpublished= episode("e1-2", 5, Publisher.BARB_MASTER);
+        Episode expEquivChildOfUnpublished = episode("e1-2-1", 6, Publisher.BARB_TRANSMISSIONS);
+        expEquivUnpublished.setActivelyPublished(false);
+
+        LookupEntry subjEntry = entry(subject, expEquiv, expEquivUnpublished);
+        lookupResolver.store(subjEntry);
+        lookupResolver.store(entry(expEquiv, expEquivChild));
+        lookupResolver.store(entry(expEquivUnpublished, expEquivChildOfUnpublished));
+        lookupResolver.store(entry(expEquivChild));
+        lookupResolver.store(entry(expEquivChildOfUnpublished));
+
+        Set<LookupRef> processedRefs = resolver.getEquivSetByFollowingLinks(subjEntry, sourceFilter);
+
+        assertThat(processedRefs.size(), is(3));
+        assertTrue(processedRefs.contains(LookupRef.from(subject)));
+        assertTrue(processedRefs.contains(LookupRef.from(expEquiv)));
+        assertTrue(processedRefs.contains(LookupRef.from(expEquivChild)));
+    }
+
+    @Test
+    public void annotationOnlyReturnsSingleContentIfContentUnpublished() {
+        DefaultEquivalentContentResolver resolver = (DefaultEquivalentContentResolver) equivResolver;
+
+        when(application.getConfiguration()).thenReturn(configWithSources(Publisher.BARB_OVERRIDES, Publisher.BARB_MASTER, Publisher.BARB_TRANSMISSIONS));
+
+        Predicate<LookupRef> sourceFilter = MorePredicates.transformingPredicate(
+                LookupRef.TO_SOURCE,
+                Predicates.in(application.getConfiguration().getEnabledReadSources()))::apply;
+
+        Episode subject = episode("e1", 1, Publisher.BARB_OVERRIDES);
+        Episode expEquiv = episode("e1-1", 2, Publisher.BARB_MASTER);
+        Episode expEquivChild = episode("e1-1-1", 3, Publisher.BARB_TRANSMISSIONS);
+        subject.setActivelyPublished(false);
+
+        LookupEntry subjEntry = entry(subject, expEquiv, expEquivChild);
+        lookupResolver.store(subjEntry);
+        lookupResolver.store(entry(expEquiv, expEquivChild));
+        lookupResolver.store(entry(expEquivChild));
+
+        Set<LookupRef> processedRefs = resolver.getEquivSetByFollowingLinks(subjEntry, sourceFilter);
+
+        assertThat(processedRefs.size(), is(0));
     }
 
     private ApplicationConfiguration configWithSources(Publisher... srcs) {
