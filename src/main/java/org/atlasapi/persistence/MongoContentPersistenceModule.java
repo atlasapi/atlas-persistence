@@ -143,7 +143,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         );
     }
 
-    @Bean()
+    @Bean
     @Lazy(true)
     public MessageSender<EntityUpdatedMessage> contentChanges() {
         return persistenceModule().contentChanges();
