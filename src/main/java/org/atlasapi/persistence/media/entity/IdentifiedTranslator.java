@@ -1,20 +1,20 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.Set;
-
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.ModelTranslator;
 
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import java.util.Map;
+import java.util.Set;
 
 public class IdentifiedTranslator implements ModelTranslator<Identified> {
 
@@ -31,6 +31,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     public static final String TYPE = "type";
     public static final String PUBLISHER = "publisher";
     public static final String OPAQUE_ID = "aid";
+    private static final String CUSTOM_FIELDS = "customFields";
+
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
     private static final Function<DBObject, LookupRef> equivalentFromDbo = input -> lookupRefTranslator
             .fromDBObject(input, null);
@@ -73,6 +75,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
         TranslatorUtils.from(dbObject, EQUIVALENT_TO, toDBObject(entity.getEquivalentTo()));
         TranslatorUtils.fromDateTime(dbObject, LAST_UPDATED, entity.getLastUpdated());
 
+        fromMap(dbObject, CUSTOM_FIELDS, entity.getCustomFields());
+
         return dbObject;
     }
 
@@ -100,6 +104,8 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 
         description.setEquivalentTo(equivalentsFrom(dbObject));
         description.setLastUpdated(TranslatorUtils.toDateTime(dbObject, LAST_UPDATED));
+
+        description.setCustomFields(toMap(dbObject, CUSTOM_FIELDS));
         return description;
     }
 
@@ -120,6 +126,17 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 
         return list;
     }
+
+    private static <V> void fromMap(DBObject dbObject, String name, Map<String, V> map) {
+        dbObject.put(name, map);
+    }
+
+    private static <V> Map<String, V> toMap(DBObject dbObject, String name) {
+        if(dbObject.containsField(name)) {
+            return (Map<String, V>) dbObject.get(name);
+        }
+        return Maps.newHashMap();
+     }
 
     public void removeFieldsForHash(DBObject dbObject) {
         dbObject.removeField(LAST_UPDATED);

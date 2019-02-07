@@ -414,6 +414,19 @@ public class MongoContentWriterTest {
         assertEquals(retrievedNewEpisode.getContainer().getUri(), "newBrandUri");
     }
 
+    @Test
+    public void testWritingAndReadingCustomFields() {
+        Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
+        brand.putCustomField("customField", "1");
+        brand.putCustomField("customField2", "2");
+
+        contentWriter.createOrUpdate(brand);
+
+        Brand retrievedBrand = retrieveBrand(brand);
+
+        assertEquals(brand.getCustomFields(), retrievedBrand.getCustomFields());
+    }
+
     public Brand retrieveBrand(Brand brand) {
         return (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
     }
