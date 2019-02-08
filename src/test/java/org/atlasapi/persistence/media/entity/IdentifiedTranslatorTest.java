@@ -8,8 +8,8 @@ public class IdentifiedTranslatorTest extends TestCase {
 
     public void testShouldConvertCustomFields() {
         Identified desc = new Identified();
-        desc.putCustomField("customField", "1");
-        desc.putCustomField("customField2", "2");
+        desc.addCustomField("customField", "1");
+        desc.addCustomField("customField2", "2");
 
         IdentifiedTranslator translator = new IdentifiedTranslator();
         DBObject dbObj = translator.toDBObject(null, desc);

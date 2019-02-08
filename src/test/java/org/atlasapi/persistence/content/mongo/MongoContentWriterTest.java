@@ -417,8 +417,8 @@ public class MongoContentWriterTest {
     @Test
     public void testWritingAndReadingCustomFields() {
         Brand brand = new Brand("brandUri", "brandUri", Publisher.BBC);
-        brand.putCustomField("customField", "1");
-        brand.putCustomField("customField2", "2");
+        brand.addCustomField("customField", "1");
+        brand.addCustomField("customField2", "2");
 
         contentWriter.createOrUpdate(brand);
 
