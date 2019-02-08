@@ -31,7 +31,7 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
     public static final String TYPE = "type";
     public static final String PUBLISHER = "publisher";
     public static final String OPAQUE_ID = "aid";
-    private static final String CUSTOM_FIELDS = "customFields";
+    public static final String CUSTOM_FIELDS = "customFields";
 
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
     private static final Function<DBObject, LookupRef> equivalentFromDbo = input -> lookupRefTranslator
