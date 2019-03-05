@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
-public class AmazonPersistenceModule {
+public class AmazonPersistenceModule implements AmazonPersistenceModuleInterface {
 
     @Autowired private Mongo mongo;
 
@@ -31,10 +31,16 @@ public class AmazonPersistenceModule {
         this.amazonDbName = amazonDbName;
     }
 
+
+    private transient AmazonTitleIndexStore amazonTitleIndexStore;
+    @Override
     @Primary
     @Bean
     public AmazonTitleIndexStore amazonTitleIndexStore() {
-        return new AmazonTitleIndexStore(new DatabasedMongo(mongo, amazonDbName));
+        if(amazonTitleIndexStore == null) {
+            amazonTitleIndexStore = new AmazonTitleIndexStore(new DatabasedMongo(mongo, amazonDbName));
+        }
+        return amazonTitleIndexStore;
     }
 
 }
