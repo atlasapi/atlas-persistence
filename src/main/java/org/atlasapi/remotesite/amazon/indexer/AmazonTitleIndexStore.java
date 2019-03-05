@@ -1,42 +1,8 @@
 package org.atlasapi.remotesite.amazon.indexer;
 
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoBuilders;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import org.joda.time.DateTime;
+public interface AmazonTitleIndexStore {
 
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
+     AmazonTitleIndexEntry createOrUpdateIndex(AmazonTitleIndexEntry amazonTitleIndexEntry);
 
-public class AmazonTitleIndexStore {
-    private static final String AMAZON_TITLE_INDEX_COLLECTION = "amazonTitleIndex";
-
-    private static final AmazonTitleIndexEntryTranslator amazonTitleIndexEntryTranslator = new AmazonTitleIndexEntryTranslator();
-
-    private final DBCollection amazonTitleIndexCollection;
-
-    public AmazonTitleIndexStore(DatabasedMongo mongo) {
-        amazonTitleIndexCollection = mongo.collection(AMAZON_TITLE_INDEX_COLLECTION);
-    }
-
-    public AmazonTitleIndexEntry createOrUpdateIndex(AmazonTitleIndexEntry amazonTitleIndexEntry) {
-        amazonTitleIndexEntry.setLastUpdated(DateTime.now());
-        DBObject dbObject = amazonTitleIndexEntryTranslator.toDBObject(amazonTitleIndexEntry);
-        MongoQueryBuilder where = MongoBuilders.where()
-                .idEquals(amazonTitleIndexEntry.getTitle())
-                ;
-        amazonTitleIndexCollection.update(where.build(), dbObject, UPSERT, SINGLE);
-        return amazonTitleIndexEntry;
-    }
-
-    public AmazonTitleIndexEntry getIndexEntry(String title) {
-        MongoQueryBuilder where = MongoBuilders.where()
-                .idEquals(title)
-                ;
-        DBObject dbObject = amazonTitleIndexCollection.findOne(where.build());
-        return amazonTitleIndexEntryTranslator.fromDBObject(dbObject);
-    }
-
+     AmazonTitleIndexEntry getIndexEntry(String title);
 }
