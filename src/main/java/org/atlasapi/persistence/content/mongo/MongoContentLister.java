@@ -1,37 +1,5 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
-import static org.atlasapi.persistence.content.ContentCategory.CHILD_ITEM;
-import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
-import static org.atlasapi.persistence.content.ContentCategory.PROGRAMME_GROUP;
-import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
-
-import java.util.Iterator;
-import java.util.List;
-
-import org.atlasapi.content.criteria.ContentQuery;
-import org.atlasapi.media.entity.Container;
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.Item;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.KnownTypeContentResolver;
-import org.atlasapi.persistence.content.listing.ContentLister;
-import org.atlasapi.persistence.content.listing.ContentListingCriteria;
-import org.atlasapi.persistence.event.EventContentLister;
-import org.atlasapi.persistence.media.entity.ContainerTranslator;
-import org.atlasapi.persistence.media.entity.DescribedTranslator;
-import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
-import org.atlasapi.persistence.media.entity.ItemTranslator;
-import org.atlasapi.persistence.topic.TopicContentLister;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.AbstractIterator;
@@ -49,6 +17,36 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.Bytes;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.content.criteria.ContentQuery;
+import org.atlasapi.media.entity.Container;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.KnownTypeContentResolver;
+import org.atlasapi.persistence.content.listing.ContentLister;
+import org.atlasapi.persistence.content.listing.ContentListingCriteria;
+import org.atlasapi.persistence.event.EventContentLister;
+import org.atlasapi.persistence.media.entity.ContainerTranslator;
+import org.atlasapi.persistence.media.entity.DescribedTranslator;
+import org.atlasapi.persistence.media.entity.ItemTranslator;
+import org.atlasapi.persistence.topic.TopicContentLister;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Iterator;
+import java.util.List;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
+import static org.atlasapi.persistence.content.ContentCategory.CHILD_ITEM;
+import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
+import static org.atlasapi.persistence.content.ContentCategory.PROGRAMME_GROUP;
+import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister,
         EventContentLister {
@@ -107,7 +105,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     public DBCursor cursorFor(ContentCategory category) {
                         return contentTables.collectionFor(category)
                                 .find(queryForCategory(category))
-                                .batchSize(100)
+                                .batchSize(10)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
                                 .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
                     }
@@ -151,7 +149,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                 return contentTables.collectionFor(category)
                             .find(where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when).build())
                             .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build())
-                            .batchSize(100)
+                            .batchSize(10)
                             .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
             }
 
