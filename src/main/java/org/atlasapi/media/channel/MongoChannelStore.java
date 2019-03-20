@@ -1,23 +1,5 @@
 package org.atlasapi.media.channel;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.StreamSupport;
-
-import javax.annotation.Nullable;
-
-import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
-
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
-import com.metabroadcast.common.stream.MoreCollectors;
-
 import com.google.common.base.Equivalence;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -26,12 +8,26 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.stream.MoreCollectors;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -270,48 +266,68 @@ public class MongoChannelStore extends BaseChannelStore implements ServiceChanne
         }
 
         newChannel.setVariationIds(existingChannel.getVariations());
+
+        SetView<ChannelNumbering> difference = Sets.difference(
+                existingChannel.getChannelNumbers(),
+                newChannel.getChannelNumbers()
+        );
+        if (!difference.isEmpty()) {
+            for (ChannelNumbering oldNumbering : difference) {
+                Optional<ChannelGroup> optGroup = channelGroupResolver.channelGroupFor(
+                        oldNumbering.getChannelGroup());
+                if (!optGroup.isPresent()) {
+                    throw new IllegalStateException(String.format(
+                            "ChannelGroup with id %s not found for channel with id %s",
+                            oldNumbering.getChannelGroup(),
+                            newChannel.getId()
+                    ));
+                }
+                ChannelGroup group = optGroup.get();
+
+                Set<ChannelNumbering> numberings = Sets.newHashSet(group.getChannelNumberings());
+                numberings.remove(oldNumbering);
+                group.setChannelNumberings(numberings);
+
+                channelGroupWriter.createOrUpdate(group);
+            }
+        }
     }
 
     private void updateNumberingsOnChannelGroups(Channel channel, Optional<Channel> existingRecord) {
+
         if (existingRecord.isPresent()
                 && channel.getChannelNumbers().equals(existingRecord.get().getChannelNumbers())) {
             return;
         }
 
         if (existingRecord.isPresent()) {
-            Set<ChannelNumbering> existingChannelNumbers = existingRecord.get().getChannelNumbers();
-            removeStaleLinks(channel, existingChannelNumbers);
-            addNewLinks(channel, existingChannelNumbers);
-            return;
+            removeLinks(
+                    channel.getChannelNumbers(),
+                    existingRecord.get().getChannelNumbers()
+            );
         }
 
-        // if the channel is new, add all channel numbers
-        addNewLinks(channel, Sets.newHashSet());
-    }
-
-    private void addNewLinks(Channel channel, Set<ChannelNumbering> existingChannelNumbers) {
         Multimap<Long, ChannelNumbering> newChannelGroupMapping = ArrayListMultimap.create();
-        SetView<ChannelNumbering> newChannelNumberings = Sets.difference(
-                channel.getChannelNumbers(),
-                existingChannelNumbers
-        );
-
-        // group new channel numbering per channel group
-        newChannelNumberings.forEach(numbering -> {
+        for (ChannelNumbering numbering : channel.getChannelNumbers()) {
             numbering.setChannel(channel.getId());
             newChannelGroupMapping.put(numbering.getChannelGroup(), numbering);
-        });
+        }
 
-        newChannelGroupMapping.keySet().forEach(channelGroupId -> {
-            ChannelGroup channelGroup = resolveChannelGroupForId(channelGroupId);
-
-            Collection<ChannelNumbering> newChannelGroupNumberings = newChannelGroupMapping.get(
-                    channelGroupId
-            );
-            newChannelGroupNumberings.forEach(channelGroup::addChannelNumbering);
-
-            channelGroupWriter.createOrUpdate(channelGroup);
-        });
+        for (Long channelGroupId : newChannelGroupMapping.keySet()) {
+            Optional<ChannelGroup> optGroup = channelGroupResolver.channelGroupFor(channelGroupId);
+            if (!optGroup.isPresent()) {
+                throw new IllegalStateException(String.format(
+                        "ChannelGroup with id %s not found for channel with id %s",
+                        channelGroupId,
+                        channel.getId()
+                ));
+            }
+            ChannelGroup group = optGroup.get();
+            for (ChannelNumbering numbering : newChannelGroupMapping.get(channelGroupId)) {
+                group.addChannelNumbering(numbering);
+            }
+            channelGroupWriter.createOrUpdate(group);
+        }
     }
 
     private void ensureParentReference(Channel channel) {
@@ -345,54 +361,42 @@ public class MongoChannelStore extends BaseChannelStore implements ServiceChanne
     }
 
     /**
-     * Given a channel containing a set of the new ChannelNumbering and a set of the existing
-     * ChannelNumberings, determines those numberings not in the new set, and removes them from
-     * their channel group.
+     * Given a set of the new and existing ChannelNumberings, determines those numberings not in the
+     * new set, and removes them from their channel group.
      *
-     * @param channel
+     * @param newNumbers
      * @param existingNumbers
      */
-    private void removeStaleLinks(
-            Channel channel,
-            Set<ChannelNumbering> existingNumbers
-    ) {
-        Multimap<Long, ChannelNumbering> expiredChannelGroupMapping = ArrayListMultimap.create();
-        SetView<ChannelNumbering> expiredNumberings = Sets.difference(
-                existingNumbers,
-                channel.getChannelNumbers()
-        );
+    private void removeLinks(final Set<ChannelNumbering> newNumbers,
+            Set<ChannelNumbering> existingNumbers) {
+        SetView<ChannelNumbering> expiredNumberings = Sets.difference(existingNumbers, newNumbers);
 
-        // group expired channel numberings per channel group
-        expiredNumberings.forEach(numbering -> {
-            numbering.setChannel(channel.getId());
-            expiredChannelGroupMapping.put(numbering.getChannelGroup(), numbering);
-        });
-
-        expiredChannelGroupMapping.keySet().forEach(channelGroupId -> {
-            ChannelGroup channelGroup = resolveChannelGroupForId(channelGroupId);
-
-            Collection<ChannelNumbering> expiredChannelGroupNumberings = expiredChannelGroupMapping.get(
-                    channelGroupId
-            );
-            Iterable<ChannelNumbering> nonExpired = Iterables.filter(
-                    channelGroup.getChannelNumberings(),
-                    channelNumbering -> !expiredChannelGroupNumberings.contains(channelNumbering)
-            );
-            channelGroup.setChannelNumberings(nonExpired);
-
-            channelGroupWriter.createOrUpdate(channelGroup);
-        });
+        for (ChannelNumbering expired : expiredNumberings) {
+            removeNumbering(expired);
+        }
     }
 
-    private ChannelGroup resolveChannelGroupForId(Long channelGroupId) {
-        Optional<ChannelGroup> optGroup = channelGroupResolver.channelGroupFor(channelGroupId);
-        if (!optGroup.isPresent()) {
-            throw new IllegalStateException(String.format(
-                    "ChannelGroup with id %s not found",
-                    channelGroupId
-            ));
+    /**
+     * Resolves the ChannelGroup for a given numbering, removes all numberings on that group with a
+     * channel matching that of the provided numbering, then writes the group.
+     *
+     * @param expired
+     */
+    private void removeNumbering(final ChannelNumbering expired) {
+        Optional<ChannelGroup> resolved = channelGroupResolver.channelGroupFor(expired.getChannelGroup());
+        if (!resolved.isPresent()) {
+            log.error(
+                    "Tried to remove numbering {} from non-existent channel group {}",
+                    expired,
+                    expired.getChannelGroup()
+            );
         }
-        return optGroup.get();
+        Iterable<ChannelNumbering> nonExpired = Iterables.filter(
+                resolved.get().getChannelNumberings(),
+                input -> !input.getChannel().equals(expired.getChannel())
+        );
+        resolved.get().setChannelNumberings(nonExpired);
+        channelGroupWriter.createOrUpdate(resolved.get());
     }
 
     @Override

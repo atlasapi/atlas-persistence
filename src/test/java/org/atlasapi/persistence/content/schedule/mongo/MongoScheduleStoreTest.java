@@ -396,70 +396,7 @@ public class MongoScheduleStoreTest {
         assertEquals(item3.getCanonicalUri(), replacementChannel.items().get(2).getCanonicalUri());
         
     }
-
-    @Test
-    public void shouldAddScheduleBlock() throws Exception {
-        Channel_4_HD.setId(1234L);
-
-        DateTime broadcast1Start = now.withMinuteOfHour(0).withSecondOfMinute(0);
-        DateTime broadcast1End = broadcast1Start.plusMinutes(30);
-        Broadcast b1 = new Broadcast(Channel_4_HD.getUri(), broadcast1Start, broadcast1End);
-        Broadcast b2 = new Broadcast(Channel_4_HD.getUri(), broadcast1End, broadcast1End.plusMinutes(30));
-
-        Version v1 = new Version();
-        Version v2 = new Version();
-
-        v1.addBroadcast(b1);
-        v2.addBroadcast(b2);
-
-        item1.addVersion(v1);
-        item2.addVersion(v2);
-
-        List<ItemRefAndBroadcast> itemsAndBroadcasts = Lists.newArrayList();
-        itemsAndBroadcasts.add(new ItemRefAndBroadcast(item1, b1));
-        itemsAndBroadcasts.add(new ItemRefAndBroadcast(item2, b2));
-
-        store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, itemsAndBroadcasts);
-
-        Set<Publisher> publishers = ImmutableSet.of(Publisher.BBC);
-        when(application.getConfiguration()).thenReturn(configWithSources(publishers));
-
-        Schedule schedule = store.schedule(
-                broadcast1Start,
-                broadcast1End.plusMinutes(30),
-                ImmutableSet.of(Channel_4_HD),
-                publishers,
-                Optional.of(application)
-        );
-
-        assertEquals(1, schedule.scheduleChannels().size());
-        ScheduleChannel channel = Iterables.getOnlyElement(schedule.scheduleChannels());
-
-        assertEquals(2, channel.items().size());
-
-        assertEquals(item1.getCanonicalUri(), channel.items().get(0).getCanonicalUri());
-        assertEquals(item2.getCanonicalUri(), channel.items().get(1).getCanonicalUri());
-
-        List<ItemRefAndBroadcast> replacementItemAndBcast = Lists.newArrayList();
-        replacementItemAndBcast.add(new ItemRefAndBroadcast(item2, b2));
-
-        store.replaceScheduleBlock(Publisher.BBC, Channel_4_HD, replacementItemAndBcast);
-        Schedule updatedSchedule = store.schedule(
-                broadcast1Start,
-                broadcast1End.plusMinutes(30),
-                ImmutableSet.of(Channel_4_HD),
-                ImmutableSet.of(Publisher.BBC),
-                Optional.of(application)
-        );
-        assertEquals(1, updatedSchedule.scheduleChannels().size());
-        ScheduleChannel replacementChannel = Iterables.getOnlyElement(updatedSchedule.scheduleChannels());
-
-        assertEquals(2, replacementChannel.items().size());
-
-        assertEquals(item1.getCanonicalUri(), replacementChannel.items().get(0).getCanonicalUri());
-        assertEquals(item2.getCanonicalUri(), replacementChannel.items().get(1).getCanonicalUri());
-    }
-
+    
     @Test(expected=IllegalArgumentException.class)
     public void overlappingScheduleShouldError() throws Exception {
         Broadcast wrongBroadcast = new Broadcast(BBC_ONE.getUri(), now.minusHours(3), now.minusHours(1));
