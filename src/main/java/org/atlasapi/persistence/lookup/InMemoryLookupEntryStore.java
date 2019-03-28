@@ -10,7 +10,6 @@ import com.google.common.collect.Multimap;
 import com.metabroadcast.common.query.Selection;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -68,15 +67,40 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
 
     @Override
     public Iterable<LookupEntry> entriesForAliases(final Optional<String> namespace, Iterable<String> values) {
+        return entriesForAliases(namespace, values, true);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForAliases(
+            final Optional<String> namespace,
+            Iterable<String> values,
+            boolean includeUnpublishedEntries
+    ) {
         if (namespace.isPresent()) {
             // create Aliases
             Iterable<Alias> aliases = StreamSupport.stream(values.spliterator(), false)
                     .map(value -> new Alias(namespace.get(), value))
                     .collect(Collectors.toList());
 
-            return Iterables.concat(Iterables.filter(Iterables.transform(aliases, Functions.forMap(aliasStore.asMap(), null)), Predicates.notNull()));
+            return Iterables.filter(
+                    Iterables.concat(
+                            Iterables.filter(
+                                    Iterables.transform(aliases, Functions.forMap(aliasStore.asMap(), null)
+                                    ),
+                                    Predicates.notNull()
+                            )),
+                    lookupEntry -> includeUnpublishedEntries || (lookupEntry != null && lookupEntry.activelyPublished())
+            );
         } else {
-            return Iterables.concat(Iterables.filter(Iterables.transform(values, Functions.forMap(aliasValueStore.asMap(), null)), Predicates.notNull()));
+            return Iterables.filter(
+                    Iterables.concat(
+                            Iterables.filter(
+                                    Iterables.transform(values, Functions.forMap(aliasValueStore.asMap(), null)
+                                    ),
+                                    Predicates.notNull()
+                            )),
+                    lookupEntry -> includeUnpublishedEntries || (lookupEntry != null && lookupEntry.activelyPublished())
+            );
         }
     }
 
