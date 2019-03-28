@@ -1,5 +1,43 @@
 package org.atlasapi.persistence.lookup.mongo;
 
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.metabroadcast.common.persistence.mongo.MongoBuilders;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.metabroadcast.common.query.Selection;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.ReadPreference;
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.audit.PersistenceAuditLog;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.content.listing.ContentListingProgress;
+import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
@@ -21,46 +59,6 @@ import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.SELF;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import javax.annotation.Nullable;
-
-import org.atlasapi.media.entity.Content;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.audit.PersistenceAuditLog;
-import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.listing.ContentListingProgress;
-import org.atlasapi.persistence.lookup.NewLookupWriter;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
-import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
-import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.metabroadcast.common.persistence.mongo.MongoBuilders;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.metabroadcast.common.query.Selection;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.ReadPreference;
 
 public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter {
 
@@ -184,7 +182,16 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public Iterable<LookupEntry> entriesForAliases(Optional<String> namespace, Iterable<String> values) {
-        return Iterables.transform(find(namespace, values), translator.FROM_DBO);
+        return entriesForAliases(namespace,values, true);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForAliases(
+            Optional<String> namespace,
+            Iterable<String> values,
+            boolean includeUnpublishedEntries
+    ) {
+        return Iterables.transform(find(namespace, values, includeUnpublishedEntries), translator.FROM_DBO);
     }
 
     @Override
@@ -203,15 +210,17 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         }
         return results.build();
     }
-    
-    private Iterable<DBObject> find(Optional<String> namespace, Iterable<String> values) {
-        if (namespace.isPresent()) {
-            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values)).build())
-                    .setReadPreference(readPreference);        
-        } else {
-            return lookup.find(where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values)).build())
-                    .setReadPreference(readPreference);
+
+    private Iterable<DBObject> find(Optional<String> namespace, Iterable<String> values, boolean includeUnpublishedEntries) {
+        MongoQueryBuilder query = namespace.isPresent()
+                ? where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values))
+                : where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values));
+        if (!includeUnpublishedEntries) {
+            // Not actively published content will have this value set to false
+            // Actively published content will either have this value be true or null
+            query.fieldNotEqualTo(ACTIVELY_PUBLISHED, false);
         }
+        return lookup.find(query.build()).setReadPreference(readPreference);
     }
 
     @Override

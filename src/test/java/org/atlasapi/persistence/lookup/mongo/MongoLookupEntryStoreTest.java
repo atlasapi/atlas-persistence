@@ -1,22 +1,16 @@
 package org.atlasapi.persistence.lookup.mongo;
 
-import static com.google.common.base.Predicates.equalTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isOneOf;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-
-import java.util.Map;
-
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
@@ -37,17 +31,22 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.ReadPreference;
+import java.util.Map;
+
+import static com.google.common.base.Predicates.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MongoLookupEntryStoreTest {
@@ -283,6 +282,31 @@ public class MongoLookupEntryStoreTest {
         assertTrue(Iterables.isEmpty(aliasEntry));
         
         aliasEntry = entryStore.entriesForAliases(Optional.of("c"), ImmutableList.of("d"));
+        assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
+    }
+
+    @Test
+    public void testEnsureUnpublishContentFilteredFromAliasLookup() {
+        Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.addAlias(new Alias("a", "b"));
+
+        Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.BBC);
+        testItemTwo.addAlias(new Alias("a", "b"));
+        testItemTwo.setActivelyPublished(false);
+
+        LookupEntry testEntryOne = LookupEntry.lookupEntryFrom(testItemOne);
+        LookupEntry testEntryTwo = LookupEntry.lookupEntryFrom(testItemTwo);
+        entryStore.store(testEntryOne);
+        entryStore.store(testEntryTwo);
+
+        Iterable<LookupEntry> aliasEntry = entryStore.entriesForAliases(Optional.of("a"), ImmutableList.of("b"));
+        LookupEntry first = Iterables.get(aliasEntry, 0);
+        LookupEntry second = Iterables.get(aliasEntry, 1);
+        assertThat(first, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(second, isOneOf(testEntryOne, testEntryTwo));
+        assertThat(first, is(not(second)));
+
+        aliasEntry = entryStore.entriesForAliases(Optional.of("a"), ImmutableList.of("b"), false);
         assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
     }
     
