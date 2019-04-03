@@ -1,28 +1,25 @@
 package org.atlasapi.media.channel;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import junit.framework.TestCase;
-
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
-import org.joda.time.DateTime;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import com.metabroadcast.common.base.Maybe;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import junit.framework.TestCase;
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MongoChannelStoreWriteTest extends TestCase {
@@ -186,14 +183,20 @@ public class MongoChannelStoreWriteTest extends TestCase {
         channel.setChannelNumbers(ImmutableSet.of(currentNumbering));
         
         channel = channelStore.createOrUpdate(channel);
-        
-        assertEquals(ImmutableSet.of(currentNumbering), ImmutableSet.copyOf(channel.getChannelNumbers()));
+
+        assertEquals(
+                ImmutableSet.of(currentNumbering),
+                ImmutableSet.copyOf(channel.getChannelNumbers())
+        );
         
         group1 = channelGroupStore.channelGroupFor(group1Id).get();
         group2 = channelGroupStore.channelGroupFor(group2Id).get();
         
         assertTrue(group1.getChannelNumberings().isEmpty());
-        assertEquals(ImmutableSet.of(currentNumbering), ImmutableSet.copyOf(group2.getChannelNumberings()));
+        assertEquals(
+                ImmutableSet.of(currentNumbering),
+                ImmutableSet.copyOf(group2.getChannelNumberings())
+        );
     }
 
     @Test
