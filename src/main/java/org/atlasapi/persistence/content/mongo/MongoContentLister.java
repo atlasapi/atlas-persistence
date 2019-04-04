@@ -109,7 +109,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                                 .find(queryForCategory(category))
                                 .batchSize(100)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
-                                .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+                                .noCursorTimeout(true);
                     }
 
                     @Override
