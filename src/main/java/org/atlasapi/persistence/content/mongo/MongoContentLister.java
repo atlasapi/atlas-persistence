@@ -25,7 +25,6 @@ import org.atlasapi.persistence.content.listing.ContentListingCriteria;
 import org.atlasapi.persistence.event.EventContentLister;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
-import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.topic.TopicContentLister;
 import org.joda.time.DateTime;
@@ -43,6 +42,7 @@ import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSelectBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObjectBuilder;
@@ -72,20 +72,26 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         this.itemTranslator = new ItemTranslator(idCodec);
         this.contentResolver = checkNotNull(contentResolver);
     }
-    
+
     @Override
-    public Iterator<Content> listContent(ContentListingCriteria criteria) {
+    public Iterator<Content> listContent(ContentListingCriteria criteria){
+        MongoSelectBuilder allSelector = new MongoSelectBuilder();
+        return listContent(criteria, allSelector);
+    }
+
+    public Iterator<Content> listContent(ContentListingCriteria criteria, MongoSelectBuilder selector) {
         List<Publisher> publishers = remainingPublishers(criteria);
         
         if(publishers.isEmpty()) {
             return Iterators.emptyIterator();
         }
 
-        return iteratorsFor(publishers, criteria);
+        return iteratorsFor(publishers, criteria, selector);
     }
     
 
-    private Iterator<Content> iteratorsFor(final List<Publisher> publishers, ContentListingCriteria criteria) {
+    private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
+            ContentListingCriteria criteria, MongoSelectBuilder selector) {
         final String uri = criteria.getProgress().getUri();
         final List<ContentCategory> initialCats = remainingTables(criteria);
         final List<ContentCategory> allCats = criteria.getCategories();
@@ -95,8 +101,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public Iterator<Content> apply(final Publisher publisher) {
                 return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
                     
-                    public DBObject queryForCategory(ContentCategory category) {
-                        MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key());
+                    public DBObject queryForCategory(ContentCategory category, MongoSelectBuilder selector) {
+                        MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key())
+                                .selecting(selector);
                         if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
                             query.fieldGreaterThan(ID, uri);
                         }
@@ -106,7 +113,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     @Override
                     public DBCursor cursorFor(ContentCategory category) {
                         return contentTables.collectionFor(category)
-                                .find(queryForCategory(category))
+                                .find(queryForCategory(category, selector))
                                 .batchSize(100)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
                                 .noCursorTimeout(true);
