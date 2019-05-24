@@ -22,6 +22,7 @@ import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.listing.ContentLister;
 import org.atlasapi.persistence.content.listing.ContentListingCriteria;
+import org.atlasapi.persistence.content.listing.SelectedContentLister;
 import org.atlasapi.persistence.event.EventContentLister;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
@@ -51,7 +52,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder, TopicContentLister,
-        EventContentLister {
+        EventContentLister, SelectedContentLister {
 
     private static final Logger log = LoggerFactory.getLogger(MongoContentLister.class);
     
@@ -73,25 +74,24 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         this.contentResolver = checkNotNull(contentResolver);
     }
 
-    @Override
     public Iterator<Content> listContent(ContentListingCriteria criteria){
-        MongoSelectBuilder allSelector = new MongoSelectBuilder();
-        return listContent(criteria, allSelector);
+        return listContent(criteria, false);
     }
 
-    public Iterator<Content> listContent(ContentListingCriteria criteria, MongoSelectBuilder selector) {
+    @Override
+    public Iterator<Content> listContent(ContentListingCriteria criteria, boolean selectedFlag) {
         List<Publisher> publishers = remainingPublishers(criteria);
         
         if(publishers.isEmpty()) {
             return Iterators.emptyIterator();
         }
 
-        return iteratorsFor(publishers, criteria, selector);
+        return iteratorsFor(publishers, criteria, selectedFlag);
     }
-    
+
 
     private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
-            ContentListingCriteria criteria, MongoSelectBuilder selector) {
+            ContentListingCriteria criteria, boolean selectedFlag) {
         final String uri = criteria.getProgress().getUri();
         final List<ContentCategory> initialCats = remainingTables(criteria);
         final List<ContentCategory> allCats = criteria.getCategories();
@@ -100,10 +100,16 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             @Override
             public Iterator<Content> apply(final Publisher publisher) {
                 return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
-                    
-                    public DBObject queryForCategory(ContentCategory category, MongoSelectBuilder selector) {
-                        MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key())
-                                .selecting(selector);
+
+                    public DBObject queryForCategory(ContentCategory category, boolean selectedFlag) {
+                        MongoQueryBuilder query;
+                        if(selectedFlag) {
+                            query = where().fieldEquals("publisher", publisher.key())
+                                    .selecting(new MongoSelectBuilder().field("_id"));
+                        }
+                        else {
+                            query = where().fieldEquals("publisher", publisher.key());
+                        }
                         if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
                             query.fieldGreaterThan(ID, uri);
                         }
@@ -113,7 +119,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     @Override
                     public DBCursor cursorFor(ContentCategory category) {
                         return contentTables.collectionFor(category)
-                                .find(queryForCategory(category, selector))
+                                .find(queryForCategory(category, selectedFlag))
                                 .batchSize(100)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
                                 .noCursorTimeout(true);
