@@ -9,6 +9,8 @@ import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
 import static org.atlasapi.persistence.content.ContentCategory.PROGRAMME_GROUP;
 import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -74,24 +76,38 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         this.contentResolver = checkNotNull(contentResolver);
     }
 
-    public Iterator<Content> listContent(ContentListingCriteria criteria){
-        return listContent(criteria, false);
-    }
-
     @Override
-    public Iterator<Content> listContent(ContentListingCriteria criteria, boolean selectedFlag) {
+    public Iterator<Content> listContent(ContentListingCriteria criteria){
         List<Publisher> publishers = remainingPublishers(criteria);
-        
+
         if(publishers.isEmpty()) {
             return Iterators.emptyIterator();
         }
 
-        return iteratorsFor(publishers, criteria, selectedFlag);
+        return iteratorsFor(publishers, criteria);
     }
 
+    @Override
+    public List<Content> listContent(ContentListingCriteria criteria, boolean preloadAllContent) {
+        List<Publisher> publishers = remainingPublishers(criteria);
+        
+        if(publishers.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Iterator<Content> iterator = iteratorsFor(publishers, criteria, preloadAllContent);
+        List<Content> allContent = new ArrayList<>();
+        iterator.forEachRemaining(allContent::add);
+        return allContent;
+    }
 
     private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
-            ContentListingCriteria criteria, boolean selectedFlag) {
+            ContentListingCriteria criteria) {
+        return iteratorsFor(publishers, criteria, false);
+    }
+
+    private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
+            ContentListingCriteria criteria, boolean preloadAllContent) {
         final String uri = criteria.getProgress().getUri();
         final List<ContentCategory> initialCats = remainingTables(criteria);
         final List<ContentCategory> allCats = criteria.getCategories();
@@ -101,9 +117,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public Iterator<Content> apply(final Publisher publisher) {
                 return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
 
-                    public DBObject queryForCategory(ContentCategory category, boolean selectedFlag) {
+                    public DBObject queryForCategory(ContentCategory category, boolean preloadAllContent) {
                         MongoQueryBuilder query;
-                        if(selectedFlag) {
+                        if(preloadAllContent) {
                             query = where().fieldEquals("publisher", publisher.key())
                                     .selecting(new MongoSelectBuilder().field("_id"));
                         }
@@ -119,7 +135,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     @Override
                     public DBCursor cursorFor(ContentCategory category) {
                         return contentTables.collectionFor(category)
-                                .find(queryForCategory(category, selectedFlag))
+                                .find(queryForCategory(category, preloadAllContent))
                                 .batchSize(100)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
                                 .noCursorTimeout(true);
