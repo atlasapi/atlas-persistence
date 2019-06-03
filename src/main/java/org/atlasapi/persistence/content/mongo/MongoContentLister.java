@@ -90,14 +90,14 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
 
     @Override
-    public List<String> listContentUris(ContentListingCriteria criteria, boolean preloadAllContent) {
+    public List<String> listContentUris(ContentListingCriteria criteria) {
         List<Publisher> publishers = remainingPublishers(criteria);
 
         if(publishers.isEmpty()) {
             return Collections.emptyList();
         }
 
-        Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, preloadAllContent);
+        Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, true);
         Iterator<String> uriIterator = Iterators.transform(contentIterator,
                 Identified::getCanonicalUri
         );
@@ -112,7 +112,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
 
     private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
-            ContentListingCriteria criteria, boolean preloadAllContent) {
+            ContentListingCriteria criteria, boolean fetchOnlyUris) {
         final String uri = criteria.getProgress().getUri();
         final List<ContentCategory> initialCats = remainingTables(criteria);
         final List<ContentCategory> allCats = criteria.getCategories();
@@ -122,12 +122,12 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public Iterator<Content> apply(final Publisher publisher) {
                 return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
 
-                    public DBObject queryForCategory(ContentCategory category, boolean preloadAllContent) {
+                    public DBObject queryForCategory(ContentCategory category, boolean fetchOnlyUris) {
                         MongoQueryBuilder query;
-                        //if true, then preload all content from a publisher into memory; end goal
-                        //is to get an Iterator<Content> filled only with the _id field (uris); this
-                        //is to fix the MongoCursorTimeout exception when rerunning equiv on an entire publisher
-                        if(preloadAllContent) {
+                        //if true, then select only the URis from all content from a publisher; goal
+                        //is to get an Iterator<Content> filled only with the _id field (uris); by
+                        //then preloading into a list, we try and prevent MongoCursorTimeout exception
+                        if(fetchOnlyUris) {
                             query = where().fieldEquals("publisher", publisher.key())
                                     .selecting(new MongoSelectBuilder().field("_id"));
                         }
@@ -143,7 +143,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     @Override
                     public DBCursor cursorFor(ContentCategory category) {
                         return contentTables.collectionFor(category)
-                                .find(queryForCategory(category, preloadAllContent))
+                                .find(queryForCategory(category, fetchOnlyUris))
                                 .batchSize(100)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
                                 .noCursorTimeout(true);
