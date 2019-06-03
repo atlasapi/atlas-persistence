@@ -7,7 +7,7 @@ import org.atlasapi.media.entity.Content;
 
 public interface SelectedContentLister {
 
-    List<Content> listContent(ContentListingCriteria criteria, boolean preloadAllContent);
+    List<String> listContent(ContentListingCriteria criteria, boolean preloadAllContent);
 
     Iterator<Content> listContent(ContentListingCriteria criteria);
 

@@ -17,6 +17,7 @@ import java.util.List;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
@@ -88,16 +89,19 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
 
     @Override
-    public List<Content> listContent(ContentListingCriteria criteria, boolean preloadAllContent) {
+    public List<String> listContent(ContentListingCriteria criteria, boolean preloadAllContent) {
         List<Publisher> publishers = remainingPublishers(criteria);
         
         if(publishers.isEmpty()) {
             return Collections.emptyList();
         }
 
-        Iterator<Content> iterator = iteratorsFor(publishers, criteria, preloadAllContent);
-        List<Content> allContent = new ArrayList<>();
-        iterator.forEachRemaining(allContent::add);
+        Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, preloadAllContent);
+        Iterator<String> stringIterator = Iterators.transform(contentIterator,
+                Identified::getCanonicalUri
+        );
+        List<String> allContent = new ArrayList<>();
+        stringIterator.forEachRemaining(allContent::add);
         return allContent;
     }
 
@@ -119,6 +123,9 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 
                     public DBObject queryForCategory(ContentCategory category, boolean preloadAllContent) {
                         MongoQueryBuilder query;
+                        //if true, then preload all content from a publisher into memory; end goal
+                        //is to get an Iterator<Content> filled only with the _id field (uris); this
+                        //is to fix the MongoCursorTimeout exception when rerunning equiv on an entire publisher
                         if(preloadAllContent) {
                             query = where().fieldEquals("publisher", publisher.key())
                                     .selecting(new MongoSelectBuilder().field("_id"));
