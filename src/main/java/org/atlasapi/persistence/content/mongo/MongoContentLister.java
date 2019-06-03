@@ -89,7 +89,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
 
     @Override
-    public List<String> listContent(ContentListingCriteria criteria, boolean preloadAllContent) {
+    public List<String> listContentUris(ContentListingCriteria criteria, boolean preloadAllContent) {
         List<Publisher> publishers = remainingPublishers(criteria);
         
         if(publishers.isEmpty()) {
