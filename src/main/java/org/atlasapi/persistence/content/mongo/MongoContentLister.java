@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.content.mongo;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -90,20 +88,18 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
 
     @Override
-    public List<String> listContentUris(ContentListingCriteria criteria) {
+    public Iterator<String> listContentUris(ContentListingCriteria criteria) {
         List<Publisher> publishers = remainingPublishers(criteria);
 
         if(publishers.isEmpty()) {
-            return Collections.emptyList();
+            return Iterators.emptyIterator();
         }
 
         Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, true);
         Iterator<String> uriIterator = Iterators.transform(contentIterator,
                 Identified::getCanonicalUri
         );
-        List<String> allContent = new ArrayList<>();
-        uriIterator.forEachRemaining(allContent::add);
-        return allContent;
+        return uriIterator;
     }
 
     private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
