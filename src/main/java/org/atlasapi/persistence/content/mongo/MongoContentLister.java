@@ -1,7 +1,5 @@
 package org.atlasapi.persistence.content.mongo;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -128,11 +126,14 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                         //is to get an Iterator<Content> filled only with the _id field (uris); by
                         //then preloading into a list, we try and prevent MongoCursorTimeout exception
                         if(fetchOnlyUris) {
-                            query = where().fieldEquals("publisher", publisher.key())
+                            query = where()
+                                    .fieldEquals("publisher", publisher.key())
+                                    .fieldEquals("activelyPublished", "true")
                                     .selecting(new MongoSelectBuilder().field("_id"));
                         }
                         else {
-                            query = where().fieldEquals("publisher", publisher.key());
+                            query = where().fieldEquals("publisher", publisher.key())
+                                    .fieldEquals("activelyPublished", "true");
                         }
                         if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
                             query.fieldGreaterThan(ID, uri);
@@ -186,10 +187,15 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             @Override
             public DBCursor cursorFor(ContentCategory category) {
                 return contentTables.collectionFor(category)
-                            .find(where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when).build())
-                            .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build())
-                            .batchSize(100)
-                            .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+                        .find(where().fieldEquals("publisher", publisher.key())
+                                .fieldAfter("thisOrChildLastUpdated", when)
+                                .fieldEquals("activelyPublished", "true")
+                                .build())
+                        .sort(sort().ascending("publisher")
+                                .ascending("thisOrChildLastUpdated")
+                                .build())
+                        .batchSize(100)
+                        .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
             }
 
             @Override
