@@ -128,12 +128,12 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                         if(fetchOnlyUris) {
                             query = where()
                                     .fieldEquals("publisher", publisher.key())
-                                    .fieldEquals("activelyPublished", "true")
+                                    .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false)
                                     .selecting(new MongoSelectBuilder().field("_id"));
                         }
                         else {
                             query = where().fieldEquals("publisher", publisher.key())
-                                    .fieldEquals("activelyPublished", "true");
+                                    .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
                         }
                         if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
                             query.fieldGreaterThan(ID, uri);
@@ -189,7 +189,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                 return contentTables.collectionFor(category)
                         .find(where().fieldEquals("publisher", publisher.key())
                                 .fieldAfter("thisOrChildLastUpdated", when)
-                                .fieldEquals("activelyPublished", "true")
+                                .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false)
                                 .build())
                         .sort(sort().ascending("publisher")
                                 .ascending("thisOrChildLastUpdated")
