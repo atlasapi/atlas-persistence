@@ -130,7 +130,8 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return Iterators.concat(Iterators.transform(publishers.iterator(), new Function<Publisher, Iterator<Content>>() {
             @Override
             public Iterator<Content> apply(final Publisher publisher) {
-                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
+                return contentIterator(first(publisher, publishers) ? initialCats : allCats,
+                        new ListingCursorBuilder<Content>() {
 
                     public DBObject queryForCategory(ContentCategory category, boolean fetchOnlyUris, boolean skipUnpublished) {
                         MongoQueryBuilder query;
@@ -154,14 +155,22 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                         return query.build();
                     }
 
-                    @Override
-                    public DBCursor cursorFor(ContentCategory category) {
-                        return contentTables.collectionFor(category)
-                                .find(queryForCategory(category, fetchOnlyUris, skipUnpublished))
-                                .batchSize(100)
-                                .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
-                                .noCursorTimeout(true);
-                    }
+                            @Override
+                            public DBCursor cursorFor(ContentCategory category,
+                                    boolean skipUnpublished) {
+                            return contentTables.collectionFor(category)
+                                        .find(queryForCategory(category, fetchOnlyUris, skipUnpublished))
+                                        .batchSize(100)
+                                        .sort(new MongoSortBuilder().ascending("publisher")
+                                                .ascending(MongoConstants.ID)
+                                                .build())
+                                        .noCursorTimeout(true);
+                            }
+
+                            @Override
+                            public DBCursor cursorFor(ContentCategory category) {
+                                return cursorFor(category, skipUnpublished);
+                            }
 
                     @Override
                     public Function<DBObject, Content> translatorFor(ContentCategory contentCategory) {
@@ -198,17 +207,24 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {
         return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<Content>() {
             @Override
-            public DBCursor cursorFor(ContentCategory category) {
+            public DBCursor cursorFor(ContentCategory category, boolean skipUnpublished) {
+                MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key())
+                        .fieldAfter("thisOrChildLastUpdated", when);
+                if(skipUnpublished){
+                    query = query.fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
+                }
                 return contentTables.collectionFor(category)
-                        .find(where().fieldEquals("publisher", publisher.key())
-                                .fieldAfter("thisOrChildLastUpdated", when)
-                                .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false)
-                                .build())
+                        .find(query.build())
                         .sort(sort().ascending("publisher")
                                 .ascending("thisOrChildLastUpdated")
                                 .build())
                         .batchSize(100)
                         .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+            }
+
+            @Override
+            public DBCursor cursorFor(ContentCategory category) {
+                return cursorFor(category, false);
             }
 
             @Override
@@ -270,11 +286,20 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                 new ListingCursorBuilder<LookupRef>() {
 
                     @Override
-                    public DBCursor cursorFor(ContentCategory category) {
+                    public DBCursor cursorFor(ContentCategory category, boolean skipUnpublished) {
+                        MongoQueryBuilder query = where().longFieldIn("events._id", eventIds);
+                        if(skipUnpublished) {
+                            query = query.fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
+                        }
                         return contentTables.collectionFor(category).find(
-                                where().longFieldIn("events._id", eventIds).build(),
+                                query.build(),
                                 BasicDBObjectBuilder.start(MongoConstants.ID, 1).get()
                         ).sort(sort().ascending(ID).build());
+                    }
+
+                    @Override
+                    public DBCursor cursorFor(ContentCategory category) {
+                        return cursorFor(category, false);
                     }
 
                     @Override
@@ -292,6 +317,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
 
     private interface ListingCursorBuilder<T> {
 
+        DBCursor cursorFor(ContentCategory category, boolean skipUnpublished);
         DBCursor cursorFor(ContentCategory category);
         Function<DBObject, T> translatorFor(ContentCategory contentCategory);
 
@@ -300,15 +326,23 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     @Override
     //TODO: enable use of contentQuery?
     public Iterator<Content> contentForTopic(final Long topicId, ContentQuery contentQuery) {
-        Iterator<LookupRef> allCanonicalUris = contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<LookupRef>() {
+        Iterator<LookupRef> allCanonicalUris = contentIterator(BRAND_SERIES_AND_ITEMS_TABLES,
+                new ListingCursorBuilder<LookupRef>() {
+
+            @Override
+            public DBCursor cursorFor(ContentCategory category, boolean skipUnpublished) {
+                MongoQueryBuilder query = where().fieldEquals("topics.topic", topicId);
+                if(skipUnpublished) {
+                    query = query.fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
+                }
+                return contentTables.collectionFor(category).find(query.build(),
+                        BasicDBObjectBuilder.start(MongoConstants.ID, 1).get()
+                ).sort(sort().ascending(ID).build());
+            }
+
             @Override
             public DBCursor cursorFor(ContentCategory category) {
-                return contentTables.collectionFor(category).find(
-                        where().fieldEquals("topics.topic", topicId)
-                               .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false)
-                               .build(),
-                        BasicDBObjectBuilder.start(MongoConstants.ID, 1).get()
-                        ).sort(sort().ascending(ID).build());
+                return cursorFor(category, true);
             }
 
             @Override
