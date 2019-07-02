@@ -10,4 +10,5 @@ public interface SelectedContentLister {
 
     Iterator<Content> listContent(ContentListingCriteria criteria);
 
+    Iterator<Content> listUnpublishedContent(ContentListingCriteria criteria);
 }

@@ -95,21 +95,33 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             return Iterators.emptyIterator();
         }
 
-        Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, true);
+        Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, true, false);
         Iterator<String> uriIterator = Iterators.transform(contentIterator,
                 Identified::getCanonicalUri
         );
         return uriIterator;
     }
 
-    private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
-            ContentListingCriteria criteria) {
+    @Override
+    public Iterator<Content> listUnpublishedContent(ContentListingCriteria criteria){
+        List<Publisher> publishers = remainingPublishers(criteria);
 
-        return iteratorsFor(publishers, criteria, false);
+        if(publishers.isEmpty()) {
+            return Iterators.emptyIterator();
+        }
+
+        return iteratorsFor(publishers, criteria, false, true);
     }
 
     private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
-            ContentListingCriteria criteria, boolean fetchOnlyUris) {
+            ContentListingCriteria criteria) {
+
+        return iteratorsFor(publishers, criteria, false, false);
+    }
+
+    private Iterator<Content> iteratorsFor(final List<Publisher> publishers,
+            ContentListingCriteria criteria, boolean fetchOnlyUris,
+            boolean skipUnpublished) {
 
         final String uri = criteria.getProgress().getUri();
         final List<ContentCategory> initialCats = remainingTables(criteria);
@@ -120,7 +132,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             public Iterator<Content> apply(final Publisher publisher) {
                 return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
 
-                    public DBObject queryForCategory(ContentCategory category, boolean fetchOnlyUris) {
+                    public DBObject queryForCategory(ContentCategory category, boolean fetchOnlyUris, boolean skipUnpublished) {
                         MongoQueryBuilder query;
                         //if true, then select only the URis from all content from a publisher; goal
                         //is to get an Iterator<Content> filled only with the _id field (uris); by
@@ -128,12 +140,13 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                         if(fetchOnlyUris) {
                             query = where()
                                     .fieldEquals("publisher", publisher.key())
-                                    .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false)
                                     .selecting(new MongoSelectBuilder().field("_id"));
                         }
                         else {
-                            query = where().fieldEquals("publisher", publisher.key())
-                                    .fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
+                            query = where().fieldEquals("publisher", publisher.key());
+                        }
+                        if (skipUnpublished){
+                            query = query.fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
                         }
                         if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
                             query.fieldGreaterThan(ID, uri);
@@ -144,7 +157,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                     @Override
                     public DBCursor cursorFor(ContentCategory category) {
                         return contentTables.collectionFor(category)
-                                .find(queryForCategory(category, fetchOnlyUris))
+                                .find(queryForCategory(category, fetchOnlyUris, skipUnpublished))
                                 .batchSize(100)
                                 .sort(new MongoSortBuilder().ascending("publisher").ascending(MongoConstants.ID).build())
                                 .noCursorTimeout(true);
