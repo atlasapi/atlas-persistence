@@ -95,7 +95,7 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
             return Iterators.emptyIterator();
         }
 
-        Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, true, false);
+        Iterator<Content> contentIterator = iteratorsFor(publishers, criteria, true, true);
         Iterator<String> uriIterator = Iterators.transform(contentIterator,
                 Identified::getCanonicalUri
         );
