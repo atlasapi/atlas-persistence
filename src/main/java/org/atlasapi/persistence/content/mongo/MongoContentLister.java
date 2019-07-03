@@ -54,7 +54,8 @@ import static org.atlasapi.persistence.content.ContentCategory.PROGRAMME_GROUP;
 import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
 
 public class MongoContentLister implements ContentLister, LastUpdatedContentFinder,
-        TopicContentLister, EventContentLister, SelectedContentLister {
+        TopicContentLister, EventContentLister, SelectedContentLister,
+        LastUpdatedPublishedContentFinder {
 
     private static final Logger log = LoggerFactory.getLogger(MongoContentLister.class);
 
@@ -130,36 +131,44 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
         return Iterators.concat(Iterators.transform(publishers.iterator(), new Function<Publisher, Iterator<Content>>() {
             @Override
             public Iterator<Content> apply(final Publisher publisher) {
-                return contentIterator(first(publisher, publishers) ? initialCats : allCats,
-                        new ListingCursorBuilder<Content>() {
+                return contentIterator(first(publisher, publishers) ? initialCats : allCats, new ListingCursorBuilder<Content>() {
 
-                    public DBObject queryForCategory(ContentCategory category, boolean fetchOnlyUris, boolean skipUnpublished) {
-                        MongoQueryBuilder query;
-                        //if true, then select only the URis from all content from a publisher; goal
-                        //is to get an Iterator<Content> filled only with the _id field (uris); by
-                        //then preloading into a list, we try and prevent MongoCursorTimeout exception
-                        if(fetchOnlyUris) {
-                            query = where()
-                                    .fieldEquals("publisher", publisher.key())
-                                    .selecting(new MongoSelectBuilder().field("_id"));
-                        }
-                        else {
-                            query = where().fieldEquals("publisher", publisher.key());
-                        }
-                        if (skipUnpublished){
-                            query = query.fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
-                        }
-                        if(first(publisher, publishers) && first(category, initialCats) && !Strings.isNullOrEmpty(uri) ) {
-                            query.fieldGreaterThan(ID, uri);
-                        }
-                        return query.build();
-                    }
+                            public DBObject queryForCategory(ContentCategory category,
+                                    boolean fetchOnlyUris, boolean skipUnpublished) {
+                                MongoQueryBuilder query;
+                                //if true, then select only the URis from all content from a publisher; goal
+                                //is to get an Iterator<Content> filled only with the _id field (uris); by
+                                //then preloading into a list, we try and prevent MongoCursorTimeout exception
+                                if (fetchOnlyUris) {
+                                    query = where()
+                                            .fieldEquals("publisher", publisher.key())
+                                            .selecting(new MongoSelectBuilder().field("_id"));
+                                } else {
+                                    query = where().fieldEquals("publisher", publisher.key());
+                                }
+                                if (skipUnpublished) {
+                                    query = query.fieldNotEqualTo(
+                                            DescribedTranslator.ACTIVELY_PUBLISHED_KEY,
+                                            false
+                                    );
+                                }
+                                if (first(publisher, publishers)
+                                        && first(category, initialCats)
+                                        && !Strings.isNullOrEmpty(uri)) {
+                                    query.fieldGreaterThan(ID, uri);
+                                }
+                                return query.build();
+                            }
 
                             @Override
                             public DBCursor cursorFor(ContentCategory category,
                                     boolean skipUnpublished) {
-                            return contentTables.collectionFor(category)
-                                        .find(queryForCategory(category, fetchOnlyUris, skipUnpublished))
+                                return contentTables.collectionFor(category)
+                                        .find(queryForCategory(
+                                                category,
+                                                fetchOnlyUris,
+                                                skipUnpublished
+                                        ))
                                         .batchSize(100)
                                         .sort(new MongoSortBuilder().ascending("publisher")
                                                 .ascending(MongoConstants.ID)
@@ -172,12 +181,14 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                                 return cursorFor(category, skipUnpublished);
                             }
 
-                    @Override
-                    public Function<DBObject, Content> translatorFor(ContentCategory contentCategory) {
-                        return toContentFunction(contentCategory);
-                    }
+                            @Override
+                            public Function<DBObject, Content> translatorFor(
+                                    ContentCategory contentCategory) {
+                                return toContentFunction(contentCategory);
+                            }
 
-                });
+                        }
+                );
 
             }
             private <T> boolean first(T e, List<T> es) {
@@ -202,6 +213,37 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
     }
 
     private static final List<ContentCategory> BRAND_SERIES_AND_ITEMS_TABLES = ImmutableList.of(CONTAINER, PROGRAMME_GROUP, TOP_LEVEL_ITEM, CHILD_ITEM);
+
+    @Override
+    public Iterator<Content> publishedUpdatedSince(final Publisher publisher, final DateTime when){
+        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<Content>() {
+            @Override
+            public DBCursor cursorFor(ContentCategory category, boolean skipUnpublished) {
+                MongoQueryBuilder query = where().fieldEquals("publisher", publisher.key())
+                        .fieldAfter("thisOrChildLastUpdated", when);
+                if(skipUnpublished){
+                    query = query.fieldNotEqualTo(DescribedTranslator.ACTIVELY_PUBLISHED_KEY, false);
+                }
+                return contentTables.collectionFor(category)
+                        .find(query.build())
+                        .sort(sort().ascending("publisher")
+                                .ascending("thisOrChildLastUpdated")
+                                .build())
+                        .batchSize(100)
+                        .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+            }
+
+            @Override
+            public DBCursor cursorFor(ContentCategory category) {
+                return cursorFor(category, true);
+            }
+
+            @Override
+            public Function<DBObject, Content> translatorFor(ContentCategory contentCategory) {
+                return toContentFunction(contentCategory);
+            }
+        });
+    }
 
     @Override
     public Iterator<Content> updatedSince(final Publisher publisher, final DateTime when) {

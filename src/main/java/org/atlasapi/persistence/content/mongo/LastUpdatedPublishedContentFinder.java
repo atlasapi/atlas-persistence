@@ -1,0 +1,16 @@
+package org.atlasapi.persistence.content.mongo;
+
+import java.util.Iterator;
+
+import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Publisher;
+
+import org.joda.time.DateTime;
+
+public interface LastUpdatedPublishedContentFinder {
+
+    Iterator<Content> updatedSince(Publisher publisher, DateTime since);
+
+    Iterator<Content> publishedUpdatedSince(Publisher publisher, DateTime since);
+    
+}
