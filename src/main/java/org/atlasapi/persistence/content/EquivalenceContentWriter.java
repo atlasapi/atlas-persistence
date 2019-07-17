@@ -4,6 +4,7 @@ import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -13,8 +14,8 @@ import java.util.Set;
  */
 public interface EquivalenceContentWriter extends ContentWriter {
 
-	Item createOrUpdate(Item item, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
+	Item createOrUpdate(Item item, @Nullable Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
 	
-	void createOrUpdate(Container container, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
+	void createOrUpdate(Container container, @Nullable Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
 
 }
