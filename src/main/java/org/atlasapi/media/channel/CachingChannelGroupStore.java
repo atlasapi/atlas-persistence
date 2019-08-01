@@ -1,15 +1,16 @@
 package org.atlasapi.media.channel;
 
-import com.google.common.base.Optional;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.metabroadcast.common.stream.MoreCollectors;
-
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
+
+import com.metabroadcast.common.stream.MoreCollectors;
+
+import com.google.common.base.Optional;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

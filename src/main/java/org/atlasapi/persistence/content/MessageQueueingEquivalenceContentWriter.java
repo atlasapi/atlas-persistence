@@ -11,6 +11,7 @@ import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -53,7 +54,7 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
     }
 
     @Override
-    public Item createOrUpdate(Item item, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
+    public Item createOrUpdate(Item item, @Nullable Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
         long lastTime = System.nanoTime();
         timerLog.debug("TIMER MQ entered. {} {}",item.getId(), Thread.currentThread().getName());
         Item writtenItem = equivalenceContentWriter.createOrUpdate(item, publishers, writeEquivalencesIfEmpty);
@@ -70,7 +71,7 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
     }
 
     @Override
-    public void createOrUpdate(Container container, Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
+    public void createOrUpdate(Container container, @Nullable Set<Publisher> publishers, boolean writeEquivalencesIfEmpty) {
         equivalenceContentWriter.createOrUpdate(container, publishers, writeEquivalencesIfEmpty);
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             log.debug("{} un-changed", container.getCanonicalUri());

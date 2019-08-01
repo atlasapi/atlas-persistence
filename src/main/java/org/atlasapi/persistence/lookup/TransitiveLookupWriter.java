@@ -114,20 +114,23 @@ public class TransitiveLookupWriter implements LookupWriter {
         Set<String> subjectAndNeighbours = MoreSets.add(newNeighboursUris, subjectUri);
         Set<String> transitiveSetsUris = null;
 
-        Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().stream()
-                .map(LookupRef::uri)
-                .collect(MoreCollectors.toImmutableSet());
-        Set<String> directUriIntersection = Sets.intersection(subjectAndNeighbours, existingSubjectDirectUris);
-        boolean strictSubset = !directUriIntersection.equals(existingSubjectDirectUris);
-        //If we break some existing direct equivalences, update these first so we can
-        //reduce the size of the transitive equiv set
-        if(strictSubset
-                && !directUriIntersection.equals(subjectAndNeighbours) //if equal we only need to update once
-                ) {
-            writeLookup(subjectUri, subjectEntry, directUriIntersection, sources);
-            strictSubset = false; //for the entire set of neighbours
+        boolean strictSubset = false;
+        // If we break some existing direct equivalences, update these first
+        // so we can reduce the size of the transitive equiv set
+        if (!explicit) {
+            Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().stream()
+                    .map(LookupRef::uri)
+                    .collect(MoreCollectors.toImmutableSet());
+            Set<String> directUriIntersection = Sets.intersection(subjectAndNeighbours, existingSubjectDirectUris);
+            strictSubset = !directUriIntersection.equals(existingSubjectDirectUris);
+            boolean writeDirectSubset = strictSubset
+                    && !directUriIntersection.equals(subjectAndNeighbours); //if equal we only need to update once
+            if(writeDirectSubset) {
+                writeLookup(subjectUri, subjectEntry, directUriIntersection, sources);
+                strictSubset = false; //for the entire set of neighbours
+            }
+            //Carry on with the entire set of neighbours
         }
-        //Carry on with the entire set of neighbours
 
         try {
             synchronized (lock) {
