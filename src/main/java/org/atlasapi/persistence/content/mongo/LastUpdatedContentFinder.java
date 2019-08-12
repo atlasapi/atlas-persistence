@@ -9,5 +9,6 @@ import org.joda.time.DateTime;
 public interface LastUpdatedContentFinder {
 
     Iterator<Content> updatedSince(Publisher publisher, DateTime since);
-    
+
+    Iterator<Content> updatedBetween(Publisher publisher, DateTime from, DateTime to);
 }

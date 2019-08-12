@@ -189,7 +189,29 @@ public class MongoContentLister implements ContentLister, LastUpdatedContentFind
                             .find(where().fieldEquals("publisher", publisher.key()).fieldAfter("thisOrChildLastUpdated", when).build())
                             .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build())
                             .batchSize(100)
-                            .addOption(Bytes.QUERYOPTION_NOTIMEOUT);
+                            .noCursorTimeout(true);
+            }
+
+            @Override
+            public Function<DBObject, Content> translatorFor(ContentCategory contentCategory) {
+                return toContentFunction(contentCategory);
+            }
+        });
+    }
+
+    @Override
+    public Iterator<Content> updatedBetween(final Publisher publisher, final DateTime from, final DateTime to) {
+        return contentIterator(BRAND_SERIES_AND_ITEMS_TABLES, new ListingCursorBuilder<Content>() {
+            @Override
+            public DBCursor cursorFor(ContentCategory category) {
+                return contentTables.collectionFor(category)
+                        .find(where()
+                                .fieldEquals("publisher", publisher.key())
+                                .inclusiveRange("thisOrChildLastUpdated", from, to)
+                                .build())
+                        .sort(sort().ascending("publisher").ascending("thisOrChildLastUpdated").build())
+                        .batchSize(100)
+                        .noCursorTimeout(true);
             }
 
             @Override
