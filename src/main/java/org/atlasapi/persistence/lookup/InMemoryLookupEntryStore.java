@@ -15,6 +15,7 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -76,32 +77,51 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
             Iterable<String> values,
             boolean includeUnpublishedEntries
     ) {
+        return entriesForAliases(namespace, values, null, includeUnpublishedEntries);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForAliases(
+            final Optional<String> namespace,
+            Iterable<String> values,
+            @Nullable Iterable<Publisher> publishers,
+            boolean includeUnpublishedEntries
+    ) {
+        Iterable<LookupEntry> lookupEntries;
         if (namespace.isPresent()) {
             // create Aliases
             Iterable<Alias> aliases = StreamSupport.stream(values.spliterator(), false)
                     .map(value -> new Alias(namespace.get(), value))
                     .collect(Collectors.toList());
-
-            return Iterables.filter(
-                    Iterables.concat(
-                            Iterables.filter(
-                                    Iterables.transform(aliases, Functions.forMap(aliasStore.asMap(), null)
-                                    ),
-                                    Predicates.notNull()
-                            )),
-                    lookupEntry -> includeUnpublishedEntries || (lookupEntry != null && lookupEntry.activelyPublished())
+            lookupEntries = Iterables.concat(
+                    Iterables.filter(
+                            Iterables.transform(aliases, Functions.forMap(aliasStore.asMap(), null)
+                            ),
+                            Predicates.notNull()
+                    )
             );
         } else {
-            return Iterables.filter(
-                    Iterables.concat(
-                            Iterables.filter(
-                                    Iterables.transform(values, Functions.forMap(aliasValueStore.asMap(), null)
-                                    ),
-                                    Predicates.notNull()
-                            )),
-                    lookupEntry -> includeUnpublishedEntries || (lookupEntry != null && lookupEntry.activelyPublished())
+            lookupEntries = Iterables.concat(
+                    Iterables.filter(
+                            Iterables.transform(values, Functions.forMap(aliasValueStore.asMap(), null)
+                            ),
+                            Predicates.notNull()
+                    )
             );
         }
+
+        lookupEntries = Iterables.filter(
+                lookupEntries,
+                lookupEntry -> includeUnpublishedEntries || (lookupEntry != null && lookupEntry.activelyPublished())
+        );
+
+        lookupEntries = Iterables.filter(
+                lookupEntries,
+                lookupEntry -> lookupEntry.lookupRef() != null
+                        && (publishers == null || Iterables.contains(publishers, lookupEntry.lookupRef().publisher()))
+        );
+
+        return lookupEntries;
     }
 
     @Override

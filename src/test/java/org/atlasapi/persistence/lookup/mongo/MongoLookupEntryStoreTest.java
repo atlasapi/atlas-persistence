@@ -309,6 +309,38 @@ public class MongoLookupEntryStoreTest {
         aliasEntry = entryStore.entriesForAliases(Optional.of("a"), ImmutableList.of("b"), false);
         assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
     }
+
+    @Test
+    public void testEnsurePublishersFilteredFromAliasLookup() {
+        Item testItemOne = new Item("testItemOneUri", "testItem1Curie", Publisher.BBC);
+        testItemOne.addAlias(new Alias("a", "b"));
+
+        Item testItemTwo = new Item("testItemTwoUri", "testItem2Curie", Publisher.METABROADCAST);
+        testItemTwo.addAlias(new Alias("a", "b"));
+
+        LookupEntry testEntryOne = LookupEntry.lookupEntryFrom(testItemOne);
+        LookupEntry testEntryTwo = LookupEntry.lookupEntryFrom(testItemTwo);
+        entryStore.store(testEntryOne);
+        entryStore.store(testEntryTwo);
+
+        Iterable<LookupEntry> aliasEntry = entryStore.entriesForAliases(
+                Optional.of("a"),
+                ImmutableList.of("b"),
+                ImmutableSet.of(Publisher.BBC),
+                false
+        );
+        assertThat(Iterables.size(aliasEntry), is(1));
+        assertEquals(testEntryOne, Iterables.getOnlyElement(aliasEntry));
+
+        aliasEntry = entryStore.entriesForAliases(
+                Optional.of("a"),
+                ImmutableList.of("b"),
+                ImmutableSet.of(Publisher.METABROADCAST),
+                false
+        );
+        assertThat(Iterables.size(aliasEntry), is(1));
+        assertEquals(testEntryTwo, Iterables.getOnlyElement(aliasEntry));
+    }
     
     @Test
     public void testMultipleValueLookup() {

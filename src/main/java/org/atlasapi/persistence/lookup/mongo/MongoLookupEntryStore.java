@@ -182,7 +182,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public Iterable<LookupEntry> entriesForAliases(Optional<String> namespace, Iterable<String> values) {
-        return entriesForAliases(namespace,values, true);
+        return entriesForAliases(namespace, values, null, true);
     }
 
     @Override
@@ -191,7 +191,17 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             Iterable<String> values,
             boolean includeUnpublishedEntries
     ) {
-        return Iterables.transform(find(namespace, values, includeUnpublishedEntries), translator.FROM_DBO);
+        return Iterables.transform(find(namespace, values, null, includeUnpublishedEntries), translator.FROM_DBO);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForAliases(
+            Optional<String> namespace,
+            Iterable<String> values,
+            @Nullable Iterable<Publisher> publishers,
+            boolean includeUnpublishedEntries
+    ) {
+        return Iterables.transform(find(namespace, values, publishers, includeUnpublishedEntries), translator.FROM_DBO);
     }
 
     @Override
@@ -211,7 +221,12 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         return results.build();
     }
 
-    private Iterable<DBObject> find(Optional<String> namespace, Iterable<String> values, boolean includeUnpublishedEntries) {
+    private Iterable<DBObject> find(
+            Optional<String> namespace,
+            Iterable<String> values,
+            @Nullable Iterable<Publisher> publishers,
+            boolean includeUnpublishedEntries
+    ) {
         MongoQueryBuilder query = namespace.isPresent()
                 ? where().elemMatch(IDS, where().fieldEquals(NAMESPACE, namespace.get()).fieldIn(VALUE, values))
                 : where().elemMatch(IDS, where().fieldEquals(NAMESPACE, ANYTHING).fieldIn(VALUE, values));
@@ -219,6 +234,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             // Not actively published content will have this value set to false
             // Actively published content will either have this value be true or null
             query.fieldNotEqualTo(ACTIVELY_PUBLISHED, false);
+        }
+        if (publishers != null) {
+            query.fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
         }
         return lookup.find(query.build()).setReadPreference(readPreference);
     }
