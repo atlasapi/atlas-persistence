@@ -1,15 +1,37 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
+import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.queue.MessagingException;
+import com.metabroadcast.common.stream.MoreCollectors;
+import com.metabroadcast.common.time.SystemClock;
+import com.metabroadcast.common.time.Timestamp;
+import com.metabroadcast.common.time.Timestamper;
+import com.mongodb.DBCollection;
 import org.atlasapi.application.v3.DefaultApplication;
 import org.atlasapi.equiv.OutputContentMerger;
 import org.atlasapi.media.channel.Channel;
@@ -35,45 +57,21 @@ import org.atlasapi.persistence.content.ResolvedContent;
 import org.atlasapi.persistence.content.ScheduleResolver;
 import org.atlasapi.persistence.content.schedule.ScheduleBroadcastFilter;
 import org.atlasapi.persistence.media.entity.ScheduleEntryTranslator;
-
-import com.metabroadcast.applications.client.model.internal.Application;
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.base.MorePredicates;
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.queue.MessagingException;
-import com.metabroadcast.common.time.SystemClock;
-import com.metabroadcast.common.time.Timestamp;
-import com.metabroadcast.common.time.Timestamper;
-
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.base.Objects;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
-import com.mongodb.DBCollection;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Interval;
 import org.joda.time.format.PeriodFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
 
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 
@@ -329,6 +327,24 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
         Map<String, Maybe<Identified>> itemIndex = resolveItems(uniqueRefs);
 	    return scheduleFrom(toChannelMap(channels, uniqueRefs, itemIndex), interval);
 	}
+
+	@Override
+    public Set<Item> resolveItems(
+            DateTime from,
+            DateTime to,
+            Iterable<Channel> channels,
+            Iterable<Publisher> publishers
+    ) {
+        List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
+        Iterable<Entry<Channel, ItemRefAndBroadcast>> uniqueRefs = uniqueRefs(entries);
+        Map<String, Maybe<Identified>> itemIndex = resolveItems(uniqueRefs);
+        return itemIndex.values().stream()
+                .filter(Maybe::hasValue)
+                .map(Maybe::requireValue)
+                .filter(Item.class::isInstance)
+                .map(Item.class::cast)
+                .collect(MoreCollectors.toImmutableSet());
+    }
 	
     private Map<String, Maybe<Identified>> resolveItems(
             Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {

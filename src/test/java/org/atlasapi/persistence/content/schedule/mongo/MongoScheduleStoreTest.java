@@ -1,16 +1,21 @@
 package org.atlasapi.persistence.content.schedule.mongo;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Optional;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.queue.MessagingException;
 import com.metabroadcast.common.stream.MoreCollectors;
-import com.sun.jersey.core.impl.provider.entity.XMLJAXBElementProvider;
-import org.atlasapi.application.v3.DefaultApplication;
+import com.metabroadcast.common.time.DateTimeZones;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelResolver;
 import org.atlasapi.media.entity.Brand;
@@ -32,32 +37,21 @@ import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
 import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.channels.DummyChannelResolver;
 import org.atlasapi.persistence.content.ContentResolver;
-import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.DummyContentWriter;
 import org.atlasapi.persistence.content.EquivalentContent;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.testing.StubContentResolver;
-
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.queue.MessagingException;
-import com.metabroadcast.common.time.DateTimeZones;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
@@ -710,9 +704,23 @@ public class MongoScheduleStoreTest {
     public void testResolvingUnmergedSchedule() {
         store.writeScheduleFrom(item1);
         store.writeScheduleFrom(item2);
-        
+
         Schedule schedule = store.unmergedSchedule(now.minusHours(4), now, ImmutableSet.of(BBC_ONE, BBC_TWO), ImmutableSet.of(Publisher.BBC, Publisher.C4, Publisher.ITV));
         assertSchedule(schedule);
+    }
+
+    @Test
+    public void testResolveItems() {
+        store.writeScheduleFrom(item1);
+        store.writeScheduleFrom(item2);
+
+        Set<Item> resolvedContent = store.resolveItems(
+                now.minusHours(4),
+                now,
+                ImmutableSet.of(BBC_ONE, BBC_TWO),
+                ImmutableSet.of(Publisher.BBC)
+        );
+        assertEquals(resolvedContent, ImmutableSet.of(item1, item2));
     }
     
     private void checkCount(

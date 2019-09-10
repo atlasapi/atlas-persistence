@@ -6,6 +6,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
 public interface LookupEntryStore {
@@ -48,6 +49,22 @@ public interface LookupEntryStore {
     Iterable<LookupEntry> entriesForAliases(
             Optional<String> namespace,
             Iterable<String> values,
+            boolean includeUnpublishedEntries
+    );
+
+    /**
+     * Get entries for specified namespace and values.
+     *
+     * @param namespace - not always present
+     * @param values - one or more corresponding alias values
+     * @param publishers - (optional) the set of publishers to restrict the search to
+     * @param includeUnpublishedEntries - include unpublished content
+     * @return
+     */
+    Iterable<LookupEntry> entriesForAliases(
+            Optional<String> namespace,
+            Iterable<String> values,
+            @Nullable Iterable<Publisher> publishers,
             boolean includeUnpublishedEntries
     );
 
