@@ -65,6 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -335,9 +336,23 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
             Iterable<Channel> channels,
             Iterable<Publisher> publishers
     ) {
+        Interval interval = getInterval(from,  to);
         List<ScheduleEntry> entries = resolveEntries(channels, from, to, publishers);
-        Iterable<Entry<Channel, ItemRefAndBroadcast>> uniqueRefs = uniqueRefs(entries);
-        Map<String, Maybe<Identified>> itemIndex = resolveItems(uniqueRefs);
+        ScheduleBroadcastFilter intervalFilter = new ScheduleBroadcastFilter(interval);
+
+        Set<String> itemUris = entries.stream()
+                .map(ScheduleEntry::getItemRefsAndBroadcasts)
+                .flatMap(Collection::stream)
+                .filter(
+                        itemRefAndBroadcast -> intervalFilter.apply(
+                                BROADCAST_TO_INTERVAL.apply(itemRefAndBroadcast.getBroadcast())
+                        )
+                )
+                .map(ItemRefAndBroadcast::getItemUri)
+                .collect(MoreCollectors.toImmutableSet());
+
+        Map<String, Maybe<Identified>> itemIndex = resolveItems(itemUris);
+
         return itemIndex.values().stream()
                 .filter(Maybe::hasValue)
                 .map(Maybe::requireValue)
@@ -349,6 +364,10 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
     private Map<String, Maybe<Identified>> resolveItems(
             Iterable<Entry<Channel, ItemRefAndBroadcast>> refs) {
         ImmutableSet<String> uris = uniqueUris(refs);
+        return resolveItems(uris);
+    }
+
+    private Map<String, Maybe<Identified>> resolveItems(Set<String> uris) {
         ResolvedContent resolved = contentResolver.findByCanonicalUris(uris);
         Builder<String, Maybe<Identified>> itemIndex = ImmutableMap.builder();
         for (String uri : uris) {
@@ -650,11 +669,11 @@ public class MongoScheduleStore implements ScheduleResolver, ScheduleWriter {
                 .immutableSortedCopy(items);
     }
     
-    private static final Function<Broadcast, Interval> TO_BROADCAST = input ->
+    private static final Function<Broadcast, Interval> BROADCAST_TO_INTERVAL = input ->
             new Interval(input.getTransmissionTime(), input.getTransmissionEndTime());
 
     private static final Function<Item, Interval> ITEM_TO_BROADCAST_INTERVAL = Functions.compose(
-            TO_BROADCAST,
+            BROADCAST_TO_INTERVAL,
             ScheduleEntry.BROADCAST
     );
 
