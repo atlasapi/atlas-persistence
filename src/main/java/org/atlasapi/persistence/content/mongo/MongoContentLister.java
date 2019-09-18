@@ -1,7 +1,22 @@
 package org.atlasapi.persistence.content.mongo;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import com.google.common.base.Function;
+import com.google.common.base.Strings;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.Bytes;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import java.util.Iterator;
 import java.util.List;
 
@@ -23,25 +38,7 @@ import org.atlasapi.persistence.media.entity.DescribedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.topic.TopicContentLister;
 
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoSelectBuilder;
-import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-
-import com.google.common.base.Function;
-import com.google.common.base.Strings;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.Bytes;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
