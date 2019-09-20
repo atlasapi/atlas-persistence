@@ -4,6 +4,5 @@ import org.atlasapi.media.entity.Container;
 
 public interface NullRemoveFieldsContentWriter extends ContentWriter {
 
-    void createOrUpdate(Container container, boolean nullRemoveFields);
-
+    void createOrUpdate(Container container, Iterable<String> fieldsToRemove);
 }

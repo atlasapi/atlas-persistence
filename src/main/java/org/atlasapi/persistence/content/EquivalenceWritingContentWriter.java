@@ -92,10 +92,10 @@ public class EquivalenceWritingContentWriter implements EquivalenceContentWriter
     }
 
     @Override
-    public void createOrUpdate(Container container, boolean nullRemoveFields) {
+    public void createOrUpdate(Container container, Iterable<String> fieldsToRemove) {
         Long lastTime = System.nanoTime();
         timerLog.debug("TIMER EQ entered. {} {}",container.getId(), Thread.currentThread().getName());
-        nullRemoveFieldsDelegate.createOrUpdate(container, nullRemoveFields);
+        nullRemoveFieldsDelegate.createOrUpdate(container, fieldsToRemove);
         timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
         lastTime = System.nanoTime();
         writeEquivalences(container, null, false);

@@ -24,7 +24,7 @@ import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class MessageQueueingContentWriter implements ContentWriter, NullRemoveFieldsContentWriter {
+public class MessageQueueingContentWriter implements NullRemoveFieldsContentWriter {
 
     private static final Logger log = LoggerFactory.getLogger(MessageQueueingContentWriter.class);
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
@@ -97,8 +97,8 @@ public class MessageQueueingContentWriter implements ContentWriter, NullRemoveFi
     }
 
     @Override
-    public void createOrUpdate(Container container, boolean nullRemoveFields) {
-        nullRemoveFieldsContentWriter.createOrUpdate(container, nullRemoveFields);
+    public void createOrUpdate(Container container, Iterable<String> fieldsToRemove) {
+        nullRemoveFieldsContentWriter.createOrUpdate(container, fieldsToRemove);
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             log.debug("{} un-changed", container.getCanonicalUri());
             return;

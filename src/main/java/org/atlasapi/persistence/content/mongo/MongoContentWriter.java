@@ -17,7 +17,6 @@ import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.NullRemoveFieldsContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
@@ -254,11 +253,11 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
 
     @Override
     public void createOrUpdate(Container container) {
-        createOrUpdate(container, false);
+        createOrUpdate(container, ImmutableSet.of());
     }
 
     @Override
-    public void createOrUpdate(Container container, boolean nullRemoveFields) {
+    public void createOrUpdate(Container container, Iterable<String> fieldsToRemove) {
         checkNotNull(container);
         checkArgument(container instanceof Brand || container instanceof Series,
                 "Not brand or series");
@@ -280,7 +279,7 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
         if (container instanceof Brand || isTopLevelSeries(container)) {
 
             DBObject containerDbo = containerTranslator.toDB(container);
-            createOrUpdateContainer(container, containers, containerDbo, nullRemoveFields);
+            createOrUpdateContainer(container, containers, containerDbo, fieldsToRemove);
 
             // The series inside a brand cannot be top level items any more so we
             // remove them as outer elements
@@ -292,7 +291,7 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
                     containers.remove(where().idIn(urisToRemove).build());
                 }
             } else {
-                createOrUpdateContainer(container, programmeGroups, containerDbo, nullRemoveFields);
+                createOrUpdateContainer(container, programmeGroups, containerDbo, fieldsToRemove);
             }
         } else {
             Series series = (Series)container;
@@ -311,7 +310,7 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
             DBCollection programmeGroups,
             DBObject dbo
     ) {
-        createOrUpdateContainer(container, programmeGroups, dbo, false);
+        createOrUpdateContainer(container, programmeGroups, dbo, ImmutableSet.of());
     }
 
     private boolean isTopLevelSeries(Container container) {
@@ -322,20 +321,16 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
             Container container,
             DBCollection collection,
             DBObject containerDbo,
-            boolean nullRemoveFields
+            Iterable<String> fieldsToRemove
     ) {
         MongoQueryBuilder where = where().fieldEquals(
                 IdentifiedTranslator.ID,
                 container.getCanonicalUri()
         );
 
-        if (nullRemoveFields) {
-            collection.save(containerDbo);
-        } else {
-            BasicDBObject op = set(containerDbo);
-            unset(containerDbo, op);
-            collection.update(where.build(), op, true, false);
-        }
+        BasicDBObject op = set(containerDbo);
+        unset(containerDbo, op, fieldsToRemove);
+        collection.update(where.build(), op, true, false);
 
         lookupStore.ensureLookup(container);
     }
@@ -350,13 +345,20 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
      * there is no prototype object from which to unset fields, we
      * maintain a list of keys to perform unsets on.
      */
-    private void unset(DBObject dbo, BasicDBObject op) {
+    private void unset(
+            DBObject dbo,
+            BasicDBObject op,
+            Iterable<String> fieldsToRemove
+    ) {
+        Iterable<String> allFieldsToRemove = Iterables.concat(getKeysToRemove(), fieldsToRemove);
+
         BasicDBObject toRemove = new BasicDBObject();
-        for (String key : getKeysToRemove()) {
+        for (String key : allFieldsToRemove) {
             if (!dbo.containsField(key)) {
                 toRemove.put(key, 1);
             }
         }
+
         if (!toRemove.isEmpty()) {
             op.append(MongoConstants.UNSET, toRemove);
         }
