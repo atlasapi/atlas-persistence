@@ -18,6 +18,7 @@ import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.ContentWriter;
+import org.atlasapi.persistence.content.NullRemoveFieldsContentWriter;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.DescribedTranslator;
@@ -54,7 +55,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 
-public class MongoContentWriter implements ContentWriter {
+public class MongoContentWriter implements NullRemoveFieldsContentWriter {
 
     private static final Set<String> KEYS_TO_REMOVE = ImmutableSet.of(DescribedTranslator.LINKS_KEY);
     private final Logger log = LoggerFactory.getLogger(MongoContentWriter.class);
@@ -115,6 +116,7 @@ public class MongoContentWriter implements ContentWriter {
         this.programmeGroups = writer.programmeGroups;
         this.persistenceAuditLog = writer.persistenceAuditLog;
     }
+
     @Override
     public Item createOrUpdate(Item item) {
         Long lastTime = System.nanoTime();
@@ -252,6 +254,11 @@ public class MongoContentWriter implements ContentWriter {
 
     @Override
     public void createOrUpdate(Container container) {
+        createOrUpdate(container, false);
+    }
+
+    @Override
+    public void createOrUpdate(Container container, boolean nullRemoveFields) {
         checkNotNull(container);
         checkArgument(container instanceof Brand || container instanceof Series,
                 "Not brand or series");
@@ -273,7 +280,7 @@ public class MongoContentWriter implements ContentWriter {
         if (container instanceof Brand || isTopLevelSeries(container)) {
 
             DBObject containerDbo = containerTranslator.toDB(container);
-            createOrUpdateContainer(container, containers, containerDbo);
+            createOrUpdateContainer(container, containers, containerDbo, nullRemoveFields);
 
             // The series inside a brand cannot be top level items any more so we
             // remove them as outer elements
@@ -285,14 +292,14 @@ public class MongoContentWriter implements ContentWriter {
                     containers.remove(where().idIn(urisToRemove).build());
                 }
             } else {
-                createOrUpdateContainer(container, programmeGroups, containerDbo);
+                createOrUpdateContainer(container, programmeGroups, containerDbo, nullRemoveFields);
             }
         } else {
             Series series = (Series)container;
             childRefWriter.includeSeriesInTopLevelContainer(series);
             DBObject dbo = containerTranslator.toDB(container);
             checkContainerIdRef(dbo, ContainerTranslator.CONTAINER, ContainerTranslator.CONTAINER_ID);
-            createOrUpdateContainer(container, programmeGroups, dbo);
+            createOrUpdateContainer(container, programmeGroups, dbo, nullRemoveFields);
             //this isn't a top-level series so ensure it's not in the container table.
             containers.remove(where().idEquals(series.getCanonicalUri()).build());
         }
@@ -303,12 +310,24 @@ public class MongoContentWriter implements ContentWriter {
         return container instanceof Series && ((Series)container).getParent() == null;
     }
 
-    private void createOrUpdateContainer(Container container, DBCollection collection, DBObject containerDbo) {
-        MongoQueryBuilder where = where().fieldEquals(IdentifiedTranslator.ID, container.getCanonicalUri());
+    private void createOrUpdateContainer(
+            Container container,
+            DBCollection collection,
+            DBObject containerDbo,
+            boolean nullRemoveFields
+    ) {
+        MongoQueryBuilder where = where().fieldEquals(
+                IdentifiedTranslator.ID,
+                container.getCanonicalUri()
+        );
 
-        BasicDBObject op = set(containerDbo);
-        unset(containerDbo, op);
-        collection.update(where.build(), op, true, false);
+        if (nullRemoveFields) {
+            collection.save(containerDbo);
+        } else {
+            BasicDBObject op = set(containerDbo);
+            unset(containerDbo, op);
+            collection.update(where.build(), op, true, false);
+        }
 
         lookupStore.ensureLookup(container);
     }

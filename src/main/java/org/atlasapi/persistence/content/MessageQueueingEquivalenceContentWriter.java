@@ -1,18 +1,21 @@
 package org.atlasapi.persistence.content;
 
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.time.SystemClock;
-import com.metabroadcast.common.time.Timestamper;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.time.SystemClock;
+import com.metabroadcast.common.time.Timestamper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -31,15 +34,24 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
             ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             EquivalenceContentWriter equivalenceContentWriter,
+            NullRemoveFieldsContentWriter nullRemoveFieldsContentWriter,
             ContentResolver contentResolver
     ) {
-        this(messenger, sender, equivalenceContentWriter, contentResolver, new SystemClock());
+        this(
+                messenger,
+                sender,
+                equivalenceContentWriter,
+                nullRemoveFieldsContentWriter,
+                contentResolver,
+                new SystemClock()
+        );
     }
 
     public MessageQueueingEquivalenceContentWriter(
             ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             EquivalenceContentWriter equivalenceContentWriter,
+            NullRemoveFieldsContentWriter nullRemoveFieldsContentWriter,
             ContentResolver contentResolver,
             Timestamper clock
     ) {
@@ -47,6 +59,7 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
                 messenger,
                 sender,
                 equivalenceContentWriter,
+                nullRemoveFieldsContentWriter,
                 contentResolver,
                 clock
         );

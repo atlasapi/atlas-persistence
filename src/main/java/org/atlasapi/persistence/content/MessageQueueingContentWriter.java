@@ -24,13 +24,14 @@ import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class MessageQueueingContentWriter implements ContentWriter {
+public class MessageQueueingContentWriter implements ContentWriter, NullRemoveFieldsContentWriter {
 
     private static final Logger log = LoggerFactory.getLogger(MessageQueueingContentWriter.class);
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
 
     private final MessageSender<EntityUpdatedMessage> sender;
     private final ContentWriter contentWriter;
+    private final NullRemoveFieldsContentWriter nullRemoveFieldsContentWriter;
     private final ContentResolver contentResolver;
     private final Timestamper clock;
     private final ContentEquivalenceAssertionMessenger messenger;
@@ -46,21 +47,24 @@ public class MessageQueueingContentWriter implements ContentWriter {
             ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             ContentWriter contentWriter,
+            NullRemoveFieldsContentWriter nullRemoveFieldsContentWriter,
             ContentResolver contentResolver
     ) {
-        this(messenger, sender, contentWriter, contentResolver, new SystemClock());
+        this(messenger, sender, contentWriter, nullRemoveFieldsContentWriter, contentResolver, new SystemClock());
     }
 
     public MessageQueueingContentWriter(
             ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             ContentWriter contentWriter,
+            NullRemoveFieldsContentWriter nullRemoveFieldsContentWriter,
             ContentResolver contentResolver,
             Timestamper clock
     ) {
         this.messenger = checkNotNull(messenger);
         this.sender = checkNotNull(sender);
         this.contentWriter = checkNotNull(contentWriter);
+        this.nullRemoveFieldsContentWriter = checkNotNull(nullRemoveFieldsContentWriter);
         this.contentResolver = checkNotNull(contentResolver);
         this.clock = checkNotNull(clock);
     }
@@ -85,6 +89,16 @@ public class MessageQueueingContentWriter implements ContentWriter {
     @Override
     public void createOrUpdate(Container container) {
         contentWriter.createOrUpdate(container);
+        if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
+            log.debug("{} un-changed", container.getCanonicalUri());
+            return;
+        }
+        enqueueMessageUpdatedMessage(container, false);
+    }
+
+    @Override
+    public void createOrUpdate(Container container, boolean nullRemoveFields) {
+        nullRemoveFieldsContentWriter.createOrUpdate(container, nullRemoveFields);
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             log.debug("{} un-changed", container.getCanonicalUri());
             return;

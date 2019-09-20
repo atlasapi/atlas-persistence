@@ -12,10 +12,10 @@ import java.util.Set;
  * implementations to include default behaviour for this new flag. Since very few ContentWriter implementations deal
  * with equivalence it made sense to add this separately and modify the few which do.
  */
-public interface EquivalenceContentWriter extends ContentWriter {
+public interface EquivalenceContentWriter extends NullRemoveFieldsContentWriter {
 
 	Item createOrUpdate(Item item, @Nullable Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
-	
+
 	void createOrUpdate(Container container, @Nullable Set<Publisher> publishers, boolean writeEquivalencesIfEmpty);
 
 }

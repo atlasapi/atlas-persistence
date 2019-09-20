@@ -26,11 +26,18 @@ public class MessageQueueingContentWriterTest {
     private final MessageSender<EntityUpdatedMessage> sender = 
         (MessageSender<EntityUpdatedMessage>) mock(MessageSender.class);
     private final ContentWriter delegate = mock(ContentWriter.class);
+    private final NullRemoveFieldsContentWriter nullRemoveFieldsDelegate =
+            mock(NullRemoveFieldsContentWriter.class);
     private final ContentResolver resolver = mock(ContentResolver.class);
     private final ContentEquivalenceAssertionMessenger messenger =
             mock(ContentEquivalenceAssertionMessenger.class);
-    private final MessageQueueingContentWriter writer 
-        = new MessageQueueingContentWriter(messenger, sender, delegate, resolver);
+    private final MessageQueueingContentWriter writer = new MessageQueueingContentWriter(
+            messenger,
+            sender,
+            delegate,
+            nullRemoveFieldsDelegate,
+            resolver
+    );
     
     @Test
     public void testEnqueuesMessageWhenContentChanges() throws Exception {

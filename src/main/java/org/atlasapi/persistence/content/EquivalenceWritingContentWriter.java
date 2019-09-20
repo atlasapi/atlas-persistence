@@ -1,9 +1,9 @@
 package org.atlasapi.persistence.content;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
@@ -11,11 +11,13 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.LookupWriter;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.util.Set;
 
 public class EquivalenceWritingContentWriter implements EquivalenceContentWriter {
 
@@ -23,10 +25,16 @@ public class EquivalenceWritingContentWriter implements EquivalenceContentWriter
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
 
     private final ContentWriter delegate;
+    private final NullRemoveFieldsContentWriter nullRemoveFieldsDelegate;
     private final LookupWriter equivalenceWriter;
 
-    public EquivalenceWritingContentWriter(ContentWriter delegate, LookupWriter lookupWriter) {
+    public EquivalenceWritingContentWriter(
+            ContentWriter delegate,
+            NullRemoveFieldsContentWriter nullRemoveFieldsDelegate,
+            LookupWriter lookupWriter
+    ) {
         this.delegate = delegate;
+        this.nullRemoveFieldsDelegate = nullRemoveFieldsDelegate;
         this.equivalenceWriter = lookupWriter;
     }
 
@@ -81,6 +89,17 @@ public class EquivalenceWritingContentWriter implements EquivalenceContentWriter
     @Override
     public void createOrUpdate(Container container) {
         createOrUpdate(container, null, false);
+    }
+
+    @Override
+    public void createOrUpdate(Container container, boolean nullRemoveFields) {
+        Long lastTime = System.nanoTime();
+        timerLog.debug("TIMER EQ entered. {} {}",container.getId(), Thread.currentThread().getName());
+        nullRemoveFieldsDelegate.createOrUpdate(container, nullRemoveFields);
+        timerLog.debug("TIMER EQ Delegate finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
+        lastTime = System.nanoTime();
+        writeEquivalences(container, null, false);
+        timerLog.debug("TIMER EQ Local work finished "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",container.getCanonicalUri(), Thread.currentThread().getName());
     }
 
     @Override

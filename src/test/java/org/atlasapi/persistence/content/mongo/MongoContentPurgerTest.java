@@ -68,6 +68,9 @@ public class MongoContentPurgerTest {
                 new MongoContentWriter(db, entryStore, persistenceAuditLog, 
                                        playerResolver, serviceResolver, 
                                        new SystemClock()),
+                new MongoContentWriter(db, entryStore, persistenceAuditLog,
+                        playerResolver, serviceResolver,
+                        new SystemClock()),
                 TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore));
         contentResolver = new DefaultEquivalentContentResolver(new MongoContentResolver(db, entryStore), entryStore);
         
