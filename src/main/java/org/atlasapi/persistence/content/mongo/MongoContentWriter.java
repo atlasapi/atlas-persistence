@@ -299,11 +299,19 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
             childRefWriter.includeSeriesInTopLevelContainer(series);
             DBObject dbo = containerTranslator.toDB(container);
             checkContainerIdRef(dbo, ContainerTranslator.CONTAINER, ContainerTranslator.CONTAINER_ID);
-            createOrUpdateContainer(container, programmeGroups, dbo, nullRemoveFields);
+            createOrUpdateContainer(container, programmeGroups, dbo);
             //this isn't a top-level series so ensure it's not in the container table.
             containers.remove(where().idEquals(series.getCanonicalUri()).build());
         }
 
+    }
+
+    private void createOrUpdateContainer(
+            Container container,
+            DBCollection programmeGroups,
+            DBObject dbo
+    ) {
+        createOrUpdateContainer(container, programmeGroups, dbo, false);
     }
 
     private boolean isTopLevelSeries(Container container) {
