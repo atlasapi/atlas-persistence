@@ -14,6 +14,7 @@ import org.atlasapi.media.entity.EventRef;
 import org.atlasapi.media.entity.KeyPhrase;
 import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -81,6 +82,10 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     }
 
+    // enum with all API field names (lowercase)
+    // in translator there's map with all fields mappings
+    // construct the unset object
+
     @Override
     public Content fromDBObject(DBObject dbObject, Content entity) {
         describedTranslator.fromDBObject(dbObject, entity);
@@ -126,6 +131,11 @@ public class ContentTranslator implements ModelTranslator<Content> {
                     TranslatorUtils.toDBObjectList(dbObject, AWARDS)));
         }
         return entity;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return describedTranslator.unsetFields(dbObject, fieldsToUnset);
     }
 
     protected void decodeLanguages(DBObject dbObject, Content entity) {

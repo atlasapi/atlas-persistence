@@ -3,6 +3,7 @@ package org.atlasapi.media.channel;
 import java.util.Set;
 
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
@@ -126,5 +127,10 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         }
         
         return model;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 }

@@ -2,6 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.ContentGroup;
 import org.atlasapi.media.entity.EntityType;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -33,6 +34,11 @@ public class ContentGroupTranslator implements ModelTranslator<ContentGroup> {
         entity.setContents(childTranslator.fromDBObjects(TranslatorUtils.toDBObjectList(dbObject, CONTENT_URIS_KEY)));
         entity.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
         return entity;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     @Override

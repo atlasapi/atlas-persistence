@@ -15,6 +15,7 @@ import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.NullRemoveFieldsContentWriter;
@@ -257,7 +258,7 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
     }
 
     @Override
-    public void createOrUpdate(Container container, Iterable<String> fieldsToRemove) {
+    public void createOrUpdate(Container container, Iterable<ApiContentFields> fieldsToRemove) {
         checkNotNull(container);
         checkArgument(container instanceof Brand || container instanceof Series,
                 "Not brand or series");
@@ -321,7 +322,7 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
             Container container,
             DBCollection collection,
             DBObject containerDbo,
-            Iterable<String> fieldsToRemove
+            Iterable<ApiContentFields> fieldsToRemove
     ) {
         MongoQueryBuilder where = where().fieldEquals(
                 IdentifiedTranslator.ID,
@@ -345,15 +346,11 @@ public class MongoContentWriter implements NullRemoveFieldsContentWriter {
      * there is no prototype object from which to unset fields, we
      * maintain a list of keys to perform unsets on.
      */
-    private void unset(
-            DBObject dbo,
-            BasicDBObject op,
-            Iterable<String> fieldsToRemove
-    ) {
-        Iterable<String> allFieldsToRemove = Iterables.concat(getKeysToRemove(), fieldsToRemove);
-
+    private void unset(DBObject dbo, BasicDBObject op, Iterable<ApiContentFields> fieldsToRemove) {
         BasicDBObject toRemove = new BasicDBObject();
-        for (String key : allFieldsToRemove) {
+        containerTranslator.unsetFields(toRemove, fieldsToRemove);
+
+        for (String key : getKeysToRemove()) {
             if (!dbo.containsField(key)) {
                 toRemove.put(key, 1);
             }

@@ -5,6 +5,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import java.util.List;
 
 import org.atlasapi.media.entity.Person;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.base.Function;
@@ -46,6 +47,11 @@ public class PersonTranslator implements ModelTranslator<Person> {
         contentGroupTranslator.fromDBObject(dbObject, entity);
         
         return entity;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     @Override

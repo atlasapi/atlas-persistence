@@ -8,6 +8,7 @@ import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Quality;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -46,6 +47,11 @@ public class LocationTranslator implements ModelTranslator<Location> {
         	entity.setPolicy(policyTranslator.fromDBObject(policyObject, new Policy()));
         }
         return entity;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     private <T extends Enum<T>> T readEnum(Class<T> clazz, DBObject dbObject, String field) {

@@ -5,6 +5,7 @@ import org.atlasapi.media.entity.ImageAspectRatio;
 import org.atlasapi.media.entity.ImageTheme;
 import org.atlasapi.media.entity.ImageColor;
 import org.atlasapi.media.entity.ImageType;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.media.MimeType;
@@ -109,6 +110,11 @@ public class ImageTranslator implements ModelTranslator<Image> {
         }
 
         return model;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
 }

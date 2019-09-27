@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.Clip;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.ids.NumberToShortStringCodec;
@@ -22,6 +23,11 @@ public class ClipTranslator implements ModelTranslator<Clip> {
         itemTranslator.fromDBObject(dbObject, clip);
         clip.setClipOf((String) dbObject.get("clipOfUri"));
         return clip;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     @Override

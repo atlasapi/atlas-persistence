@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.lookup.LookupWriter;
 
 import com.google.common.base.Function;
@@ -92,7 +93,7 @@ public class EquivalenceWritingContentWriter implements EquivalenceContentWriter
     }
 
     @Override
-    public void createOrUpdate(Container container, Iterable<String> fieldsToRemove) {
+    public void createOrUpdate(Container container, Iterable<ApiContentFields> fieldsToRemove) {
         Long lastTime = System.nanoTime();
         timerLog.debug("TIMER EQ entered. {} {}",container.getId(), Thread.currentThread().getName());
         nullRemoveFieldsDelegate.createOrUpdate(container, fieldsToRemove);

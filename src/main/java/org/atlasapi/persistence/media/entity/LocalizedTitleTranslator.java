@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import org.atlasapi.media.entity.LocalizedTitle;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
@@ -27,5 +28,10 @@ public class LocalizedTitleTranslator implements ModelTranslator<LocalizedTitle>
         
         return model;
     }
-    
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
+    }
+
 }

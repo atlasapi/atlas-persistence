@@ -2,6 +2,7 @@ package org.atlasapi.persistence.media.entity;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
@@ -14,9 +15,11 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Rating;
 import org.atlasapi.media.entity.Review;
 import org.atlasapi.media.entity.Specialization;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
@@ -54,7 +57,12 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String RATINGS_KEY = "ratings";
     public static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     public static final String ITEM_PRIORITY_KEY = "priority";
-    
+
+    public static final Map<ApiContentFields, String> API_TO_MONGO_FIELDS = ImmutableMap.of(
+            ApiContentFields.title, TITLE_KEY,
+            ApiContentFields.description, DESCRIPTION_KEY
+    );
+
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from((o1, o2) -> ComparisonChain.start()
                     .compare(o1.getLanguageTag(),
@@ -207,7 +215,14 @@ public class DescribedTranslator implements ModelTranslator<Described> {
 
 		return entity;
 	}
-	
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        fieldsToUnset.forEach(field -> dbObject.put(API_TO_MONGO_FIELDS.get(field), 1));
+
+        return dbObject;
+    }
+
     private void decodeLocalizedTitles(DBObject dbObject, Described entity) {
         List<DBObject> localisedTitlesDBO = TranslatorUtils.toDBObjectList(dbObject,
                 LOCALIZED_TITLES_KEY);

@@ -13,6 +13,7 @@ import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
 import org.atlasapi.media.entity.Song;
 import org.atlasapi.media.entity.Subtitles;
 import org.atlasapi.media.entity.Version;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
 import org.joda.time.Duration;
@@ -150,7 +151,12 @@ public class ItemTranslator implements ModelTranslator<Item> {
         item.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
         return item; 
     }
-    
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
+    }
+
     public String hashCodeOf(Item item) {
         return generateHashByRemovingFieldsFromTheDbo(toDB(item));
     }

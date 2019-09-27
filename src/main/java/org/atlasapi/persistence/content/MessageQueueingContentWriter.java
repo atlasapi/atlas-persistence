@@ -14,6 +14,7 @@ import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.slf4j.Logger;
@@ -97,7 +98,7 @@ public class MessageQueueingContentWriter implements NullRemoveFieldsContentWrit
     }
 
     @Override
-    public void createOrUpdate(Container container, Iterable<String> fieldsToRemove) {
+    public void createOrUpdate(Container container, Iterable<ApiContentFields> fieldsToRemove) {
         nullRemoveFieldsContentWriter.createOrUpdate(container, fieldsToRemove);
         if (!container.hashChanged(containerTranslator.hashCodeOf(container))) {
             log.debug("{} un-changed", container.getCanonicalUri());

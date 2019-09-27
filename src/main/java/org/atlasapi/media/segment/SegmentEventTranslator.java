@@ -2,6 +2,7 @@ package org.atlasapi.media.segment;
 
 import java.math.BigInteger;
 
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.joda.time.Duration;
@@ -65,6 +66,11 @@ public class SegmentEventTranslator implements ModelTranslator<SegmentEvent> {
         }
 
         return model;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
 }

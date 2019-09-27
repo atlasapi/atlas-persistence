@@ -5,6 +5,7 @@ import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.MediaType;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.RelatedLink;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.RelatedLinkTranslator;
@@ -213,6 +214,11 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
         model.setInteractive(TranslatorUtils.toBoolean(dbObject, INTERACTIVE));
 
         return (Channel) identifiedTranslator.fromDBObject(dbObject, model);
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     @SuppressWarnings("unchecked")

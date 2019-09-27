@@ -11,6 +11,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import java.util.Map;
@@ -107,6 +108,11 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 
         description.setCustomFields(toMap(dbObject, CUSTOM_FIELDS));
         return description;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     private Set<LookupRef> equivalentsFrom(DBObject dbObject) {

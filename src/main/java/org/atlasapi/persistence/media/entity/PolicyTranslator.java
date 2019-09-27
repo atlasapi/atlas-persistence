@@ -11,6 +11,7 @@ import org.atlasapi.media.entity.Policy.Network;
 import org.atlasapi.media.entity.Policy.Platform;
 import org.atlasapi.media.entity.Policy.RevenueContract;
 import org.atlasapi.media.entity.simple.Pricing;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.currency.Price;
@@ -78,7 +79,12 @@ public class PolicyTranslator implements ModelTranslator<Policy> {
         return entity;
     }
 
-	@Override
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
+    }
+
+    @Override
     public DBObject toDBObject(DBObject dbObject, Policy entity) {
         
 	    TranslatorUtils.fromDateTime(dbObject, "actualAvailabilityStart", entity.getActualAvailabilityStart());

@@ -41,4 +41,9 @@ public class PricingTranslator implements ModelTranslator<Pricing> {
         DateTime endTime = TranslatorUtils.toDateTime(dbObject, END_TIME);
         return new Pricing(startTime, endTime, price);
     }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
+    }
 }

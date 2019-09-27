@@ -8,6 +8,7 @@ import static org.atlasapi.persistence.media.entity.IdentifiedTranslator.TYPE;
 
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.content.ContentCategory;
 
@@ -45,6 +46,11 @@ public class LookupRefTranslator implements ModelTranslator<LookupRef> {
                 .requireValue();
         String type = TranslatorUtils.toString(dbObject, TYPE);
         return new LookupRef(uri, id, publisher, ContentCategory.valueOf(type));
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
 }

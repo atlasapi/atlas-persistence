@@ -6,6 +6,7 @@ import java.util.Set;
 import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Quality;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.google.common.collect.ComparisonChain;
@@ -90,6 +91,11 @@ public class EncodingTranslator implements ModelTranslator<Encoding> {
         }
         
         return entity;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     private MimeType readVideoCoding(DBObject dbObject) {

@@ -10,6 +10,7 @@ import org.atlasapi.media.entity.Restriction;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.media.segment.SegmentEvent;
 import org.atlasapi.media.segment.SegmentEventTranslator;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.ModelTranslator;
 import org.joda.time.Duration;
 
@@ -97,6 +98,11 @@ public class VersionTranslator implements ModelTranslator<Version> {
         }
         
         return entity;
+    }
+
+    @Override
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToUnset) {
+        return dbObject;
     }
 
     @Override

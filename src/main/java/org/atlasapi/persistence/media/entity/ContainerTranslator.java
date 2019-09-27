@@ -11,6 +11,7 @@ import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.SortKey;
+import org.atlasapi.persistence.ApiContentFields;
 import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,6 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.DBObject;
 
 public class ContainerTranslator {
-
 
     private static final Logger log = LoggerFactory.getLogger(ContainerTranslator.class);
     
@@ -118,6 +118,10 @@ public class ContainerTranslator {
         
         entity.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject, includeChildrenInHashCode));
         return entity;
+    }
+
+    public DBObject unsetFields(DBObject dbObject, Iterable<ApiContentFields> fieldsToRemove) {
+        return contentTranslator.unsetFields(dbObject, fieldsToRemove);
     }
 
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject, boolean includeChildren) {
