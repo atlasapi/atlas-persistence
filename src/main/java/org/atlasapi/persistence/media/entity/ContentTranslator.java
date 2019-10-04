@@ -82,10 +82,6 @@ public class ContentTranslator implements ModelTranslator<Content> {
 
     }
 
-    // enum with all API field names (lowercase)
-    // in translator there's map with all fields mappings
-    // construct the unset object
-
     @Override
     public Content fromDBObject(DBObject dbObject, Content entity) {
         describedTranslator.fromDBObject(dbObject, entity);
