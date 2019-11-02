@@ -189,7 +189,7 @@
         <common.version>1.0-SNAPSHOT</common.version>
         <common-queue.version>2.0-SNAPSHOT</common-queue.version>
         <spring.version>4.0.9.RELEASE</spring.version>
-        <amq.version>5.9.0</amq.version>
+        <amq.version>5.15.10</amq.version>
         <jacoco.version>0.7.5.201505241946</jacoco.version>
         <guava.version>18.0</guava.version>
 
