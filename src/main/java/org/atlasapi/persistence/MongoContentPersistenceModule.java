@@ -69,6 +69,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
     public static final String NON_ID_NO_LOCK_SETTING_CONTENT_WRITER = "nonIdNoLockSettingContentWriter";
+    public static final String NO_EQUIVALENCE_WRITING_CONTENT_WRITER = "noEquivalenceWritingContentWriter";
 
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
@@ -197,6 +198,12 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     public ContentWriter contentWriter() {
         return persistenceModule().contentWriter();
+    }
+
+    @Override
+    @Bean(name = NO_EQUIVALENCE_WRITING_CONTENT_WRITER)
+    public ContentWriter noEquivalenceWritingContentWriter() {
+        return persistenceModule().noEquivalenceWritingContentWriter();
     }
 
     @Override
