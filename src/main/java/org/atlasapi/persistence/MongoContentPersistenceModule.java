@@ -257,6 +257,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return persistenceModule().explicitLookupWriter();
     }
 
+    @Primary
     @Bean
     public LookupWriter generatedLookupWriter() {
         return persistenceModule().generatedLookupWriter();
