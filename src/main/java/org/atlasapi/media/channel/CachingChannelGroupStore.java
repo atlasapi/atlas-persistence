@@ -1,16 +1,17 @@
 package org.atlasapi.media.channel;
 
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.StreamSupport;
-
-import com.metabroadcast.common.stream.MoreCollectors;
-
 import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -31,12 +32,18 @@ public class CachingChannelGroupStore implements ChannelGroupStore {
                             public Map<Long, Optional<ChannelGroup>> loadAll(
                                     Iterable<? extends Long> keys
                             ) {
-                                return StreamSupport.stream(
-                                        delegate.channelGroupsFor(keys).spliterator(), false
-                                ).collect(MoreCollectors.toImmutableMap(
-                                        ChannelGroup::getId,
-                                        Optional::of
-                                ));
+                                Set<Long> remainingKeys = StreamSupport.stream(keys.spliterator(), false)
+                                        .collect(Collectors.toSet());
+                                Iterable<ChannelGroup> channelGroups = delegate.channelGroupsFor(keys);
+                                ImmutableMap.Builder<Long, Optional<ChannelGroup>> channelGroupMap = ImmutableMap.builder();
+                                for (ChannelGroup channelGroup : channelGroups) {
+                                    remainingKeys.remove(channelGroup.getId());
+                                    channelGroupMap.put(channelGroup.getId(), Optional.of(channelGroup));
+                                }
+                                for (Long key : remainingKeys) {
+                                    channelGroupMap.put(key, Optional.absent());
+                                }
+                                return channelGroupMap.build();
                             }
                             
                         });
