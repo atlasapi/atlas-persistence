@@ -270,6 +270,29 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     @Override
+    public ContentWriter noEquivalenceWritingContentWriter() {
+        ContentWriter contentWriter = new MongoContentWriter(
+                db, lookupStore(), persistenceAuditLog(),
+                playerResolver(), serviceResolver(), new SystemClock()
+        );
+
+        if (messagingEnabled) {
+            contentWriter = new MessageQueueingContentWriter(
+                    messenger(),
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
+        }
+
+        contentWriter = new IdSettingContentWriter(
+                contentWriter, lookupBackedContentIdGenerator()
+        );
+
+        return contentWriter;
+    }
+
+    @Override
     public EquivalenceContentWriter nonIdSettingContentWriter() {
         ContentWriter contentWriter = new MongoContentWriter(
                 db, lookupStore(), persistenceAuditLog(),
