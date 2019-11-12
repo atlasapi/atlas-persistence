@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.atlasapi</groupId>
     <artifactId>atlas-persistence</artifactId>
-    <version>5.0-SNAPSHOT</version>
+    <version>5.5-SNAPSHOT</version>
     <build>
         <finalName>atlas-persistence</finalName>
         <plugins>
