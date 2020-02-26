@@ -274,6 +274,7 @@ public class MongoContentWriter implements ContentWriter {
 
             DBObject containerDbo = containerTranslator.toDB(container);
             createOrUpdateContainer(container, containers, containerDbo);
+            programmeGroups.remove(where().idEquals(container.getCanonicalUri()).build());
 
             // The series inside a brand cannot be top level items any more so we
             // remove them as outer elements
@@ -284,8 +285,6 @@ public class MongoContentWriter implements ContentWriter {
                 if (!urisToRemove.isEmpty()) {
                     containers.remove(where().idIn(urisToRemove).build());
                 }
-            } else {
-                createOrUpdateContainer(container, programmeGroups, containerDbo);
             }
         } else {
             Series series = (Series)container;
