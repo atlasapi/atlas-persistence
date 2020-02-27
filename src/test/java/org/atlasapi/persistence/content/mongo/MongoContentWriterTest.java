@@ -434,7 +434,7 @@ public class MongoContentWriterTest {
     @Test
     public void testWritingAndReadingRatings() {
         Film film = new Film("filmUri", "filmUri", Publisher.IMDB);
-        Rating ratingWithVotes = new Rating("10STAR", 8.7F, Publisher.IMDB, 1234);
+        Rating ratingWithVotes = new Rating("10STAR", 8.7F, Publisher.IMDB, 1234L);
         film.setRatings(ImmutableSet.of(ratingWithVotes));
 
         contentWriter.createOrUpdate(film);
