@@ -1,5 +1,7 @@
 package org.atlasapi.persistence.content.mongo;
 
+import java.util.Set;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -16,9 +18,11 @@ import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
+import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.ParentRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.Rating;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
@@ -427,6 +431,21 @@ public class MongoContentWriterTest {
         assertEquals(brand.getCustomFields(), retrievedBrand.getCustomFields());
     }
 
+    @Test
+    public void testWritingAndReadingRatings() {
+        Film film = new Film("filmUri", "filmUri", Publisher.IMDB);
+        Rating ratingWithVotes = new Rating("10STAR", 8.7F, Publisher.IMDB, 1234);
+        film.setRatings(ImmutableSet.of(ratingWithVotes));
+
+        contentWriter.createOrUpdate(film);
+
+        Film retrievedFilm = retrieveFilm(film);
+
+        Set<Rating> filmRatings = film.getRatings();
+        Set<Rating> retrievedFilmRatings = retrievedFilm.getRatings();
+        assertEquals(film.getRatings(), retrievedFilm.getRatings());
+    }
+
     public Brand retrieveBrand(Brand brand) {
         return (Brand) containerTranslator.fromDB(containers.findOne(brand.getCanonicalUri()));
     }
@@ -441,5 +460,9 @@ public class MongoContentWriterTest {
     
     private Episode retrieveEpisode(Episode episode) {
         return (Episode) itemTranslator.fromDB(children.findOne(episode.getCanonicalUri()));
+    }
+
+    private Film retrieveFilm (Film film) {
+        return (Film) itemTranslator.fromDB(topLevelItems.findOne(film.getCanonicalUri()));
     }
 }
