@@ -60,6 +60,7 @@ public class ItemTranslatorTest extends TestCase {
         enc.addAvailableAt(loc);
         
         Duration duration = Duration.standardSeconds(1);
+        item.setDuration(duration);
         Broadcast br = new Broadcast("channel", clock.now(), duration);
         br.setScheduleDate(new LocalDate(2010, 3, 20));
         
@@ -81,6 +82,7 @@ public class ItemTranslatorTest extends TestCase {
         
         assertEquals("canonicalUri", dbObject.get(IdentifiedTranslator.ID));
         assertEquals("title", dbObject.get("title"));
+        assertEquals(item.getDuration().getStandardSeconds(), dbObject.get("duration"));
         
         List<String> t = (List<String>) dbObject.get("tags");
         assertFalse(t.isEmpty());
