@@ -12,6 +12,7 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.stream.MoreCollectors;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -39,10 +40,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.equalTo;
-import static com.google.common.base.Predicates.not;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.transform;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -50,7 +47,9 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.media.entity.LookupRef.TO_URI;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
@@ -152,22 +151,53 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         LookupRef ref = merged.lookupRef();
 
         store(merged, existing);
+
+        Set<String> transitiveUris = merged.equivalents().stream()
+                .filter(equivRef -> !equivRef.equals(ref))
+                .map(LookupRef::uri)
+                .collect(MoreCollectors.toImmutableSet());
         
-        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_URI))) {
-            if(entry.directEquivalents().contains(ref)) {
-                entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
+        for (LookupEntry entry : entriesForCanonicalUris(transitiveUris)) {
+            if(merged.getDirectEquivalents().contains(entry.lookupRef(), OUTGOING)) {
+                entry = entry.copyWithDirectEquivalents(entry.getDirectEquivalents().copyWithLink(ref, INCOMING));
             }
-            entry = entry.copyWithEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build());
+            if(merged.getExplicitEquivalents().contains(entry.lookupRef(), OUTGOING)) {
+                entry = entry.copyWithExplicitEquivalents(entry.getDirectEquivalents().copyWithLink(ref, INCOMING));
+            }
+            if(merged.getBlacklistedEquivalents().contains(entry.lookupRef(), OUTGOING)) {
+                entry = entry.copyWithBlacklistedEquivalents(entry.getDirectEquivalents().copyWithLink(ref, INCOMING));
+            }
+            Set<LookupRef> newEquivs = ImmutableSet.<LookupRef>builder()
+                    .add(ref)
+                    .addAll(existing.equivalents())
+                    .build();
+            entry = entry.copyWithEquivalents(newEquivs);
             store(entry, existing);
         }
     }
 
     private LookupEntry merge(Content content, LookupEntry newEntry, LookupEntry existing) {
         LookupRef ref = LookupRef.from(content);
-        Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
-        Set<LookupRef> explicit = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.explicitEquivalents()).build();
-        Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
-        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliasUrls(), newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated(), newEntry.activelyPublished());
+        Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder()
+                .add(ref)
+                .addAll(existing.equivalents())
+                .build();
+
+        LookupEntry merged = new LookupEntry(
+                newEntry.uri(),
+                existing.id(),
+                ref,
+                newEntry.aliasUrls(),
+                newEntry.aliases(),
+                existing.getDirectEquivalents().copyWithLink(ref, BIDIRECTIONAL),
+                existing.getExplicitEquivalents().copyWithLink(ref, BIDIRECTIONAL),
+                existing.getBlacklistedEquivalents(),
+                transitiveEquivs,
+                existing.created(),
+                newEntry.updated(),
+                newEntry.equivUpdated(),
+                newEntry.activelyPublished()
+        );
         return merged;
     }
 
@@ -309,6 +339,19 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public Iterable<LookupEntry> updatedSince(Publisher publisher, DateTime dateTime) {
         DBObject query = where()
                 .fieldAfter("updated", dateTime)
+                .fieldEquals("self.publisher", publisher.key())
+                .fieldNotEqualTo("activelyPublished", false)
+                .build();
+
+        return StreamSupport.stream(lookup.find(query).spliterator(), false)
+                .map(translator.FROM_DBO::apply)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Iterable<LookupEntry> equivUpdatedSince(Publisher publisher, DateTime dateTime) {
+        DBObject query = where()
+                .fieldAfter("equivUpdated", dateTime)
                 .fieldEquals("self.publisher", publisher.key())
                 .fieldNotEqualTo("activelyPublished", false)
                 .build();
