@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content;
 
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -9,6 +10,7 @@ import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.InMemoryLookupEntryStore;
 import org.atlasapi.persistence.lookup.LookupWriter;
 import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.junit.Test;
@@ -37,13 +39,13 @@ public class EquivalenceWritingContentWriterTest {
         
         Item explicitEquivalent = new Item("equivUri", "durie", Publisher.BBC);
         LookupEntry explicitEquiv = LookupEntry.lookupEntryFrom(explicitEquivalent)
-                .copyWithDirectEquivalents(ImmutableList.of(generatedEquiv.lookupRef()))
-                .copyWithEquivalents(ImmutableList.of(generatedEquiv.lookupRef()));
+                .copyWithDirectEquivalents(EquivRefs.of(generatedEquiv.lookupRef(), OUTGOING))
+                .copyWithEquivalents(ImmutableSet.of(generatedEquiv.lookupRef()));
         lookupEntryStore.store(explicitEquiv);
 
         generatedEquiv = generatedEquiv
-                .copyWithDirectEquivalents(ImmutableList.of(explicitEquiv.lookupRef()))
-                .copyWithExplicitEquivalents(ImmutableList.of(explicitEquiv.lookupRef()));
+                .copyWithDirectEquivalents(EquivRefs.of(explicitEquiv.lookupRef(), OUTGOING))
+                .copyWithExplicitEquivalents(EquivRefs.of(explicitEquiv.lookupRef(), OUTGOING));
         lookupEntryStore.store(generatedEquiv);
         
         firstSubjectItem.setEquivalentTo(ImmutableSet.of(explicitEquiv.lookupRef()));

@@ -19,6 +19,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.junit.Test;
@@ -33,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriter;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItems;
@@ -342,8 +344,8 @@ public class TransitiveLookupWriterTest extends TestCase {
         Item paItem = createItem("paItem3",Publisher.PA);
         Item pnItem = createItem("pnItem3",Publisher.PREVIEW_NETWORKS);
         
-        LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(ImmutableList.of(LookupRef.from(pnItem)));
-        LookupEntry pnLookupEntry = lookupEntryFrom(pnItem).copyWithDirectEquivalents(ImmutableList.of(LookupRef.from(paItem)));
+        LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(pnItem), OUTGOING));
+        LookupEntry pnLookupEntry = lookupEntryFrom(pnItem).copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(paItem), OUTGOING));
         
         when(store.entriesForCanonicalUris(ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri())))
             .thenReturn(ImmutableList.of(paLookupEntry, pnLookupEntry));
@@ -428,16 +430,15 @@ public class TransitiveLookupWriterTest extends TestCase {
         
         LookupEntry bigEntry = LookupEntry.lookupEntryFrom(big);
         LookupEntry equivEntry = LookupEntry.lookupEntryFrom(equiv);
+
+        Set<LookupRef> equivs = ImmutableSet.copyOf(
+                Iterables.transform(
+                        ContiguousSet.create(Range.closedOpen(0, 1499), DiscreteDomain.integers()),
+                        input -> new LookupRef(input + "Uri", input.longValue(), Publisher.BBC_REDUX, ContentCategory.CHILD_ITEM)
+                )
+        );
         
-        bigEntry = bigEntry.copyWithEquivalents(Iterables.transform(
-            ContiguousSet.create(Range.closedOpen(0, 1499), DiscreteDomain.integers()), 
-            new Function<Integer, LookupRef>() {
-                @Override
-                public LookupRef apply(Integer input) {
-                    return new LookupRef(input+"Uri", input.longValue(), Publisher.BBC_REDUX, ContentCategory.CHILD_ITEM);
-                }
-            }
-        ));
+        bigEntry = bigEntry.copyWithEquivalents(equivs);
         
         when(store.entriesForCanonicalUris(argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri()))))
             .thenReturn(ImmutableList.of(bigEntry, equivEntry));
@@ -465,19 +466,16 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntry equivEntry = LookupEntry.lookupEntryFrom(equiv);
         LookupEntry otherEntry = LookupEntry.lookupEntryFrom(other);
 
-        Iterable<LookupRef> transitiveEquivSet = Iterables.transform(
-                ContiguousSet.create(Range.closedOpen(0, 200), DiscreteDomain.integers()),
-                new Function<Integer, LookupRef>() {
-                    @Override
-                    public LookupRef apply(Integer input) {
-                        return new LookupRef(input + "Uri", input.longValue(), Publisher.BBC_REDUX, ContentCategory.CHILD_ITEM);
-                    }
-                }
+        Set<LookupRef> transitiveEquivSet = ImmutableSet.copyOf(
+                Iterables.transform(
+                        ContiguousSet.create(Range.closedOpen(0, 200), DiscreteDomain.integers()),
+                        input -> new LookupRef(input + "Uri", input.longValue(), Publisher.BBC_REDUX, ContentCategory.CHILD_ITEM)
+                )
         );
 
         equivEntry = equivEntry
                 .copyWithEquivalents(transitiveEquivSet)
-                .copyWithDirectEquivalents(transitiveEquivSet);
+                .copyWithDirectEquivalents(EquivRefs.of(transitiveEquivSet, OUTGOING));
 
         ImmutableSet<String> directEquivSubsetUris = equivEntry.directEquivalents().stream()
                         .limit(10)

@@ -13,7 +13,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.common.base.MorePredicates;
 import com.metabroadcast.common.stream.MoreCollectors;
@@ -237,7 +236,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             //get links to resolve from the next equiv sets, until there are no more links to follow.
             Set<LookupRef> nextLinks = StreamSupport.stream(resolvedEntries.spliterator(), false)
                     .filter(LookupEntry::activelyPublished)
-                    .flatMap(entry -> getExplicitAndDirectEquiv(entry).stream())
+                    .flatMap(entry -> entry.getNeighbours().stream())
                     .distinct()
                     .filter(sourceFilter)
                     .filter(ref -> !collectedEquivsAndPublishedState.containsKey(ref))
@@ -269,13 +268,6 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                 .collect(MoreCollectors.toImmutableSet());
     }
 
-    private Set<LookupRef> getExplicitAndDirectEquiv(LookupEntry startingContent) {
-        return Sets.union(
-                startingContent.explicitEquivalents(),
-                startingContent.directEquivalents()
-        );
-    }
-
     private ImmutableSetMultimap<LookupEntry, LookupRef> resolveAndFilter(
             SetMultimap<LookupRef, LookupRef> secondaryResolve,
             ImmutableSetMultimap<LookupEntry, LookupRef> subjsToEquivs,
@@ -298,7 +290,7 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
                 if (removalRefs.contains(equiv)) {
                     LookupEntry entryToRemove = entriesToRemove.get(equiv);
                     if (entryToRemove != null) {
-                        filteredEquivs.removeAll(allAdjacents(entryToRemove));
+                        filteredEquivs.removeAll(entryToRemove.getNeighbours());
                     }
                 }
             }
@@ -308,17 +300,13 @@ public class DefaultEquivalentContentResolver implements EquivalentContentResolv
             }
             //and its exclusive enabled adjacent.
             filteredEquivs.addAll(Sets.difference(
-                Sets.filter(allAdjacents(subjToEquivs.getKey()), sourceFilter::test),
+                Sets.filter(subjToEquivs.getKey().getNeighbours(), sourceFilter::test),
                 secondaryResolve.get(subjToEquivs.getKey().lookupRef())
             ));
             filtered.putAll(subjToEquivs.getKey(), filteredEquivs);
         }
         
         return filtered.build();
-    }
-
-    private SetView<LookupRef> allAdjacents(LookupEntry entry) {
-        return Sets.union(entry.directEquivalents(), entry.explicitEquivalents());
     }
 
     private LookupRef lowestIdFromPrecedentSource(

@@ -49,7 +49,6 @@ import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -69,7 +68,6 @@ import javax.annotation.PreDestroy;
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
-    public static final String NON_ID_NO_LOCK_SETTING_CONTENT_WRITER = "nonIdNoLockSettingContentWriter";
     public static final String NO_EQUIVALENCE_WRITING_CONTENT_WRITER = "noEquivalenceWritingContentWriter";
     public static final String EXPLICIT_LOOKUP_WRITER = "explicitLookupWriter";
 
@@ -212,12 +210,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean(name = NON_ID_SETTING_CONTENT_WRITER)
     public EquivalenceContentWriter nonIdSettingContentWriter() {
         return persistenceModule().nonIdSettingContentWriter();
-    }
-
-    @Override
-    @Bean(name = NON_ID_NO_LOCK_SETTING_CONTENT_WRITER)
-    public ContentWriter nonIdNoLockSettingContentWriter() {
-        return persistenceModule().nonIdNoLockSettingContentWriter();
     }
 
     @Override

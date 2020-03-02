@@ -8,6 +8,9 @@ import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
+
 //TODO: Unit tests
 public class EquivRefs {
 
@@ -77,6 +80,10 @@ public class EquivRefs {
         return new EquivRefs(ImmutableMap.of(lookupRef, direction));
     }
 
+    public static EquivRefs of(Set<LookupRef> lookupRefs, EquivDirection direction) {
+        return new EquivRefs(toMap(lookupRefs, direction));
+    }
+
     public static EquivRefs of() {
         return new EquivRefs(ImmutableMap.of());
     }
@@ -129,24 +136,38 @@ public class EquivRefs {
     }
 
     /**
-     * Takes a copy and adds an equiv link. No copy is taken if the link was already present.
+     * Takes a copy and adds an equiv link.
      */
     public EquivRefs copyWithLink(LookupRef lookupRef, EquivDirection direction) {
-        EquivDirection existingDirection = equivRefs.get(lookupRef);
-        if (existingDirection != null && existingDirection.is(direction)) {
-            return this;
-        }
+        return copyWithLinks(toMap(lookupRef, direction));
+    }
 
+    /**
+     * Takes a copy and adds the specified equiv links.
+     */
+    public EquivRefs copyWithLinks(Set<LookupRef> lookupRefs, EquivDirection direction) {
+        return copyWithLinks(toMap(lookupRefs, direction));
+    }
+
+    /**
+     * Takes a copy and adds the specified equiv links.
+     */
+    public EquivRefs copyWithLinks(Map<LookupRef, EquivDirection> equivRefsToAdd) {
         ImmutableMap.Builder<LookupRef, EquivDirection> newEquivs = ImmutableMap.builder();
 
-        if (!equivRefs.containsKey(lookupRef)) {
-            newEquivs.put(lookupRef, direction);
+        for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefsToAdd.entrySet()) {
+
+            EquivDirection existingDirection = equivRefs.get(equivRef.getKey());
+
+            if (existingDirection == null) {
+                newEquivs.put(equivRef);
+            } else {
+                newEquivs.put(equivRef.getKey(), existingDirection.add(equivRef.getValue()));
+            }
         }
 
         for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefs.entrySet()) {
-            if (equivRef.getKey().equals(lookupRef)) {
-                newEquivs.put(equivRef.getKey(), equivRef.getValue().add(direction));
-            } else {
+            if (!equivRefsToAdd.containsKey(equivRef.getKey())) {
                 newEquivs.put(equivRef);
             }
         }
@@ -155,27 +176,96 @@ public class EquivRefs {
     }
 
     /**
-     * Takes a copy and removes an equiv link. No copy is taken if the link was not present.
+     * Takes a copy and removes an equiv link.
      */
     public EquivRefs copyWithoutLink(LookupRef lookupRef, EquivDirection direction) {
-        EquivDirection existingDirection = equivRefs.get(lookupRef);
-        if (existingDirection == null || !existingDirection.is(direction)) {
-            return this;
+        return copyWithoutLinks(toMap(lookupRef, direction));
+    }
+
+    /**
+     * Takes a copy and removes the specified equiv links.
+     */
+    public EquivRefs copyWithoutLinks(Set<LookupRef> lookupRefs, EquivDirection direction) {
+        return copyWithoutLinks(toMap(lookupRefs, direction));
+    }
+
+    /**
+     * Takes a copy and removes the specified equiv links.
+     */
+    public EquivRefs copyWithoutLinks(Map<LookupRef, EquivDirection> equivRefsToAdd) {
+        ImmutableMap.Builder<LookupRef, EquivDirection> newEquivs = ImmutableMap.builder();
+
+        for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefsToAdd.entrySet()) {
+
+            EquivDirection newEquivDirection = equivRefs.get(equivRef.getKey());
+
+            if (newEquivDirection != null) {
+                EquivDirection newDirection = newEquivDirection.remove(equivRef.getValue());
+                if (newDirection != null) {
+                    newEquivs.put(equivRef.getKey(), newDirection);
+                }
+            }
         }
 
-        ImmutableMap.Builder<LookupRef, EquivDirection> newEquivs = ImmutableMap.builder();
         for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefs.entrySet()) {
-            if (equivRef.getKey().equals(lookupRef)) {
-                EquivDirection newEquivDirection = equivRef.getValue().remove(direction);
-                if (newEquivDirection == null) {
-                    continue;
-                }
-                newEquivs.put(equivRef.getKey(), newEquivDirection);
-            } else {
+            if (!equivRefsToAdd.containsKey(equivRef.getKey())) {
                 newEquivs.put(equivRef);
             }
         }
 
         return new EquivRefs(newEquivs.build());
+    }
+
+    public EquivRefs copyAndReplaceOutgoing(Set<LookupRef> newOutgoing) {
+        ImmutableMap.Builder<LookupRef, EquivDirection> newEquivs = ImmutableMap.builder();
+
+        for (LookupRef lookupRef : newOutgoing) {
+            if (!equivRefs.containsKey(lookupRef)) {
+                newEquivs.put(lookupRef, OUTGOING);
+            }
+        }
+
+        for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefs.entrySet()) {
+            if (newOutgoing.contains(equivRef.getKey())) {
+                newEquivs.put(equivRef.getKey(), equivRef.getValue().add(OUTGOING));
+            } else {
+                if (equivRef.getValue().isIncoming()) {
+                    newEquivs.put(equivRef.getKey(), INCOMING);
+                }
+            }
+        }
+
+        return new EquivRefs(newEquivs.build());
+    }
+
+    public EquivRefs copyAndReplaceIncoming(Set<LookupRef> newIncoming) {
+        ImmutableMap.Builder<LookupRef, EquivDirection> newEquivs = ImmutableMap.builder();
+
+        for (LookupRef lookupRef : newIncoming) {
+            if (!equivRefs.containsKey(lookupRef)) {
+                newEquivs.put(lookupRef, INCOMING);
+            }
+        }
+
+        for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefs.entrySet()) {
+            if (newIncoming.contains(equivRef.getKey())) {
+                newEquivs.put(equivRef.getKey(), equivRef.getValue().add(INCOMING));
+            } else {
+                if (equivRef.getValue().isOutgoing()) {
+                    newEquivs.put(equivRef.getKey(), OUTGOING);
+                }
+            }
+        }
+
+        return new EquivRefs(newEquivs.build());
+    }
+
+    private static Map<LookupRef, EquivDirection> toMap(LookupRef lookupRef, EquivDirection direction) {
+        return ImmutableMap.of(lookupRef, direction);
+    }
+
+    private static Map<LookupRef, EquivDirection> toMap(Set<LookupRef> lookupRefs, EquivDirection direction) {
+        return lookupRefs.stream()
+                .collect(MoreCollectors.toImmutableMap(ref -> ref, ref -> direction));
     }
 }

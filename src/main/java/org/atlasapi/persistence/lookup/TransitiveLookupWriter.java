@@ -1,18 +1,14 @@
 package org.atlasapi.persistence.lookup;
 
-import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.base.MorePredicates;
-import com.metabroadcast.common.collect.MoreSets;
 import com.metabroadcast.common.stream.MoreCollectors;
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
@@ -24,15 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.in;
-import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.collect.Iterables.transform;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
 
 public class TransitiveLookupWriter implements LookupWriter {
     
@@ -57,13 +52,6 @@ public class TransitiveLookupWriter implements LookupWriter {
         this.entryStore = entryStore;
         this.explicit = explicit;
     }
-    
-    private static final Function<ContentRef, String> TO_URI = new Function<ContentRef, String>() {
-        @Override
-        public String apply(@Nullable ContentRef input) {
-            return input.getCanonicalUri();
-        }
-    };
 
     @Override
     public Optional<Set<LookupEntry>> writeLookup(ContentRef subject, Iterable<ContentRef> equivalents, Set<Publisher> sources) {
@@ -71,26 +59,24 @@ public class TransitiveLookupWriter implements LookupWriter {
         long startTime = System.nanoTime();
         timerLog.debug("TIMER L TW 1 entered. {}", Thread.currentThread().getName());
 
-        Iterable<String> neighbourUris = Iterables.transform(filterContentsources(equivalents, sources), TO_URI);
+        Iterable<String> neighbourUris = Iterables.transform(
+                filterContentSources(equivalents, sources),
+                ContentRef::getCanonicalUri
+        );
         Optional<Set<LookupEntry>> setOptional = writeLookup(
                 subject.getCanonicalUri(),
                 ImmutableSet.copyOf(neighbourUris),
                 sources
         );
-        timerLog.debug("TIMER L TW 1 wrote lookup {}ms. {}", Long.toString((System.nanoTime() - startTime)/1000000), Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 1 wrote lookup {}ms. {}", (System.nanoTime() - startTime) / 1000000, Thread.currentThread().getName());
         if((System.nanoTime() - startTime)/1000000 > 1000){
             timerLog.debug("TIMER L TW SLOW");
         }
         return setOptional;
     }
     
-    private Iterable<ContentRef> filterContentsources(Iterable<ContentRef> content, final Set<Publisher> sources) {
-        return Iterables.filter(content, new Predicate<ContentRef>() {
-            @Override
-            public boolean apply(ContentRef input) {
-                return sources.contains(input.getPublisher());
-            }
-        });
+    private Iterable<ContentRef> filterContentSources(Iterable<ContentRef> content, final Set<Publisher> sources) {
+        return Iterables.filter(content, input -> sources.contains(input.getPublisher()));
     }
 
     public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> sources) {
@@ -111,14 +97,14 @@ public class TransitiveLookupWriter implements LookupWriter {
         Preconditions.checkNotNull(emptyToNull(subjectUri), "null subject");
         
         ImmutableSet<String> newNeighboursUris = ImmutableSet.copyOf(equivalentUris);
-        Set<String> subjectAndNeighbours = MoreSets.add(newNeighboursUris, subjectUri);
+        Set<String> subjectAndNeighbours = Sets.union(newNeighboursUris, ImmutableSet.of(subjectUri));
         Set<String> transitiveSetsUris = null;
 
         boolean strictSubset = false;
         // If we break some existing direct equivalences, update these first
         // so we can reduce the size of the transitive equiv set
         if (!explicit) {
-            Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().stream()
+            Set<String> existingSubjectDirectUris = subjectEntry.getDirectEquivalents().getOutgoing().stream()
                     .map(LookupRef::uri)
                     .collect(MoreCollectors.toImmutableSet());
             Set<String> directUriIntersection = Sets.intersection(subjectAndNeighbours, existingSubjectDirectUris);
@@ -134,20 +120,20 @@ public class TransitiveLookupWriter implements LookupWriter {
 
         try {
             synchronized (lock) {
-                timerLog.debug("TIMER L TW 2 acquired the lock object. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW 2 acquired the lock object. {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 int loop = 0;
                 while((transitiveSetsUris = tryLockAllIds(subjectAndNeighbours, strictSubset)) == null) {
-                    timerLog.debug("TIMER L TW 2 failed to lock ids (loop "+loop++ +"). {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                    timerLog.debug("TIMER L TW 2 failed to lock ids (loop "+loop++ +"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                     lock.unlock(subjectAndNeighbours);
-                    timerLog.debug("TIMER L TW 2 unlocked "+subjectAndNeighbours.size()+" (loop "+loop++ +"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                    timerLog.debug("TIMER L TW 2 unlocked "+subjectAndNeighbours.size()+" (loop "+loop++ +"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                     lock.wait();
-                    timerLog.debug("TIMER L TW 2 wait finished (loop "+loop++ +"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                    timerLog.debug("TIMER L TW 2 wait finished (loop "+loop++ +"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                 }
-                timerLog.debug("TIMER L TW 2 all ids locked (loop "+loop +"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW 2 all ids locked (loop "+loop +"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                 lastTime = System.nanoTime();
             }
             
@@ -161,17 +147,17 @@ public class TransitiveLookupWriter implements LookupWriter {
             log.error(String.format("%s: %s", subjectUri, newNeighboursUris), e);
             return Optional.absent();
         } finally {
-            timerLog.debug("TIMER L TW Finally block reached. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+            timerLog.debug("TIMER L TW Finally block reached. {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
             lastTime = System.nanoTime();
             synchronized (lock) {
-                timerLog.debug("TIMER L TW Finally acquired the lock object.{}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW Finally acquired the lock object.{}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 lock.unlock(subjectAndNeighbours);
-                timerLog.debug("TIMER L TW Finally unlocked subjet and neighbours ("+subjectAndNeighbours.size()+").{}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                timerLog.debug("TIMER L TW Finally unlocked subjet and neighbours ("+subjectAndNeighbours.size()+").{}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 if (transitiveSetsUris != null) {
                     lock.unlock(transitiveSetsUris);
-                    timerLog.debug("TIMER L TW Finally unlocked transitive uris ("+transitiveSetsUris.size()+").{}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+                    timerLog.debug("TIMER L TW Finally unlocked transitive uris ("+transitiveSetsUris.size()+").{}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                 }
                 lock.notifyAll();
             }
@@ -185,7 +171,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         timerLog.debug("TIMER L TW 4 updating all entries {}", Thread.currentThread().getName());
         LookupEntry subject = entryFor(subjectUri);
 
-        timerLog.debug("TIMER L TW 4 got lookup for main entry. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 4 got lookup for main entry. {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
         lastTime = System.nanoTime();
 
         checkNotNull(subject, "No entry for %s", subjectUri);
@@ -197,7 +183,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         // entries for all members in all transitive sets involved
         Map<String, LookupEntry> entryIndex = resolveTransitiveSets(transitiveSetsUris);
 
-        timerLog.debug("TIMER L TW 4 Resolved transitive sets ("+entryIndex.size()+"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 4 Resolved transitive sets ("+entryIndex.size()+"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
         lastTime = System.nanoTime();
         Set<LookupEntry> newNeighbours = newSubjectNeighbours(newNeighboursUris, entryIndex);
         
@@ -212,18 +198,22 @@ public class TransitiveLookupWriter implements LookupWriter {
             entryStore.store(entry);
         }
 
-        timerLog.debug("TIMER L TW 4 Saved entries to db. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000),Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 4 Saved entries to db. {}ms. {}", (System.nanoTime() - lastTime) / 1000000,Thread.currentThread().getName());
         
         return Optional.of(newLookups);
     }
 
-    private ImmutableSet<LookupEntry> newSubjectNeighbours(Set<String> neighboursUris,
-            Map<String, LookupEntry> entryIndex) {
-        return ImmutableSet.copyOf(Iterables.transform(neighboursUris, Functions.forMap(entryIndex)));
+    private ImmutableSet<LookupEntry> newSubjectNeighbours(
+            Set<String> neighboursUris,
+            Map<String, LookupEntry> entryIndex
+    ) {
+        return neighboursUris.stream()
+                .map(Functions.forMap(entryIndex)::apply)
+                .collect(MoreCollectors.toImmutableSet());
     }
 
     private Map<String, LookupEntry> resolveTransitiveSets(Set<String> transitiveSetUris) {
-        return Maps.newHashMap(Maps.uniqueIndex(entriesFor(transitiveSetUris), LookupEntry.TO_ID));
+        return Maps.newHashMap(Maps.uniqueIndex(entriesFor(transitiveSetUris), LookupEntry::uri));
     }
 
     /*
@@ -239,37 +229,41 @@ public class TransitiveLookupWriter implements LookupWriter {
      * locking needs to re-attempted. Non-null return is a set containing all
      * URIs in all transitive sets relevant to this update.
      */
+    @Nullable
     private Set<String> tryLockAllIds(Set<String> neighboursUris, boolean strictSubset) throws InterruptedException {
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
         timerLog.debug("TIMER L TW 3 Trying to lock all ids. {}", Thread.currentThread().getName());
         if (!lock.tryLock(neighboursUris)) {
-            timerLog.debug("TIMER L TW 3 Failed. {}ms. {}", Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+            timerLog.debug("TIMER L TW 3 Failed. {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
             lastTime = System.nanoTime();
             return null;
         }
 
-        timerLog.debug("TIMER L TW 3 all ids locked. {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000),  Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 3 all ids locked. {}ms. {}", (System.nanoTime() - lastTime) / 1000000,  Thread.currentThread().getName());
         lastTime = System.nanoTime();
         Set<LookupEntry> entries = entriesFor(neighboursUris);
 
-        timerLog.debug("TIMER L TW 3 got all entries from the DB ("+entries.size()+"). {}ms. {}",Long.toString((System.nanoTime() - lastTime)/1000000), Thread.currentThread().getName());
+        timerLog.debug("TIMER L TW 3 got all entries from the DB ("+entries.size()+"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
 
-        Iterable<LookupRef> transitiveSetRefs = Iterables.concat(Iterables.transform(entries, LookupEntry.TO_EQUIVS));
-        Set<String> transitiveSetUris = ImmutableSet.copyOf(Iterables.transform(transitiveSetRefs, LookupRef.TO_URI));
+        Set<String> transitiveSetUris = entries.stream()
+                .map(LookupEntry::equivalents)
+                .flatMap(Collection::stream)
+                .map(LookupRef::uri)
+                .collect(MoreCollectors.toImmutableSet());
+
         // We allow oversize sets if this is being written as an explicit equivalence, 
         // since a user has explicitly asked us to make the assertion, so we must
         // honour it
         // If we will shrink the direct equivalences then we allow this as well
-        if (!explicit
-                && transitiveSetUris.size() > maxSetSize
-                && !strictSubset
-                ) {
+        if (!explicit && transitiveSetUris.size() > maxSetSize && !strictSubset) {
             throw new OversizeTransitiveSetException(transitiveSetUris.size());
         }
-        Iterable<String> urisToLock = Iterables.filter(transitiveSetUris, not(in(neighboursUris)));
-        return lock.tryLock(ImmutableSet.copyOf(urisToLock)) ? transitiveSetUris
-                                                             : null;
+        Set<String> urisToLock = transitiveSetUris.stream()
+                .filter(uri -> !neighboursUris.contains(uri))
+                .collect(MoreCollectors.toImmutableSet());
+
+        return lock.tryLock(urisToLock) ? transitiveSetUris : null;
     }
 
     private LookupEntry updateEntryNeighbours(LookupEntry entry, LookupEntry subject,
@@ -283,41 +277,82 @@ public class TransitiveLookupWriter implements LookupWriter {
         return entry;
     }
 
-    private LookupEntry updateSubjectNeighbours(LookupEntry subject,
-            Set<LookupEntry> neighbours, Set<Publisher> sources) {
-        Predicate<LookupRef> unaffectedSources = MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, not(in(sources)));
-        return updateRelevantNeighbours(subject, Iterables.concat(
-            Sets.filter(getRelevantNeighbours(subject), unaffectedSources), 
-            Iterables.transform(neighbours, LookupEntry.TO_SELF)
-        ));
-    }
-
-    private LookupEntry updateEntrysNeighbours(LookupEntry entry,
-            LookupEntry subject, Set<LookupEntry> subjectNeighbours) {
-        ImmutableSet<LookupRef> subjectRef = ImmutableSet.of(subject.lookupRef());
-        Set<LookupRef> entryNeighbours = getRelevantNeighbours(entry);
-        if (subjectNeighbours.contains(entry)) {
-            entryNeighbours = Sets.union(entryNeighbours, subjectRef);
-        } else {
-            entryNeighbours = Sets.difference(entryNeighbours, subjectRef);
-        }
-        return updateRelevantNeighbours(entry, entryNeighbours);
-    }
-
-    private LookupEntry updateRelevantNeighbours(LookupEntry equivalent,
-            Iterable<LookupRef> updatedNeighbours) {
-        return explicit ? equivalent.copyWithExplicitEquivalents(updatedNeighbours)
-                        : equivalent.copyWithDirectEquivalents(updatedNeighbours);
-    }
-
-    private boolean noChangeInNeighbours(LookupEntry subject, ImmutableSet<String> newNeighbours,
-            Set<Publisher> sources) {
-        Set<LookupRef> currentNeighbours = Sets.filter(
-            getRelevantNeighbours(subject), 
-            MorePredicates.transformingPredicate(LookupRef.TO_SOURCE, in(sources))
+    private LookupEntry updateSubjectNeighbours(
+            LookupEntry subject,
+            Set<LookupEntry> neighbours,
+            Set<Publisher> sources
+    ) {
+        Set<LookupRef> relevantNeighbours = Sets.union(
+                neighbours.stream()
+                        .map(LookupEntry::lookupRef)
+                        .collect(MoreCollectors.toImmutableSet()),
+                getRelevantOutgoingNeighbours(subject).stream()
+                        .filter(neighbour -> !sources.contains(neighbour.publisher()))
+                        .collect(MoreCollectors.toImmutableSet())
         );
-        Set<String> subjectAndNeighbours = MoreSets.add(newNeighbours, subject.uri());
-        Set<String> currentNeighbourUris = ImmutableSet.copyOf(transform(currentNeighbours, LookupRef.TO_URI));
+
+        return updateOutgoingNeighbours(subject, relevantNeighbours);
+    }
+
+    private LookupEntry updateEntrysNeighbours(
+            LookupEntry entry,
+            LookupEntry subject,
+            Set<LookupEntry> subjectNeighbours
+    ) {
+        if (subjectNeighbours.contains(entry)) {
+            return addIncomingNeighbour(entry, subject.lookupRef());
+        } else {
+            return removeIncomingNeighbour(entry, subject.lookupRef());
+        }
+    }
+
+    private LookupEntry updateOutgoingNeighbours(LookupEntry equivalent, Set<LookupRef> updatedNeighbours) {
+        if (explicit) {
+            return equivalent.copyWithExplicitEquivalents(
+                    equivalent.getExplicitEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
+            );
+        } else {
+            return equivalent.copyWithDirectEquivalents(
+                    equivalent.getDirectEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
+            );
+        }
+    }
+
+    private LookupEntry addIncomingNeighbour(LookupEntry equivalent, LookupRef neighbour) {
+        if (explicit) {
+            return equivalent.copyWithExplicitEquivalents(
+                    equivalent.getExplicitEquivalents().copyWithLink(neighbour, INCOMING)
+            );
+        } else {
+            return equivalent.copyWithDirectEquivalents(
+                    equivalent.getDirectEquivalents().copyWithLink(neighbour, INCOMING)
+            );
+        }
+    }
+
+    private LookupEntry removeIncomingNeighbour(LookupEntry equivalent, LookupRef neighbour) {
+        if (explicit) {
+            return equivalent.copyWithExplicitEquivalents(
+                    equivalent.getExplicitEquivalents().copyWithoutLink(neighbour, INCOMING)
+            );
+        } else {
+            return equivalent.copyWithDirectEquivalents(
+                    equivalent.getDirectEquivalents().copyWithoutLink(neighbour, INCOMING)
+            );
+        }
+    }
+
+    private boolean noChangeInNeighbours(
+            LookupEntry subject,
+            ImmutableSet<String> newNeighbours,
+            Set<Publisher> sources
+    ) {
+        Set<String> subjectAndNeighbours = Sets.union(newNeighbours, ImmutableSet.of(subject.uri()));
+        Set<String> currentNeighbourUris = getRelevantOutgoingNeighbours(subject).stream()
+                .filter(neighbour -> sources.contains(neighbour.publisher()))
+                .map(LookupRef::uri)
+                .collect(MoreCollectors.toImmutableSet());
+
         boolean noChange = currentNeighbourUris.equals(subjectAndNeighbours);
         if (!noChange) {
             log.debug("Equivalence change: {} -> {}", currentNeighbourUris, subjectAndNeighbours);
@@ -325,48 +360,49 @@ public class TransitiveLookupWriter implements LookupWriter {
         return noChange;
     }
 
-    private Set<LookupRef> getRelevantNeighbours(LookupEntry subjectEntry) {
-        return explicit ? subjectEntry.explicitEquivalents() 
-                        : subjectEntry.directEquivalents();
+    private Set<LookupRef> getRelevantOutgoingNeighbours(LookupEntry subjectEntry) {
+        return explicit ? subjectEntry.getExplicitEquivalents().getOutgoing()
+                        : subjectEntry.getDirectEquivalents().getOutgoing();
     }
 
     private Set<LookupEntry> recomputeTransitiveClosures(Map<String, LookupEntry> entries) {
         
         Set<LookupEntry> updatedEntries = Sets.newHashSet();
-        for (LookupEntry entry : Iterables.filter(entries.values(), not(in(updatedEntries)))) {
+        for (LookupEntry entry : entries.values()) {
+            if (updatedEntries.contains(entry)) {
+                continue;
+            }
 
             Set<LookupRef> transitiveSet = Sets.newHashSet();
             
-            Queue<LookupRef> direct = Lists.newLinkedList(neighbours(entry));
+            Queue<LookupRef> neighboursToProcess = Lists.newLinkedList(entry.getNeighbours());
             //Traverse equivalence graph breadth-first
             Set<LookupRef> seen = Sets.newHashSet();
-            while(!direct.isEmpty()) {
-                LookupRef current = direct.poll();
+            while (!neighboursToProcess.isEmpty()) {
+                LookupRef current = neighboursToProcess.poll();
                 if (!seen.contains(current)) {
                     transitiveSet.add(current);
-                    if (entries.get(current.uri())!= null) {
+                    if (entries.get(current.uri()) != null) {
                         LookupEntry currentEntry = entries.get(current.uri());
-                        Iterables.addAll(direct, Iterables.filter(neighbours(currentEntry), not(in(transitiveSet))));
+                        currentEntry.getNeighbours().stream()
+                                .filter(neighbour -> !transitiveSet.contains(neighbour))
+                                .forEach(neighboursToProcess::add);
                     }
                     seen.add(current);
                 }
             }
-            
+
             // Because all entries in the same transitive set should have
             // the same equivalents their entries can be updated here,
             // short-circuiting the top-level loop.
             for (LookupRef lookupRef : transitiveSet) {
                 LookupEntry lookupEntry = entries.get(lookupRef.uri());
-                if(lookupEntry != null ) {
+                if (lookupEntry != null) {
                     updatedEntries.add(lookupEntry.copyWithEquivalents(transitiveSet));
                 }
             }
         }
         return updatedEntries;
-    }
-
-    private Iterable<LookupRef> neighbours(LookupEntry current) {
-        return Iterables.concat(current.directEquivalents(), current.explicitEquivalents());
     }
     
     private Set<LookupEntry> entriesFor(Iterable<String> equivalents) {

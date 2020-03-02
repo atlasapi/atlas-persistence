@@ -22,6 +22,7 @@ import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import java.util.Map;
 
 import static com.google.common.base.Predicates.equalTo;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
@@ -174,9 +176,9 @@ public class MongoLookupEntryStoreTest {
         LookupEntry secondEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveUri")));
         
         ImmutableSet<LookupRef> secondRef = ImmutableSet.of(secondEntry.lookupRef());
-        firstEntry = firstEntry.copyWithDirectEquivalents(secondRef).copyWithEquivalents(secondRef);
+        firstEntry = firstEntry.copyWithDirectEquivalents(EquivRefs.of(secondRef, OUTGOING)).copyWithEquivalents(secondRef);
         ImmutableSet<LookupRef> firstRef = ImmutableSet.of(firstEntry.lookupRef());
-        secondEntry= secondEntry.copyWithDirectEquivalents(firstRef).copyWithEquivalents(firstRef);
+        secondEntry= secondEntry.copyWithDirectEquivalents(EquivRefs.of(firstRef, OUTGOING)).copyWithEquivalents(firstRef);
 
         entryStore.store(firstEntry);
         entryStore.store(secondEntry);

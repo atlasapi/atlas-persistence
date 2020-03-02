@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.stream.MoreCollectors;
 import com.metabroadcast.common.time.DateTimeZones;
 import org.atlasapi.media.entity.Alias;
@@ -11,7 +12,6 @@ import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.LookupRef;
 import org.joda.time.DateTime;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -46,12 +46,12 @@ public class LookupEntry {
 
     public static Function<LookupEntry,String> TO_ID = LookupEntry::uri;
     
-    public static Function<LookupEntry, LookupRef> TO_SELF = input -> input.self;
+    public static Function<LookupEntry, LookupRef> TO_SELF = LookupEntry::lookupRef;
 
-    public static Function<LookupEntry,Set<LookupRef>> TO_EQUIVS = input -> input.equivalents();
-    
+    public static Function<LookupEntry,Set<LookupRef>> TO_EQUIVS = LookupEntry::equivalents;
+
     public static Function<LookupEntry,List<LookupRef>> TO_DIRECT_EQUIVS = input ->
-            ImmutableList.copyOf(input.directEquivalents());
+            ImmutableList.copyOf(input.getDirectEquivalents().getLookupRefs());
     
     private final String uri;
     private final Long id;
@@ -272,20 +272,22 @@ public class LookupEntry {
         );
     }
 
-    public Set<LookupRef> getAllOutgoing() {
-        Set<LookupRef> outgoing = new HashSet<>();
-        outgoing.addAll(explicitEquivalents.getOutgoing());
-        outgoing.addAll(directEquivalents.getOutgoing());
-        outgoing.removeAll(blacklistedEquivalents.getOutgoing());
-        return ImmutableSet.copyOf(outgoing);
+    public Set<LookupRef> getOutgoing() {
+        return Sets.difference(
+                Sets.union(explicitEquivalents.getOutgoing(), directEquivalents.getOutgoing()),
+                blacklistedEquivalents.getOutgoing()
+        );
     }
 
-    public Set<LookupRef> getAllIncoming() {
-        Set<LookupRef> outgoing = new HashSet<>();
-        outgoing.addAll(explicitEquivalents.getIncoming());
-        outgoing.addAll(directEquivalents.getIncoming());
-        outgoing.removeAll(blacklistedEquivalents.getIncoming());
-        return ImmutableSet.copyOf(outgoing);
+    public Set<LookupRef> getIncoming() {
+        return Sets.difference(
+                Sets.union(explicitEquivalents.getIncoming(), directEquivalents.getIncoming()),
+                blacklistedEquivalents.getIncoming()
+        );
+    }
+
+    public Set<LookupRef> getNeighbours() {
+        return Sets.union(getOutgoing(), getIncoming());
     }
 
     public DateTime created() {

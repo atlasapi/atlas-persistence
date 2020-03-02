@@ -26,6 +26,7 @@ import java.util.Set;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
 
 public class LookupEntryTranslator {
 
@@ -161,20 +162,31 @@ public class LookupEntryTranslator {
 
     private EquivRefs translateEquivRefs(@Nullable LookupRef selfRef, DBObject dbo, String field) {
         ImmutableMap.Builder<LookupRef, EquivDirection> equivRefs = ImmutableMap.builder();
+
+        boolean addedSelf = false;
+
         List<DBObject> equivRefDbos = TranslatorUtils.toDBObjectList(dbo, field);
         for (DBObject equivRefDbo : equivRefDbos) {
             LookupRef ref = refFromDbo.apply(equivRefDbo);
             String equivDirectionStr = TranslatorUtils.toString(equivRefDbo, EQUIV_DIRECTION);
-            // If we don't know we assume it's bidirectional so that we don't break any existing links.
-            // This may mean we created a link that wasn't technically there, but updating equiv will fix this.
+            // If we don't know we assume it's an outgoing link so that we mirror the old behaviour which
+            // would break an incoming link during equiv if it did not become an outgoing link.
+            // If we treated this as a incoming or bidrectional link we would end up in a situation where bad
+            // equiv is hard to break, since some sources like PA do not have equiv run on them.
             EquivDirection equivDirection = Strings.isNullOrEmpty(equivDirectionStr)
-                    ? BIDIRECTIONAL
+                    ? OUTGOING
                     : EquivRefs.EquivDirection.valueOf(equivDirectionStr);
             equivRefs.put(ref, equivDirection);
+
+            if (ref.equals(selfRef)) {
+                addedSelf = true;
+            }
         }
-        if (selfRef != null) {
+
+        if (!addedSelf && selfRef != null) {
             equivRefs.put(selfRef, BIDIRECTIONAL);
         }
+
         return EquivRefs.of(equivRefs.build());
     }
 
