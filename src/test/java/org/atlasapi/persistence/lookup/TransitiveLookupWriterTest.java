@@ -220,7 +220,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         writeLookup(writer, pivot, ImmutableSet.of(left), publishers);
         writeLookup(writer, left, ImmutableSet.<Content>of(), publishers);
         
-        hasEquivs(pivot, pivot);
+        hasEquivs(pivot, pivot, left);
         
     }
     
@@ -477,7 +477,7 @@ public class TransitiveLookupWriterTest extends TestCase {
                 .copyWithEquivalents(transitiveEquivSet)
                 .copyWithDirectEquivalents(EquivRefs.of(transitiveEquivSet, OUTGOING));
 
-        ImmutableSet<String> directEquivSubsetUris = equivEntry.directEquivalents().stream()
+        ImmutableSet<String> directEquivSubsetUris = equivEntry.getDirectEquivalents().getLookupRefs().stream()
                         .limit(10)
                         .map(LookupRef::uri)
                         .collect(MoreCollectors.toImmutableSet());

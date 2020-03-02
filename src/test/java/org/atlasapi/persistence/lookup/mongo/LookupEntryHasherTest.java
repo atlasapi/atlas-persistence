@@ -1,16 +1,15 @@
 package org.atlasapi.persistence.lookup.mongo;
 
-import static org.junit.Assert.assertEquals;
-
-import org.atlasapi.media.entity.Alias;
+import com.google.common.collect.ImmutableSet;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableSet;
+import static org.junit.Assert.assertEquals;
 
 
 public class LookupEntryHasherTest {
@@ -32,16 +31,21 @@ public class LookupEntryHasherTest {
         long id = 1;
         Publisher publisher = Publisher.METABROADCAST;
 
-        return new LookupEntry(uri, id,
+        return new LookupEntry(
+                uri,
+                id,
                 new LookupRef(uri, id, publisher, ContentCategory.TOP_LEVEL_ITEM),
-                ImmutableSet.<String>of(),
-                ImmutableSet.<Alias>of(),
-                ImmutableSet.<LookupRef>of(),
-                ImmutableSet.<LookupRef>of(),
-                ImmutableSet.<LookupRef>of(),
+                ImmutableSet.of(),
+                ImmutableSet.of(),
+                EquivRefs.of(),
+                EquivRefs.of(),
+                EquivRefs.of(),
+                ImmutableSet.of(),
                 created,
                 updated,
-                true);
+                updated,
+                true
+        );
                 
                 
                 
