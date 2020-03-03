@@ -65,9 +65,9 @@ public class LookupEntryTranslator {
         TranslatorUtils.from(dbo, IDS, aliasTranslator.toDBList(entry.aliases()));
 
         translateRefsIntoField(dbo, EQUIVS, entry.equivalents());
-        translateEquivRefsIntoField(dbo, DIRECT, entry.getDirectEquivalents());
-        translateEquivRefsIntoField(dbo, EXPLICIT, entry.getExplicitEquivalents());
-        translateEquivRefsIntoField(dbo, BLACKLISTED, entry.getBlacklistedEquivalents());
+        translateEquivRefsIntoField(dbo, DIRECT, entry.directEquivalents());
+        translateEquivRefsIntoField(dbo, EXPLICIT, entry.explicitEquivalents());
+        translateEquivRefsIntoField(dbo, BLACKLISTED, entry.blacklistedEquivalents());
 
         TranslatorUtils.fromDateTime(dbo, FIRST_CREATED, entry.created());
         TranslatorUtils.fromDateTime(dbo, LAST_UPDATED, entry.updated());

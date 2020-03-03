@@ -65,7 +65,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntry uriEntry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of("testUri")));
         assertEquals(item.getCanonicalUri(), uriEntry.uri());
         assertEquals(item.getAllUris(), uriEntry.aliasUrls());
-        assertEquals("testUri", Iterables.getOnlyElement(uriEntry.getDirectEquivalents().getLookupRefs()).uri());
+        assertEquals("testUri", Iterables.getOnlyElement(uriEntry.directEquivalents().getLookupRefs()).uri());
 
         assertNotNull(uriEntry.created());
         assertNotNull(uriEntry.updated());
@@ -201,7 +201,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
     private void hasDirectEquivs(Content id, Content... directEquivs) {
         LookupEntry entry = Iterables.getOnlyElement(store.entriesForCanonicalUris(ImmutableList.of(id.getCanonicalUri())));
-        assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(directEquivs),Identified.TO_URI)), ImmutableSet.copyOf(Iterables.transform(entry.getDirectEquivalents().getLookupRefs(), LookupRef.TO_URI)));
+        assertEquals(ImmutableSet.copyOf(Iterables.transform(ImmutableSet.copyOf(directEquivs),Identified.TO_URI)), ImmutableSet.copyOf(Iterables.transform(entry.directEquivalents().getLookupRefs(), LookupRef.TO_URI)));
     }
 
     public void testBreakingEquivs() {

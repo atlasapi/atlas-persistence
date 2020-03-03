@@ -79,8 +79,8 @@ public class LookupEntryTranslatorTest {
         assertEquals(e.lookupRef(), t.lookupRef());
         assertEquals(e.aliasUrls(), t.aliasUrls());
         assertEquals(e.aliases(), t.aliases());
-        assertEquals(e.getDirectEquivalents().getLookupRefs(), t.getDirectEquivalents().getLookupRefs());
-        assertEquals(e.getExplicitEquivalents().getLookupRefs(), t.getExplicitEquivalents().getLookupRefs());
+        assertEquals(e.directEquivalents().getLookupRefs(), t.directEquivalents().getLookupRefs());
+        assertEquals(e.explicitEquivalents().getLookupRefs(), t.explicitEquivalents().getLookupRefs());
         assertEquals(e.equivalents(), t.equivalents());
         assertEquals(e.created(), t.created());
         assertEquals(e.updated(), t.updated());
@@ -153,8 +153,8 @@ public class LookupEntryTranslatorTest {
         LookupEntry t = translator.fromDbo(dbo);
         
         LookupRef selfRef = t.lookupRef();
-        containsInstance(selfRef, t.getDirectEquivalents().getLookupRefs());
-        containsInstance(selfRef, t.getExplicitEquivalents().getLookupRefs());
+        containsInstance(selfRef, t.directEquivalents().getLookupRefs());
+        containsInstance(selfRef, t.explicitEquivalents().getLookupRefs());
         containsInstance(selfRef, t.equivalents());
         
     }

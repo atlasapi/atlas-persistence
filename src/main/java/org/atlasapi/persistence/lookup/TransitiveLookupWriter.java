@@ -104,7 +104,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         // If we break some existing direct equivalences, update these first
         // so we can reduce the size of the transitive equiv set
         if (!explicit) {
-            Set<String> existingSubjectDirectUris = subjectEntry.getDirectEquivalents().getOutgoing().stream()
+            Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().getOutgoing().stream()
                     .map(LookupRef::uri)
                     .collect(MoreCollectors.toImmutableSet());
             Set<String> directUriIntersection = Sets.intersection(subjectAndNeighbours, existingSubjectDirectUris);
@@ -309,11 +309,11 @@ public class TransitiveLookupWriter implements LookupWriter {
     private LookupEntry updateOutgoingNeighbours(LookupEntry equivalent, Set<LookupRef> updatedNeighbours) {
         if (explicit) {
             return equivalent.copyWithExplicitEquivalents(
-                    equivalent.getExplicitEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
+                    equivalent.explicitEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
             );
         } else {
             return equivalent.copyWithDirectEquivalents(
-                    equivalent.getDirectEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
+                    equivalent.directEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
             );
         }
     }
@@ -321,11 +321,11 @@ public class TransitiveLookupWriter implements LookupWriter {
     private LookupEntry addIncomingNeighbour(LookupEntry equivalent, LookupRef neighbour) {
         if (explicit) {
             return equivalent.copyWithExplicitEquivalents(
-                    equivalent.getExplicitEquivalents().copyWithLink(neighbour, INCOMING)
+                    equivalent.explicitEquivalents().copyWithLink(neighbour, INCOMING)
             );
         } else {
             return equivalent.copyWithDirectEquivalents(
-                    equivalent.getDirectEquivalents().copyWithLink(neighbour, INCOMING)
+                    equivalent.directEquivalents().copyWithLink(neighbour, INCOMING)
             );
         }
     }
@@ -333,11 +333,11 @@ public class TransitiveLookupWriter implements LookupWriter {
     private LookupEntry removeIncomingNeighbour(LookupEntry equivalent, LookupRef neighbour) {
         if (explicit) {
             return equivalent.copyWithExplicitEquivalents(
-                    equivalent.getExplicitEquivalents().copyWithoutLink(neighbour, INCOMING)
+                    equivalent.explicitEquivalents().copyWithoutLink(neighbour, INCOMING)
             );
         } else {
             return equivalent.copyWithDirectEquivalents(
-                    equivalent.getDirectEquivalents().copyWithoutLink(neighbour, INCOMING)
+                    equivalent.directEquivalents().copyWithoutLink(neighbour, INCOMING)
             );
         }
     }
@@ -361,8 +361,8 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Set<LookupRef> getRelevantOutgoingNeighbours(LookupEntry subjectEntry) {
-        return explicit ? subjectEntry.getExplicitEquivalents().getOutgoing()
-                        : subjectEntry.getDirectEquivalents().getOutgoing();
+        return explicit ? subjectEntry.explicitEquivalents().getOutgoing()
+                        : subjectEntry.directEquivalents().getOutgoing();
     }
 
     private Set<LookupEntry> recomputeTransitiveClosures(Map<String, LookupEntry> entries) {

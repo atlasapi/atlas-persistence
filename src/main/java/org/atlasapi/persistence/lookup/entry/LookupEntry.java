@@ -5,7 +5,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.stream.MoreCollectors;
 import com.metabroadcast.common.time.DateTimeZones;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Described;
@@ -51,7 +50,7 @@ public class LookupEntry {
     public static Function<LookupEntry,Set<LookupRef>> TO_EQUIVS = LookupEntry::equivalents;
 
     public static Function<LookupEntry,List<LookupRef>> TO_DIRECT_EQUIVS = input ->
-            ImmutableList.copyOf(input.getDirectEquivalents().getLookupRefs());
+            ImmutableList.copyOf(input.directEquivalents().getLookupRefs());
     
     private final String uri;
     private final Long id;
@@ -69,44 +68,6 @@ public class LookupEntry {
 
     private final LookupRef self;
     private final boolean activelyPublished;
-
-    public LookupEntry(
-            String uri,
-            Long id,
-            LookupRef self,
-            Set<String> aliasUris,
-            Set<Alias> aliases,
-            Set<LookupRef> directEquivs,
-            Set<LookupRef> explicitEquivalents,
-            Set<LookupRef> equivs,
-            DateTime created,
-            DateTime updated,
-            boolean activelyPublished
-    ) {
-        this(
-                uri,
-                id,
-                self,
-                aliasUris,
-                aliases,
-                toEquivRefs(directEquivs, EquivRefs.EquivDirection.BIDIRECTIONAL),
-                toEquivRefs(explicitEquivalents, EquivRefs.EquivDirection.BIDIRECTIONAL),
-                EquivRefs.of(),
-                ImmutableSet.copyOf(equivs),
-                created,
-                updated,
-                null,
-                activelyPublished
-        );
-        throw new UnsupportedOperationException("Tristan messed up, this should no longer be used");
-    }
-
-    private static EquivRefs toEquivRefs(Set<LookupRef> lookupRefs, EquivRefs.EquivDirection direction) {
-        return EquivRefs.of(
-                lookupRefs.stream()
-                        .collect(MoreCollectors.toImmutableMap(lookupRef -> lookupRef, lookupRef -> direction))
-        );
-    }
 
     public LookupEntry(
             String uri,
@@ -162,14 +123,7 @@ public class LookupEntry {
         return ImmutableSet.<String>builder().add(uri).addAll(aliasUris).build();
     }
 
-    /**
-     * @deprecated use {@link #getExplicitEquivalents()} instead
-     */
-    public Set<LookupRef> explicitEquivalents() {
-        return explicitEquivalents.getLookupRefs();
-    }
-
-    public EquivRefs getExplicitEquivalents() {
+    public EquivRefs explicitEquivalents() {
         return explicitEquivalents;
     }
 
@@ -192,14 +146,7 @@ public class LookupEntry {
         );
     }
 
-    /**
-     * @deprecated use {@link #getDirectEquivalents()} instead
-     */
-    public Set<LookupRef> directEquivalents() {
-        return directEquivalents.getLookupRefs();
-    }
-
-    public EquivRefs getDirectEquivalents() {
+    public EquivRefs directEquivalents() {
         return directEquivalents;
     }
 
@@ -222,7 +169,7 @@ public class LookupEntry {
         );
     }
 
-    public EquivRefs getBlacklistedEquivalents() {
+    public EquivRefs blacklistedEquivalents() {
         return blacklistedEquivalents;
     }
 

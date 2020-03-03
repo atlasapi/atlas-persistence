@@ -96,12 +96,12 @@ public class MongoContentPurgerTest {
         contentWriter.createOrUpdate(item2);
         
         LookupEntry lookup = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableSet.of(BBC_ITEM_URI)));
-        assertEquals(2, lookup.getExplicitEquivalents().getLookupRefs().size());
+        assertEquals(2, lookup.explicitEquivalents().getLookupRefs().size());
         
         mongoContentPurger.purge(Publisher.METABROADCAST, ImmutableSet.of(Publisher.BBC));
         
         lookup = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableSet.of(BBC_ITEM_URI)));
-        assertEquals(1, lookup.getExplicitEquivalents().getLookupRefs().size());
+        assertEquals(1, lookup.explicitEquivalents().getLookupRefs().size());
         
         assertEquals(0, contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), application, ImmutableSet.<Annotation>of(), false).get(MB_ITEM_URI).size());
         

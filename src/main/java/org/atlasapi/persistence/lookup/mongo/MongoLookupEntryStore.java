@@ -158,14 +158,14 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 .collect(MoreCollectors.toImmutableSet());
         
         for (LookupEntry entry : entriesForCanonicalUris(transitiveUris)) {
-            if(merged.getDirectEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithDirectEquivalents(entry.getDirectEquivalents().copyWithLink(ref, INCOMING));
+            if(merged.directEquivalents().contains(entry.lookupRef(), OUTGOING)) {
+                entry = entry.copyWithDirectEquivalents(entry.directEquivalents().copyWithLink(ref, INCOMING));
             }
-            if(merged.getExplicitEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithExplicitEquivalents(entry.getDirectEquivalents().copyWithLink(ref, INCOMING));
+            if(merged.explicitEquivalents().contains(entry.lookupRef(), OUTGOING)) {
+                entry = entry.copyWithExplicitEquivalents(entry.directEquivalents().copyWithLink(ref, INCOMING));
             }
-            if(merged.getBlacklistedEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithBlacklistedEquivalents(entry.getDirectEquivalents().copyWithLink(ref, INCOMING));
+            if(merged.blacklistedEquivalents().contains(entry.lookupRef(), OUTGOING)) {
+                entry = entry.copyWithBlacklistedEquivalents(entry.directEquivalents().copyWithLink(ref, INCOMING));
             }
             Set<LookupRef> newEquivs = ImmutableSet.<LookupRef>builder()
                     .add(ref)
@@ -189,9 +189,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 ref,
                 newEntry.aliasUrls(),
                 newEntry.aliases(),
-                existing.getDirectEquivalents().copyWithLink(ref, BIDIRECTIONAL),
-                existing.getExplicitEquivalents().copyWithLink(ref, BIDIRECTIONAL),
-                existing.getBlacklistedEquivalents(),
+                existing.directEquivalents().copyWithLink(ref, BIDIRECTIONAL),
+                existing.explicitEquivalents().copyWithLink(ref, BIDIRECTIONAL),
+                existing.blacklistedEquivalents(),
                 transitiveEquivs,
                 existing.created(),
                 newEntry.updated(),
