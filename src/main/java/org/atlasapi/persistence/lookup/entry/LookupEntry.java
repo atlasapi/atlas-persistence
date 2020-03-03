@@ -261,7 +261,7 @@ public class LookupEntry {
         if(that instanceof LookupEntry) {
             LookupEntry other = (LookupEntry) that;
             return uri.equals(other.uri) && equivs.equals(other.equivs) && created.equals(other.created)
-                    && updated.equals(other.updated) && equivUpdated.equals(other.equivUpdated)
+                    && updated.equals(other.updated) && Objects.equal(equivUpdated, other.equivUpdated)
                     && activelyPublished == other.activelyPublished;
         }
         return false;
