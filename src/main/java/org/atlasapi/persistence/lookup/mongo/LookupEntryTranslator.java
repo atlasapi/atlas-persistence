@@ -178,7 +178,7 @@ public class LookupEntryTranslator {
             String equivDirectionStr = TranslatorUtils.toString(equivRefDbo, EQUIV_DIRECTION);
             // If we don't know we assume it's an outgoing link so that we mirror the old behaviour which
             // would break an incoming link during equiv if it did not become an outgoing link.
-            // If we treated this as a incoming or bidrectional link we would end up in a situation where bad
+            // If we treated this as a incoming or bidirectional link we would end up in a situation where bad
             // equiv is hard to break, since some sources like PA do not have equiv run on them.
             EquivDirection equivDirection = Strings.isNullOrEmpty(equivDirectionStr)
                     ? OUTGOING
