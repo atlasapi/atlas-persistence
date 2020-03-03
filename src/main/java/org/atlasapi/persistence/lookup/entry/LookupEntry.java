@@ -184,7 +184,7 @@ public class LookupEntry {
                 directEquivalents,
                 newExplicitEquivalents.copyWithLink(self, BIDIRECTIONAL),
                 blacklistedEquivalents,
-                this.equivs,
+                equivs,
                 created,
                 now,
                 now,
