@@ -191,7 +191,7 @@ public class MongoLookupEntryStoreTest {
 
         LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemUri")));
         assertEquals(ContentCategory.CHILD_ITEM, newEntry.lookupRef().category());
-        assertTrue(newEntry.directEquivalents().contains(secondEntry.lookupRef()));
+        assertTrue(newEntry.getDirectEquivalents().getLookupRefs().contains(secondEntry.lookupRef()));
         assertTrue(newEntry.equivalents().contains(secondEntry.lookupRef()));
         assertEquals(firstEntry.created(), newEntry.created());
         
@@ -199,7 +199,7 @@ public class MongoLookupEntryStoreTest {
         
         LookupEntry transtiveEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveUri")));
         assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.equivalents(), equalTo(newEntry.lookupRef())).category());
-        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.directEquivalents(), equalTo(newEntry.lookupRef())).category());
+        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.getDirectEquivalents().getLookupRefs(), equalTo(newEntry.lookupRef())).category());
         assertEquals(transtiveEntry.created(), secondEntry.created());
         
         assertTrue(Iterables.isEmpty(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveAlias"))));

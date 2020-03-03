@@ -79,8 +79,8 @@ public class LookupEntryTranslatorTest {
         assertEquals(e.lookupRef(), t.lookupRef());
         assertEquals(e.aliasUrls(), t.aliasUrls());
         assertEquals(e.aliases(), t.aliases());
-        assertEquals(e.directEquivalents(), t.directEquivalents());
-        assertEquals(e.explicitEquivalents(), t.explicitEquivalents());
+        assertEquals(e.getDirectEquivalents().getLookupRefs(), t.getDirectEquivalents().getLookupRefs());
+        assertEquals(e.getExplicitEquivalents().getLookupRefs(), t.getExplicitEquivalents().getLookupRefs());
         assertEquals(e.equivalents(), t.equivalents());
         assertEquals(e.created(), t.created());
         assertEquals(e.updated(), t.updated());

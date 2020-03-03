@@ -1,10 +1,7 @@
 package org.atlasapi.persistence.content;
 
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.lookup.InMemoryLookupEntryStore;
@@ -15,9 +12,10 @@ import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class EquivalenceWritingContentWriterTest {
 
@@ -55,17 +53,17 @@ public class EquivalenceWritingContentWriterTest {
         verify(delegate).createOrUpdate(firstSubjectItem);
         
         LookupEntry first = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(firstSubjectItem.getCanonicalUri())));
-        assertTrue(first.explicitEquivalents().contains(explicitEquiv.lookupRef()));
+        assertTrue(first.getExplicitEquivalents().getLookupRefs().contains(explicitEquiv.lookupRef()));
         assertTrue(first.equivalents().contains(explicitEquiv.lookupRef()));
 
         LookupEntry explicit = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(explicitEquivalent.getCanonicalUri())));
-        assertTrue(explicit.explicitEquivalents().contains(subject.lookupRef()));
-        assertTrue(explicit.directEquivalents().contains(generatedEquiv.lookupRef()));
+        assertTrue(explicit.getExplicitEquivalents().getLookupRefs().contains(subject.lookupRef()));
+        assertTrue(explicit.getDirectEquivalents().getLookupRefs().contains(generatedEquiv.lookupRef()));
         assertTrue(explicit.equivalents().contains(subject.lookupRef()));
         assertTrue(explicit.equivalents().contains(generatedEquiv.lookupRef()));
 
         LookupEntry generated = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(generatedEquivalent.getCanonicalUri())));
-        assertTrue(generated.directEquivalents().contains(explicitEquiv.lookupRef()));
+        assertTrue(generated.getDirectEquivalents().getLookupRefs().contains(explicitEquiv.lookupRef()));
         assertTrue(generated.equivalents().contains(subject.lookupRef()));
         assertTrue(generated.equivalents().contains(explicitEquiv.lookupRef()));
         
@@ -81,20 +79,20 @@ public class EquivalenceWritingContentWriterTest {
         verify(delegate).createOrUpdate(secondSubjectItem);
         
         LookupEntry second = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(secondSubjectItem.getCanonicalUri())));
-        assertTrue(second.explicitEquivalents().contains(explicitEquiv.lookupRef()));
+        assertTrue(second.getExplicitEquivalents().getLookupRefs().contains(explicitEquiv.lookupRef()));
         assertTrue(second.equivalents().contains(explicitEquiv.lookupRef()));
         assertTrue(second.equivalents().contains(subject.lookupRef()));
         assertTrue(second.equivalents().contains(generatedEquiv.lookupRef()));
         
         first = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(firstSubjectItem.getCanonicalUri())));
-        assertTrue(first.explicitEquivalents().contains(explicitEquiv.lookupRef()));
+        assertTrue(first.getExplicitEquivalents().getLookupRefs().contains(explicitEquiv.lookupRef()));
         assertTrue(first.equivalents().contains(explicitEquiv.lookupRef()));
         assertTrue(first.equivalents().contains(secondSubject.lookupRef()));
         assertTrue(first.equivalents().contains(generatedEquiv.lookupRef()));
         
         explicit = Iterables.getOnlyElement(lookupEntryStore.entriesForCanonicalUris(ImmutableSet.of(explicitEquivalent.getCanonicalUri())));
-        assertTrue(explicit.explicitEquivalents().contains(subject.lookupRef()));
-        assertTrue(explicit.explicitEquivalents().contains(secondSubject.lookupRef()));
+        assertTrue(explicit.getExplicitEquivalents().getLookupRefs().contains(subject.lookupRef()));
+        assertTrue(explicit.getExplicitEquivalents().getLookupRefs().contains(secondSubject.lookupRef()));
         assertTrue(explicit.equivalents().contains(subject.lookupRef()));
         assertTrue(explicit.equivalents().contains(secondSubject.lookupRef()));
         assertTrue(explicit.equivalents().contains(generatedEquiv.lookupRef()));
