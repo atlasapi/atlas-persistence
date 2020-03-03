@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
+import com.google.common.collect.Sets;
 import com.metabroadcast.common.collect.MoreSets;
 import com.metabroadcast.common.stream.MoreCollectors;
 import junit.framework.TestCase;
@@ -477,11 +478,11 @@ public class TransitiveLookupWriterTest extends TestCase {
                 .copyWithEquivalents(transitiveEquivSet)
                 .copyWithDirectEquivalents(EquivRefs.of(transitiveEquivSet, OUTGOING));
 
-        ImmutableSet<String> directEquivSubsetUris = equivEntry.getDirectEquivalents().getLookupRefs().stream()
+        Set<String> directEquivSubsetUris = transitiveEquivSet.stream()
                         .limit(10)
                         .map(LookupRef::uri)
                         .collect(MoreCollectors.toImmutableSet());
-        ImmutableSet<String> directEquivUris = MoreSets.add(directEquivSubsetUris, other.getCanonicalUri());
+        Set<String> directEquivUris = Sets.union(directEquivSubsetUris, ImmutableSet.of(other.getCanonicalUri()));
 
         ImmutableSet.Builder<LookupEntry> directSubsetEntriesBuilder = new ImmutableSet.Builder<>();
         for(int i = 0; i < 10; i++) {
