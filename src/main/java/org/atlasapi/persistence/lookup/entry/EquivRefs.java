@@ -11,7 +11,6 @@ import java.util.Set;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
 
-//TODO: Unit tests
 public class EquivRefs {
 
     public enum EquivDirection { // A lot of logic is heavily tied to these enum values
