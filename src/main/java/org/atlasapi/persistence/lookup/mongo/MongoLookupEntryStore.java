@@ -178,6 +178,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     private LookupEntry merge(Content content, LookupEntry newEntry, LookupEntry existing) {
         LookupRef ref = LookupRef.from(content);
+
+        // We copy the equiv refs to update the ref's content category if needed
+
         Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder()
                 .add(ref)
                 .addAll(existing.equivalents())
