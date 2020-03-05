@@ -48,11 +48,11 @@ public class EquivRefsTest {
 
     @Test
     public void testOfAndGetEquivRefsReturnExpectedMap() {
-        assertEquals(equivRefsMap, equivRefs.getEquivRefs());
+        assertEquals(equivRefsMap, equivRefs.getEquivRefsAsMap());
         equivRefs = of(ref1, OUTGOING);
-        assertEquals(ImmutableMap.of(ref1, OUTGOING), equivRefs.getEquivRefs());
+        assertEquals(ImmutableMap.of(ref1, OUTGOING), equivRefs.getEquivRefsAsMap());
         equivRefs = of(ImmutableSet.of(ref1, ref2), INCOMING);
-        assertEquals(ImmutableMap.of(ref1, INCOMING, ref2, INCOMING), equivRefs.getEquivRefs());
+        assertEquals(ImmutableMap.of(ref1, INCOMING, ref2, INCOMING), equivRefs.getEquivRefsAsMap());
     }
 
     @Test

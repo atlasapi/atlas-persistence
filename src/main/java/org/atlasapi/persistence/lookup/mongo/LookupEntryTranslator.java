@@ -87,7 +87,7 @@ public class LookupEntryTranslator {
 
     private void translateEquivRefsIntoField(BasicDBObject dbo, String field, EquivRefs equivRefs) {
         BasicDBList equivRefDbos = new BasicDBList();
-        for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefs.getEquivRefs().entrySet()) {
+        for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefs.getEquivRefsAsMap().entrySet()) {
             DBObject equivRefDbo = refToDbo.apply(equivRef.getKey());
             TranslatorUtils.from(equivRefDbo, EQUIV_DIRECTION, equivRef.getValue().toString());
             equivRefDbos.add(equivRefDbo);
@@ -178,7 +178,7 @@ public class LookupEntryTranslator {
             // If we don't know we assume it's a bidirectional link in order to keep our logic consistent.
             // If two different pieces of content which were equived only thought they either each
             // have an outgoing link to the other, or each have an incoming link from the other, this would actually
-            // a bidirectional link.
+            // be a bidirectional link.
             EquivDirection equivDirection = Strings.isNullOrEmpty(equivDirectionStr)
                     ? BIDIRECTIONAL
                     : EquivRefs.EquivDirection.valueOf(equivDirectionStr);

@@ -88,7 +88,7 @@ public class EquivRefs {
         return new EquivRefs(ImmutableMap.of());
     }
 
-    public Map<LookupRef, EquivDirection> getEquivRefs() {
+    public Map<LookupRef, EquivDirection> getEquivRefsAsMap() {
         return equivRefs;
     }
 
@@ -113,6 +113,11 @@ public class EquivRefs {
             return false;
         }
         return equivDirection.is(direction);
+    }
+
+    @Nullable
+    public EquivDirection getLink(LookupRef ref) {
+        return equivRefs.get(ref);
     }
 
     /**

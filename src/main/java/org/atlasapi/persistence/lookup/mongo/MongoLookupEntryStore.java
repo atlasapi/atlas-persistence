@@ -25,6 +25,7 @@ import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
@@ -48,8 +49,6 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
@@ -158,16 +157,20 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 .filter(equivRef -> !equivRef.equals(ref))
                 .map(LookupRef::uri)
                 .collect(MoreCollectors.toImmutableSet());
-        
+
+        // Update any instances of the ref from the entries equived to it
         for (LookupEntry entry : entriesForCanonicalUris(transitiveUris)) {
-            if(merged.directEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithDirectEquivalents(entry.directEquivalents().copyWithLink(ref, INCOMING));
+            EquivRefs.EquivDirection directEquivLink = entry.directEquivalents().getLink(ref);
+            EquivRefs.EquivDirection explicitEquivLink = entry.explicitEquivalents().getLink(ref);
+            EquivRefs.EquivDirection blacklistedEquivLink = entry.blacklistedEquivalents().getLink(ref);
+            if(directEquivLink != null) {
+                entry = entry.copyWithDirectEquivalents(entry.directEquivalents().copyWithLink(ref, directEquivLink));
             }
-            if(merged.explicitEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithExplicitEquivalents(entry.explicitEquivalents().copyWithLink(ref, INCOMING));
+            if(explicitEquivLink != null) {
+                entry = entry.copyWithExplicitEquivalents(entry.explicitEquivalents().copyWithLink(ref, explicitEquivLink));
             }
-            if(merged.blacklistedEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithBlacklistedEquivalents(entry.blacklistedEquivalents().copyWithLink(ref, INCOMING));
+            if(blacklistedEquivLink != null) {
+                entry = entry.copyWithBlacklistedEquivalents(entry.blacklistedEquivalents().copyWithLink(ref, blacklistedEquivLink));
             }
             Set<LookupRef> newEquivs = ImmutableSet.<LookupRef>builder()
                     .add(ref)
