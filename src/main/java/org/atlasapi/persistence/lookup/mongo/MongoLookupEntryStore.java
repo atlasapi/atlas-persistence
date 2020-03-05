@@ -53,7 +53,9 @@ import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUT
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.EQUIV_LAST_UPDATED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.IDS;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.LAST_UPDATED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.SELF;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
@@ -341,9 +343,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Iterable<LookupEntry> updatedSince(Publisher publisher, DateTime dateTime) {
         DBObject query = where()
-                .fieldAfter("updated", dateTime)
-                .fieldEquals("self.publisher", publisher.key())
-                .fieldNotEqualTo("activelyPublished", false)
+                .fieldAfter(LAST_UPDATED, dateTime)
+                .fieldEquals(PUBLISHER, publisher.key())
+                .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
                 .build();
 
         return StreamSupport.stream(lookup.find(query).spliterator(), false)
@@ -354,9 +356,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Iterable<LookupEntry> equivUpdatedSince(Publisher publisher, DateTime dateTime) {
         DBObject query = where()
-                .fieldAfter("equivUpdated", dateTime)
-                .fieldEquals("self.publisher", publisher.key())
-                .fieldNotEqualTo("activelyPublished", false)
+                .fieldAfter(EQUIV_LAST_UPDATED, dateTime)
+                .fieldEquals(PUBLISHER, publisher.key())
+                .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
                 .build();
 
         return StreamSupport.stream(lookup.find(query).spliterator(), false)

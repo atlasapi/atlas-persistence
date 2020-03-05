@@ -33,9 +33,9 @@ public class LookupEntryTranslator {
     private static final String DIRECT = "direct";
     private static final String BLACKLISTED = "blacklisted";
     private static final String EQUIVS = "equivs";
-    private static final String LAST_UPDATED = "updated";
-    private static final String EQUIV_LAST_UPDATED = "equivLastUpdated";
-    private static final String FIRST_CREATED = "created";
+    public static final String LAST_UPDATED = "updated";
+    public static final String EQUIV_LAST_UPDATED = "equivLastUpdated";
+    public static final String FIRST_CREATED = "created";
     public static final String ACTIVELY_PUBLISHED = "activelyPublished";
     public static final String ALIASES = "aliases";
     public static final String IDS = "ids";
