@@ -162,10 +162,10 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 entry = entry.copyWithDirectEquivalents(entry.directEquivalents().copyWithLink(ref, INCOMING));
             }
             if(merged.explicitEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithExplicitEquivalents(entry.directEquivalents().copyWithLink(ref, INCOMING));
+                entry = entry.copyWithExplicitEquivalents(entry.explicitEquivalents().copyWithLink(ref, INCOMING));
             }
             if(merged.blacklistedEquivalents().contains(entry.lookupRef(), OUTGOING)) {
-                entry = entry.copyWithBlacklistedEquivalents(entry.directEquivalents().copyWithLink(ref, INCOMING));
+                entry = entry.copyWithBlacklistedEquivalents(entry.blacklistedEquivalents().copyWithLink(ref, INCOMING));
             }
             Set<LookupRef> newEquivs = ImmutableSet.<LookupRef>builder()
                     .add(ref)
