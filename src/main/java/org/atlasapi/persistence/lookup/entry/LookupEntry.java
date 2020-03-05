@@ -141,7 +141,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                now,
+                equivUpdated,
                 activelyPublished
         );
     }
@@ -164,7 +164,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                now,
+                equivUpdated,
                 activelyPublished
         );
     }
@@ -187,7 +187,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                now,
+                equivUpdated,
                 activelyPublished
         );
     }
@@ -214,7 +214,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                now,
+                this.equivs.equals(equivs) ? equivUpdated : now,
                 activelyPublished
         );
     }

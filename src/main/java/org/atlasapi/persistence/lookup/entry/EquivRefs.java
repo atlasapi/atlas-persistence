@@ -6,6 +6,7 @@ import org.atlasapi.media.entity.LookupRef;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
@@ -266,5 +267,18 @@ public class EquivRefs {
     private static Map<LookupRef, EquivDirection> toMap(Set<LookupRef> lookupRefs, EquivDirection direction) {
         return lookupRefs.stream()
                 .collect(MoreCollectors.toImmutableMap(ref -> ref, ref -> direction));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EquivRefs equivRefs1 = (EquivRefs) o;
+        return equivRefs.equals(equivRefs1.equivRefs);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(equivRefs);
     }
 }
