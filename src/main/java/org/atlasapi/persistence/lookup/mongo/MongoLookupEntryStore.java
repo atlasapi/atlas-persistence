@@ -361,8 +361,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
                 .build();
 
-        return StreamSupport.stream(lookup.find(query).spliterator(), false)
-                .map(translator.FROM_DBO::apply)
-                .collect(Collectors.toList());
+        return Iterables.transform(lookup.find(query), translator.FROM_DBO);
+
     }
 }
