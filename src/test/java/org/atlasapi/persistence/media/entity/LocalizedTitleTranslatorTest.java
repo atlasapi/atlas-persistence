@@ -13,6 +13,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.junit.Test;
 
+import static org.atlasapi.persistence.media.entity.DescribedTranslator.LOCALIZED_TITLES_KEY;
 import static org.atlasapi.persistence.media.entity.DescribedTranslatorTest.localizedTitles;
 import static org.atlasapi.persistence.media.entity.LocalizedTitleTranslator.LOCALE_KEY;
 import static org.atlasapi.persistence.media.entity.LocalizedTitleTranslator.TITLE_KEY;
@@ -21,8 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 
 public class LocalizedTitleTranslatorTest {
-
-    public static final String TITLES_KEY = "titles";
 
     @Test
     public void testLocalizedTitleTranslation() {
@@ -53,7 +52,7 @@ public class LocalizedTitleTranslatorTest {
 
         Film deserializedFilm = new Film();
         DBObject dbObj = translator.toDBObject(null, film);
-        assertTrue(dbObj.containsField("titles"));
+        assertTrue(dbObj.containsField(LOCALIZED_TITLES_KEY));
 
         translator.fromDBObject(dbObj, deserializedFilm);
 
