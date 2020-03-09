@@ -170,7 +170,14 @@ public class LookupEntryTranslator {
 
         List<DBObject> equivRefDbos = TranslatorUtils.toDBObjectList(dbo, field);
         for (DBObject equivRefDbo : equivRefDbos) {
-            LookupRef ref = refFromDbo.apply(TranslatorUtils.toDBObject(equivRefDbo, REF));
+            DBObject lookupRefDbo = TranslatorUtils.toDBObject(equivRefDbo, REF);
+            LookupRef ref;
+            if (lookupRefDbo != null) {
+                ref = refFromDbo.apply(lookupRefDbo);
+            } else {
+                // For pre-existing lookup refs which are not nested
+                ref = refFromDbo.apply(equivRefDbo);
+            }
 
             if (ref == null || ref.equals(selfRef)) {
                 continue;
