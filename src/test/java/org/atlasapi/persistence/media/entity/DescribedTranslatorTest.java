@@ -58,16 +58,18 @@ public class DescribedTranslatorTest {
         descriptionsList.add(ImmutableMap.of("language", "en-GB", "shortDescription", "Desc 1", "description", "Desc 1"));
         descriptionsList.add(ImmutableMap.of("language", "en-US", "shortDescription", "Desc 2", "mediumDescription", "Desc 2 Medium", "description", "Desc 2 Medium"));
 
-        BasicDBList titlesList = new BasicDBList();
-        titlesList.add(ImmutableMap.of("language", "en-GB", "title", "Title 1"));
-        titlesList.add(ImmutableMap.of("language", "en-US", "title", "Title 2"));
-        titlesList.add(ImmutableMap.of("language", "it", "title", "Titolo 3"));
-        
+        BasicDBList localizedTitles = new BasicDBList();
+        localizedTitles.add(ImmutableMap.of("title", "Title 5"));
+        localizedTitles.add(ImmutableMap.of("locale", "en-GB", "title", "Title 1"));
+        localizedTitles.add(ImmutableMap.of("locale", "it", "title", "Titolo 3"));
+        localizedTitles.add(ImmutableMap.of("locale", "und", "title", "Title 4"));
+        localizedTitles.add(ImmutableMap.of("locale", "und-US", "title", "Title 2"));
+
         Map<String, Object> m = ImmutableMap.of("links", (Object) list,
                 "descriptions",
                 (Object) descriptionsList,
                 "titles",
-                (Object) titlesList);
+                (Object) localizedTitles);
                 
         DBObject dbo = new BasicDBObject(m);
         int hashCodeFromDbo = dbo.hashCode();
@@ -268,24 +270,33 @@ public class DescribedTranslatorTest {
         return localizedDescriptions;
     }
 
-    private Set<LocalizedTitle> localizedTitles() {
+    public static Set<LocalizedTitle> localizedTitles() {
         Set<LocalizedTitle> localizedTitles = Sets.newHashSet();
 
-        LocalizedTitle title1 = new LocalizedTitle();
-        title1.setLocale(new Locale("en", "GB"));
-        title1.setTitle("Title 1");
+        LocalizedTitle titleWithLanguageAndRegion = new LocalizedTitle();   //i.e. title with locale
+        titleWithLanguageAndRegion.setLocale(Locale.forLanguageTag("en-GB"));
+        titleWithLanguageAndRegion.setTitle("Title 1");
 
-        LocalizedTitle title2 = new LocalizedTitle();
-        title2.setLocale(new Locale("en", "US"));
-        title2.setTitle("Title 2");
+        LocalizedTitle titleWithRegionOnly = new LocalizedTitle();
+        titleWithRegionOnly.setLocale(new Locale("", "US"));
+        titleWithRegionOnly.setTitle("Title 2");
 
-        LocalizedTitle title3 = new LocalizedTitle();
-        title3.setLocale(new Locale("it"));
-        title3.setTitle("Titolo 3");
+        LocalizedTitle titleWithLanguageOnly = new LocalizedTitle();
+        titleWithLanguageOnly.setLocale(new Locale("it"));
+        titleWithLanguageOnly.setTitle("Titolo 3");
 
-        localizedTitles.add(title1);
-        localizedTitles.add(title2);
-        localizedTitles.add(title3);
+        LocalizedTitle titleWithEmptyLocale = new LocalizedTitle();
+        titleWithEmptyLocale.setLocale(new Locale("",""));
+        titleWithEmptyLocale.setTitle("Title 4");
+
+        LocalizedTitle titleWithNullLocale = new LocalizedTitle();
+        titleWithNullLocale.setTitle("Title 5");
+
+        localizedTitles.add(titleWithLanguageAndRegion);
+        localizedTitles.add(titleWithRegionOnly);
+        localizedTitles.add(titleWithLanguageOnly);
+        localizedTitles.add(titleWithEmptyLocale);
+        localizedTitles.add(titleWithNullLocale);
 
         return localizedTitles;        
     }
