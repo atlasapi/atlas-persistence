@@ -286,4 +286,11 @@ public class EquivRefs {
     public int hashCode() {
         return Objects.hash(equivRefs);
     }
+
+    @Override
+    public String toString() {
+        return "EquivRefs{" +
+                "equivRefs=" + equivRefs +
+                '}';
+    }
 }

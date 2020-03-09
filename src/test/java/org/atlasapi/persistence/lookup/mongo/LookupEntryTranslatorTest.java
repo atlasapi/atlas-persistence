@@ -16,6 +16,8 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
@@ -43,6 +45,8 @@ public class LookupEntryTranslatorTest {
         Set<LookupRef> explicit = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM),
             ref("exp",3L, Publisher.BT, ContentCategory.CHILD_ITEM));
+        Set<LookupRef> blacklisted = ImmutableSet.of(
+                ref("blc",4L, Publisher.PA, ContentCategory.CHILD_ITEM));
         Set<LookupRef> equivs = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM), 
             ref("dir",2L, Publisher.PA, ContentCategory.CHILD_ITEM),
@@ -56,9 +60,9 @@ public class LookupEntryTranslatorTest {
                 self,
                 aliasUris,
                 aliases,
-                EquivRefs.of(directEquivs, OUTGOING),
-                EquivRefs.of(explicit, OUTGOING),
-                EquivRefs.of(),
+                EquivRefs.of(directEquivs, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(explicit, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(blacklisted, INCOMING),
                 equivs,
                 created,
                 updated,
@@ -79,8 +83,9 @@ public class LookupEntryTranslatorTest {
         assertEquals(e.lookupRef(), t.lookupRef());
         assertEquals(e.aliasUrls(), t.aliasUrls());
         assertEquals(e.aliases(), t.aliases());
-        assertEquals(e.directEquivalents().getLookupRefs(), t.directEquivalents().getLookupRefs());
-        assertEquals(e.explicitEquivalents().getLookupRefs(), t.explicitEquivalents().getLookupRefs());
+        assertEquals(e.directEquivalents(), t.directEquivalents());
+        assertEquals(e.explicitEquivalents(), t.explicitEquivalents());
+        assertEquals(e.blacklistedEquivalents(), t.blacklistedEquivalents());
         assertEquals(e.equivalents(), t.equivalents());
         assertEquals(e.created(), t.created());
         assertEquals(e.updated(), t.updated());
@@ -94,7 +99,7 @@ public class LookupEntryTranslatorTest {
                 aliases,
                 EquivRefs.of(directEquivs, OUTGOING),
                 EquivRefs.of(explicit, OUTGOING),
-                EquivRefs.of(),
+                EquivRefs.of(blacklisted, INCOMING),
                 equivs,
                 created,
                 updated,
@@ -125,6 +130,8 @@ public class LookupEntryTranslatorTest {
         Set<LookupRef> explicit = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM),
             ref("exp",3L, Publisher.BT, ContentCategory.CHILD_ITEM));
+        Set<LookupRef> blacklisted = ImmutableSet.of(
+                ref("blc",4L, Publisher.PA, ContentCategory.CHILD_ITEM));
         Set<LookupRef> equivs = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM), 
             ref("dir",2L, Publisher.PA, ContentCategory.CHILD_ITEM),
@@ -138,9 +145,9 @@ public class LookupEntryTranslatorTest {
                 self,
                 aliasUris,
                 aliases,
-                EquivRefs.of(directEquivs, OUTGOING),
-                EquivRefs.of(explicit, OUTGOING),
-                EquivRefs.of(),
+                EquivRefs.of(directEquivs, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(explicit, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(blacklisted, INCOMING),
                 equivs,
                 created,
                 updated,
