@@ -13,7 +13,7 @@ import joptsimple.internal.Strings;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.persistence.lookup.entry.EquivRefs;
-import org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection;
+import org.atlasapi.persistence.lookup.entry.EquivRefs.Direction;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.media.entity.AliasTranslator;
 import org.atlasapi.persistence.media.entity.LookupRefTranslator;
@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
 
 public class LookupEntryTranslator {
 
@@ -34,14 +34,15 @@ public class LookupEntryTranslator {
     private static final String BLACKLISTED = "blacklisted";
     private static final String EQUIVS = "equivs";
     public static final String LAST_UPDATED = "updated";
-    public static final String EQUIV_LAST_UPDATED = "equivLastUpdated";
+    public static final String TRANSITIVES_UPDATED = "transitivesUpdated";
     public static final String FIRST_CREATED = "created";
     public static final String ACTIVELY_PUBLISHED = "activelyPublished";
     public static final String ALIASES = "aliases";
     public static final String IDS = "ids";
     public static final String OPAQUE_ID = "aid";
     public static final String SELF = "self";
-    public static final String EQUIV_DIRECTION = "equivDirection";
+    public static final String REF = "ref";
+    public static final String DIRECTION = "direction";
 
     private final AliasTranslator aliasTranslator = new AliasTranslator();
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
@@ -70,7 +71,7 @@ public class LookupEntryTranslator {
 
         TranslatorUtils.fromDateTime(dbo, FIRST_CREATED, entry.created());
         TranslatorUtils.fromDateTime(dbo, LAST_UPDATED, entry.updated());
-        TranslatorUtils.fromDateTime(dbo, EQUIV_LAST_UPDATED, entry.equivUpdated());
+        TranslatorUtils.fromDateTime(dbo, TRANSITIVES_UPDATED, entry.transitivesUpdated());
 
         if (!entry.activelyPublished()) {
             TranslatorUtils.from(dbo, ACTIVELY_PUBLISHED, entry.activelyPublished());
@@ -87,9 +88,10 @@ public class LookupEntryTranslator {
 
     private void translateEquivRefsIntoField(BasicDBObject dbo, String field, EquivRefs equivRefs) {
         BasicDBList equivRefDbos = new BasicDBList();
-        for (Map.Entry<LookupRef, EquivDirection> equivRef : equivRefs.getEquivRefsAsMap().entrySet()) {
-            DBObject equivRefDbo = refToDbo.apply(equivRef.getKey());
-            TranslatorUtils.from(equivRefDbo, EQUIV_DIRECTION, equivRef.getValue().toString());
+        for (Map.Entry<LookupRef, Direction> equivRef : equivRefs.getEquivRefsAsMap().entrySet()) {
+            DBObject equivRefDbo = new BasicDBObject();
+            TranslatorUtils.from(equivRefDbo, REF, refToDbo.apply(equivRef.getKey()));
+            TranslatorUtils.from(equivRefDbo, DIRECTION, equivRef.getValue().toString());
             equivRefDbos.add(equivRefDbo);
         }
         TranslatorUtils.from(dbo, field, equivRefDbos);
@@ -119,7 +121,7 @@ public class LookupEntryTranslator {
 
         DateTime created = TranslatorUtils.toDateTime(dbo, FIRST_CREATED);
         DateTime updated = TranslatorUtils.toDateTime(dbo, LAST_UPDATED);
-        DateTime equivUpdated = TranslatorUtils.toDateTime(dbo, EQUIV_LAST_UPDATED);
+        DateTime equivUpdated = TranslatorUtils.toDateTime(dbo, TRANSITIVES_UPDATED);
 
         boolean activelyPublished = true;
         if (dbo.containsField(ACTIVELY_PUBLISHED)) {
@@ -148,7 +150,7 @@ public class LookupEntryTranslator {
         }
         dbo.removeField(LAST_UPDATED);
         dbo.removeField(FIRST_CREATED);
-        dbo.removeField(EQUIV_LAST_UPDATED);
+        dbo.removeField(TRANSITIVES_UPDATED);
         return dbo;
     }
 
@@ -160,7 +162,7 @@ public class LookupEntryTranslator {
     }
 
     private EquivRefs translateEquivRefs(@Nullable LookupRef selfRef, DBObject dbo, String field) {
-        ImmutableMap.Builder<LookupRef, EquivDirection> equivRefs = ImmutableMap.builder();
+        ImmutableMap.Builder<LookupRef, Direction> equivRefs = ImmutableMap.builder();
 
         if (selfRef != null) {
             equivRefs.put(selfRef, BIDIRECTIONAL);
@@ -168,21 +170,21 @@ public class LookupEntryTranslator {
 
         List<DBObject> equivRefDbos = TranslatorUtils.toDBObjectList(dbo, field);
         for (DBObject equivRefDbo : equivRefDbos) {
-            LookupRef ref = refFromDbo.apply(equivRefDbo);
+            LookupRef ref = refFromDbo.apply(TranslatorUtils.toDBObject(equivRefDbo, REF));
 
             if (ref == null || ref.equals(selfRef)) {
                 continue;
             }
 
-            String equivDirectionStr = TranslatorUtils.toString(equivRefDbo, EQUIV_DIRECTION);
+            String directionStr = TranslatorUtils.toString(equivRefDbo, DIRECTION);
             // If we don't know we assume it's a bidirectional link in order to keep our logic consistent.
             // If two different pieces of content which were equived only thought they either each
             // have an outgoing link to the other, or each have an incoming link from the other, this would actually
             // be a bidirectional link.
-            EquivDirection equivDirection = Strings.isNullOrEmpty(equivDirectionStr)
+            Direction direction = Strings.isNullOrEmpty(directionStr)
                     ? BIDIRECTIONAL
-                    : EquivRefs.EquivDirection.valueOf(equivDirectionStr);
-            equivRefs.put(ref, equivDirection);
+                    : Direction.valueOf(directionStr);
+            equivRefs.put(ref, direction);
         }
 
         return EquivRefs.of(equivRefs.build());

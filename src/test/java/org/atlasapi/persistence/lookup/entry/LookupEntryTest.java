@@ -9,9 +9,9 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.junit.Assert.assertEquals;
 
 public class LookupEntryTest {

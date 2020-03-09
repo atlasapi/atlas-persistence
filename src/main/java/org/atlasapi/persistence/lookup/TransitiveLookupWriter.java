@@ -27,7 +27,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.emptyToNull;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
 
 public class TransitiveLookupWriter implements LookupWriter {
     

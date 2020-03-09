@@ -35,9 +35,9 @@ import org.slf4j.Logger;
 import java.util.Map;
 
 import static com.google.common.base.Predicates.equalTo;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;

@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -345,7 +345,7 @@ public class DefaultEquivalentContentResolverTest {
     }
 
     private EquivRefs toEquivRefs(Iterable<? extends Content> contents) {
-        ImmutableMap.Builder<LookupRef, EquivRefs.EquivDirection> equivRefs = ImmutableMap.builder();
+        ImmutableMap.Builder<LookupRef, EquivRefs.Direction> equivRefs = ImmutableMap.builder();
         for (Content content : contents) {
             equivRefs.put(LookupRef.from(content), OUTGOING);
         }

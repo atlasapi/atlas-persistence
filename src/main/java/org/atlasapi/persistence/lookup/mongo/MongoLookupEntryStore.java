@@ -48,15 +48,15 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
-import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.EQUIV_LAST_UPDATED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.IDS;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.LAST_UPDATED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.SELF;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.TRANSITIVES_UPDATED;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 
@@ -160,9 +160,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
         // Update any instances of the ref from the entries equived to it
         for (LookupEntry entry : entriesForCanonicalUris(transitiveUris)) {
-            EquivRefs.EquivDirection directEquivLink = entry.directEquivalents().getLink(ref);
-            EquivRefs.EquivDirection explicitEquivLink = entry.explicitEquivalents().getLink(ref);
-            EquivRefs.EquivDirection blacklistedEquivLink = entry.blacklistedEquivalents().getLink(ref);
+            EquivRefs.Direction directEquivLink = entry.directEquivalents().getLink(ref);
+            EquivRefs.Direction explicitEquivLink = entry.explicitEquivalents().getLink(ref);
+            EquivRefs.Direction blacklistedEquivLink = entry.blacklistedEquivalents().getLink(ref);
             if(directEquivLink != null) {
                 entry = entry.copyWithDirectEquivalents(entry.directEquivalents().copyWithLink(ref, directEquivLink));
             }
@@ -203,7 +203,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 transitiveEquivs,
                 existing.created(),
                 newEntry.updated(),
-                newEntry.equivUpdated(),
+                newEntry.transitivesUpdated(),
                 newEntry.activelyPublished()
         );
         return merged;
@@ -359,7 +359,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Iterable<LookupEntry> equivUpdatedSince(Publisher publisher, DateTime dateTime) {
         DBObject query = where()
-                .fieldAfter(EQUIV_LAST_UPDATED, dateTime)
+                .fieldAfter(TRANSITIVES_UPDATED, dateTime)
                 .fieldEquals(PUBLISHER, publisher.key())
                 .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
                 .build();

@@ -10,10 +10,10 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.INCOMING;
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.OUTGOING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.of;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -26,7 +26,7 @@ public class EquivRefsTest {
     private LookupRef ref3;
     private LookupRef ref4;
     private EquivRefs equivRefs;
-    private Map<LookupRef, EquivDirection> equivRefsMap;
+    private Map<LookupRef, Direction> equivRefsMap;
 
     @Before
     public void setUp() {
@@ -101,7 +101,7 @@ public class EquivRefsTest {
         assertEquals(equivRefs, newEquivRefs);
 
         newEquivRefs = equivRefs.copyWithLink(ref1, OUTGOING);
-        Map<LookupRef, EquivDirection> expectedEquivRefsMap = ImmutableMap.of(
+        Map<LookupRef, Direction> expectedEquivRefsMap = ImmutableMap.of(
             ref1, BIDIRECTIONAL,
             ref2, OUTGOING,
             ref3, BIDIRECTIONAL
@@ -118,21 +118,21 @@ public class EquivRefsTest {
 
 
         newEquivRefs = equivRefs.copyWithLink(ref4, INCOMING);
-        expectedEquivRefsMap = ImmutableMap.<LookupRef, EquivDirection>builder()
+        expectedEquivRefsMap = ImmutableMap.<LookupRef, Direction>builder()
                 .putAll(equivRefsMap)
                 .put(ref4, INCOMING)
                 .build();
         assertEquals(EquivRefs.of(expectedEquivRefsMap), newEquivRefs);
 
         newEquivRefs = equivRefs.copyWithLink(ref4, OUTGOING);
-        expectedEquivRefsMap = ImmutableMap.<LookupRef, EquivDirection>builder()
+        expectedEquivRefsMap = ImmutableMap.<LookupRef, Direction>builder()
                 .putAll(equivRefsMap)
                 .put(ref4, OUTGOING)
                 .build();
         assertEquals(EquivRefs.of(expectedEquivRefsMap), newEquivRefs);
 
         newEquivRefs = equivRefs.copyWithLink(ref4, BIDIRECTIONAL);
-        expectedEquivRefsMap = ImmutableMap.<LookupRef, EquivDirection>builder()
+        expectedEquivRefsMap = ImmutableMap.<LookupRef, Direction>builder()
                 .putAll(equivRefsMap)
                 .put(ref4, BIDIRECTIONAL)
                 .build();
@@ -145,7 +145,7 @@ public class EquivRefsTest {
         EquivRefs newEquivRefs = equivRefs.copyWithLinks(
                 ImmutableSet.of(ref1, ref2, ref3, ref4), INCOMING
         );
-        Map<LookupRef, EquivDirection> expectedEquivRefsMap = ImmutableMap.of(
+        Map<LookupRef, Direction> expectedEquivRefsMap = ImmutableMap.of(
                 ref1, INCOMING,
                 ref2, BIDIRECTIONAL,
                 ref3, BIDIRECTIONAL,
@@ -186,7 +186,7 @@ public class EquivRefsTest {
         assertEquals(equivRefs, newEquivRefs);
 
         newEquivRefs = equivRefs.copyWithoutLink(ref1, INCOMING);
-        Map<LookupRef, EquivDirection> expectedEquivRefsMap = ImmutableMap.of(
+        Map<LookupRef, Direction> expectedEquivRefsMap = ImmutableMap.of(
                 ref2, OUTGOING,
                 ref3, BIDIRECTIONAL
         );
@@ -234,7 +234,7 @@ public class EquivRefsTest {
         EquivRefs newEquivRefs = equivRefs.copyWithoutLinks(
                 ImmutableSet.of(ref1, ref2, ref3, ref4), INCOMING
         );
-        Map<LookupRef, EquivDirection> expectedEquivRefsMap = ImmutableMap.of(
+        Map<LookupRef, Direction> expectedEquivRefsMap = ImmutableMap.of(
                 ref2, OUTGOING,
                 ref3, OUTGOING
         );
@@ -259,7 +259,7 @@ public class EquivRefsTest {
     @Test
     public void testCopyAndReplaceOutgoing() {
         EquivRefs newEquivRefs = equivRefs.copyAndReplaceOutgoing(ImmutableSet.of(ref2, ref4));
-        Map<LookupRef, EquivDirection> expectedEquivRefsMap = ImmutableMap.of(
+        Map<LookupRef, Direction> expectedEquivRefsMap = ImmutableMap.of(
                 ref1, INCOMING,
                 ref2, OUTGOING,
                 ref3, INCOMING,
@@ -278,7 +278,7 @@ public class EquivRefsTest {
     @Test
     public void testCopyAndReplaceIncoming() {
         EquivRefs newEquivRefs = equivRefs.copyAndReplaceIncoming(ImmutableSet.of(ref1, ref4));
-        Map<LookupRef, EquivDirection> expectedEquivRefsMap = ImmutableMap.of(
+        Map<LookupRef, Direction> expectedEquivRefsMap = ImmutableMap.of(
                 ref1, INCOMING,
                 ref2, OUTGOING,
                 ref3, OUTGOING,

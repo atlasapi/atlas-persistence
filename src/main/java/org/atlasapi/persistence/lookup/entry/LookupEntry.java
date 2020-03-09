@@ -14,7 +14,7 @@ import org.joda.time.DateTime;
 import java.util.List;
 import java.util.Set;
 
-import static org.atlasapi.persistence.lookup.entry.EquivRefs.EquivDirection.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
 
 public class LookupEntry {
 
@@ -64,7 +64,7 @@ public class LookupEntry {
     
     private final DateTime created;
     private final DateTime updated;
-    private final DateTime equivUpdated;
+    private final DateTime transitivesUpdated;
 
     private final LookupRef self;
     private final boolean activelyPublished;
@@ -81,7 +81,7 @@ public class LookupEntry {
             Set<LookupRef> equivs,
             DateTime created,
             DateTime updated,
-            DateTime equivUpdated,
+            DateTime transitivesUpdated,
             boolean activelyPublished
     ) {
         this.uri = uri;
@@ -95,7 +95,7 @@ public class LookupEntry {
         this.equivs = equivs;
         this.created = created;
         this.updated = updated;
-        this.equivUpdated = equivUpdated;
+        this.transitivesUpdated = transitivesUpdated;
         this.activelyPublished = activelyPublished;
     }
 
@@ -141,7 +141,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                equivUpdated,
+                transitivesUpdated,
                 activelyPublished
         );
     }
@@ -164,7 +164,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                equivUpdated,
+                transitivesUpdated,
                 activelyPublished
         );
     }
@@ -187,7 +187,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                equivUpdated,
+                transitivesUpdated,
                 activelyPublished
         );
     }
@@ -214,7 +214,7 @@ public class LookupEntry {
                 equivs,
                 created,
                 now,
-                this.equivs.equals(equivs) ? equivUpdated : now,
+                this.equivs.equals(equivs) ? transitivesUpdated : now,
                 activelyPublished
         );
     }
@@ -245,8 +245,8 @@ public class LookupEntry {
         return updated;
     }
 
-    public DateTime equivUpdated() {
-        return equivUpdated;
+    public DateTime transitivesUpdated() {
+        return transitivesUpdated;
     }
 
     public LookupRef lookupRef() {
@@ -261,7 +261,7 @@ public class LookupEntry {
         if(that instanceof LookupEntry) {
             LookupEntry other = (LookupEntry) that;
             return uri.equals(other.uri) && equivs.equals(other.equivs) && created.equals(other.created)
-                    && updated.equals(other.updated) && Objects.equal(equivUpdated, other.equivUpdated)
+                    && updated.equals(other.updated) && Objects.equal(transitivesUpdated, other.transitivesUpdated)
                     && activelyPublished == other.activelyPublished;
         }
         return false;
@@ -269,7 +269,7 @@ public class LookupEntry {
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(uri, equivs, created, updated, equivUpdated, activelyPublished);
+        return Objects.hashCode(uri, equivs, created, updated, transitivesUpdated, activelyPublished);
     }
     
     @Override
