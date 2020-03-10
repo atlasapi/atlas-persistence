@@ -96,7 +96,7 @@ public class LookupEntryTranslator {
         }
         TranslatorUtils.from(dbo, field, equivRefDbos);
     }
-    
+
     private static Function<LookupRef, DBObject> refToDbo = input ->
             lookupRefTranslator.toDBObject(null, input);
     
