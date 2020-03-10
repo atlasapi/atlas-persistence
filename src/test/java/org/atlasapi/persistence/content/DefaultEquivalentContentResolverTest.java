@@ -1,14 +1,15 @@
 package org.atlasapi.persistence.content;
 
 import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
 import com.metabroadcast.common.base.MorePredicates;
+import com.metabroadcast.common.stream.MoreCollectors;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Identified;
@@ -16,6 +17,7 @@ import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.output.Annotation;
 import org.atlasapi.persistence.lookup.InMemoryLookupEntryStore;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.junit.Before;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -327,14 +330,26 @@ public class DefaultEquivalentContentResolverTest {
     }
     
     private LookupEntry entry(Content c, Iterable<? extends Content> direct, Content... equivs) {
+        EquivRefs equivRefs = toEquivRefs(direct);
+        Set<LookupRef> transitiveSet = Arrays.stream(equivs)
+                .map(LookupRef::from)
+                .collect(MoreCollectors.toImmutableSet());
         return LookupEntry.lookupEntryFrom(c)
-            .copyWithDirectEquivalents(Iterables.transform(direct, LookupRef.FROM_DESCRIBED))
-            .copyWithEquivalents(Collections2.transform(ImmutableSet.copyOf(equivs), LookupRef.FROM_DESCRIBED));
+            .copyWithDirectEquivalents(equivRefs)
+            .copyWithEquivalents(transitiveSet);
     }
 
     private LookupEntry entry(Content c, Content... equivs) {
         return LookupEntry.lookupEntryFrom(c)
-                .copyWithExplicitEquivalents(Collections2.transform(ImmutableSet.copyOf(equivs), LookupRef.FROM_DESCRIBED));
+                .copyWithExplicitEquivalents(toEquivRefs(ImmutableSet.copyOf(equivs)));
+    }
+
+    private EquivRefs toEquivRefs(Iterable<? extends Content> contents) {
+        ImmutableMap.Builder<LookupRef, EquivRefs.Direction> equivRefs = ImmutableMap.builder();
+        for (Content content : contents) {
+            equivRefs.put(LookupRef.from(content), OUTGOING);
+        }
+        return EquivRefs.of(equivRefs.build());
     }
     
     private Episode episode(String uri, long id, Publisher src) {

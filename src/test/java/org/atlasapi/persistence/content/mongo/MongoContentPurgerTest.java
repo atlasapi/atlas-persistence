@@ -1,14 +1,15 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.Set;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
-import org.atlasapi.application.v3.DefaultApplication;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.DBCollection;
+import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
@@ -32,14 +33,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.DBCollection;
-import com.mongodb.ReadPreference;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MongoContentPurgerTest {
@@ -98,12 +96,12 @@ public class MongoContentPurgerTest {
         contentWriter.createOrUpdate(item2);
         
         LookupEntry lookup = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableSet.of(BBC_ITEM_URI)));
-        assertEquals(2, lookup.explicitEquivalents().size());
+        assertEquals(2, lookup.explicitEquivalents().getLookupRefs().size());
         
         mongoContentPurger.purge(Publisher.METABROADCAST, ImmutableSet.of(Publisher.BBC));
         
         lookup = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableSet.of(BBC_ITEM_URI)));
-        assertEquals(1, lookup.explicitEquivalents().size());
+        assertEquals(1, lookup.explicitEquivalents().getLookupRefs().size());
         
         assertEquals(0, contentResolver.resolveUris(ImmutableSet.of(BBC_ITEM_URI), application, ImmutableSet.<Annotation>of(), false).get(MB_ITEM_URI).size());
         

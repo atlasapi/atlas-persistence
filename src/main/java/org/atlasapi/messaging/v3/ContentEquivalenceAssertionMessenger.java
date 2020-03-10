@@ -3,6 +3,7 @@ package org.atlasapi.messaging.v3;
 import java.math.BigInteger;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.atlasapi.media.entity.Content;
@@ -134,12 +135,10 @@ public class ContentEquivalenceAssertionMessenger {
             // the smallest lookup entry ID from that graph that ID should be consistent enough
             // to use as a partition key and ensure updates on the same graph end up on the same
             // partition.
-            Optional<Long> graphId = ImmutableSet.<LookupRef>builder()
-                    .addAll(lookupEntry.equivalents())
-                    .addAll(lookupEntry.explicitEquivalents())
-                    .addAll(lookupEntry.directEquivalents())
-                    .build()
-                    .stream()
+            Optional<Long> graphId = Stream.concat(
+                    lookupEntry.equivalents().stream(),
+                    lookupEntry.getNeighbours().stream()
+            )
                     .map(LookupRef::id)
                     .sorted()
                     .findFirst();

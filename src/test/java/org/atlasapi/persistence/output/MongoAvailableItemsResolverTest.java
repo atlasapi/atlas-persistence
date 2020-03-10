@@ -1,18 +1,15 @@
 package org.atlasapi.persistence.output;
 
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
-import org.atlasapi.application.v3.DefaultApplication;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.time.DateTimeZones;
+import com.metabroadcast.common.time.TimeMachine;
+import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Encoding;
@@ -27,6 +24,7 @@ import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentWriter;
 import org.atlasapi.persistence.content.mongo.MongoContentWriter;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.player.PlayerResolver;
@@ -37,13 +35,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.time.DateTimeZones;
-import com.metabroadcast.common.time.TimeMachine;
-import com.mongodb.ReadPreference;
+import java.util.Set;
+
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MongoAvailableItemsResolverTest {
@@ -121,10 +121,10 @@ public class MongoAvailableItemsResolverTest {
 
     private void writeEquivalences(Episode a, Episode b) {
         LookupEntry aEntry = LookupEntry.lookupEntryFrom(a)
-            .copyWithDirectEquivalents(ImmutableSet.of(LookupRef.from(b)))
+            .copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(b), OUTGOING))
             .copyWithEquivalents(ImmutableSet.of(LookupRef.from(b)));
         LookupEntry bEntry = LookupEntry.lookupEntryFrom(b)
-            .copyWithDirectEquivalents(ImmutableSet.of(LookupRef.from(a)))
+            .copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(a), OUTGOING))
             .copyWithEquivalents(ImmutableSet.of(LookupRef.from(a)));
         
         lookupStore.store(aEntry);

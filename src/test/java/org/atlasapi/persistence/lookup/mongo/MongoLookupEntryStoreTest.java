@@ -22,6 +22,7 @@ import org.atlasapi.media.entity.Series;
 import org.atlasapi.persistence.audit.NoLoggingPersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -34,6 +35,9 @@ import org.slf4j.Logger;
 import java.util.Map;
 
 import static com.google.common.base.Predicates.equalTo;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
@@ -174,9 +178,9 @@ public class MongoLookupEntryStoreTest {
         LookupEntry secondEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveUri")));
         
         ImmutableSet<LookupRef> secondRef = ImmutableSet.of(secondEntry.lookupRef());
-        firstEntry = firstEntry.copyWithDirectEquivalents(secondRef).copyWithEquivalents(secondRef);
+        firstEntry = firstEntry.copyWithDirectEquivalents(EquivRefs.of(secondRef, BIDIRECTIONAL)).copyWithEquivalents(secondRef);
         ImmutableSet<LookupRef> firstRef = ImmutableSet.of(firstEntry.lookupRef());
-        secondEntry= secondEntry.copyWithDirectEquivalents(firstRef).copyWithEquivalents(firstRef);
+        secondEntry= secondEntry.copyWithDirectEquivalents(EquivRefs.of(firstRef, BIDIRECTIONAL)).copyWithEquivalents(firstRef);
 
         entryStore.store(firstEntry);
         entryStore.store(secondEntry);
@@ -189,7 +193,7 @@ public class MongoLookupEntryStoreTest {
 
         LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemUri")));
         assertEquals(ContentCategory.CHILD_ITEM, newEntry.lookupRef().category());
-        assertTrue(newEntry.directEquivalents().contains(secondEntry.lookupRef()));
+        assertTrue(newEntry.directEquivalents().getLookupRefs().contains(secondEntry.lookupRef()));
         assertTrue(newEntry.equivalents().contains(secondEntry.lookupRef()));
         assertEquals(firstEntry.created(), newEntry.created());
         
@@ -197,10 +201,64 @@ public class MongoLookupEntryStoreTest {
         
         LookupEntry transtiveEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveUri")));
         assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.equivalents(), equalTo(newEntry.lookupRef())).category());
-        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.directEquivalents(), equalTo(newEntry.lookupRef())).category());
+        assertEquals(ContentCategory.CHILD_ITEM, Iterables.find(transtiveEntry.directEquivalents().getLookupRefs(), equalTo(newEntry.lookupRef())).category());
         assertEquals(transtiveEntry.created(), secondEntry.created());
         
         assertTrue(Iterables.isEmpty(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveAlias"))));
+    }
+
+    @Test
+    public void testEnsureLookupDoesNotChangeEquivalenceLinksWhenChangeInType() {
+
+        Item testItem = new Item("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testItem.addAliasUrl("oldItemAlias");
+
+        entryStore.ensureLookup(testItem);
+
+        LookupEntry firstEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemUri")));
+
+        Item transitiveItem = new Item("transitiveUri", "transitiveCurie", Publisher.PA);
+        transitiveItem.addAliasUrl("transitiveAlias");
+
+        entryStore.ensureLookup(transitiveItem);
+
+        LookupEntry secondEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveUri")));
+
+        ImmutableSet<LookupRef> secondRef = ImmutableSet.of(secondEntry.lookupRef());
+        firstEntry = firstEntry
+                .copyWithDirectEquivalents(EquivRefs.of(secondRef, BIDIRECTIONAL))
+                .copyWithExplicitEquivalents(EquivRefs.of(secondRef, INCOMING))
+                .copyWithBlacklistedEquivalents(EquivRefs.of(secondRef, OUTGOING))
+                .copyWithEquivalents(secondRef);
+        ImmutableSet<LookupRef> firstRef = ImmutableSet.of(firstEntry.lookupRef());
+        secondEntry= secondEntry
+                .copyWithDirectEquivalents(EquivRefs.of(firstRef, BIDIRECTIONAL))
+                .copyWithExplicitEquivalents(EquivRefs.of(firstRef, OUTGOING))
+                .copyWithBlacklistedEquivalents(EquivRefs.of(firstRef, INCOMING))
+                .copyWithEquivalents(firstRef);
+
+        entryStore.store(firstEntry);
+        entryStore.store(secondEntry);
+
+        Episode testEpisode = new Episode("oldItemUri", "oldItemCurie", Publisher.BBC);
+        testEpisode.addAliasUrl("oldItemAlias");
+        testEpisode.setParentRef(new ParentRef("aBrand"));
+
+        entryStore.ensureLookup(testEpisode);
+
+        LookupEntry newEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemUri")));
+        assertEquals(firstEntry.equivalents(), newEntry.equivalents());
+        assertEquals(firstEntry.directEquivalents(), newEntry.directEquivalents());
+        assertEquals(firstEntry.explicitEquivalents(), newEntry.explicitEquivalents());
+        assertEquals(firstEntry.blacklistedEquivalents(), newEntry.blacklistedEquivalents());
+
+        assertTrue(Iterables.isEmpty(entryStore.entriesForCanonicalUris(ImmutableList.of("oldItemAlias"))));
+
+        LookupEntry transtiveEntry = Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of("transitiveUri")));
+        assertEquals(secondEntry.equivalents(), transtiveEntry.equivalents());
+        assertEquals(secondEntry.directEquivalents(), transtiveEntry.directEquivalents());
+        assertEquals(secondEntry.explicitEquivalents(), transtiveEntry.explicitEquivalents());
+        assertEquals(secondEntry.blacklistedEquivalents(), transtiveEntry.blacklistedEquivalents());
     }
     
     @Test

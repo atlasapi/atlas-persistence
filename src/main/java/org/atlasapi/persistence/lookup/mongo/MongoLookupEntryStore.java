@@ -12,6 +12,7 @@ import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.stream.MoreCollectors;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -24,6 +25,7 @@ import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
@@ -39,10 +41,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.equalTo;
-import static com.google.common.base.Predicates.not;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.transform;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.select;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.sort;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
@@ -50,13 +48,15 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.IN;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-import static org.atlasapi.media.entity.LookupRef.TO_URI;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ACTIVELY_PUBLISHED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.ALIASES;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.IDS;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.LAST_UPDATED;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.OPAQUE_ID;
 import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.SELF;
+import static org.atlasapi.persistence.lookup.mongo.LookupEntryTranslator.TRANSITIVES_UPDATED;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.NAMESPACE;
 import static org.atlasapi.persistence.media.entity.AliasTranslator.VALUE;
 
@@ -152,22 +152,60 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         LookupRef ref = merged.lookupRef();
 
         store(merged, existing);
-        
-        for (LookupEntry entry : entriesForCanonicalUris(transform(filter(merged.equivalents(), not(equalTo(ref))), TO_URI))) {
-            if(entry.directEquivalents().contains(ref)) {
-                entry = entry.copyWithDirectEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(entry.directEquivalents()).build());
+
+        Set<String> transitiveUris = merged.equivalents().stream()
+                .filter(equivRef -> !equivRef.equals(ref))
+                .map(LookupRef::uri)
+                .collect(MoreCollectors.toImmutableSet());
+
+        // Update any instances of the ref from the entries equived to it
+        for (LookupEntry entry : entriesForCanonicalUris(transitiveUris)) {
+            EquivRefs.Direction directEquivLink = entry.directEquivalents().getLink(ref);
+            EquivRefs.Direction explicitEquivLink = entry.explicitEquivalents().getLink(ref);
+            EquivRefs.Direction blacklistedEquivLink = entry.blacklistedEquivalents().getLink(ref);
+            if(directEquivLink != null) {
+                entry = entry.copyWithDirectEquivalents(entry.directEquivalents().copyWithLink(ref, directEquivLink));
             }
-            entry = entry.copyWithEquivalents(ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build());
+            if(explicitEquivLink != null) {
+                entry = entry.copyWithExplicitEquivalents(entry.explicitEquivalents().copyWithLink(ref, explicitEquivLink));
+            }
+            if(blacklistedEquivLink != null) {
+                entry = entry.copyWithBlacklistedEquivalents(entry.blacklistedEquivalents().copyWithLink(ref, blacklistedEquivLink));
+            }
+            Set<LookupRef> newEquivs = ImmutableSet.<LookupRef>builder()
+                    .add(ref)
+                    .addAll(existing.equivalents())
+                    .build();
+            entry = entry.copyWithEquivalents(newEquivs);
             store(entry, existing);
         }
     }
 
     private LookupEntry merge(Content content, LookupEntry newEntry, LookupEntry existing) {
         LookupRef ref = LookupRef.from(content);
-        Set<LookupRef> directEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.directEquivalents()).build();
-        Set<LookupRef> explicit = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.explicitEquivalents()).build();
-        Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder().add(ref).addAll(existing.equivalents()).build();
-        LookupEntry merged = new LookupEntry(newEntry.uri(), existing.id(), ref, newEntry.aliasUrls(), newEntry.aliases(), directEquivs, explicit, transitiveEquivs, existing.created(), newEntry.updated(), newEntry.activelyPublished());
+
+        // We copy the equiv refs to update the ref's content category if needed
+
+        Set<LookupRef> transitiveEquivs = ImmutableSet.<LookupRef>builder()
+                .add(ref)
+                .addAll(existing.equivalents())
+                .build();
+
+        LookupEntry merged = new LookupEntry(
+                newEntry.uri(),
+                existing.id(),
+                ref,
+                newEntry.aliasUrls(),
+                newEntry.aliases(),
+                existing.directEquivalents().copyWithLink(ref, BIDIRECTIONAL),
+                existing.explicitEquivalents().copyWithLink(ref, BIDIRECTIONAL),
+                existing.blacklistedEquivalents(),
+                transitiveEquivs,
+                existing.created(),
+                newEntry.updated(),
+                newEntry.transitivesUpdated(),
+                newEntry.activelyPublished()
+        );
         return merged;
     }
 
@@ -308,13 +346,25 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Iterable<LookupEntry> updatedSince(Publisher publisher, DateTime dateTime) {
         DBObject query = where()
-                .fieldAfter("updated", dateTime)
-                .fieldEquals("self.publisher", publisher.key())
-                .fieldNotEqualTo("activelyPublished", false)
+                .fieldAfter(LAST_UPDATED, dateTime)
+                .fieldEquals(PUBLISHER, publisher.key())
+                .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
                 .build();
 
         return StreamSupport.stream(lookup.find(query).spliterator(), false)
                 .map(translator.FROM_DBO::apply)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Iterable<LookupEntry> equivUpdatedSince(Publisher publisher, DateTime dateTime) {
+        DBObject query = where()
+                .fieldAfter(TRANSITIVES_UPDATED, dateTime)
+                .fieldEquals(PUBLISHER, publisher.key())
+                .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
+                .build();
+
+        return Iterables.transform(lookup.find(query), translator.FROM_DBO);
+
     }
 }

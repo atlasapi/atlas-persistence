@@ -1,26 +1,29 @@
 package org.atlasapi.persistence.lookup.mongo;
 
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Set;
-
-import org.atlasapi.media.entity.Alias;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.content.ContentCategory;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
-import org.joda.time.DateTime;
-import org.junit.Test;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.mongodb.DBObject;
+import org.atlasapi.media.entity.Alias;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.content.ContentCategory;
+import org.atlasapi.persistence.lookup.entry.EquivRefs;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.joda.time.DateTime;
+import org.junit.Test;
+
+import java.util.Set;
+
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 public class LookupEntryTranslatorTest {
@@ -42,16 +45,30 @@ public class LookupEntryTranslatorTest {
         Set<LookupRef> explicit = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM),
             ref("exp",3L, Publisher.BT, ContentCategory.CHILD_ITEM));
+        Set<LookupRef> blacklisted = ImmutableSet.of(
+                ref("blc",4L, Publisher.PA, ContentCategory.CHILD_ITEM));
         Set<LookupRef> equivs = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM), 
             ref("dir",2L, Publisher.PA, ContentCategory.CHILD_ITEM),
             ref("exp",3L, Publisher.BT, ContentCategory.CHILD_ITEM));
         DateTime created = DateTime.now(DateTimeZones.UTC);
         DateTime updated = DateTime.now(DateTimeZones.UTC);
-        
-        boolean activelyPublished = true;
-        
-        LookupEntry e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated, activelyPublished );
+
+        LookupEntry e = new LookupEntry(
+                "uri",
+                1L,
+                self,
+                aliasUris,
+                aliases,
+                EquivRefs.of(directEquivs, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(explicit, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(blacklisted, INCOMING),
+                equivs,
+                created,
+                updated,
+                updated,
+                true
+        );
         
         DBObject dbo = translator.toDbo(e);
         
@@ -68,12 +85,29 @@ public class LookupEntryTranslatorTest {
         assertEquals(e.aliases(), t.aliases());
         assertEquals(e.directEquivalents(), t.directEquivalents());
         assertEquals(e.explicitEquivalents(), t.explicitEquivalents());
+        assertEquals(e.blacklistedEquivalents(), t.blacklistedEquivalents());
         assertEquals(e.equivalents(), t.equivalents());
         assertEquals(e.created(), t.created());
         assertEquals(e.updated(), t.updated());
         assertEquals(e.activelyPublished(), t.activelyPublished());
         
-        e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated, false);
+        e = new LookupEntry(
+                "uri",
+                1L,
+                self,
+                aliasUris,
+                aliases,
+                EquivRefs.of(directEquivs, OUTGOING),
+                EquivRefs.of(explicit, OUTGOING),
+                EquivRefs.of(blacklisted, INCOMING),
+                equivs,
+                created,
+                updated,
+                updated,
+                false
+        );
+
+
         dbo = translator.toDbo(e);
         
         assertTrue(dbo.containsField(ACTIVELY_PUBLISHED));
@@ -96,23 +130,38 @@ public class LookupEntryTranslatorTest {
         Set<LookupRef> explicit = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM),
             ref("exp",3L, Publisher.BT, ContentCategory.CHILD_ITEM));
+        Set<LookupRef> blacklisted = ImmutableSet.of(
+                ref("blc",4L, Publisher.PA, ContentCategory.CHILD_ITEM));
         Set<LookupRef> equivs = ImmutableSet.of(
             ref("uri", 1L, Publisher.BBC, ContentCategory.CHILD_ITEM), 
             ref("dir",2L, Publisher.PA, ContentCategory.CHILD_ITEM),
             ref("exp",3L, Publisher.BT, ContentCategory.CHILD_ITEM));
         DateTime created = DateTime.now(DateTimeZones.UTC);
         DateTime updated = DateTime.now(DateTimeZones.UTC);
-        
-        boolean activelyPublished = true;
-        LookupEntry e = new LookupEntry("uri", 1L, self, aliasUris, aliases, directEquivs, explicit, equivs, created, updated, activelyPublished);
+
+        LookupEntry e = new LookupEntry(
+                "uri",
+                1L,
+                self,
+                aliasUris,
+                aliases,
+                EquivRefs.of(directEquivs, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(explicit, OUTGOING).copyWithLink(self, BIDIRECTIONAL),
+                EquivRefs.of(blacklisted, INCOMING),
+                equivs,
+                created,
+                updated,
+                updated,
+                true
+        );
         
         DBObject dbo = translator.toDbo(e);
         
         LookupEntry t = translator.fromDbo(dbo);
         
         LookupRef selfRef = t.lookupRef();
-        containsInstance(selfRef, t.directEquivalents());
-        containsInstance(selfRef, t.explicitEquivalents());
+        containsInstance(selfRef, t.directEquivalents().getLookupRefs());
+        containsInstance(selfRef, t.explicitEquivalents().getLookupRefs());
         containsInstance(selfRef, t.equivalents());
         
     }

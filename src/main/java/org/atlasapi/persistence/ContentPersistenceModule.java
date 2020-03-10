@@ -1,5 +1,6 @@
 package org.atlasapi.persistence;
 
+import com.metabroadcast.common.ids.IdGenerator;
 import org.atlasapi.media.product.ProductResolver;
 import org.atlasapi.media.product.ProductStore;
 import org.atlasapi.media.segment.SegmentResolver;
@@ -15,8 +16,6 @@ import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 
-import com.metabroadcast.common.ids.IdGenerator;
-
 public interface ContentPersistenceModule {
 
     ContentGroupWriter contentGroupWriter();
@@ -28,8 +27,6 @@ public interface ContentPersistenceModule {
     ContentWriter noEquivalenceWritingContentWriter();
 
     ContentWriter nonIdSettingContentWriter();
-
-	ContentWriter nonIdNoLockSettingContentWriter();
 
 	ContentWriter mongoContentWriter();
 	
