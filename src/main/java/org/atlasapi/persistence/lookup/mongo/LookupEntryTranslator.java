@@ -1,16 +1,5 @@
 package org.atlasapi.persistence.lookup.mongo;
 
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
-
-import java.util.Set;
-
-import org.atlasapi.media.entity.Alias;
-import org.atlasapi.media.entity.LookupRef;
-import org.atlasapi.persistence.lookup.entry.LookupEntry;
-import org.atlasapi.persistence.media.entity.AliasTranslator;
-import org.atlasapi.persistence.media.entity.LookupRefTranslator;
-import org.joda.time.DateTime;
-
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -19,6 +8,16 @@ import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.atlasapi.media.entity.Alias;
+import org.atlasapi.media.entity.LookupRef;
+import org.atlasapi.persistence.lookup.entry.LookupEntry;
+import org.atlasapi.persistence.media.entity.AliasTranslator;
+import org.atlasapi.persistence.media.entity.LookupRefTranslator;
+import org.joda.time.DateTime;
+
+import java.util.Set;
+
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.ID;
 
 public class LookupEntryTranslator {
 
@@ -32,6 +31,7 @@ public class LookupEntryTranslator {
     public static final String IDS = "ids";
     public static final String OPAQUE_ID = "aid";
     public static final String SELF = "self";
+    public static final String REF = "ref";
     
     private final AliasTranslator aliasTranslator = new AliasTranslator();
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
@@ -137,7 +137,12 @@ public class LookupEntryTranslator {
     private static final Function<DBObject, LookupRef> refFromDbo = new Function<DBObject, LookupRef>() {
         @Override
         public LookupRef apply(DBObject input) {
-            return lookupRefTranslator.fromDBObject(input, null);
+            DBObject newRefFormatDbo = TranslatorUtils.toDBObject(input, REF);
+            if (newRefFormatDbo == null) {
+                return lookupRefTranslator.fromDBObject(input, null);
+            } else {
+                return lookupRefTranslator.fromDBObject(newRefFormatDbo, null);
+            }
         }
     };
 }
