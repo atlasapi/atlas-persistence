@@ -52,6 +52,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
@@ -60,14 +61,13 @@ import org.springframework.context.annotation.Primary;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import static org.atlasapi.persistence.MongoModule.OWL_DATABASED_MONGO;
-
 /**
  * This is the Spring version of the MongoContentPersistenceModule.
  * The non-DI version serves as a delegate in this class.
  */
 @Configuration
-@Import({KafkaMessagingModule.class, MongoModule.class})
+@Import(KafkaMessagingModule.class)
+@ComponentScan(basePackages = "org.atlasapi")
 public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
@@ -76,7 +76,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
-    @Autowired @Qualifier(OWL_DATABASED_MONGO) private DatabasedMongo db;
+    @Autowired @Qualifier("OwlDatabasedMongo") private DatabasedMongo db;
     @Autowired private AdapterLog log;
     @Autowired private MessagingModule messagingModule;
 
