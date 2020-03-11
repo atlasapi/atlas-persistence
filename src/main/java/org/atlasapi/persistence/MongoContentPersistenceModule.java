@@ -1,14 +1,22 @@
 package org.atlasapi.persistence;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.stream.MoreCollectors;
 import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
 import com.mongodb.ReadPreference;
+import com.mongodb.ServerAddress;
+import com.mongodb.WriteConcern;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ServiceChannelStore;
 import org.atlasapi.media.product.ProductResolver;
@@ -49,7 +57,6 @@ import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,6 +66,9 @@ import org.springframework.context.annotation.Primary;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.StreamSupport;
 
 /**
  * This is the Spring version of the MongoContentPersistenceModule.
@@ -74,11 +84,18 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
-    @Autowired @Qualifier("OwlDatabasedMongo") private DatabasedMongo db;
+    private DatabasedMongo db;
     @Autowired private AdapterLog log;
     @Autowired private MessagingModule messagingModule;
 
     private final Parameter processingConfig = Configurer.get("processing.config");
+    private final String mongoHost = Configurer.get("mongo.host").get();
+    private final String dbName = Configurer.get("mongo.dbName").get();
+    private static final int mongoMaxConnections = Configurer.get("mongo.maxConnections").toInt();
+    private final String mongoTag = Strings.emptyToNull(Configurer.get("mongo.db.tag").get());
+    private final String mongoFallbackTag = Strings.emptyToNull(Configurer.get("mongo.db.tag.fallback").get());
+    private final Parameter processingWriteConcern = Configurer.get("processing.mongo.writeConcern");
+    private final MongoSecondaryReadPreferenceBuilder secondaryReadPreferenceBuilder = new MongoSecondaryReadPreferenceBuilder();
 
     @Value("${messaging.destination.content.changes}") private String contentChanges;
     @Value("${messaging.destination.topics.changes}") private String topicChanges;
@@ -91,7 +108,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Value("${mongo.audit.dbname}") private String auditDbName;
     @Value("${mongo.audit.enabled}") private boolean auditEnabled;
 
-    public MongoContentPersistenceModule() {}
+    public MongoContentPersistenceModule() {
+        this.db = databasedMongo();
+    }
 
     @VisibleForTesting
     public MongoContentPersistenceModule(
@@ -143,6 +162,60 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
                 processingConfig,
                 equivAssertDest
         );
+    }
+
+    private DatabasedMongo databasedMongo() {
+        return new DatabasedMongo(mongo(), dbName);
+    }
+
+    private Mongo mongo() {
+        MongoClientOptions.Builder optionsBuilder = MongoClientOptions.builder()
+                .readPreference(readPreference())
+                .connectionsPerHost(mongoMaxConnections);
+
+        if(isProcessing()
+                && processingWriteConcern != null
+                && !Strings.isNullOrEmpty(processingWriteConcern.get())) {
+
+            WriteConcern writeConcern = WriteConcern.valueOf(processingWriteConcern.get());
+            if (writeConcern == null) {
+                throw new IllegalArgumentException("Could not parse write concern: " +
+                        processingWriteConcern.get());
+            }
+            optionsBuilder.writeConcern(writeConcern);
+        }
+        return new MongoClient(mongoHosts(), optionsBuilder.build());
+    }
+
+    private ReadPreference readPreference() {
+        boolean requirePrimary = isProcessing();
+        if (requirePrimary) {
+            return ReadPreference.primary();
+        }
+
+        ImmutableList.Builder<String> tags = ImmutableList.builder();
+        if (mongoTag != null) {
+            tags.add(mongoTag);
+        }
+
+        if (mongoFallbackTag != null) {
+            tags.add(mongoFallbackTag);
+        }
+
+        return secondaryReadPreferenceBuilder.fromProperties(tags.build());
+    }
+
+    private boolean isProcessing() {
+        return processingConfig != null && processingConfig.toBoolean();
+    }
+
+    private List<ServerAddress> mongoHosts() {
+        Splitter splitter = Splitter.on(",").omitEmptyStrings().trimResults();
+
+        return StreamSupport.stream(splitter.split(mongoHost).spliterator(), false)
+                .map(input -> new ServerAddress(input, 27017))
+                .filter(Objects::nonNull)
+                .collect(MoreCollectors.toImmutableList());
     }
 
     @Bean
