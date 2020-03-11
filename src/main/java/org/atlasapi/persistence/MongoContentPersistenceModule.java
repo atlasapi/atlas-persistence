@@ -49,6 +49,7 @@ import org.atlasapi.persistence.shorturls.ShortUrlSaver;
 import org.atlasapi.persistence.topic.TopicQueryResolver;
 import org.atlasapi.persistence.topic.TopicStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,7 +74,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
-    @Autowired private DatabasedMongo db;
+    @Autowired @Qualifier("OwlDatabasedMongo") private DatabasedMongo db;
     @Autowired private AdapterLog log;
     @Autowired private MessagingModule messagingModule;
 
