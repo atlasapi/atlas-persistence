@@ -56,6 +56,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
 	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
 	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
+	private static final String DURATION_KEY = "duration";
 
 	private final ContentTranslator contentTranslator;
 
@@ -100,6 +101,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
         
         item.setIsLongForm((Boolean) dbObject.get(IS_LONG_FORM_KEY));
         item.setBlackAndWhite(TranslatorUtils.toBoolean(dbObject, BLACK_AND_WHITE_KEY));
+        Long duration = TranslatorUtils.toLong(dbObject, "duration");
+        if (duration != null) {
+            item.setDuration(Duration.standardSeconds(duration));
+        }
         if (dbObject.containsField(FILM_RELEASES_KEY)) {
             item.setReleaseDates(Iterables.transform(TranslatorUtils.toDBObjectList(dbObject, FILM_RELEASES_KEY), releaseDateFromDbo));
         }
@@ -141,10 +146,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         if (item instanceof Song) {
             Song song = (Song) item;
             song.setIsrc(TranslatorUtils.toString(dbObject, "isrc"));
-            Long duration = TranslatorUtils.toLong(dbObject, "duration");
-            if (duration != null) {
-                song.setDuration(Duration.standardSeconds(duration));
-            }
         }
         
         item.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
@@ -187,6 +188,10 @@ public class ItemTranslator implements ModelTranslator<Item> {
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
 
         TranslatorUtils.from(itemDbo, BLACK_AND_WHITE_KEY, entity.getBlackAndWhite());
+
+        if (entity.getDuration() != null) {
+            TranslatorUtils.from(itemDbo, "duration", entity.getDuration().getStandardSeconds());
+        }
 		
         if(entity.getContainer() != null) {
             itemDbo.put(CONTAINER, entity.getContainer().getUri());
@@ -225,9 +230,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
         if (entity instanceof Song) {
             Song song = (Song) entity;
             TranslatorUtils.from(itemDbo, "isrc", song.getIsrc());
-            if (song.getDuration() != null) {
-                TranslatorUtils.from(itemDbo, "duration", song.getDuration().getStandardSeconds());
-            }
         }
 		
         return itemDbo;
