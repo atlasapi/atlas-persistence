@@ -83,7 +83,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public static final String EXPLICIT_LOOKUP_WRITER = "explicitLookupWriter";
 
     @Autowired private ReadPreference readPreference;
-    @Autowired private Mongo mongo;
+    private Mongo mongo;
     private DatabasedMongo db;
     @Autowired private AdapterLog log;
     @Autowired private MessagingModule messagingModule;
@@ -109,7 +109,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Value("${mongo.audit.enabled}") private boolean auditEnabled;
 
     public MongoContentPersistenceModule() {
-        this.db = databasedMongo();
+        mongo = createMongo();
+        db = createDatabasedMongo(mongo);
     }
 
     @VisibleForTesting
@@ -164,11 +165,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         );
     }
 
-    private DatabasedMongo databasedMongo() {
-        return new DatabasedMongo(mongo(), dbName);
+    private DatabasedMongo createDatabasedMongo(Mongo mongo) {
+        return new DatabasedMongo(mongo, dbName);
     }
 
-    private Mongo mongo() {
+    private Mongo createMongo() {
         MongoClientOptions.Builder optionsBuilder = MongoClientOptions.builder()
                 .readPreference(readPreference())
                 .connectionsPerHost(mongoMaxConnections);
