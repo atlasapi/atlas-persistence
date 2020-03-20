@@ -40,6 +40,7 @@ import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.iterableWithSize;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -348,15 +349,15 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(pnItem), OUTGOING));
         LookupEntry pnLookupEntry = lookupEntryFrom(pnItem).copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(paItem), OUTGOING));
         
-        when(store.entriesForCanonicalUris(ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(null, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri())))
             .thenReturn(ImmutableList.of(paLookupEntry, pnLookupEntry));
-        when(store.entriesForCanonicalUris(ImmutableList.of(paItem.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(null, ImmutableList.of(paItem.getCanonicalUri())))
             .thenReturn(ImmutableList.of(paLookupEntry));
         
         writer.writeLookup(ContentRef.valueOf(paItem), ImmutableSet.of(ContentRef.valueOf(pnItem)), ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS));
         
-        verify(store).entriesForCanonicalUris(ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri()));
-        verify(store, times(2)).entriesForCanonicalUris(ImmutableList.of(paItem.getCanonicalUri()));
+        verify(store).entriesForCanonicalUris(null, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri()));
+        verify(store, times(2)).entriesForCanonicalUris(null, ImmutableList.of(paItem.getCanonicalUri()));
         verify(store, never()).store(Mockito.isA(LookupEntry.class));
         
         Mockito.validateMockitoUsage();
@@ -441,14 +442,14 @@ public class TransitiveLookupWriterTest extends TestCase {
         
         bigEntry = bigEntry.copyWithEquivalents(equivs);
         
-        when(store.entriesForCanonicalUris(argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri()))))
+        when(store.entriesForCanonicalUris(any(), argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri()))))
             .thenReturn(ImmutableList.of(bigEntry, equivEntry));
-        when(store.entriesForCanonicalUris(ImmutableList.of(equiv.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(null, ImmutableList.of(equiv.getCanonicalUri())))
                 .thenReturn(ImmutableList.of(equivEntry));
         
         writeLookup(writer, equiv, ImmutableSet.of(big), Publisher.all());
         
-        verify(store).entriesForCanonicalUris(argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri())));
+        verify(store).entriesForCanonicalUris(any(), argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri())));
         verify(store, never()).store(Mockito.isA(LookupEntry.class));
         
         Mockito.validateMockitoUsage();
@@ -494,26 +495,26 @@ public class TransitiveLookupWriterTest extends TestCase {
         ImmutableSet<LookupEntry> directSubsetEntries = directSubsetEntriesBuilder.build();
         ImmutableSet<LookupEntry> directEntries = MoreSets.add(directSubsetEntries, otherEntry);
 
-        when(store.entriesForCanonicalUris(ImmutableList.of(equiv.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(null, ImmutableList.of(equiv.getCanonicalUri())))
                 .thenReturn(ImmutableList.of(equivEntry));
-        when(store.entriesForCanonicalUris(argThat(iterableWithSize(directEquivSubsetUris.size() + 1))))
+        when(store.entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivSubsetUris.size() + 1))))
                 .thenReturn(MoreSets.add(directSubsetEntries, equivEntry));
-        when(store.entriesForCanonicalUris(argThat(iterableWithSize(directEquivUris.size() + 1))))
+        when(store.entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivUris.size() + 1))))
                 .thenReturn(MoreSets.add(directEntries, equivEntry));
-        when(store.entriesForCanonicalUris(argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1)))))
+        when(store.entriesForCanonicalUris(any(), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1)))))
                 .thenReturn(MoreSets.add(directEntries, equivEntry));
 
         Optional<Set<LookupEntry>> result = writer.writeLookup(equiv.getCanonicalUri(), directEquivUris, Publisher.all());
 
         //One time attempting to update direct subset
         verify(store, times(1))
-                .entriesForCanonicalUris(argThat(iterableWithSize(directEquivSubsetUris.size() + 1)));
+                .entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivSubsetUris.size() + 1)));
         //One time attempting to update entire direct set
         verify(store, times(1))
-                .entriesForCanonicalUris(argThat(iterableWithSize(directEquivUris.size() + 1)));
+                .entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivUris.size() + 1)));
         //One time to update direct subset (and not entire direct set)
         verify(store, times(1))
-                .entriesForCanonicalUris(argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1))));
+                .entriesForCanonicalUris(any(), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1))));
 
         assertTrue(!result.isPresent());
 

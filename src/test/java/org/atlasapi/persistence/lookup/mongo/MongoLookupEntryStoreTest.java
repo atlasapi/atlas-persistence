@@ -5,12 +5,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.mongo.MongoUpdateBuilder;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.mongodb.ReadPreference;
+import com.mongodb.client.MongoCollection;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Episode;
@@ -55,26 +56,27 @@ import static org.mockito.Mockito.verify;
 @RunWith( MockitoJUnitRunner.class )
 public class MongoLookupEntryStoreTest {
 
-    private static DatabasedMongo mongo;
+    private static DatabasedMongoClient mongo;
     private static MongoLookupEntryStore entryStore;
     private static Logger log = mock(Logger.class);
-    private static DBCollection collection; 
+    private static MongoCollection<DBObject> collection;
     
     @BeforeClass
     public static void setUp() {
-        mongo = MongoTestHelper.anEmptyTestDatabase();
-        collection = mongo.collection("lookup");
+        mongo = MongoTestHelper.anEmptyTestDatabaseWithMongoClient();
+        collection = mongo.collection("lookup", DBObject.class);
         entryStore = new MongoLookupEntryStore(
-                            collection, 
-                            ReadPreference.primary(), 
-                            new NoLoggingPersistenceAuditLog(), 
-                            log
-                         );
+                collection,
+                mongo,
+                ReadPreference.primary(),
+                new NoLoggingPersistenceAuditLog(),
+                log
+        );
     }
     
     @After 
     public void clear() {
-        mongo.collection("lookup").remove(new BasicDBObject());
+        mongo.collection("lookup").deleteMany(new BasicDBObject());
         reset(log);
     }
     
@@ -466,9 +468,9 @@ public class MongoLookupEntryStoreTest {
         
         String MARKER_FIELD = "not_updated";
         String MARKER_VALUE = "x";
-        collection.update(
-                new MongoQueryBuilder().idEquals(uri).build(), 
-                new MongoUpdateBuilder().setField(MARKER_FIELD, MARKER_VALUE).build()
+        collection.updateOne(
+                new MongoQueryBuilder().idEquals(uri).buildAsDocument(),
+                new MongoUpdateBuilder().setField(MARKER_FIELD, MARKER_VALUE).buildAsDocument()
         );
         
         entryStore.store(LookupEntry.lookupEntryFrom(testItemOne));
@@ -480,7 +482,7 @@ public class MongoLookupEntryStoreTest {
         
         assertEquals(
                 MARKER_VALUE,
-                collection.findOne(new MongoQueryBuilder().idEquals(uri).build()).get(MARKER_FIELD)
+                collection.find(new MongoQueryBuilder().idEquals(uri).buildAsDocument()).first().get(MARKER_FIELD)
         );
         
         assertEquals(

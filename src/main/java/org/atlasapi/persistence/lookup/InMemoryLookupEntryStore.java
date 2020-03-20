@@ -10,6 +10,7 @@ import com.google.common.collect.Multimap;
 import com.metabroadcast.common.query.Selection;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -148,5 +149,25 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
     @Override
     public Iterable<LookupEntry> equivUpdatedSince(Publisher publisher, DateTime dateTime) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Transaction startTransaction() {
+        return null;
+    }
+
+    @Override
+    public void store(Transaction transaction, LookupEntry entry) {
+        store(entry);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForCanonicalUris(Transaction transaction, Iterable<String> uris) {
+        return entriesForCanonicalUris(uris);
+    }
+
+    @Override
+    public Iterable<LookupEntry> entriesForIds(Transaction transaction, Iterable<Long> ids) {
+        return entriesForIds(ids);
     }
 }

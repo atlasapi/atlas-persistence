@@ -3,11 +3,13 @@ package org.atlasapi.persistence;
 import com.google.common.annotations.VisibleForTesting;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Configurer;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.queue.MessageSender;
 import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import org.atlasapi.media.channel.ChannelGroupStore;
 import org.atlasapi.media.channel.ServiceChannelStore;
@@ -74,6 +76,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
     @Autowired private DatabasedMongo db;
+    @Autowired private MongoClient mongoClient; //TODO create bean
+    @Autowired private DatabasedMongoClient mongoDatabase; //TODO create bean
     @Autowired private AdapterLog log;
     @Autowired private MessagingModule messagingModule;
 
@@ -125,8 +129,9 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
 
     public ConstructorBasedMongoContentPersistenceModule persistenceModule() {
         return new ConstructorBasedMongoContentPersistenceModule(
-                mongo,
+                mongoClient,
                 db,
+                mongoDatabase,
                 messagingModule,
                 auditDbName,
                 log,

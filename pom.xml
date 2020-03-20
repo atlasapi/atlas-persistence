@@ -90,7 +90,7 @@
         <dependency>
             <groupId>com.metabroadcast.common.persistence</groupId>
             <artifactId>common-persistence</artifactId>
-            <version>${common.version}</version>
+            <version>${common.persistence.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.datastax.cassandra</groupId>
@@ -186,7 +186,7 @@
     
     <properties>
         <atlas.version>5.0-SNAPSHOT</atlas.version>
-        <common.version>1.0-SNAPSHOT</common.version>
+        <common.persistence.version>1.1-SNAPSHOT</common.persistence.version>
         <common-queue.version>2.0-SNAPSHOT</common-queue.version>
         <spring.version>4.0.9.RELEASE</spring.version>
         <amq.version>5.9.0</amq.version>

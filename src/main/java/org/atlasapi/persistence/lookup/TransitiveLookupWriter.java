@@ -13,6 +13,7 @@ import com.metabroadcast.common.stream.MoreCollectors;
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.util.GroupLock;
@@ -80,11 +81,14 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> sources) {
-        LookupEntry subjectEntry = entryFor(subjectUri);
-        return writeLookup(subjectUri, subjectEntry, equivalentUris, sources);
+        try (Transaction transaction = entryStore.startTransaction()) {
+            LookupEntry subjectEntry = entryFor(transaction, subjectUri);
+            return writeLookup(transaction, subjectUri, subjectEntry, equivalentUris, sources);
+        }
     }
 
     public Optional<Set<LookupEntry>> writeLookup(
+            Transaction transaction,
             final String subjectUri,
             LookupEntry subjectEntry,
             Iterable<String> equivalentUris,
@@ -112,7 +116,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             boolean writeDirectSubset = strictSubset
                     && !directUriIntersection.equals(subjectAndNeighbours); //if equal we only need to update once
             if(writeDirectSubset) {
-                writeLookup(subjectUri, subjectEntry, directUriIntersection, sources);
+                writeLookup(transaction, subjectUri, subjectEntry, directUriIntersection, sources);
                 strictSubset = false; //for the entire set of neighbours
             }
             //Carry on with the entire set of neighbours
@@ -123,7 +127,7 @@ public class TransitiveLookupWriter implements LookupWriter {
                 timerLog.debug("TIMER L TW 2 acquired the lock object. {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                 lastTime = System.nanoTime();
                 int loop = 0;
-                while((transitiveSetsUris = tryLockAllIds(subjectAndNeighbours, strictSubset)) == null) {
+                while((transitiveSetsUris = tryLockAllIds(transaction, subjectAndNeighbours, strictSubset)) == null) {
                     timerLog.debug("TIMER L TW 2 failed to lock ids (loop "+loop++ +"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
                     lastTime = System.nanoTime();
                     lock.unlock(subjectAndNeighbours);
@@ -137,7 +141,7 @@ public class TransitiveLookupWriter implements LookupWriter {
                 lastTime = System.nanoTime();
             }
             
-            return updateEntries(subjectUri, newNeighboursUris, transitiveSetsUris, sources);
+            return updateEntries(transaction, subjectUri, newNeighboursUris, transitiveSetsUris, sources);
             
         } catch(OversizeTransitiveSetException otse) {
             log.info(String.format("Oversize set for %s : %s",
@@ -164,12 +168,17 @@ public class TransitiveLookupWriter implements LookupWriter {
         }
     }
 
-    private Optional<Set<LookupEntry>> updateEntries(String subjectUri, ImmutableSet<String> newNeighboursUris,
-            Set<String> transitiveSetsUris, Set<Publisher> sources) {
+    private Optional<Set<LookupEntry>> updateEntries(
+            Transaction transaction,
+            String subjectUri,
+            ImmutableSet<String> newNeighboursUris,
+            Set<String> transitiveSetsUris,
+            Set<Publisher> sources
+    ) {
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
         timerLog.debug("TIMER L TW 4 updating all entries {}", Thread.currentThread().getName());
-        LookupEntry subject = entryFor(subjectUri);
+        LookupEntry subject = entryFor(transaction, subjectUri);
 
         timerLog.debug("TIMER L TW 4 got lookup for main entry. {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
         lastTime = System.nanoTime();
@@ -181,7 +190,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         }
         
         // entries for all members in all transitive sets involved
-        Map<String, LookupEntry> entryIndex = resolveTransitiveSets(transitiveSetsUris);
+        Map<String, LookupEntry> entryIndex = resolveTransitiveSets(transaction, transitiveSetsUris);
 
         timerLog.debug("TIMER L TW 4 Resolved transitive sets ("+entryIndex.size()+"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
         lastTime = System.nanoTime();
@@ -195,7 +204,7 @@ public class TransitiveLookupWriter implements LookupWriter {
    
         Set<LookupEntry> newLookups = recomputeTransitiveClosures(entryIndex);
         for (LookupEntry entry : newLookups) {
-            entryStore.store(entry);
+            entryStore.store(transaction, entry);
         }
 
         timerLog.debug("TIMER L TW 4 Saved entries to db. {}ms. {}", (System.nanoTime() - lastTime) / 1000000,Thread.currentThread().getName());
@@ -212,8 +221,8 @@ public class TransitiveLookupWriter implements LookupWriter {
                 .collect(MoreCollectors.toImmutableSet());
     }
 
-    private Map<String, LookupEntry> resolveTransitiveSets(Set<String> transitiveSetUris) {
-        return Maps.newHashMap(Maps.uniqueIndex(entriesFor(transitiveSetUris), LookupEntry::uri));
+    private Map<String, LookupEntry> resolveTransitiveSets(Transaction transaction, Set<String> transitiveSetUris) {
+        return Maps.newHashMap(Maps.uniqueIndex(entriesFor(transaction, transitiveSetUris), LookupEntry::uri));
     }
 
     /*
@@ -230,7 +239,11 @@ public class TransitiveLookupWriter implements LookupWriter {
      * URIs in all transitive sets relevant to this update.
      */
     @Nullable
-    private Set<String> tryLockAllIds(Set<String> neighboursUris, boolean strictSubset) throws InterruptedException {
+    private Set<String> tryLockAllIds(
+            Transaction transaction,
+            Set<String> neighboursUris,
+            boolean strictSubset
+    ) throws InterruptedException {
         long startTime = System.nanoTime();
         long lastTime = System.nanoTime();
         timerLog.debug("TIMER L TW 3 Trying to lock all ids. {}", Thread.currentThread().getName());
@@ -242,7 +255,7 @@ public class TransitiveLookupWriter implements LookupWriter {
 
         timerLog.debug("TIMER L TW 3 all ids locked. {}ms. {}", (System.nanoTime() - lastTime) / 1000000,  Thread.currentThread().getName());
         lastTime = System.nanoTime();
-        Set<LookupEntry> entries = entriesFor(neighboursUris);
+        Set<LookupEntry> entries = entriesFor(transaction, neighboursUris);
 
         timerLog.debug("TIMER L TW 3 got all entries from the DB ("+entries.size()+"). {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
 
@@ -405,12 +418,12 @@ public class TransitiveLookupWriter implements LookupWriter {
         return updatedEntries;
     }
     
-    private Set<LookupEntry> entriesFor(Iterable<String> equivalents) {
-        return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(equivalents));
+    private Set<LookupEntry> entriesFor(Transaction transaction, Iterable<String> equivalents) {
+        return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(transaction, equivalents));
     }
 
-    private LookupEntry entryFor(String subject) {
-        return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(ImmutableList.of(subject)), null);
+    private LookupEntry entryFor(Transaction transaction, String subject) {
+        return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(transaction, ImmutableList.of(subject)), null);
     }
 
     private static class OversizeTransitiveSetException extends RuntimeException {
