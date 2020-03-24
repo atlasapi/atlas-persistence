@@ -120,7 +120,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public Transaction startTransaction() {
         try {
             ClientSession session = mongo.getMongoClient().startSession();
-            session.startTransaction(); //TODO: options?
+            session.startTransaction();
             return new Transaction(session);
         } catch (MongoClientException e) {
             log.error(
