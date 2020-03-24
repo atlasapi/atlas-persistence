@@ -10,7 +10,6 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Alias;
@@ -68,8 +67,8 @@ public class MongoContentPurgerTest {
         persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
         DBCollection lookupCollection = db.collection("lookup");
         entryStore = new MongoLookupEntryStore(
-                mongoDatabase.collection("lookup", DBObject.class),
                 mongoDatabase,
+                "lookup",
                 new NoLoggingPersistenceAuditLog(),
                 ReadPreference.primary()
         );

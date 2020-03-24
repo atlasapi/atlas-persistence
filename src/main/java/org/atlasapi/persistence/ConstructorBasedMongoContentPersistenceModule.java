@@ -9,7 +9,6 @@ import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
@@ -327,8 +326,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     public MongoLookupEntryStore lookupStore() {
         return new MongoLookupEntryStore(
-                mongoDatabase.collection(LOOKUP, DBObject.class),
                 mongoDatabase,
+                LOOKUP,
                 persistenceAuditLog(),
                 readPreference
         );
@@ -346,8 +345,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     protected LookupWriter explicitLookupWriter() {
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(
-                mongoDatabase.collection(LOOKUP, DBObject.class),
                 mongoDatabase,
+                LOOKUP,
                 persistenceAuditLog(),
                 ReadPreference.primary()
         );
@@ -356,8 +355,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     public LookupWriter generatedLookupWriter() {
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(
-                mongoDatabase.collection(LOOKUP, DBObject.class),
                 mongoDatabase,
+                LOOKUP,
                 persistenceAuditLog(),
                 ReadPreference.primary()
         );
@@ -401,8 +400,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     public PersonStore personStore() {
         LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(
-                mongoDatabase.collection("peopleLookup", DBObject.class),
                 mongoDatabase,
+                "peopleLookup",
                 persistenceAuditLog(),
                 readPreference
         );
@@ -511,8 +510,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public OrganisationStore organisationStore() {
 
         LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(
-                mongoDatabase.collection("organisationLookup", DBObject.class),
                 mongoDatabase,
+                "organisationLookup",
                 persistenceAuditLog(),
                 readPreference
         );
@@ -571,8 +570,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         return new EquivalatingPeopleResolver(
                 personStore(),
                 new MongoLookupEntryStore(
-                        mongoDatabase.collection("peopleLookup", DBObject.class),
                         mongoDatabase,
+                        "peopleLookup",
                         persistenceAuditLog(),
                         readPreference
                 )

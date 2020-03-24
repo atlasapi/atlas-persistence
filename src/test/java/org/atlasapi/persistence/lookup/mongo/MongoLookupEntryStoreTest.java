@@ -66,8 +66,8 @@ public class MongoLookupEntryStoreTest {
         mongo = MongoTestHelper.anEmptyTestDatabaseWithMongoClient();
         collection = mongo.collection("lookup", DBObject.class);
         entryStore = new MongoLookupEntryStore(
-                collection,
                 mongo,
+                "lookup",
                 ReadPreference.primary(),
                 new NoLoggingPersistenceAuditLog(),
                 log

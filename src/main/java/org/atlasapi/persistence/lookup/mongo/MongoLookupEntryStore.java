@@ -77,22 +77,22 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     };
 
     private final Logger log;
-    private final MongoCollection<DBObject> lookup;
+    private final MongoCollection<DBObject> lookupPrimaryRead;
+    private final MongoCollection<DBObject> lookupSpecifiedRead;
     private final DatabasedMongoClient mongo;
     private final LookupEntryTranslator translator;
-    private final ReadPreference readPreference; //TODO: make sure to set this as appropriate now it has moved
     private final LookupEntryHasher lookupEntryHasher;
     private final PersistenceAuditLog persistenceAuditLog;
 
     public MongoLookupEntryStore(
-            MongoCollection<DBObject> lookup,
             DatabasedMongoClient mongo,
+            String lookupCollectionName,
             PersistenceAuditLog persistenceAuditLog,
             ReadPreference readPreference
     ) {
         this(
-                lookup,
                 mongo,
+                lookupCollectionName,
                 readPreference,
                 persistenceAuditLog,
                 LoggerFactory.getLogger(MongoLookupEntryStore.class)
@@ -100,15 +100,16 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     public MongoLookupEntryStore(
-            MongoCollection<DBObject> lookup,
             DatabasedMongoClient mongo,
+            String lookupCollectionName,
             ReadPreference readPreference,
             PersistenceAuditLog persistenceAuditLog,
             Logger log
     ) {
-        this.lookup = checkNotNull(lookup);
         this.mongo = checkNotNull(mongo);
-        this.readPreference = checkNotNull(readPreference);
+        MongoCollection<DBObject> lookup = mongo.collection(lookupCollectionName, DBObject.class);
+        this.lookupPrimaryRead = lookup.withReadPreference(ReadPreference.primary());
+        this.lookupSpecifiedRead = lookup.withReadPreference(readPreference);
         this.persistenceAuditLog = checkNotNull(persistenceAuditLog);
         this.translator = new LookupEntryTranslator();
         this.lookupEntryHasher = new LookupEntryHasher(translator);
@@ -141,9 +142,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         Document queryDocument = new Document(MongoConstants.ID, entry.uri());
         LookupEntry existing;
         if (transaction == null) {
-            existing = lookup.find(queryDocument).map(translator::fromDbo).first();
+            existing = lookupPrimaryRead.find(queryDocument).map(translator::fromDbo).first();
         } else {
-            existing = lookup.find(transaction.getSession(), queryDocument).map(translator::fromDbo).first();
+            existing = lookupPrimaryRead.find(transaction.getSession(), queryDocument).map(translator::fromDbo).first();
         }
 
         store(transaction, entry, existing);
@@ -164,13 +165,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         replaceOptions.upsert(true);
 
         if (transaction == null) {
-            lookup.replaceOne(
+            lookupPrimaryRead.replaceOne(
                     queryDocument,
                     translator.toDbo(newEntry),
                     replaceOptions
             );
         } else {
-            lookup.replaceOne(
+            lookupPrimaryRead.replaceOne(
                     transaction.getSession(),
                     queryDocument,
                     translator.toDbo(newEntry),
@@ -189,8 +190,8 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public Iterable<LookupEntry> entriesForCanonicalUris(@Nullable Transaction transaction, Iterable<String> uris) {
         Document queryDocument = where().idIn(uris).buildAsDocument();
         FindIterable<DBObject> found = transaction == null
-                ? lookup.find(queryDocument)
-                : lookup.find(transaction.getSession(), queryDocument);
+                ? lookupSpecifiedRead.find(queryDocument)
+                : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
         return found.map(translator::fromDbo);
     }
 
@@ -203,8 +204,8 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public Iterable<LookupEntry> entriesForIds(@Nullable Transaction transaction, Iterable<Long> ids) {
         Document queryDocument = new Document(OPAQUE_ID, new BasicDBObject(IN, ids));
         FindIterable<DBObject> found = transaction == null
-                ? lookup.find(queryDocument)
-                : lookup.find(transaction.getSession(), queryDocument);
+                ? lookupSpecifiedRead.find(queryDocument)
+                : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
 
         return found.map(translator::fromDbo);
     }
@@ -213,7 +214,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public void ensureLookup(Content content) {
         LookupEntry newEntry = lookupEntryFrom(content);
         // Since most content will already have a lookup entry we read first to avoid locking the database
-        DBObject existingDbo = lookup.find(new Document(MongoConstants.ID, content.getCanonicalUri())).first();
+        DBObject existingDbo = lookupPrimaryRead.find(new Document(MongoConstants.ID, content.getCanonicalUri())).first();
         LookupEntry existing = existingDbo == null ? null : translator.fromDbo(existingDbo);
 
         if (existing == null) {
@@ -295,7 +296,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     private FindIterable<DBObject> find(Iterable<String> identifiers) {
-        return lookup.find(
+        return lookupSpecifiedRead.find(
                 where().fieldIn(ALIASES, identifiers).buildAsDocument()
         );
     }
@@ -327,7 +328,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     @Override
     public Map<String, Long> idsForCanonicalUris(Iterable<String> uris) {
         Builder<String, Long> results = ImmutableMap.builder();
-        Iterable<DBObject> cursor = lookup.find(where().idIn(uris).buildAsDocument())
+        Iterable<DBObject> cursor = lookupSpecifiedRead.find(where().idIn(uris).buildAsDocument())
                 .projection(select().field(OPAQUE_ID).field(ID).buildAsDocument());
         for (DBObject dbo : cursor) {
             Long id = TranslatorUtils.toLong(dbo, OPAQUE_ID);
@@ -355,13 +356,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         if (publishers != null) {
             query.fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY));
         }
-        return lookup.find(query.buildAsDocument());
+        return lookupSpecifiedRead.find(query.buildAsDocument());
     }
 
     @Override
     public Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers,
             @Nullable Selection selection) {
-        FindIterable<DBObject> find = lookup.find(
+        FindIterable<DBObject> find = lookupSpecifiedRead.find(
                 where()
                         .fieldIn(PUBLISHER, Iterables.transform(publishers, Publisher.TO_KEY))
                         // Not actively published content will have this value set to false
@@ -386,7 +387,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     }
 
     public Iterable<LookupEntry> all() {
-        return lookup.find().map(translator::fromDbo);
+        return lookupSpecifiedRead.find().map(translator::fromDbo);
     }
 
     private FindIterable<DBObject> cursorForPublishers(Iterable<Publisher> publishers,
@@ -398,7 +399,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
             limitQueryByProgress(progress, queryBuilder);
         }
 
-        return lookup.find(queryBuilder.buildAsDocument())
+        return lookupSpecifiedRead.find(queryBuilder.buildAsDocument())
                 .sort(sort().ascending(OPAQUE_ID).buildAsDocument());
     }
 
@@ -424,7 +425,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
                 .buildAsDocument();
 
-        return StreamSupport.stream(lookup.find(query).map(translator::fromDbo).spliterator(), false)
+        return StreamSupport.stream(lookupSpecifiedRead.find(query).map(translator::fromDbo).spliterator(), false)
                 .collect(Collectors.toList());
     }
 
@@ -436,7 +437,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 .fieldNotEqualTo(ACTIVELY_PUBLISHED, false)
                 .buildAsDocument();
 
-        return lookup.find(query).map(translator::fromDbo);
+        return lookupSpecifiedRead.find(query).map(translator::fromDbo);
     }
 
     private Document toDocument(DBObject dbObject) {

@@ -10,7 +10,6 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.TimeMachine;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Brand;
@@ -60,9 +59,9 @@ public class MongoAvailableItemsResolverTest {
     private final TimeMachine clock = new TimeMachine();
     private final MongoLookupEntryStore lookupStore
         = new MongoLookupEntryStore(
-                mongoDatabase.collection("lookup", DBObject.class),
                 mongoDatabase,
-                new NoLoggingPersistenceAuditLog(),
+            "lookup",
+            new NoLoggingPersistenceAuditLog(),
             ReadPreference.primary()
     );
     private final MongoAvailableItemsResolver resolver

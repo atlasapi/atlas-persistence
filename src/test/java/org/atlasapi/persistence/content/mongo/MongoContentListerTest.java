@@ -9,7 +9,6 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import org.atlasapi.content.criteria.ContentQuery;
@@ -63,8 +62,8 @@ public class MongoContentListerTest {
     
     private final MongoContentLister lister = new MongoContentLister(mongo, 
             new MongoContentResolver(mongo, new MongoLookupEntryStore(
-                    mongoDatabase.collection("lookup", DBObject.class),
                     mongoDatabase,
+                    "lookup",
                     persistenceAuditLog,
                     ReadPreference.primary()))
     );

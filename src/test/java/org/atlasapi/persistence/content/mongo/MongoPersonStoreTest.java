@@ -9,7 +9,6 @@ import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.text.NumberPadder;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.ChildRef;
@@ -67,8 +66,8 @@ public class MongoPersonStoreTest {
         mongoDatabase = new DatabasedMongoClient(mongo, "testing");
         persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
         entryStore = new MongoLookupEntryStore(
-                mongoDatabase.collection("peopleLookup", DBObject.class),
                 mongoDatabase,
+                "peopleLookup",
                 new NoLoggingPersistenceAuditLog(),
                 ReadPreference.primary()
         );
