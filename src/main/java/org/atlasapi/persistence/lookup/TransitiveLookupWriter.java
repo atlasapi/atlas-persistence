@@ -84,7 +84,15 @@ public class TransitiveLookupWriter implements LookupWriter {
 
     public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> sources) {
 
-        for (int attempt = 0; attempt < WRITE_RETRIES; attempt++) {
+        for (int attempt = 1; attempt <= WRITE_RETRIES; attempt++) {
+
+            if (attempt > 1) {
+                try {
+                    Thread.sleep(1000 * (long) Math.pow(2, attempt));
+                } catch (InterruptedException interruptedException) {
+                    throw new RuntimeException(interruptedException);
+                }
+            }
 
             try (@Nullable Transaction transaction = entryStore.startTransaction()) {
                 LookupEntry subjectEntry = entryFor(transaction, subjectUri);
@@ -98,17 +106,18 @@ public class TransitiveLookupWriter implements LookupWriter {
                     return writeLookup(null, subjectUri, subjectEntry, equivalentUris, sources);
                 }
                 else if (e.getErrorCode() == 112 || e.getErrorCodeName().equals("WriteConflict")) {
-                    log.warn("WriteConflict when updating {}, retrying", subjectUri);
+                    log.warn(
+                            "WriteConflict when updating {} (attempt {}/{}), retrying",
+                            new Object[] { // This is to help the compiler use the correct overloaded method
+                                    subjectUri,
+                                    attempt,
+                                    WRITE_RETRIES
+                            }
+                    );
                 }
                 else {
                     throw e;
                 }
-            }
-
-            try {
-                Thread.sleep(1000 * (long) Math.pow(2, attempt));
-            } catch (InterruptedException interruptedException) {
-                throw new RuntimeException(interruptedException);
             }
         }
         throw new IllegalStateException("Exceeded number of retry attempts to update " + subjectUri);
