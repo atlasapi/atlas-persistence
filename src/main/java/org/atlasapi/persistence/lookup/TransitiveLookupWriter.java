@@ -88,6 +88,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         } catch (MongoCommandException e) {
             // The transaction was too large due to Mongo restrictions so we have to do it without a transaction
             if (e.getErrorCode() == 257 || e.getErrorCodeName().equals("TransactionTooLarge")) {
+                log.warn("Transaction for updating {} was too large, retrying without transactions", subjectUri);
                 LookupEntry subjectEntry = entryFor(null, subjectUri);
                 return writeLookup(null, subjectUri, subjectEntry, equivalentUris, sources);
             }
