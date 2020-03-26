@@ -38,7 +38,8 @@ public class TransitiveLookupWriter implements LookupWriter {
     private static final Logger log = LoggerFactory.getLogger(TransitiveLookupWriter.class);
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
     private static final int maxSetSize = 150;
-    
+    private static final int WRITE_RETRIES = 5;
+
     private final LookupEntryStore entryStore;
     private final boolean explicit;
     
@@ -82,18 +83,35 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     public Optional<Set<LookupEntry>> writeLookup(final String subjectUri, Iterable<String> equivalentUris, final Set<Publisher> sources) {
-        try (@Nullable Transaction transaction = entryStore.startTransaction()) {
-            LookupEntry subjectEntry = entryFor(transaction, subjectUri);
-            return writeLookup(transaction, subjectUri, subjectEntry, equivalentUris, sources);
-        } catch (MongoCommandException e) {
-            // The transaction was too large due to Mongo restrictions so we have to do it without a transaction
-            if (e.getErrorCode() == 257 || e.getErrorCodeName().equals("TransactionTooLarge")) {
-                log.warn("Transaction for updating {} was too large, retrying without transactions", subjectUri);
-                LookupEntry subjectEntry = entryFor(null, subjectUri);
-                return writeLookup(null, subjectUri, subjectEntry, equivalentUris, sources);
+
+        for (int attempt = 0; attempt < WRITE_RETRIES; attempt++) {
+
+            try (@Nullable Transaction transaction = entryStore.startTransaction()) {
+                LookupEntry subjectEntry = entryFor(transaction, subjectUri);
+                return writeLookup(transaction, subjectUri, subjectEntry, equivalentUris, sources);
             }
-            throw e;
+            catch (MongoCommandException e) {
+                // The transaction was too large due to Mongo restrictions so we have to do it without a transaction
+                if (e.getErrorCode() == 257 || e.getErrorCodeName().equals("TransactionTooLarge")) {
+                    log.warn("Transaction for updating {} was too large, retrying without transactions", subjectUri);
+                    LookupEntry subjectEntry = entryFor(null, subjectUri);
+                    return writeLookup(null, subjectUri, subjectEntry, equivalentUris, sources);
+                }
+                else if (e.getErrorCode() == 112 || e.getErrorCodeName().equals("WriteConflict")) {
+                    log.warn("WriteConflict when updating {}, retrying", subjectUri);
+                }
+                else {
+                    throw e;
+                }
+            }
+
+            try {
+                Thread.sleep(1000 * (long) Math.pow(2, attempt));
+            } catch (InterruptedException interruptedException) {
+                throw new RuntimeException(interruptedException);
+            }
         }
+        throw new IllegalStateException("Exceeded number of retry attempts to update " + subjectUri);
     }
 
     public Optional<Set<LookupEntry>> writeLookup(
