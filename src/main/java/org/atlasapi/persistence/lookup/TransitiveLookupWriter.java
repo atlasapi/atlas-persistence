@@ -94,16 +94,24 @@ public class TransitiveLookupWriter implements LookupWriter {
                 }
             }
 
-            try (@Nullable Transaction transaction = entryStore.startTransaction()) {
+            try (Transaction transaction = entryStore.startTransaction()) {
                 LookupEntry subjectEntry = entryFor(transaction, subjectUri);
-                return writeLookup(transaction, subjectUri, subjectEntry, equivalentUris, sources);
+                Optional<Set<LookupEntry>> newLookups = writeLookup(
+                        transaction,
+                        subjectUri,
+                        subjectEntry,
+                        equivalentUris,
+                        sources
+                );
+                transaction.commit();
+                return newLookups;
             }
             catch (MongoCommandException e) {
                 // The transaction was too large due to Mongo restrictions so we have to do it without a transaction
                 if (e.getErrorCode() == 257 || e.getErrorCodeName().equals("TransactionTooLarge")) {
                     log.warn("Transaction for updating {} was too large, retrying without transactions", subjectUri);
-                    LookupEntry subjectEntry = entryFor(null, subjectUri);
-                    return writeLookup(null, subjectUri, subjectEntry, equivalentUris, sources);
+                    LookupEntry subjectEntry = entryFor(Transaction.none(), subjectUri);
+                    return writeLookup(Transaction.none(), subjectUri, subjectEntry, equivalentUris, sources);
                 }
                 else if (e.getErrorCode() == 112 || e.getErrorCodeName().equals("WriteConflict")) {
                     log.warn(
@@ -124,7 +132,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     public Optional<Set<LookupEntry>> writeLookup(
-            @Nullable Transaction transaction,
+            Transaction transaction,
             final String subjectUri,
             LookupEntry subjectEntry,
             Iterable<String> equivalentUris,
@@ -205,7 +213,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Optional<Set<LookupEntry>> updateEntries(
-            @Nullable Transaction transaction,
+            Transaction transaction,
             String subjectUri,
             ImmutableSet<String> newNeighboursUris,
             Set<String> transitiveSetsUris,
@@ -257,7 +265,7 @@ public class TransitiveLookupWriter implements LookupWriter {
                 .collect(MoreCollectors.toImmutableSet());
     }
 
-    private Map<String, LookupEntry> resolveTransitiveSets(@Nullable Transaction transaction, Set<String> transitiveSetUris) {
+    private Map<String, LookupEntry> resolveTransitiveSets(Transaction transaction, Set<String> transitiveSetUris) {
         return Maps.newHashMap(Maps.uniqueIndex(entriesFor(transaction, transitiveSetUris), LookupEntry::uri));
     }
 
@@ -276,7 +284,7 @@ public class TransitiveLookupWriter implements LookupWriter {
      */
     @Nullable
     private Set<String> tryLockAllIds(
-            @Nullable Transaction transaction,
+            Transaction transaction,
             Set<String> neighboursUris,
             boolean strictSubset
     ) throws InterruptedException {
@@ -454,11 +462,11 @@ public class TransitiveLookupWriter implements LookupWriter {
         return updatedEntries;
     }
     
-    private Set<LookupEntry> entriesFor(@Nullable Transaction transaction, Iterable<String> equivalents) {
+    private Set<LookupEntry> entriesFor(Transaction transaction, Iterable<String> equivalents) {
         return ImmutableSet.copyOf(entryStore.entriesForCanonicalUris(transaction, equivalents));
     }
 
-    private LookupEntry entryFor(@Nullable Transaction transaction, String subject) {
+    private LookupEntry entryFor(Transaction transaction, String subject) {
         return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(transaction, ImmutableList.of(subject)), null);
     }
 

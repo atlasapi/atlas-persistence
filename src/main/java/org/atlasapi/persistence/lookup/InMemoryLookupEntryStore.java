@@ -153,7 +153,7 @@ public class InMemoryLookupEntryStore implements LookupEntryStore {
 
     @Override
     public Transaction startTransaction() {
-        return null;
+        return Transaction.none();
     }
 
     @Override

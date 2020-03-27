@@ -19,6 +19,7 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
@@ -35,11 +36,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriter;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -339,8 +343,11 @@ public class TransitiveLookupWriterTest extends TestCase {
     }
     
     public void testDoesntWriteEquivalencesWhenEquivalentsDontChange() {
-        
+
         LookupEntryStore store = mock(LookupEntryStore.class);
+        Transaction transaction = mock(Transaction.class);
+        when(store.startTransaction()).thenReturn(transaction);
+
         TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
         
         Item paItem = createItem("paItem3",Publisher.PA);
@@ -349,15 +356,15 @@ public class TransitiveLookupWriterTest extends TestCase {
         LookupEntry paLookupEntry = lookupEntryFrom(paItem).copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(pnItem), OUTGOING));
         LookupEntry pnLookupEntry = lookupEntryFrom(pnItem).copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(paItem), OUTGOING));
         
-        when(store.entriesForCanonicalUris(null, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(transaction, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri())))
             .thenReturn(ImmutableList.of(paLookupEntry, pnLookupEntry));
-        when(store.entriesForCanonicalUris(null, ImmutableList.of(paItem.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(transaction, ImmutableList.of(paItem.getCanonicalUri())))
             .thenReturn(ImmutableList.of(paLookupEntry));
         
         writer.writeLookup(ContentRef.valueOf(paItem), ImmutableSet.of(ContentRef.valueOf(pnItem)), ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS));
         
-        verify(store).entriesForCanonicalUris(null, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri()));
-        verify(store, times(2)).entriesForCanonicalUris(null, ImmutableList.of(paItem.getCanonicalUri()));
+        verify(store).entriesForCanonicalUris(transaction, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri()));
+        verify(store, times(2)).entriesForCanonicalUris(transaction, ImmutableList.of(paItem.getCanonicalUri()));
         verify(store, never()).store(Mockito.isA(LookupEntry.class));
         
         Mockito.validateMockitoUsage();
@@ -425,6 +432,9 @@ public class TransitiveLookupWriterTest extends TestCase {
     public void testAbortsWriteWhenSetTooLarge() {
         
         LookupEntryStore store = mock(LookupEntryStore.class);
+        Transaction transaction = mock(Transaction.class);
+        when(store.startTransaction()).thenReturn(transaction);
+
         TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
         
         Item big = createItem("big", Publisher.BBC);
@@ -442,9 +452,9 @@ public class TransitiveLookupWriterTest extends TestCase {
         
         bigEntry = bigEntry.copyWithEquivalents(equivs);
         
-        when(store.entriesForCanonicalUris(any(), argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri()))))
+        when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri()))))
             .thenReturn(ImmutableList.of(bigEntry, equivEntry));
-        when(store.entriesForCanonicalUris(null, ImmutableList.of(equiv.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(transaction, ImmutableList.of(equiv.getCanonicalUri())))
                 .thenReturn(ImmutableList.of(equivEntry));
         
         writeLookup(writer, equiv, ImmutableSet.of(big), Publisher.all());
@@ -460,6 +470,9 @@ public class TransitiveLookupWriterTest extends TestCase {
     public void testUpdatesJustExistingDirectEquivsWhenSetTooLarge() {
 
         LookupEntryStore store = mock(LookupEntryStore.class);
+        Transaction transaction = mock(Transaction.class);
+        when(store.startTransaction()).thenReturn(transaction);
+
         TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
 
         Item equiv = createItem("equiv", Publisher.PA);
@@ -495,30 +508,77 @@ public class TransitiveLookupWriterTest extends TestCase {
         ImmutableSet<LookupEntry> directSubsetEntries = directSubsetEntriesBuilder.build();
         ImmutableSet<LookupEntry> directEntries = MoreSets.add(directSubsetEntries, otherEntry);
 
-        when(store.entriesForCanonicalUris(null, ImmutableList.of(equiv.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(transaction, ImmutableList.of(equiv.getCanonicalUri())))
                 .thenReturn(ImmutableList.of(equivEntry));
-        when(store.entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivSubsetUris.size() + 1))))
+        when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivSubsetUris.size() + 1))))
                 .thenReturn(MoreSets.add(directSubsetEntries, equivEntry));
-        when(store.entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivUris.size() + 1))))
+        when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivUris.size() + 1))))
                 .thenReturn(MoreSets.add(directEntries, equivEntry));
-        when(store.entriesForCanonicalUris(any(), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1)))))
+        when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1)))))
                 .thenReturn(MoreSets.add(directEntries, equivEntry));
 
         Optional<Set<LookupEntry>> result = writer.writeLookup(equiv.getCanonicalUri(), directEquivUris, Publisher.all());
 
         //One time attempting to update direct subset
         verify(store, times(1))
-                .entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivSubsetUris.size() + 1)));
+                .entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivSubsetUris.size() + 1)));
         //One time attempting to update entire direct set
         verify(store, times(1))
-                .entriesForCanonicalUris(any(), argThat(iterableWithSize(directEquivUris.size() + 1)));
+                .entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivUris.size() + 1)));
         //One time to update direct subset (and not entire direct set)
         verify(store, times(1))
-                .entriesForCanonicalUris(any(), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1))));
+                .entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1))));
 
         assertTrue(!result.isPresent());
 
         Mockito.validateMockitoUsage();
+
+    }
+
+    @Test
+    public void testTransactionIsUsedForAllReadsAndWrites() {
+        LookupEntryStore store = mock(LookupEntryStore.class);
+        Transaction transaction = mock(Transaction.class);
+        when(store.startTransaction()).thenReturn(transaction);
+
+        TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
+
+        Item paItem = createItem("paItem",Publisher.PA);
+        Item pnItem1 = createItem("pnItem1",Publisher.PREVIEW_NETWORKS);
+        Item pnItem2 = createItem("pnItem2",Publisher.PREVIEW_NETWORKS);
+        Item pnItem3 = createItem("pnItem3",Publisher.PREVIEW_NETWORKS);
+
+        LookupEntry paLookupEntry = lookupEntryFrom(paItem)
+                .copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(pnItem1), BIDIRECTIONAL));
+        LookupEntry pnLookupEntry1 = lookupEntryFrom(pnItem1)
+                .copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(paItem), BIDIRECTIONAL));
+        LookupEntry pnLookupEntry2 = lookupEntryFrom(pnItem2);
+        LookupEntry pnLookupEntry3 = lookupEntryFrom(pnItem3);
+
+        when(store.entriesForCanonicalUris(
+                transaction,
+                ImmutableSet.of(
+                        paItem.getCanonicalUri(),
+                        pnItem2.getCanonicalUri(),
+                        pnItem3.getCanonicalUri()
+                )
+        )).thenReturn(ImmutableList.of(paLookupEntry, pnLookupEntry2, pnLookupEntry3));
+        when(store.entriesForCanonicalUris(transaction, ImmutableSet.of(paItem.getCanonicalUri())))
+                .thenReturn(ImmutableList.of(paLookupEntry));
+        when(store.entriesForCanonicalUris(transaction, ImmutableList.of(paItem.getCanonicalUri())))
+                .thenReturn(ImmutableList.of(paLookupEntry));
+
+        writer.writeLookup(
+                ContentRef.valueOf(paItem),
+                ImmutableSet.of(ContentRef.valueOf(pnItem2), ContentRef.valueOf(pnItem3)),
+                ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS)
+        );
+
+
+        verify(store, never()).entriesForCanonicalUris(argThat(not(is(transaction))), any());
+        verify(store, never()).store(argThat(not(is(transaction))), any());
+        verify(store, times(1)).startTransaction();
+        verify(transaction, times(1)).commit();
 
     }
 }

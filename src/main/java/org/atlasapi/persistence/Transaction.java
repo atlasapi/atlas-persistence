@@ -12,13 +12,29 @@ public class Transaction implements Closeable {
 
     @Nullable private final ClientSession session;
 
-    public Transaction(@Nullable ClientSession session) {
+    private Transaction(@Nullable ClientSession session) {
         this.session = session;
+    }
+
+    public static Transaction of(@Nullable ClientSession session) {
+        return new Transaction(session);
+    }
+
+
+    private static final Transaction NONE = new Transaction(null);
+    public static Transaction none() {
+        return NONE;
     }
 
     @Nullable
     public ClientSession getSession() {
         return session;
+    }
+
+    public void commit() {
+        if (session != null) {
+            session.commitTransaction();
+        }
     }
 
     @Override

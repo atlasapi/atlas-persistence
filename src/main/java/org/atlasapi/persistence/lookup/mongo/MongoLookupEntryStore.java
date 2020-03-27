@@ -121,27 +121,27 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         try {
             ClientSession session = mongo.getMongoClient().startSession();
             session.startTransaction();
-            return new Transaction(session);
+            return Transaction.of(session);
         } catch (MongoClientException e) {
             log.error(
                     "Unable to start a session (Mongo version might be too old, or the instance is not" +
                             " in a replica set), continuing without using a session",
                     e
             );
-            return null;
+            return Transaction.none();
         }
     }
 
     @Override
     public void store(LookupEntry entry) {
-        store(null, entry);
+        store(Transaction.none(), entry);
     }
 
     @Override
-    public void store(@Nullable Transaction transaction, LookupEntry entry) {
+    public void store(Transaction transaction, LookupEntry entry) {
         Document queryDocument = new Document(MongoConstants.ID, entry.uri());
         LookupEntry existing;
-        if (transaction == null) {
+        if (transaction.getSession() == null) {
             existing = lookupPrimaryRead.find(queryDocument).map(translator::fromDbo).first();
         } else {
             existing = lookupPrimaryRead.find(transaction.getSession(), queryDocument).map(translator::fromDbo).first();
@@ -150,7 +150,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         store(transaction, entry, existing);
     }
 
-    private void store(@Nullable Transaction transaction, LookupEntry newEntry, @Nullable LookupEntry existingEntry) {
+    private void store(Transaction transaction, LookupEntry newEntry, @Nullable LookupEntry existingEntry) {
         if (existingEntry != null
                 && lookupEntryHasher.writeHashFor(newEntry) == lookupEntryHasher.writeHashFor(existingEntry)) {
             log.debug("Hash code not changed for URI {}; skipping write", newEntry.uri());
@@ -164,7 +164,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         ReplaceOptions replaceOptions = new ReplaceOptions();
         replaceOptions.upsert(true);
 
-        if (transaction == null) {
+        if (transaction.getSession() == null) {
             lookupPrimaryRead.replaceOne(
                     queryDocument,
                     translator.toDbo(newEntry),
@@ -183,13 +183,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris) {
-        return entriesForCanonicalUris(null, uris);
+        return entriesForCanonicalUris(Transaction.none(), uris);
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForCanonicalUris(@Nullable Transaction transaction, Iterable<String> uris) {
+    public Iterable<LookupEntry> entriesForCanonicalUris(Transaction transaction, Iterable<String> uris) {
         Document queryDocument = where().idIn(uris).buildAsDocument();
-        FindIterable<DBObject> found = transaction == null
+        FindIterable<DBObject> found = transaction.getSession() == null
                 ? lookupSpecifiedRead.find(queryDocument)
                 : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
         return found.map(translator::fromDbo);
@@ -197,13 +197,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public Iterable<LookupEntry> entriesForIds(Iterable<Long> ids) {
-        return entriesForIds(null, ids);
+        return entriesForIds(Transaction.none(), ids);
     }
 
     @Override
-    public Iterable<LookupEntry> entriesForIds(@Nullable Transaction transaction, Iterable<Long> ids) {
+    public Iterable<LookupEntry> entriesForIds(Transaction transaction, Iterable<Long> ids) {
         Document queryDocument = new Document(OPAQUE_ID, new BasicDBObject(IN, ids));
-        FindIterable<DBObject> found = transaction == null
+        FindIterable<DBObject> found = transaction.getSession() == null
                 ? lookupSpecifiedRead.find(queryDocument)
                 : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
 
@@ -218,13 +218,13 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         LookupEntry existing = existingDbo == null ? null : translator.fromDbo(existingDbo);
 
         if (existing == null) {
-            store(null, newEntry, null);
+            store(Transaction.none(), newEntry, null);
         } else if(!newEntry.lookupRef().category().equals(existing.lookupRef().category())) {
             updateEntry(content, newEntry, existing);
         } else if (!newEntry.aliasUrls().equals(existing.aliasUrls())
                 || !newEntry.aliases().equals(existing.aliases())
                 || newEntry.activelyPublished() != existing.activelyPublished()) {
-            store(null, merge(content, newEntry, existing), existing);
+            store(Transaction.none(), merge(content, newEntry, existing), existing);
         }
     }
 
@@ -232,7 +232,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         LookupEntry merged = merge(content, newEntry, existing);
         LookupRef ref = merged.lookupRef();
 
-        store(null, merged, existing);
+        store(Transaction.none(), merged, existing);
 
         Set<String> transitiveUris = merged.equivalents().stream()
                 .filter(equivRef -> !equivRef.equals(ref))
@@ -258,7 +258,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                     .addAll(existing.equivalents())
                     .build();
             entry = entry.copyWithEquivalents(newEquivs);
-            store(null, entry, existing);
+            store(Transaction.none(), entry, existing);
         }
     }
 

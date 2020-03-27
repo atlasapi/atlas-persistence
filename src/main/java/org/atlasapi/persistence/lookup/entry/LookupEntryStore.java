@@ -21,7 +21,7 @@ public interface LookupEntryStore {
      */
     void store(LookupEntry entry);
 
-    void store(@Nullable Transaction transaction, LookupEntry entry);
+    void store(Transaction transaction, LookupEntry entry);
 
     /**
      * Get entries for given URIs or Aliases. There is a one-to-many mapping
@@ -81,11 +81,11 @@ public interface LookupEntryStore {
      */
     Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris);
 
-    Iterable<LookupEntry> entriesForCanonicalUris(@Nullable Transaction transaction, Iterable<String> uris);
+    Iterable<LookupEntry> entriesForCanonicalUris(Transaction transaction, Iterable<String> uris);
 
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
 
-    Iterable<LookupEntry> entriesForIds(@Nullable Transaction transaction, Iterable<Long> ids);
+    Iterable<LookupEntry> entriesForIds(Transaction transaction, Iterable<Long> ids);
 
     Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, Selection selection);
 
