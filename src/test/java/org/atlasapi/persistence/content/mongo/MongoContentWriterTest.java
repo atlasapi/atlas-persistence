@@ -1,5 +1,6 @@
 package org.atlasapi.persistence.content.mongo;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -17,15 +18,19 @@ import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
+import org.atlasapi.media.entity.Encoding;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
 import org.atlasapi.media.entity.Item;
+import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.ParentRef;
+import org.atlasapi.media.entity.Provider;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Rating;
 import org.atlasapi.media.entity.RelatedLink;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
+import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.lookup.NewLookupWriter;
@@ -35,6 +40,8 @@ import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.player.PlayerResolver;
 import org.atlasapi.persistence.service.ServiceResolver;
+
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -443,7 +450,40 @@ public class MongoContentWriterTest {
 
         Set<Rating> filmRatings = film.getRatings();
         Set<Rating> retrievedFilmRatings = retrievedFilm.getRatings();
-        assertEquals(film.getRatings(), retrievedFilm.getRatings());
+        assertEquals(filmRatings, retrievedFilmRatings);
+    }
+
+    @Test
+    public void testWritingAndReadingLocationProviders() {
+        Film film = new Film("filmUri", "filmUri", Publisher.JUSTWATCH);
+        Location location = new Location();
+        location.setAvailable(true);
+        location.setUri("locationUri");
+        Provider provider = new Provider("Provider Name", "provider-icon.co.uk");
+        location.setProvider(provider);
+
+        Encoding encoding = new Encoding();
+        encoding.setContainsAdvertising(false);
+        encoding.addAvailableAt(location);
+
+        Version version = new Version();
+        version.setManifestedAs(Sets.newHashSet(encoding));
+
+        film.addVersion(version);
+
+        contentWriter.createOrUpdate(film);
+
+        Film retrievedFilm = retrieveFilm(film);
+        Set<Provider> retrievedProviders = new HashSet<>();
+        for (Version v : retrievedFilm.getVersions()) {
+            for (Encoding e : v.getManifestedAs()) {
+                for(Location l : e.getAvailableAt()) {
+                    retrievedProviders.add(location.getProvider());
+                }
+            }
+        }
+        assertEquals(1, retrievedProviders.size());
+        assertEquals(provider, retrievedProviders.iterator().next());
     }
 
     public Brand retrieveBrand(Brand brand) {
