@@ -14,7 +14,6 @@ import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.metabroadcast.common.query.Selection;
 import com.metabroadcast.common.stream.MoreCollectors;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClientException;
 import com.mongodb.ReadPreference;
@@ -202,7 +201,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
 
     @Override
     public Iterable<LookupEntry> entriesForIds(Transaction transaction, Iterable<Long> ids) {
-        Document queryDocument = new Document(OPAQUE_ID, new BasicDBObject(IN, ids));
+        Document queryDocument = new Document(OPAQUE_ID, new Document(IN, ids));
         FindIterable<DBObject> found = transaction.getSession() == null
                 ? lookupSpecifiedRead.find(queryDocument)
                 : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
@@ -214,8 +213,9 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public void ensureLookup(Content content) {
         LookupEntry newEntry = lookupEntryFrom(content);
         // Since most content will already have a lookup entry we read first to avoid locking the database
-        DBObject existingDbo = lookupPrimaryRead.find(new Document(MongoConstants.ID, content.getCanonicalUri())).first();
-        LookupEntry existing = existingDbo == null ? null : translator.fromDbo(existingDbo);
+        LookupEntry existing = lookupPrimaryRead.find(new Document(MongoConstants.ID, content.getCanonicalUri()))
+                .map(translator::fromDbo)
+                .first();
 
         if (existing == null) {
             store(Transaction.none(), newEntry, null);
@@ -438,10 +438,6 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
                 .buildAsDocument();
 
         return lookupSpecifiedRead.find(query).map(translator::fromDbo);
-    }
-
-    private Document toDocument(DBObject dbObject) {
-        return new Document(dbObject.toMap());
     }
 
 }

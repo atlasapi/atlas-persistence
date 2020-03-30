@@ -76,8 +76,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
     @Autowired private DatabasedMongo db;
-    @Autowired private MongoClient mongoClient; //TODO create bean
-    @Autowired private DatabasedMongoClient mongoDatabase; //TODO create bean
+    @Autowired private MongoClient mongoClient;
+    @Autowired private DatabasedMongoClient mongoDatabase;
     @Autowired private AdapterLog log;
     @Autowired private MessagingModule messagingModule;
 
