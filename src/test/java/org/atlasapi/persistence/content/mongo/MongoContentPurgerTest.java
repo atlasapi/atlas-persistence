@@ -7,8 +7,10 @@ import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.time.SystemClock;
 import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Alias;
 import org.atlasapi.media.entity.Content;
@@ -44,7 +46,9 @@ public class MongoContentPurgerTest {
 
     private static final String MB_ITEM_URI = "http://metabroadcast.com/programmes/item";
     private static final String BBC_ITEM_URI = "http://www.bbc.co.uk/programmes/item";
+    private MongoClient mongoClient;
     private DatabasedMongo db;
+    private DatabasedMongoClient mongoDatabase;
     private EquivalenceWritingContentWriter contentWriter;
     private MongoContentPurger mongoContentPurger;
     private DefaultEquivalentContentResolver contentResolver;
@@ -57,11 +61,17 @@ public class MongoContentPurgerTest {
  
     @Before
     public void setUp() {
-        db = MongoTestHelper.anEmptyTestDatabase();
+        mongoClient = MongoTestHelper.anEmptyMongo();
+        db = new DatabasedMongo(mongoClient, "testing");
+        mongoDatabase = new DatabasedMongoClient(mongoClient, "testing");
         persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
         DBCollection lookupCollection = db.collection("lookup");
-        entryStore = new MongoLookupEntryStore(lookupCollection, 
-                new NoLoggingPersistenceAuditLog(), ReadPreference.primary());
+        entryStore = new MongoLookupEntryStore(
+                mongoDatabase,
+                "lookup",
+                new NoLoggingPersistenceAuditLog(),
+                ReadPreference.primary()
+        );
         contentWriter = new EquivalenceWritingContentWriter(
                 new MongoContentWriter(db, entryStore, persistenceAuditLog, 
                                        playerResolver, serviceResolver, 

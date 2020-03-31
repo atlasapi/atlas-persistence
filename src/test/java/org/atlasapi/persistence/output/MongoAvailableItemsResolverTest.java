@@ -7,8 +7,10 @@ import com.metabroadcast.applications.client.model.internal.Application;
 import com.metabroadcast.applications.client.model.internal.ApplicationConfiguration;
 import com.metabroadcast.common.persistence.MongoTestHelper;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.time.DateTimeZones;
 import com.metabroadcast.common.time.TimeMachine;
+import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
@@ -50,16 +52,22 @@ public class MongoAvailableItemsResolverTest {
     
     private static final ServiceResolver serviceResolver = mock(ServiceResolver.class);
     private static final PlayerResolver playerResolver = mock(PlayerResolver.class);
-    
-    private final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+
+    private final MongoClient mongoClient = MongoTestHelper.anEmptyMongo();
+    private final DatabasedMongo db = new DatabasedMongo(mongoClient, "testing");
+    private final DatabasedMongoClient mongoDatabase = new DatabasedMongoClient(mongoClient, "testing");
     private final TimeMachine clock = new TimeMachine();
     private final MongoLookupEntryStore lookupStore
-        = new MongoLookupEntryStore(mongo.collection("lookup"), 
-                new NoLoggingPersistenceAuditLog(), ReadPreference.primary());
+        = new MongoLookupEntryStore(
+                mongoDatabase,
+            "lookup",
+            new NoLoggingPersistenceAuditLog(),
+            ReadPreference.primary()
+    );
     private final MongoAvailableItemsResolver resolver
-        = new MongoAvailableItemsResolver(mongo, lookupStore, clock);
-    private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
-    private final ContentWriter writer = new MongoContentWriter(mongo, lookupStore, persistenceAuditLog, 
+        = new MongoAvailableItemsResolver(db, lookupStore, clock);
+    private final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
+    private final ContentWriter writer = new MongoContentWriter(db, lookupStore, persistenceAuditLog,
             playerResolver, serviceResolver, clock);
     
     private final Brand primary = new Brand("primary", "primary", Publisher.BBC);

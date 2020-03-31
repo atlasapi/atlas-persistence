@@ -1,28 +1,23 @@
 package org.atlasapi.persistence.content.mongo;
 
-import static org.atlasapi.media.entity.Publisher.BBC;
-import static org.atlasapi.media.entity.Publisher.C4;
-import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
-import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
-import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-import java.util.Arrays;
-import java.util.List;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.metabroadcast.applications.client.model.internal.Application;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.query.Selection;
+import com.metabroadcast.common.time.DateTimeZones;
+import com.metabroadcast.common.time.SystemClock;
+import com.mongodb.MongoClient;
+import com.mongodb.ReadPreference;
 import org.atlasapi.content.criteria.ContentQuery;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.EventRef;
-import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.persistence.audit.PerHourAndDayMongoPersistenceAuditLog;
 import org.atlasapi.persistence.audit.PersistenceAuditLog;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
@@ -36,13 +31,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.time.DateTimeZones;
-import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.ReadPreference;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.atlasapi.media.entity.Publisher.BBC;
+import static org.atlasapi.media.entity.Publisher.C4;
+import static org.atlasapi.persistence.content.ContentCategory.CONTAINER;
+import static org.atlasapi.persistence.content.ContentCategory.TOP_LEVEL_ITEM;
+import static org.atlasapi.persistence.content.listing.ContentListingCriteria.defaultCriteria;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MongoContentListerTest {
@@ -54,12 +55,18 @@ public class MongoContentListerTest {
     private static final Brand bbcBrand= new Brand("bbcBrand1", "bbcBrand1curie", Publisher.BBC);
     private static final Brand c4Brand= new Brand("c4Brand1", "c4Brand1curie", Publisher.C4);
 
-    private static final DatabasedMongo mongo = MongoTestHelper.anEmptyTestDatabase();
+    private static final MongoClient mongoClient = MongoTestHelper.anEmptyMongo();
+    private static final DatabasedMongo mongo = new DatabasedMongo(mongoClient, "testing");
+    private static final DatabasedMongoClient mongoDatabase = new DatabasedMongoClient(mongoClient, "testing");
     private static final PersistenceAuditLog persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(mongo);
     
     private final MongoContentLister lister = new MongoContentLister(mongo, 
             new MongoContentResolver(mongo, new MongoLookupEntryStore(
-                    mongo.collection("lookup"), persistenceAuditLog, ReadPreference.primary())));
+                    mongoDatabase,
+                    "lookup",
+                    persistenceAuditLog,
+                    ReadPreference.primary()))
+    );
 
     private static final ServiceResolver serviceResolver = mock(ServiceResolver.class);
     private static final PlayerResolver playerResolver = mock(PlayerResolver.class);

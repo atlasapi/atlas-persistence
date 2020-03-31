@@ -3,6 +3,7 @@ package org.atlasapi.persistence.lookup.entry;
 import com.google.common.base.Optional;
 import com.metabroadcast.common.query.Selection;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.content.listing.ContentListingProgress;
 import org.joda.time.DateTime;
 
@@ -11,12 +12,16 @@ import java.util.Map;
 
 public interface LookupEntryStore {
 
+    Transaction startTransaction();
+
     /**
      * Stores specified entry, and all related entries (like those for aliases).
      * 
      * @param entry
      */
     void store(LookupEntry entry);
+
+    void store(Transaction transaction, LookupEntry entry);
 
     /**
      * Get entries for given URIs or Aliases. There is a one-to-many mapping
@@ -76,7 +81,11 @@ public interface LookupEntryStore {
      */
     Iterable<LookupEntry> entriesForCanonicalUris(Iterable<String> uris);
 
+    Iterable<LookupEntry> entriesForCanonicalUris(Transaction transaction, Iterable<String> uris);
+
     Iterable<LookupEntry> entriesForIds(Iterable<Long> ids);
+
+    Iterable<LookupEntry> entriesForIds(Transaction transaction, Iterable<Long> ids);
 
     Iterable<LookupEntry> entriesForPublishers(Iterable<Publisher> publishers, Selection selection);
 
