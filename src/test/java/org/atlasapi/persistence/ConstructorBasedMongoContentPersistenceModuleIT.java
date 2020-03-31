@@ -1,9 +1,23 @@
 package org.atlasapi.persistence;
 
-import java.util.Map;
-
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.metabroadcast.applications.client.model.internal.Application;
-import org.atlasapi.application.v3.DefaultApplication;
+import com.metabroadcast.common.base.Maybe;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
+import com.metabroadcast.common.properties.Parameter;
+import com.metabroadcast.common.queue.Message;
+import com.metabroadcast.common.queue.MessageConsumerFactory;
+import com.metabroadcast.common.queue.MessageSender;
+import com.metabroadcast.common.queue.MessageSenderFactory;
+import com.metabroadcast.common.queue.MessageSerializer;
+import com.metabroadcast.common.queue.MessagingException;
+import com.mongodb.MongoClient;
+import com.mongodb.ReadPreference;
 import org.atlasapi.media.channel.Channel;
 import org.atlasapi.media.channel.ChannelGroup;
 import org.atlasapi.media.channel.ChannelGroupStore;
@@ -42,27 +56,11 @@ import org.atlasapi.persistence.logging.MongoLoggingAdapter;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.persistence.topic.TopicStore;
-
-import com.metabroadcast.common.base.Maybe;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.properties.Parameter;
-import com.metabroadcast.common.queue.Message;
-import com.metabroadcast.common.queue.MessageConsumerFactory;
-import com.metabroadcast.common.queue.MessageSender;
-import com.metabroadcast.common.queue.MessageSenderFactory;
-import com.metabroadcast.common.queue.MessageSerializer;
-import com.metabroadcast.common.queue.MessagingException;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.mongodb.Mongo;
-import com.mongodb.ReadPreference;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -73,8 +71,11 @@ import static org.mockito.Mockito.mock;
 
 public class ConstructorBasedMongoContentPersistenceModuleIT {
 
-    private final Mongo mongo = MongoTestHelper.anEmptyMongo();
+
+    private final MongoClient mongo = MongoTestHelper.anEmptyMongo();
     private final DatabasedMongo db = new DatabasedMongo(mongo, "atlas");
+    private final DatabasedMongoClient mongoDatabase = new DatabasedMongoClient(mongo, "atlas");
+
     private final MongoLoggingAdapter adapterLog = new MongoLoggingAdapter(db);
     private final MessagingModule messagingModule = new MessagingModule(){
         @Override
@@ -119,6 +120,7 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
         module = new ConstructorBasedMongoContentPersistenceModule(
                 mongo,
                 db,
+                mongoDatabase,
                 messagingModule,
                 "atlas-audit",
                 adapterLog,
@@ -138,6 +140,7 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
         moduleWithProcessingConfigTrue = new ConstructorBasedMongoContentPersistenceModule(
                 mongo,
                 db,
+                mongoDatabase,
                 messagingModule,
                 "atlas-audit",
                 adapterLog,

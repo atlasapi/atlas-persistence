@@ -1,10 +1,14 @@
 package org.atlasapi.persistence.content.organisation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.List;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.metabroadcast.common.persistence.MongoTestHelper;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
+import com.mongodb.MongoClient;
+import com.mongodb.ReadPreference;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Organisation;
@@ -18,18 +22,17 @@ import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.metabroadcast.common.persistence.MongoTestHelper;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.mongodb.ReadPreference;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 
 public class MongoOrganisationStoreTest {
 
+        private MongoClient mongoClient;
         private DatabasedMongo db;
+        private DatabasedMongoClient mongoDatabase;
         private MongoOrganisationStore store;
         private MongoLookupEntryStore entryStore;
         private PersistenceAuditLog persistenceAuditLog;
@@ -38,10 +41,16 @@ public class MongoOrganisationStoreTest {
         
         @Before
         public void setUp() {
-            db = MongoTestHelper.anEmptyTestDatabase();
+            mongoClient = MongoTestHelper.anEmptyMongo();
+            db = new DatabasedMongo(mongoClient, "testing");
+            mongoDatabase = new DatabasedMongoClient(mongoClient, "testing");
             persistenceAuditLog = new PerHourAndDayMongoPersistenceAuditLog(db);
-            entryStore = new MongoLookupEntryStore(db.collection("peopleLookup"), new NoLoggingPersistenceAuditLog(), 
-                    ReadPreference.primary());
+            entryStore = new MongoLookupEntryStore(
+                    mongoDatabase,
+                    "peopleLookup",
+                    new NoLoggingPersistenceAuditLog(),
+                    ReadPreference.primary()
+            );
             store = new MongoOrganisationStore(db, TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore), 
                     entryStore, persistenceAuditLog);
         }

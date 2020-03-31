@@ -4,11 +4,12 @@ import com.google.common.base.Optional;
 import com.metabroadcast.common.ids.IdGenerator;
 import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongoClient;
 import com.metabroadcast.common.persistence.mongo.health.MongoIOProbe;
 import com.metabroadcast.common.properties.Parameter;
 import com.metabroadcast.common.queue.MessageSender;
 import com.metabroadcast.common.time.SystemClock;
-import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import org.atlasapi.media.channel.CachingChannelStore;
@@ -117,8 +118,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     private static final String LOOKUP = "lookup";
 
     private final ReadPreference readPreference;
-    private final Mongo mongo;
+    private final MongoClient mongo;
     private final DatabasedMongo db;
+    private final DatabasedMongoClient mongoDatabase;
     private final AdapterLog log;
     private final MessagingModule messagingModule;
 
@@ -139,8 +141,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     //This MongoContentPersistenceModule is intended to be used by projects without DI.
     public ConstructorBasedMongoContentPersistenceModule(
-            Mongo mongo,
+            MongoClient mongo,
             DatabasedMongo db,
+            DatabasedMongoClient mongoDatabase,
             MessagingModule messagingModule,
             String auditDbName,
             AdapterLog log,
@@ -158,6 +161,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     ) {
         this.mongo = checkNotNull(mongo);
         this.db = checkNotNull(db);
+        this.mongoDatabase = checkNotNull(mongoDatabase);
         this.log = checkNotNull(log);
         this.messagingModule = checkNotNull(messagingModule);
         this.auditDbName = checkNotNull(auditDbName);
@@ -321,8 +325,12 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     public MongoLookupEntryStore lookupStore() {
-        return new MongoLookupEntryStore(db.collection(LOOKUP),
-                persistenceAuditLog(), readPreference);
+        return new MongoLookupEntryStore(
+                mongoDatabase,
+                LOOKUP,
+                persistenceAuditLog(),
+                readPreference
+        );
     }
 
     @Override
@@ -336,14 +344,22 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     protected LookupWriter explicitLookupWriter() {
-        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"),
-                persistenceAuditLog(), ReadPreference.primary());
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(
+                mongoDatabase,
+                LOOKUP,
+                persistenceAuditLog(),
+                ReadPreference.primary()
+        );
         return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
     }
 
     public LookupWriter generatedLookupWriter() {
-        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(db.collection("lookup"),
-                persistenceAuditLog(), ReadPreference.primary());
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(
+                mongoDatabase,
+                LOOKUP,
+                persistenceAuditLog(),
+                ReadPreference.primary()
+        );
         return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
     }
 
@@ -384,7 +400,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     public PersonStore personStore() {
         LookupEntryStore personLookupEntryStore = new MongoLookupEntryStore(
-                db.collection("peopleLookup"),
+                mongoDatabase,
+                "peopleLookup",
                 persistenceAuditLog(),
                 readPreference
         );
@@ -493,7 +510,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     public OrganisationStore organisationStore() {
 
         LookupEntryStore organisationLookupEntryStore = new MongoLookupEntryStore(
-                db.collection("organisationLookup"),
+                mongoDatabase,
+                "organisationLookup",
                 persistenceAuditLog(),
                 readPreference
         );
@@ -552,7 +570,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         return new EquivalatingPeopleResolver(
                 personStore(),
                 new MongoLookupEntryStore(
-                        db.collection("peopleLookup"),
+                        mongoDatabase,
+                        "peopleLookup",
                         persistenceAuditLog(),
                         readPreference
                 )
