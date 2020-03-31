@@ -121,8 +121,8 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         try {
             ClientSession session = mongo.getMongoClient().startSession();
             TransactionOptions transactionOptions = TransactionOptions.builder()
-                    // Transactions require reading from primary,
-                    // the default in some cases was not for some reason and was causing errors
+                    // Multi-document transactions require reading from primary
+                    // we're currently only using transactions for such cases so this is to enforce it is used correctly
                     .readPreference(ReadPreference.primary())
                     .build();
             session.startTransaction(transactionOptions);
@@ -196,7 +196,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         Document queryDocument = where().idIn(uris).buildAsDocument();
         FindIterable<DBObject> found = transaction.getSession() == null
                 ? lookupSpecifiedRead.find(queryDocument)
-                : lookupPrimaryRead.find(transaction.getSession(), queryDocument); //transactions require reading from primary
+                : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
         return found.map(translator::fromDbo);
     }
 
@@ -210,7 +210,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         Document queryDocument = new Document(OPAQUE_ID, new Document(IN, ids));
         FindIterable<DBObject> found = transaction.getSession() == null
                 ? lookupSpecifiedRead.find(queryDocument)
-                : lookupPrimaryRead.find(transaction.getSession(), queryDocument); //transactions require reading from primary
+                : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
 
         return found.map(translator::fromDbo);
     }
