@@ -190,7 +190,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         Document queryDocument = where().idIn(uris).buildAsDocument();
         FindIterable<DBObject> found = transaction.getSession() == null
                 ? lookupSpecifiedRead.find(queryDocument)
-                : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
+                : lookupPrimaryRead.find(transaction.getSession(), queryDocument); //transactions require reading from primary
         return found.map(translator::fromDbo);
     }
 
@@ -204,7 +204,7 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
         Document queryDocument = new Document(OPAQUE_ID, new Document(IN, ids));
         FindIterable<DBObject> found = transaction.getSession() == null
                 ? lookupSpecifiedRead.find(queryDocument)
-                : lookupSpecifiedRead.find(transaction.getSession(), queryDocument);
+                : lookupPrimaryRead.find(transaction.getSession(), queryDocument); //transactions require reading from primary
 
         return found.map(translator::fromDbo);
     }
