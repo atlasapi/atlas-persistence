@@ -17,6 +17,7 @@ import com.metabroadcast.common.stream.MoreCollectors;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClientException;
 import com.mongodb.ReadPreference;
+import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -119,7 +120,12 @@ public class MongoLookupEntryStore implements LookupEntryStore, NewLookupWriter 
     public Transaction startTransaction() {
         try {
             ClientSession session = mongo.getMongoClient().startSession();
-            session.startTransaction();
+            TransactionOptions transactionOptions = TransactionOptions.builder()
+                    // Transactions require reading from primary,
+                    // the default in some cases was not for some reason and was causing errors
+                    .readPreference(ReadPreference.primary())
+                    .build();
+            session.startTransaction(transactionOptions);
             return Transaction.of(session);
         } catch (MongoClientException e) {
             log.error(
