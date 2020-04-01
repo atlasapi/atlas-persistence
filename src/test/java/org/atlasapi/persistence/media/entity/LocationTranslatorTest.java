@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import java.util.Currency;
+import java.util.Objects;
 
 import junit.framework.TestCase;
 
@@ -9,6 +10,7 @@ import org.atlasapi.media.TransportType;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
 import org.atlasapi.media.entity.Policy.RevenueContract;
+import org.atlasapi.media.entity.Provider;
 import org.atlasapi.media.entity.Quality;
 
 import com.google.common.collect.ImmutableSet;
@@ -27,6 +29,8 @@ public class LocationTranslatorTest extends TestCase {
         Location location = new Location();
         
         location.setAvailable(true);
+        Provider provider = new Provider("provider_name", "provider-icon-url.co.uk");
+        location.setProvider(provider);
 
         location.setPolicy(new Policy()
         					.withAvailabilityStart(new SystemClock().now())
@@ -37,6 +41,9 @@ public class LocationTranslatorTest extends TestCase {
         DBObject dbObject = lt.toDBObject(null, location);
         
         assertEquals(location.getAvailable(), dbObject.get("available"));
+        DBObject providerObject = (DBObject) dbObject.get("provider");
+        assertEquals(location.getProvider().getName(), providerObject.get("name"));
+        assertEquals(location.getProvider().getIconUrl(), providerObject.get("iconUrl"));
 
         DBObject policyObject = (DBObject) dbObject.get("policy");
         assertEquals(Sets.newHashSet("GB", "IE"),  Sets.newHashSet(((BasicDBList)  policyObject.get("availableCountries"))));
@@ -48,6 +55,8 @@ public class LocationTranslatorTest extends TestCase {
     public void testToLocation() {
         Location location = new Location();
         location.setAvailable(true);
+        Provider provider = new Provider("provider_name", "provider-icon-url.co.uk");
+        location.setProvider(provider);
 
         location.setPolicy(new Policy()
         	.withAvailabilityStart(new SystemClock().now())
@@ -63,11 +72,12 @@ public class LocationTranslatorTest extends TestCase {
         location.setTransportType(TransportType.LINK);
         location.setTransportIsLive(true);
         location.setUri("uri");
-        
+
         DBObject dbObject = lt.toDBObject(null, location);
         Location resultingLocation = lt.fromDBObject(dbObject, null);
         
         assertEquals(location.getAvailable(), resultingLocation.getAvailable());
+        assertEquals(location.getProvider(), resultingLocation.getProvider());
 
         assertEquals(location.getPolicy().getAvailabilityStart(), resultingLocation.getPolicy().getAvailabilityStart());
         assertEquals(location.getPolicy().getAvailabilityEnd(), resultingLocation.getPolicy().getAvailabilityEnd());

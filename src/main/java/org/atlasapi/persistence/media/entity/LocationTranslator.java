@@ -1,26 +1,23 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.List;
-
 import org.atlasapi.media.TransportSubType;
 import org.atlasapi.media.TransportType;
-import org.atlasapi.media.entity.Image;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
-import org.atlasapi.media.entity.Quality;
 import org.atlasapi.persistence.ModelTranslator;
 
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 public class LocationTranslator implements ModelTranslator<Location> {
 	
     public static final String POLICY = "policy";
+    private static final String PROVIDER = "provider";
 
     private final IdentifiedTranslator descriptionTranslator = new IdentifiedTranslator();
 	private final PolicyTranslator policyTranslator = new PolicyTranslator();
+    private final ProviderTranslator providerTranslator = new ProviderTranslator();
 
     @Override
     public Location fromDBObject(DBObject dbObject, Location entity) {
@@ -38,8 +35,13 @@ public class LocationTranslator implements ModelTranslator<Location> {
         
         entity.setTransportType(readEnum(TransportType.class, dbObject, "transportType"));
         entity.setTransportSubType(readEnum(TransportSubType.class, dbObject, "transportSubType"));
-        
+
         entity.setUri((String) dbObject.get("uri"));
+
+        DBObject providerObject = (DBObject) dbObject.get(PROVIDER);
+        if(providerObject != null) {
+            entity.setProvider(providerTranslator.fromDBObject(providerObject));
+        }
 
         DBObject policyObject = (DBObject) dbObject.get(POLICY);
         if (policyObject != null) {
@@ -75,6 +77,13 @@ public class LocationTranslator implements ModelTranslator<Location> {
         
         TranslatorUtils.from(dbObject, "uri", entity.getUri());
         TranslatorUtils.fromDateTime(dbObject, IdentifiedTranslator.LAST_UPDATED, entity.getLastUpdated());
+
+        if(entity.getProvider() != null) {
+            DBObject providerObject = providerTranslator.toDBObject(new BasicDBObject(), entity.getProvider());
+            if(!providerObject.keySet().isEmpty()) {
+                dbObject.put(PROVIDER, providerObject);
+            }
+        }
         
         if (entity.getPolicy() != null) {
         	DBObject policyObject = policyTranslator.toDBObject(new BasicDBObject(), entity.getPolicy());
