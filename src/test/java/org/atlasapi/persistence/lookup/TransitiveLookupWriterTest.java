@@ -19,11 +19,15 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -36,6 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriter;
+import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriterWithContentMessenger;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
@@ -48,6 +53,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +61,8 @@ import static org.mockito.Mockito.when;
 public class TransitiveLookupWriterTest extends TestCase {
 
     private final LookupEntryStore store = new InMemoryLookupEntryStore();
-    private final TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
+    private final ContentEquivalenceAssertionMessenger messenger = mock(ContentEquivalenceAssertionMessenger.class);
+    private final TransitiveLookupWriter writer = generatedTransitiveLookupWriterWithContentMessenger(store, messenger);
 
     // Tests that trivial lookups are written reflexively for all content
     // identifiers
@@ -580,5 +587,85 @@ public class TransitiveLookupWriterTest extends TestCase {
         verify(store, times(1)).startTransaction();
         verify(transaction, times(1)).commit();
 
+    }
+
+
+    @Test
+    public void testEquivalenceAssertionMessageIsSentOnlyIfSubjectOutgoingChanges() {
+        Item paItem = createItem("test1", Publisher.PA);
+        Item bbcItem = createItem("test2", Publisher.BBC);
+        Item c4Item = createItem("test3", Publisher.C4);
+
+        LookupEntry initialPaEntry = LookupEntry.lookupEntryFrom(paItem)
+                .copyWithBlacklistedEquivalents(EquivRefs.of(LookupRef.from(c4Item), BIDIRECTIONAL));
+
+        LookupEntry initialC4Entry = LookupEntry.lookupEntryFrom(c4Item)
+                .copyWithBlacklistedEquivalents(EquivRefs.of(LookupRef.from(paItem), BIDIRECTIONAL));
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.PA, Publisher.BBC, Publisher.C4);
+
+        Set<String> sources = Publisher.all().stream().map(Publisher::key).collect(MoreCollectors.toImmutableSet());
+
+        store.store(initialPaEntry);
+        store.store(LookupEntry.lookupEntryFrom(bbcItem));
+        store.store(initialC4Entry);
+
+        writeLookup(writer, paItem, ImmutableSet.of(bbcItem), publishers);
+
+        verify(messenger, times(1)).sendMessage(
+                argThat(lookupEntryMatcher(paItem.getCanonicalUri())),
+                argThat(is(ImmutableSet.of(initialPaEntry.lookupRef(), LookupRef.from(bbcItem)))),
+                argThat(is(sources))
+        );
+
+        hasEquivs(paItem, paItem, bbcItem);
+        hasDirectEquivs(paItem, paItem, bbcItem);
+
+        hasEquivs(bbcItem, bbcItem, paItem);
+        hasDirectEquivs(bbcItem, bbcItem, paItem);
+
+        hasEquivs(c4Item, c4Item);
+        hasDirectEquivs(c4Item, c4Item);
+
+        reset(messenger);
+
+        writeLookup(writer, paItem, ImmutableSet.of(bbcItem, c4Item), publishers);
+
+        hasEquivs(paItem, paItem, bbcItem);
+        hasDirectEquivs(paItem, paItem, bbcItem, c4Item);
+
+        hasEquivs(bbcItem, bbcItem, paItem);
+        hasDirectEquivs(bbcItem, bbcItem, paItem);
+
+        hasEquivs(c4Item, c4Item);
+        hasDirectEquivs(c4Item, c4Item, paItem);
+
+        verify(messenger, never()).sendMessage(
+                any(LookupEntry.class),
+                any(),
+                any()
+        );
+
+        verify(messenger, never()).sendMessage(
+                any(Content.class),
+                any(),
+                any()
+        );
+
+    }
+
+    private static Matcher<LookupEntry> lookupEntryMatcher(String uri) {
+        return new BaseMatcher<LookupEntry>() {
+            @Override
+            public boolean matches(Object item) {
+                return item instanceof LookupEntry &&
+                        ((LookupEntry) item).uri().equals(uri);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("LookupEntry for " + uri);
+            }
+        };
     }
 }

@@ -50,8 +50,6 @@ import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
-import org.atlasapi.persistence.content.MessageQueueingContentWriter;
-import org.atlasapi.persistence.content.MessageQueueingEquivalenceContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.listing.MongoProgressStore;
@@ -214,7 +212,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                                 )
                         ),
                 new SystemClock(),
-                lookupStore()
+                lookupStore(),
+                knownTypeContentResolver()
         );
     }
 
@@ -256,14 +255,6 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         );
 
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
-        if (messagingEnabled) {
-            contentWriter = new MessageQueueingContentWriter(
-                    messenger(),
-                    contentChanges(),
-                    contentWriter,
-                    contentResolver()
-            );
-        }
 
         contentWriter = new IdSettingContentWriter(
                 contentWriter, lookupBackedContentIdGenerator()
@@ -278,15 +269,6 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 db, lookupStore(), persistenceAuditLog(),
                 playerResolver(), serviceResolver(), new SystemClock()
         );
-
-        if (messagingEnabled) {
-            contentWriter = new MessageQueueingContentWriter(
-                    messenger(),
-                    contentChanges(),
-                    contentWriter,
-                    contentResolver()
-            );
-        }
 
         contentWriter = new IdSettingContentWriter(
                 contentWriter, lookupBackedContentIdGenerator()
@@ -303,14 +285,6 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         );
 
         EquivalenceContentWriter equivalenceContentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
-        if (messagingEnabled) {
-            equivalenceContentWriter = new MessageQueueingEquivalenceContentWriter(
-                    messenger(),
-                    contentChanges(),
-                    equivalenceContentWriter,
-                    contentResolver()
-            );
-        }
 
         return equivalenceContentWriter;
     }
@@ -350,7 +324,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 persistenceAuditLog(),
                 ReadPreference.primary()
         );
-        return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
+        if (messagingEnabled) {
+            return TransitiveLookupWriter.explicitTransitiveLookupWriterWithContentMessenger(entryStore, messenger());
+        } else {
+            return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
+        }
     }
 
     public LookupWriter generatedLookupWriter() {
@@ -360,7 +338,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 persistenceAuditLog(),
                 ReadPreference.primary()
         );
-        return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
+        if (messagingEnabled) {
+            return TransitiveLookupWriter.generatedTransitiveLookupWriterWithContentMessenger(entryStore, messenger());
+        } else {
+            return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
+        }
     }
 
     /**
