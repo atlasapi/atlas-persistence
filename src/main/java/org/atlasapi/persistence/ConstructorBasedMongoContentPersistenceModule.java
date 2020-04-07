@@ -280,10 +280,6 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 playerResolver(), serviceResolver(), new SystemClock()
         );
 
-        contentWriter = new IdSettingContentWriter(
-                contentWriter, lookupBackedContentIdGenerator()
-        );
-
         if (messagingEnabled) {
             contentWriter = new MessageQueueingContentWriter(
                     contentChanges(),
@@ -291,6 +287,10 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                     contentResolver()
             );
         }
+
+        contentWriter = new IdSettingContentWriter(
+                contentWriter, lookupBackedContentIdGenerator()
+        );
 
         return contentWriter;
     }
