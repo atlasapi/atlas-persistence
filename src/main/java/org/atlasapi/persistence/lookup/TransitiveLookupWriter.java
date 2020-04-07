@@ -39,6 +39,9 @@ public class TransitiveLookupWriter implements LookupWriter {
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
     private static final int maxSetSize = 150;
     private static final int WRITE_RETRIES = 5;
+    private static final Set<String> ALL_PUBLISHER_KEYS = Publisher.all().stream()
+            .map(Publisher::key)
+            .collect(MoreCollectors.toImmutableSet());
 
     private final LookupEntryStore entryStore;
     private final boolean explicit;
@@ -337,7 +340,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         messenger.sendMessage(
                 entry,
                 entry.getOutgoing(),
-                Publisher.all().stream().map(Publisher::key).collect(MoreCollectors.toImmutableSet())
+                ALL_PUBLISHER_KEYS
         );
     }
 
