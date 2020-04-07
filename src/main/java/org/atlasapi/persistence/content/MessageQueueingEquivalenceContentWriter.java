@@ -6,7 +6,6 @@ import com.metabroadcast.common.time.Timestamper;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,23 +27,20 @@ public class MessageQueueingEquivalenceContentWriter extends MessageQueueingCont
     private final EquivalenceContentWriter equivalenceContentWriter;
 
     public MessageQueueingEquivalenceContentWriter(
-            ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             EquivalenceContentWriter equivalenceContentWriter,
             ContentResolver contentResolver
     ) {
-        this(messenger, sender, equivalenceContentWriter, contentResolver, new SystemClock());
+        this(sender, equivalenceContentWriter, contentResolver, new SystemClock());
     }
 
     public MessageQueueingEquivalenceContentWriter(
-            ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             EquivalenceContentWriter equivalenceContentWriter,
             ContentResolver contentResolver,
             Timestamper clock
     ) {
         super(
-                messenger,
                 sender,
                 equivalenceContentWriter,
                 contentResolver,

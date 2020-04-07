@@ -50,6 +50,8 @@ import org.atlasapi.persistence.content.IdSettingContentWriter;
 import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
+import org.atlasapi.persistence.content.MessageQueueingContentWriter;
+import org.atlasapi.persistence.content.MessageQueueingEquivalenceContentWriter;
 import org.atlasapi.persistence.content.MessageQueuingContentGroupWriter;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.listing.MongoProgressStore;
@@ -256,6 +258,14 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
 
+        if (messagingEnabled) {
+            contentWriter = new MessageQueueingContentWriter(
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
+        }
+
         contentWriter = new IdSettingContentWriter(
                 contentWriter, lookupBackedContentIdGenerator()
         );
@@ -274,6 +284,14 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 contentWriter, lookupBackedContentIdGenerator()
         );
 
+        if (messagingEnabled) {
+            contentWriter = new MessageQueueingContentWriter(
+                    contentChanges(),
+                    contentWriter,
+                    contentResolver()
+            );
+        }
+
         return contentWriter;
     }
 
@@ -285,6 +303,14 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         );
 
         EquivalenceContentWriter equivalenceContentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+
+        if (messagingEnabled) {
+            equivalenceContentWriter = new MessageQueueingEquivalenceContentWriter(
+                    contentChanges(),
+                    equivalenceContentWriter,
+                    contentResolver()
+            );
+        }
 
         return equivalenceContentWriter;
     }

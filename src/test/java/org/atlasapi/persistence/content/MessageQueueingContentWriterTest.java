@@ -1,13 +1,10 @@
 package org.atlasapi.persistence.content;
 
+import com.google.common.primitives.Longs;
+import com.metabroadcast.common.queue.MessageSender;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
-
-import com.metabroadcast.common.queue.MessageSender;
-
-import com.google.common.primitives.Longs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -27,10 +24,8 @@ public class MessageQueueingContentWriterTest {
         (MessageSender<EntityUpdatedMessage>) mock(MessageSender.class);
     private final ContentWriter delegate = mock(ContentWriter.class);
     private final ContentResolver resolver = mock(ContentResolver.class);
-    private final ContentEquivalenceAssertionMessenger messenger =
-            mock(ContentEquivalenceAssertionMessenger.class);
     private final MessageQueueingContentWriter writer 
-        = new MessageQueueingContentWriter(messenger, sender, delegate, resolver);
+        = new MessageQueueingContentWriter(sender, delegate, resolver);
     
     @Test
     public void testEnqueuesMessageWhenContentChanges() throws Exception {
