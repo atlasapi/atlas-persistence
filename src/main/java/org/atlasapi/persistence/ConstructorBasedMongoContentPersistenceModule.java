@@ -214,7 +214,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                                 )
                         ),
                 new SystemClock(),
-                lookupStore()
+                lookupStore(),
+                knownTypeContentResolver()
         );
     }
 
@@ -256,9 +257,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         );
 
         contentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+
         if (messagingEnabled) {
             contentWriter = new MessageQueueingContentWriter(
-                    messenger(),
                     contentChanges(),
                     contentWriter,
                     contentResolver()
@@ -281,7 +282,6 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
         if (messagingEnabled) {
             contentWriter = new MessageQueueingContentWriter(
-                    messenger(),
                     contentChanges(),
                     contentWriter,
                     contentResolver()
@@ -303,9 +303,9 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         );
 
         EquivalenceContentWriter equivalenceContentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
+
         if (messagingEnabled) {
             equivalenceContentWriter = new MessageQueueingEquivalenceContentWriter(
-                    messenger(),
                     contentChanges(),
                     equivalenceContentWriter,
                     contentResolver()
@@ -350,7 +350,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 persistenceAuditLog(),
                 ReadPreference.primary()
         );
-        return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
+        if (messagingEnabled) {
+            return TransitiveLookupWriter.explicitTransitiveLookupWriterWithContentMessenger(entryStore, messenger());
+        } else {
+            return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
+        }
     }
 
     public LookupWriter generatedLookupWriter() {
@@ -360,7 +364,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 persistenceAuditLog(),
                 ReadPreference.primary()
         );
-        return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
+        if (messagingEnabled) {
+            return TransitiveLookupWriter.generatedTransitiveLookupWriterWithContentMessenger(entryStore, messenger());
+        } else {
+            return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
+        }
     }
 
     /**

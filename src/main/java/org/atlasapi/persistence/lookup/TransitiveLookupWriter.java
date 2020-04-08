@@ -3,7 +3,6 @@ package org.atlasapi.persistence.lookup;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -14,6 +13,7 @@ import com.mongodb.MongoCommandException;
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -39,21 +39,44 @@ public class TransitiveLookupWriter implements LookupWriter {
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
     private static final int maxSetSize = 150;
     private static final int WRITE_RETRIES = 5;
+    private static final Set<String> ALL_PUBLISHER_KEYS = Publisher.all().stream()
+            .map(Publisher::key)
+            .collect(MoreCollectors.toImmutableSet());
 
     private final LookupEntryStore entryStore;
     private final boolean explicit;
+    private final ContentEquivalenceAssertionMessenger messenger;
     
+    public static TransitiveLookupWriter explicitTransitiveLookupWriterWithContentMessenger(
+            LookupEntryStore entryStore,
+            ContentEquivalenceAssertionMessenger messenger
+    ) {
+        return new TransitiveLookupWriter(entryStore, true, messenger);
+    }
+
     public static TransitiveLookupWriter explicitTransitiveLookupWriter(LookupEntryStore entryStore) {
-        return new TransitiveLookupWriter(entryStore, true);
+        return new TransitiveLookupWriter(entryStore, true, null);
+    }
+
+    public static TransitiveLookupWriter generatedTransitiveLookupWriterWithContentMessenger(
+            LookupEntryStore entryStore,
+            ContentEquivalenceAssertionMessenger messenger
+    ) {
+        return new TransitiveLookupWriter(entryStore, false, messenger);
     }
     
     public static TransitiveLookupWriter generatedTransitiveLookupWriter(LookupEntryStore entryStore) {
-        return new TransitiveLookupWriter(entryStore, false);
+        return new TransitiveLookupWriter(entryStore, false, null);
     }
 
-    private TransitiveLookupWriter(LookupEntryStore entryStore, boolean explicit) {
-        this.entryStore = entryStore;
-        this.explicit = explicit;
+    private TransitiveLookupWriter(
+            LookupEntryStore entryStore,
+            Boolean explicit,
+            @Nullable ContentEquivalenceAssertionMessenger messenger
+    ) {
+        this.entryStore = checkNotNull(entryStore);
+        this.explicit = checkNotNull(explicit);
+        this.messenger = messenger;
     }
 
     @Override
@@ -96,7 +119,7 @@ public class TransitiveLookupWriter implements LookupWriter {
 
             try (Transaction transaction = entryStore.startTransaction()) {
                 LookupEntry subjectEntry = entryFor(transaction, subjectUri);
-                Optional<Set<LookupEntry>> newLookups = writeLookup(
+                UpdateResult result = writeLookup(
                         transaction,
                         subjectUri,
                         subjectEntry,
@@ -104,14 +127,18 @@ public class TransitiveLookupWriter implements LookupWriter {
                         sources
                 );
                 transaction.commit();
-                return newLookups;
+
+                Set<LookupEntry> newLookups = handleUpdateResult(result);
+                return Optional.fromNullable(newLookups);
             }
             catch (MongoCommandException e) {
                 // The transaction was too large due to Mongo restrictions so we have to do it without a transaction
                 if (e.getErrorCode() == 257 || e.getErrorCodeName().equals("TransactionTooLarge")) {
                     log.warn("Transaction for updating {} was too large, retrying without transactions", subjectUri);
                     LookupEntry subjectEntry = entryFor(Transaction.none(), subjectUri);
-                    return writeLookup(Transaction.none(), subjectUri, subjectEntry, equivalentUris, sources);
+                    UpdateResult result = writeLookup(Transaction.none(), subjectUri, subjectEntry, equivalentUris, sources);
+                    Set<LookupEntry> newLookups = handleUpdateResult(result);
+                    return Optional.fromNullable(newLookups);
                 }
                 else if (e.getErrorCode() == 112 || e.getErrorCodeName().equals("WriteConflict")) {
                     log.warn(
@@ -131,7 +158,21 @@ public class TransitiveLookupWriter implements LookupWriter {
         throw new IllegalStateException("Exceeded number of retry attempts to update " + subjectUri);
     }
 
-    public Optional<Set<LookupEntry>> writeLookup(
+    @Nullable
+    private Set<LookupEntry> handleUpdateResult(@Nullable UpdateResult result) {
+        if (result == null) {
+            return null;
+        }
+
+        if (result.isSubjectOutgoingsChanged()) {
+            sendEquivalenceAssertionMessage(result.getUpdatedSubject());
+        }
+
+        return result.getAllUpdatedEntries();
+    }
+
+    @Nullable
+    private UpdateResult writeLookup(
             Transaction transaction,
             final String subjectUri,
             LookupEntry subjectEntry,
@@ -149,6 +190,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         Set<String> transitiveSetsUris = null;
 
         boolean strictSubset = false;
+        UpdateResult subsetUpdateResult = null;
         // If we break some existing direct equivalences, update these first
         // so we can reduce the size of the transitive equiv set
         if (!explicit) {
@@ -160,7 +202,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             boolean writeDirectSubset = strictSubset
                     && !directUriIntersection.equals(subjectAndNeighbours); //if equal we only need to update once
             if(writeDirectSubset) {
-                writeLookup(transaction, subjectUri, subjectEntry, directUriIntersection, sources);
+                subsetUpdateResult = writeLookup(transaction, subjectUri, subjectEntry, directUriIntersection, sources);
                 strictSubset = false; //for the entire set of neighbours
             }
             //Carry on with the entire set of neighbours
@@ -185,15 +227,17 @@ public class TransitiveLookupWriter implements LookupWriter {
                 lastTime = System.nanoTime();
             }
             
-            return updateEntries(transaction, subjectUri, newNeighboursUris, transitiveSetsUris, sources);
+            UpdateResult updateResult = updateEntries(transaction, subjectUri, newNeighboursUris, transitiveSetsUris, sources);
+
+            return mergeResults(updateResult, subsetUpdateResult);
             
         } catch(OversizeTransitiveSetException otse) {
             log.info(String.format("Oversize set for %s : %s",
                     subjectUri, otse.getMessage()));
-            return Optional.absent();
+            return mergeResults(null, subsetUpdateResult);
         } catch(InterruptedException e) {
             log.error(String.format("%s: %s", subjectUri, newNeighboursUris), e);
-            return Optional.absent();
+            return mergeResults(null, subsetUpdateResult);
         } finally {
             timerLog.debug("TIMER L TW Finally block reached. {}ms. {}", (System.nanoTime() - lastTime) / 1000000, Thread.currentThread().getName());
             lastTime = System.nanoTime();
@@ -212,7 +256,34 @@ public class TransitiveLookupWriter implements LookupWriter {
         }
     }
 
-    private Optional<Set<LookupEntry>> updateEntries(
+    @Nullable
+    private UpdateResult mergeResults(@Nullable UpdateResult main, @Nullable UpdateResult other) {
+        if (other == null) {
+            return main;
+        }
+        if (main == null) {
+            return other;
+        }
+
+        Map<String, LookupEntry> updatedEntries = Maps.newHashMap();
+
+        for (LookupEntry entry : other.getAllUpdatedEntries()) {
+            updatedEntries.put(entry.uri(), entry);
+        }
+
+        for (LookupEntry entry : main.getAllUpdatedEntries()) {
+            updatedEntries.put(entry.uri(), entry);
+        }
+
+        return new UpdateResult(
+                main.getUpdatedSubject(),
+                ImmutableSet.copyOf(updatedEntries.values()),
+                main.isSubjectOutgoingsChanged() || other.isSubjectOutgoingsChanged()
+        );
+    }
+
+    @Nullable
+    private UpdateResult updateEntries(
             Transaction transaction,
             String subjectUri,
             ImmutableSet<String> newNeighboursUris,
@@ -230,7 +301,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         checkNotNull(subject, "No entry for %s", subjectUri);
         if(noChangeInNeighbours(subject, newNeighboursUris, sources)) {
             log.debug("{}: no change in neighbours: {}", subjectUri, newNeighboursUris);
-            return Optional.absent();
+            return null;
         }
         
         // entries for all members in all transitive sets involved
@@ -246,14 +317,31 @@ public class TransitiveLookupWriter implements LookupWriter {
             );
         }
    
-        Set<LookupEntry> newLookups = recomputeTransitiveClosures(entryIndex);
-        for (LookupEntry entry : newLookups) {
+        Map<String, LookupEntry> newLookups = recomputeTransitiveClosures(entryIndex);
+        for (LookupEntry entry : newLookups.values()) {
             entryStore.store(transaction, entry);
         }
 
         timerLog.debug("TIMER L TW 4 Saved entries to db. {}ms. {}", (System.nanoTime() - lastTime) / 1000000,Thread.currentThread().getName());
-        
-        return Optional.of(newLookups);
+
+        LookupEntry newSubjectLookup = newLookups.get(subject.uri());
+
+        return new UpdateResult(
+                newSubjectLookup,
+                ImmutableSet.copyOf(newLookups.values()),
+                !subject.getOutgoing().equals(newSubjectLookup.getOutgoing())
+        );
+    }
+
+    private void sendEquivalenceAssertionMessage(LookupEntry entry) {
+        if (messenger == null) {
+            return;
+        }
+        messenger.sendMessage(
+                entry,
+                entry.getOutgoing(),
+                ALL_PUBLISHER_KEYS
+        );
     }
 
     private ImmutableSet<LookupEntry> newSubjectNeighbours(
@@ -422,11 +510,11 @@ public class TransitiveLookupWriter implements LookupWriter {
                         : subjectEntry.directEquivalents().getOutgoing();
     }
 
-    private Set<LookupEntry> recomputeTransitiveClosures(Map<String, LookupEntry> entries) {
+    private Map<String, LookupEntry> recomputeTransitiveClosures(Map<String, LookupEntry> entries) {
         
-        Set<LookupEntry> updatedEntries = Sets.newHashSet();
+        Map<String, LookupEntry> updatedEntries = Maps.newHashMap();
         for (LookupEntry entry : entries.values()) {
-            if (updatedEntries.contains(entry)) {
+            if (updatedEntries.containsKey(entry.uri())) {
                 continue;
             }
 
@@ -455,7 +543,8 @@ public class TransitiveLookupWriter implements LookupWriter {
             for (LookupRef lookupRef : transitiveSet) {
                 LookupEntry lookupEntry = entries.get(lookupRef.uri());
                 if (lookupEntry != null) {
-                    updatedEntries.add(lookupEntry.copyWithEquivalents(transitiveSet));
+                    LookupEntry updatedEntry = lookupEntry.copyWithEquivalents(transitiveSet);
+                    updatedEntries.put(updatedEntry.uri(), updatedEntry);
                 }
             }
         }
@@ -467,7 +556,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private LookupEntry entryFor(Transaction transaction, String subject) {
-        return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(transaction, ImmutableList.of(subject)), null);
+        return Iterables.getOnlyElement(entryStore.entriesForCanonicalUris(transaction, ImmutableSet.of(subject)), null);
     }
 
     private static class OversizeTransitiveSetException extends RuntimeException {
@@ -483,6 +572,30 @@ public class TransitiveLookupWriter implements LookupWriter {
             return String.valueOf(size);
         }
         
+    }
+
+    private static class UpdateResult {
+        private final LookupEntry updatedSubject;
+        private final Set<LookupEntry> allUpdatedEntries;
+        private final boolean subjectOutgoingsChanged;
+
+        public UpdateResult(LookupEntry updatedSubject, Set<LookupEntry> allUpdatedEntries, boolean subjectOutgoingsChanged) {
+            this.updatedSubject = updatedSubject;
+            this.allUpdatedEntries = allUpdatedEntries;
+            this.subjectOutgoingsChanged = subjectOutgoingsChanged;
+        }
+
+        public LookupEntry getUpdatedSubject() {
+            return updatedSubject;
+        }
+
+        public Set<LookupEntry> getAllUpdatedEntries() {
+            return allUpdatedEntries;
+        }
+
+        public boolean isSubjectOutgoingsChanged() {
+            return subjectOutgoingsChanged;
+        }
     }
     
 }

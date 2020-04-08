@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
-import com.metabroadcast.common.collect.MoreSets;
 import com.metabroadcast.common.stream.MoreCollectors;
 import junit.framework.TestCase;
 import org.atlasapi.equiv.ContentRef;
@@ -19,15 +18,20 @@ import org.atlasapi.media.entity.Identified;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.EquivRefs;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -36,18 +40,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriter;
+import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriterWithContentMessenger;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
+import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
 import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +60,8 @@ import static org.mockito.Mockito.when;
 public class TransitiveLookupWriterTest extends TestCase {
 
     private final LookupEntryStore store = new InMemoryLookupEntryStore();
-    private final TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
+    private final ContentEquivalenceAssertionMessenger messenger = mock(ContentEquivalenceAssertionMessenger.class);
+    private final TransitiveLookupWriter writer = generatedTransitiveLookupWriterWithContentMessenger(store, messenger);
 
     // Tests that trivial lookups are written reflexively for all content
     // identifiers
@@ -358,13 +364,13 @@ public class TransitiveLookupWriterTest extends TestCase {
         
         when(store.entriesForCanonicalUris(transaction, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri())))
             .thenReturn(ImmutableList.of(paLookupEntry, pnLookupEntry));
-        when(store.entriesForCanonicalUris(transaction, ImmutableList.of(paItem.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(transaction, ImmutableSet.of(paItem.getCanonicalUri())))
             .thenReturn(ImmutableList.of(paLookupEntry));
         
         writer.writeLookup(ContentRef.valueOf(paItem), ImmutableSet.of(ContentRef.valueOf(pnItem)), ImmutableSet.of(Publisher.PA, Publisher.PREVIEW_NETWORKS));
         
         verify(store).entriesForCanonicalUris(transaction, ImmutableSet.of(pnItem.getCanonicalUri(), paItem.getCanonicalUri()));
-        verify(store, times(2)).entriesForCanonicalUris(transaction, ImmutableList.of(paItem.getCanonicalUri()));
+        verify(store, times(2)).entriesForCanonicalUris(transaction, ImmutableSet.of(paItem.getCanonicalUri()));
         verify(store, never()).store(Mockito.isA(LookupEntry.class));
         
         Mockito.validateMockitoUsage();
@@ -454,7 +460,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         
         when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(hasItems(big.getCanonicalUri(), equiv.getCanonicalUri()))))
             .thenReturn(ImmutableList.of(bigEntry, equivEntry));
-        when(store.entriesForCanonicalUris(transaction, ImmutableList.of(equiv.getCanonicalUri())))
+        when(store.entriesForCanonicalUris(transaction, ImmutableSet.of(equiv.getCanonicalUri())))
                 .thenReturn(ImmutableList.of(equivEntry));
         
         writeLookup(writer, equiv, ImmutableSet.of(big), Publisher.all());
@@ -475,64 +481,69 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         TransitiveLookupWriter writer = generatedTransitiveLookupWriter(store);
 
-        Item equiv = createItem("equiv", Publisher.PA);
-        Item other = createItem("other", Publisher.BBC);
+        Item subject = createItem("subject", Publisher.PA);
+        Item candidate = createItem("candidate", Publisher.BBC);
+        Set<Item> existingOtherTransitiveItems = ContiguousSet.create(Range.closedOpen(0, 200), DiscreteDomain.integers())
+                .stream()
+                .map(i -> createItem(String.valueOf(i), Publisher.BBC_REDUX))
+                .collect(MoreCollectors.toImmutableSet());
 
-        LookupEntry equivEntry = LookupEntry.lookupEntryFrom(equiv);
-        LookupEntry otherEntry = LookupEntry.lookupEntryFrom(other);
+        Set<LookupRef> existingOtherTransitiveRefs = existingOtherTransitiveItems.stream()
+                .map(LookupRef::from)
+                .collect(MoreCollectors.toImmutableSet());
+        Set<LookupRef> initialTransitiveRefs = Sets.union(existingOtherTransitiveRefs, ImmutableSet.of(LookupRef.from(subject)));
 
-        Set<LookupRef> transitiveEquivSet = ImmutableSet.copyOf(
-                Iterables.transform(
-                        ContiguousSet.create(Range.closedOpen(0, 200), DiscreteDomain.integers()),
-                        input -> new LookupRef(input + "Uri", input.longValue(), Publisher.BBC_REDUX, ContentCategory.CHILD_ITEM)
+        LookupEntry subjectEntry = LookupEntry.lookupEntryFrom(subject)
+                .copyWithEquivalents(initialTransitiveRefs)
+                .copyWithDirectEquivalents(EquivRefs.of(existingOtherTransitiveRefs, OUTGOING));
+        LookupEntry candidateEntry = LookupEntry.lookupEntryFrom(candidate);
+
+        Set<LookupEntry> existingOtherTransitiveEntries = existingOtherTransitiveItems.stream()
+                .map(item -> LookupEntry.lookupEntryFrom(item)
+                        .copyWithEquivalents(initialTransitiveRefs)
+                        .copyWithDirectEquivalents(EquivRefs.of(LookupRef.from(subject), INCOMING))
                 )
+                .collect(MoreCollectors.toImmutableSet());
+
+        Set<LookupEntry> directSubsetEntries = existingOtherTransitiveEntries.stream()
+                .limit(10)
+                .collect(MoreCollectors.toImmutableSet());
+
+        Set<LookupEntry> directEntries = Sets.union(directSubsetEntries, ImmutableSet.of(candidateEntry));
+        Set<LookupEntry> directSubsetEntriesWithSubject = Sets.union(directSubsetEntries, ImmutableSet.of(subjectEntry));
+        Set<LookupEntry> directEntriesWithSubject = Sets.union(directEntries, ImmutableSet.of(subjectEntry));
+        Set<LookupEntry> transitiveEntriesWithoutCandidate =
+                Sets.union(existingOtherTransitiveEntries, ImmutableSet.of(subjectEntry));
+
+        setupEntriesForCanonicalUris(store, transaction, ImmutableSet.of(subjectEntry));
+        setupEntriesForCanonicalUris(store, transaction, directSubsetEntriesWithSubject);
+        setupEntriesForCanonicalUris(store, transaction, directEntriesWithSubject);
+        setupEntriesForCanonicalUris(store, transaction, transitiveEntriesWithoutCandidate);
+
+        Set<String> directEquivUris = directEntries.stream()
+                .map(LookupEntry::uri)
+                .collect(MoreCollectors.toImmutableSet());
+        Optional<Set<LookupEntry>> result = writer.writeLookup(subject.getCanonicalUri(), directEquivUris, Publisher.all());
+
+        assertTrue(result.isPresent());
+
+        Map<String, LookupEntry> entryMap = result.get().stream()
+                .collect(MoreCollectors.toImmutableMap(LookupEntry::uri, entry -> entry));
+
+        LookupEntry updatedSubject = entryMap.get(subject.getCanonicalUri());
+        assertEquals(
+                directSubsetEntriesWithSubject.stream().map(LookupEntry::lookupRef).collect(MoreCollectors.toImmutableSet()),
+                updatedSubject.directEquivalents().getLookupRefs()
         );
-
-        equivEntry = equivEntry
-                .copyWithEquivalents(transitiveEquivSet)
-                .copyWithDirectEquivalents(EquivRefs.of(transitiveEquivSet, OUTGOING));
-
-        Set<String> directEquivSubsetUris = transitiveEquivSet.stream()
-                        .limit(10)
-                        .map(LookupRef::uri)
-                        .collect(MoreCollectors.toImmutableSet());
-        Set<String> directEquivUris = Sets.union(directEquivSubsetUris, ImmutableSet.of(other.getCanonicalUri()));
-
-        ImmutableSet.Builder<LookupEntry> directSubsetEntriesBuilder = new ImmutableSet.Builder<>();
-        for(int i = 0; i < 10; i++) {
-            Item item = createItem(String.valueOf(i), Publisher.BBC_REDUX);
-            directSubsetEntriesBuilder.add(LookupEntry.lookupEntryFrom(item)
-                .copyWithEquivalents(transitiveEquivSet)
-            );
-        }
-        ImmutableSet<LookupEntry> directSubsetEntries = directSubsetEntriesBuilder.build();
-        ImmutableSet<LookupEntry> directEntries = MoreSets.add(directSubsetEntries, otherEntry);
-
-        when(store.entriesForCanonicalUris(transaction, ImmutableList.of(equiv.getCanonicalUri())))
-                .thenReturn(ImmutableList.of(equivEntry));
-        when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivSubsetUris.size() + 1))))
-                .thenReturn(MoreSets.add(directSubsetEntries, equivEntry));
-        when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivUris.size() + 1))))
-                .thenReturn(MoreSets.add(directEntries, equivEntry));
-        when(store.entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1)))))
-                .thenReturn(MoreSets.add(directEntries, equivEntry));
-
-        Optional<Set<LookupEntry>> result = writer.writeLookup(equiv.getCanonicalUri(), directEquivUris, Publisher.all());
-
-        //One time attempting to update direct subset
-        verify(store, times(1))
-                .entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivSubsetUris.size() + 1)));
-        //One time attempting to update entire direct set
-        verify(store, times(1))
-                .entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(directEquivUris.size() + 1)));
-        //One time to update direct subset (and not entire direct set)
-        verify(store, times(1))
-                .entriesForCanonicalUris(argThat(is(transaction)), argThat(iterableWithSize(greaterThan(directEquivUris.size() + 1))));
-
-        assertTrue(!result.isPresent());
 
         Mockito.validateMockitoUsage();
 
+    }
+
+    private void setupEntriesForCanonicalUris(LookupEntryStore store, Transaction transaction, Set<LookupEntry> entries) {
+        when(store.entriesForCanonicalUris(
+                transaction, entries.stream().map(LookupEntry::uri).collect(MoreCollectors.toImmutableSet())
+        )).thenReturn(entries);
     }
 
     @Test
@@ -580,5 +591,85 @@ public class TransitiveLookupWriterTest extends TestCase {
         verify(store, times(1)).startTransaction();
         verify(transaction, times(1)).commit();
 
+    }
+
+
+    @Test
+    public void testEquivalenceAssertionMessageIsSentOnlyIfSubjectOutgoingChanges() {
+        Item paItem = createItem("test1", Publisher.PA);
+        Item bbcItem = createItem("test2", Publisher.BBC);
+        Item c4Item = createItem("test3", Publisher.C4);
+
+        LookupEntry initialPaEntry = LookupEntry.lookupEntryFrom(paItem)
+                .copyWithBlacklistedEquivalents(EquivRefs.of(LookupRef.from(c4Item), BIDIRECTIONAL));
+
+        LookupEntry initialC4Entry = LookupEntry.lookupEntryFrom(c4Item)
+                .copyWithBlacklistedEquivalents(EquivRefs.of(LookupRef.from(paItem), BIDIRECTIONAL));
+
+        Set<Publisher> publishers = ImmutableSet.of(Publisher.PA, Publisher.BBC, Publisher.C4);
+
+        Set<String> sources = Publisher.all().stream().map(Publisher::key).collect(MoreCollectors.toImmutableSet());
+
+        store.store(initialPaEntry);
+        store.store(LookupEntry.lookupEntryFrom(bbcItem));
+        store.store(initialC4Entry);
+
+        writeLookup(writer, paItem, ImmutableSet.of(bbcItem), publishers);
+
+        verify(messenger, times(1)).sendMessage(
+                argThat(lookupEntryMatcher(paItem.getCanonicalUri())),
+                argThat(is(ImmutableSet.of(initialPaEntry.lookupRef(), LookupRef.from(bbcItem)))),
+                argThat(is(sources))
+        );
+
+        hasEquivs(paItem, paItem, bbcItem);
+        hasDirectEquivs(paItem, paItem, bbcItem);
+
+        hasEquivs(bbcItem, bbcItem, paItem);
+        hasDirectEquivs(bbcItem, bbcItem, paItem);
+
+        hasEquivs(c4Item, c4Item);
+        hasDirectEquivs(c4Item, c4Item);
+
+        reset(messenger);
+
+        writeLookup(writer, paItem, ImmutableSet.of(bbcItem, c4Item), publishers);
+
+        hasEquivs(paItem, paItem, bbcItem);
+        hasDirectEquivs(paItem, paItem, bbcItem, c4Item);
+
+        hasEquivs(bbcItem, bbcItem, paItem);
+        hasDirectEquivs(bbcItem, bbcItem, paItem);
+
+        hasEquivs(c4Item, c4Item);
+        hasDirectEquivs(c4Item, c4Item, paItem);
+
+        verify(messenger, never()).sendMessage(
+                any(LookupEntry.class),
+                any(),
+                any()
+        );
+
+        verify(messenger, never()).sendMessage(
+                any(Content.class),
+                any(),
+                any()
+        );
+
+    }
+
+    private static Matcher<LookupEntry> lookupEntryMatcher(String uri) {
+        return new BaseMatcher<LookupEntry>() {
+            @Override
+            public boolean matches(Object item) {
+                return item instanceof LookupEntry &&
+                        ((LookupEntry) item).uri().equals(uri);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("LookupEntry for " + uri);
+            }
+        };
     }
 }

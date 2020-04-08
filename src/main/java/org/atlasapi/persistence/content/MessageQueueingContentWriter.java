@@ -12,7 +12,6 @@ import com.metabroadcast.common.time.Timestamper;
 import org.atlasapi.media.entity.Container;
 import org.atlasapi.media.entity.Content;
 import org.atlasapi.media.entity.Item;
-import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
 import org.atlasapi.persistence.media.entity.ContainerTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
@@ -33,7 +32,6 @@ public class MessageQueueingContentWriter implements ContentWriter {
     private final ContentWriter contentWriter;
     private final ContentResolver contentResolver;
     private final Timestamper clock;
-    private final ContentEquivalenceAssertionMessenger messenger;
 
     protected final SubstitutionTableNumberCodec idCodec = new SubstitutionTableNumberCodec();
     protected final ItemTranslator itemTranslator = new ItemTranslator(idCodec);
@@ -43,22 +41,19 @@ public class MessageQueueingContentWriter implements ContentWriter {
             SubstitutionTableNumberCodec.lowerCaseOnly();
 
     public MessageQueueingContentWriter(
-            ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             ContentWriter contentWriter,
             ContentResolver contentResolver
     ) {
-        this(messenger, sender, contentWriter, contentResolver, new SystemClock());
+        this(sender, contentWriter, contentResolver, new SystemClock());
     }
 
     public MessageQueueingContentWriter(
-            ContentEquivalenceAssertionMessenger messenger,
             MessageSender<EntityUpdatedMessage> sender,
             ContentWriter contentWriter,
             ContentResolver contentResolver,
             Timestamper clock
     ) {
-        this.messenger = checkNotNull(messenger);
         this.sender = checkNotNull(sender);
         this.contentWriter = checkNotNull(contentWriter);
         this.contentResolver = checkNotNull(contentResolver);
@@ -109,12 +104,6 @@ public class MessageQueueingContentWriter implements ContentWriter {
                         .stream()
                         .map(lookupRef -> lookupRef.publisher().key())
                         .collect(MoreCollectors.toImmutableSet());
-
-                messenger.sendMessage(
-                        content,
-                        adjacents,
-                        sources
-                );
             }
             sender.sendMessage(
                     createEntityUpdatedMessage(content), Longs.toByteArray(content.getId())
