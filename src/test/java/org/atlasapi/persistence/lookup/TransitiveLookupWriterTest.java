@@ -19,6 +19,7 @@ import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
+import org.atlasapi.messaging.v3.EquivalenceChangeMessenger;
 import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.content.ContentCategory;
 import org.atlasapi.persistence.lookup.entry.EquivRefs;
@@ -40,7 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriter;
-import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriterWithContentMessenger;
+import static org.atlasapi.persistence.lookup.TransitiveLookupWriter.generatedTransitiveLookupWriterWithMessengers;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.BIDIRECTIONAL;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.INCOMING;
 import static org.atlasapi.persistence.lookup.entry.EquivRefs.Direction.OUTGOING;
@@ -60,8 +61,9 @@ import static org.mockito.Mockito.when;
 public class TransitiveLookupWriterTest extends TestCase {
 
     private final LookupEntryStore store = new InMemoryLookupEntryStore();
-    private final ContentEquivalenceAssertionMessenger messenger = mock(ContentEquivalenceAssertionMessenger.class);
-    private final TransitiveLookupWriter writer = generatedTransitiveLookupWriterWithContentMessenger(store, messenger);
+    private final ContentEquivalenceAssertionMessenger assertionMessenger = mock(ContentEquivalenceAssertionMessenger.class);
+    private final EquivalenceChangeMessenger changesMessenger = mock(EquivalenceChangeMessenger.class);
+    private final TransitiveLookupWriter writer = generatedTransitiveLookupWriterWithMessengers(store, assertionMessenger, changesMessenger);
 
     // Tests that trivial lookups are written reflexively for all content
     // identifiers
@@ -595,7 +597,7 @@ public class TransitiveLookupWriterTest extends TestCase {
 
 
     @Test
-    public void testEquivalenceAssertionMessageIsSentOnlyIfSubjectOutgoingChanges() {
+    public void testMessagesAreSentOnlyIfSubjectOutgoingChanges() {
         Item paItem = createItem("test1", Publisher.PA);
         Item bbcItem = createItem("test2", Publisher.BBC);
         Item c4Item = createItem("test3", Publisher.C4);
@@ -616,10 +618,29 @@ public class TransitiveLookupWriterTest extends TestCase {
 
         writeLookup(writer, paItem, ImmutableSet.of(bbcItem), publishers);
 
-        verify(messenger, times(1)).sendMessage(
+        verify(assertionMessenger, times(1)).sendMessage(
                 argThat(lookupEntryMatcher(paItem.getCanonicalUri())),
                 argThat(is(ImmutableSet.of(initialPaEntry.lookupRef(), LookupRef.from(bbcItem)))),
                 argThat(is(sources))
+        );
+        verify(changesMessenger, times(1)).sendMessageFromDirectEquivs(
+                argThat(is(initialPaEntry)),
+                argThat(lookupEntryMatcher(paItem.getCanonicalUri())),
+                argThat(is(sources))
+        );
+
+        verify(assertionMessenger, never()).sendMessage(
+                any(Content.class),
+                any(),
+                any()
+        );
+
+        verify(changesMessenger, never()).sendMessage(
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
         );
 
         hasEquivs(paItem, paItem, bbcItem);
@@ -631,7 +652,8 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasEquivs(c4Item, c4Item);
         hasDirectEquivs(c4Item, c4Item);
 
-        reset(messenger);
+        reset(assertionMessenger);
+        reset(changesMessenger);
 
         writeLookup(writer, paItem, ImmutableSet.of(bbcItem, c4Item), publishers);
 
@@ -644,14 +666,28 @@ public class TransitiveLookupWriterTest extends TestCase {
         hasEquivs(c4Item, c4Item);
         hasDirectEquivs(c4Item, c4Item, paItem);
 
-        verify(messenger, never()).sendMessage(
+        verify(assertionMessenger, never()).sendMessage(
                 any(LookupEntry.class),
                 any(),
                 any()
         );
 
-        verify(messenger, never()).sendMessage(
+        verify(assertionMessenger, never()).sendMessage(
                 any(Content.class),
+                any(),
+                any()
+        );
+
+        verify(changesMessenger, never()).sendMessageFromDirectEquivs(
+                any(),
+                any(),
+                any()
+        );
+
+        verify(changesMessenger, never()).sendMessage(
+                any(),
+                any(),
+                any(),
                 any(),
                 any()
         );

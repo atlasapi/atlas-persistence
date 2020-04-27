@@ -14,6 +14,7 @@ import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
+import org.atlasapi.messaging.v3.EquivalenceChangeMessenger;
 import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
@@ -45,38 +46,43 @@ public class TransitiveLookupWriter implements LookupWriter {
 
     private final LookupEntryStore entryStore;
     private final boolean explicit;
-    private final ContentEquivalenceAssertionMessenger messenger;
-    
-    public static TransitiveLookupWriter explicitTransitiveLookupWriterWithContentMessenger(
+    private final ContentEquivalenceAssertionMessenger equivAssertionMessenger;
+    private final EquivalenceChangeMessenger equivChangeMessenger;
+
+    public static TransitiveLookupWriter explicitTransitiveLookupWriterWithMessengers(
             LookupEntryStore entryStore,
-            ContentEquivalenceAssertionMessenger messenger
+            ContentEquivalenceAssertionMessenger equivAssertionMessenger,
+            EquivalenceChangeMessenger equivChangeMessenger
     ) {
-        return new TransitiveLookupWriter(entryStore, true, messenger);
+        return new TransitiveLookupWriter(entryStore, true, equivAssertionMessenger, equivChangeMessenger);
     }
 
     public static TransitiveLookupWriter explicitTransitiveLookupWriter(LookupEntryStore entryStore) {
-        return new TransitiveLookupWriter(entryStore, true, null);
+        return new TransitiveLookupWriter(entryStore, true, null, null);
     }
 
-    public static TransitiveLookupWriter generatedTransitiveLookupWriterWithContentMessenger(
+    public static TransitiveLookupWriter generatedTransitiveLookupWriterWithMessengers(
             LookupEntryStore entryStore,
-            ContentEquivalenceAssertionMessenger messenger
+            ContentEquivalenceAssertionMessenger equivAssertionMessenger,
+            EquivalenceChangeMessenger equivChangeMessenger
     ) {
-        return new TransitiveLookupWriter(entryStore, false, messenger);
+        return new TransitiveLookupWriter(entryStore, false, equivAssertionMessenger, equivChangeMessenger);
     }
     
     public static TransitiveLookupWriter generatedTransitiveLookupWriter(LookupEntryStore entryStore) {
-        return new TransitiveLookupWriter(entryStore, false, null);
+        return new TransitiveLookupWriter(entryStore, false, null, null);
     }
 
     private TransitiveLookupWriter(
             LookupEntryStore entryStore,
             Boolean explicit,
-            @Nullable ContentEquivalenceAssertionMessenger messenger
+            @Nullable ContentEquivalenceAssertionMessenger equivAssertionMessenger,
+            @Nullable EquivalenceChangeMessenger equivChangeMessenger
     ) {
         this.entryStore = checkNotNull(entryStore);
         this.explicit = checkNotNull(explicit);
-        this.messenger = messenger;
+        this.equivAssertionMessenger = equivAssertionMessenger;
+        this.equivChangeMessenger = equivChangeMessenger;
     }
 
     @Override
@@ -166,6 +172,7 @@ public class TransitiveLookupWriter implements LookupWriter {
 
         if (result.isSubjectOutgoingsChanged()) {
             sendEquivalenceAssertionMessage(result.getUpdatedSubject());
+            sendEquivalenceChangeMessage(result.getOriginalSubject(), result.getUpdatedSubject());
         }
 
         return result.getAllUpdatedEntries();
@@ -227,7 +234,13 @@ public class TransitiveLookupWriter implements LookupWriter {
                 lastTime = System.nanoTime();
             }
             
-            UpdateResult updateResult = updateEntries(transaction, subjectUri, newNeighboursUris, transitiveSetsUris, sources);
+            UpdateResult updateResult = updateEntries(
+                    transaction,
+                    subjectUri,
+                    newNeighboursUris,
+                    transitiveSetsUris,
+                    sources
+            );
 
             return mergeResults(updateResult, subsetUpdateResult);
             
@@ -276,9 +289,9 @@ public class TransitiveLookupWriter implements LookupWriter {
         }
 
         return new UpdateResult(
+                other.getOriginalSubject(),
                 main.getUpdatedSubject(),
-                ImmutableSet.copyOf(updatedEntries.values()),
-                main.isSubjectOutgoingsChanged() || other.isSubjectOutgoingsChanged()
+                ImmutableSet.copyOf(updatedEntries.values())
         );
     }
 
@@ -327,19 +340,31 @@ public class TransitiveLookupWriter implements LookupWriter {
         LookupEntry newSubjectLookup = newLookups.get(subject.uri());
 
         return new UpdateResult(
+                subject,
                 newSubjectLookup,
-                ImmutableSet.copyOf(newLookups.values()),
-                !subject.getOutgoing().equals(newSubjectLookup.getOutgoing())
+                ImmutableSet.copyOf(newLookups.values())
         );
     }
 
     private void sendEquivalenceAssertionMessage(LookupEntry entry) {
-        if (messenger == null) {
+        if (equivAssertionMessenger == null) {
             return;
         }
-        messenger.sendMessage(
+        equivAssertionMessenger.sendMessage(
                 entry,
                 entry.getOutgoing(),
+                ALL_PUBLISHER_KEYS
+        );
+    }
+
+    private void sendEquivalenceChangeMessage(LookupEntry originalEntry, LookupEntry updatedEntry) {
+        //Currently no need to re-run equiv just because explicit equivs changed
+        if (equivChangeMessenger == null || explicit) {
+            return;
+        }
+        equivChangeMessenger.sendMessageFromDirectEquivs(
+                originalEntry,
+                updatedEntry,
                 ALL_PUBLISHER_KEYS
         );
     }
@@ -575,14 +600,24 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private static class UpdateResult {
+        private final LookupEntry originalSubject;
         private final LookupEntry updatedSubject;
         private final Set<LookupEntry> allUpdatedEntries;
         private final boolean subjectOutgoingsChanged;
 
-        public UpdateResult(LookupEntry updatedSubject, Set<LookupEntry> allUpdatedEntries, boolean subjectOutgoingsChanged) {
+        public UpdateResult(
+                LookupEntry originalSubject,
+                LookupEntry updatedSubject,
+                Set<LookupEntry> allUpdatedEntries
+        ) {
+            this.originalSubject = originalSubject;
             this.updatedSubject = updatedSubject;
             this.allUpdatedEntries = allUpdatedEntries;
-            this.subjectOutgoingsChanged = subjectOutgoingsChanged;
+            this.subjectOutgoingsChanged = !originalSubject.getOutgoing().equals(updatedSubject.getOutgoing());
+        }
+
+        public LookupEntry getOriginalSubject() {
+            return originalSubject;
         }
 
         public LookupEntry getUpdatedSubject() {

@@ -31,6 +31,8 @@ import org.atlasapi.media.segment.SegmentWriter;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage;
 import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessenger;
 import org.atlasapi.messaging.v3.EntityUpdatedMessage;
+import org.atlasapi.messaging.v3.EquivalenceChangeMessage;
+import org.atlasapi.messaging.v3.EquivalenceChangeMessenger;
 import org.atlasapi.messaging.v3.JacksonMessageSerializer;
 import org.atlasapi.messaging.v3.MessagingModule;
 import org.atlasapi.messaging.v3.ScheduleUpdateMessage;
@@ -134,6 +136,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     private final String auditDbName;
     private final boolean auditEnabled;
     private final String equivAssertDest;
+    private final String equivChangesContentDest;
 
     // This decides whether to use MongoChannelStore or CachingChannelStore which has
     // additional methods.
@@ -157,7 +160,8 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
             boolean messagingEnabled,
             boolean auditEnabled,
             Parameter processingConfig,
-            String equivAssertDest
+            String equivAssertDest,
+            String equivChangesContentDest
     ) {
         this.mongo = checkNotNull(mongo);
         this.db = checkNotNull(db);
@@ -177,6 +181,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         this.auditEnabled = checkNotNull(auditEnabled);
         this.processingConfig = checkNotNull(processingConfig);
         this.equivAssertDest = checkNotNull(equivAssertDest);
+        this.equivChangesContentDest = checkNotNull(equivChangesContentDest);
     }
 
     public MessageSender<EntityUpdatedMessage> contentChanges() {
@@ -216,6 +221,19 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 new SystemClock(),
                 lookupStore(),
                 knownTypeContentResolver()
+        );
+    }
+
+    private EquivalenceChangeMessenger equivChangesContentMessenger() {
+        return EquivalenceChangeMessenger.create(
+                messagingModule.messageSenderFactory()
+                        .makeMessageSender(
+                                equivChangesContentDest,
+                                JacksonMessageSerializer.forType(
+                                        EquivalenceChangeMessage.class
+                                )
+                        ),
+                new SystemClock()
         );
     }
 
@@ -351,7 +369,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 ReadPreference.primary()
         );
         if (messagingEnabled) {
-            return TransitiveLookupWriter.explicitTransitiveLookupWriterWithContentMessenger(entryStore, messenger());
+            return TransitiveLookupWriter.explicitTransitiveLookupWriterWithMessengers(
+                    entryStore,
+                    messenger(),
+                    equivChangesContentMessenger()
+            );
         } else {
             return TransitiveLookupWriter.explicitTransitiveLookupWriter(entryStore);
         }
@@ -365,7 +387,11 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                 ReadPreference.primary()
         );
         if (messagingEnabled) {
-            return TransitiveLookupWriter.generatedTransitiveLookupWriterWithContentMessenger(entryStore, messenger());
+            return TransitiveLookupWriter.generatedTransitiveLookupWriterWithMessengers(
+                    entryStore,
+                    messenger(),
+                    equivChangesContentMessenger()
+            );
         } else {
             return TransitiveLookupWriter.generatedTransitiveLookupWriter(entryStore);
         }
