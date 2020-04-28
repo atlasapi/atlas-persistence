@@ -1,20 +1,5 @@
 package org.atlasapi.messaging.v3;
 
-import java.io.IOException;
-
-import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage.AdjacentRef;
-import org.atlasapi.messaging.worker.v3.AdjacentRefConfiguration;
-import org.atlasapi.messaging.worker.v3.ContentEquivalenceAssertionMessageConfiguration;
-import org.atlasapi.messaging.worker.v3.EntityUpdatedMessageConfiguration;
-import org.atlasapi.messaging.worker.v3.ScheduleUpdateMessageConfiguration;
-import org.atlasapi.serialization.json.JsonFactory;
-
-import com.metabroadcast.common.queue.Message;
-import com.metabroadcast.common.queue.MessageDeserializationException;
-import com.metabroadcast.common.queue.MessageSerializationException;
-import com.metabroadcast.common.queue.MessageSerializer;
-import com.metabroadcast.common.time.Timestamp;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -26,6 +11,20 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.base.Objects;
+import com.metabroadcast.common.queue.Message;
+import com.metabroadcast.common.queue.MessageDeserializationException;
+import com.metabroadcast.common.queue.MessageSerializationException;
+import com.metabroadcast.common.queue.MessageSerializer;
+import com.metabroadcast.common.time.Timestamp;
+import org.atlasapi.messaging.v3.ContentEquivalenceAssertionMessage.AdjacentRef;
+import org.atlasapi.messaging.worker.v3.AdjacentRefConfiguration;
+import org.atlasapi.messaging.worker.v3.ContentEquivalenceAssertionMessageConfiguration;
+import org.atlasapi.messaging.worker.v3.EntityUpdatedMessageConfiguration;
+import org.atlasapi.messaging.worker.v3.EquivalenceChangeMessageConfiguration;
+import org.atlasapi.messaging.worker.v3.ScheduleUpdateMessageConfiguration;
+import org.atlasapi.serialization.json.JsonFactory;
+
+import java.io.IOException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -137,6 +136,8 @@ public class JacksonMessageSerializer<M extends Message> implements MessageSeria
             );
             context.setMixInAnnotations(AdjacentRef.class, AdjacentRefConfiguration.class);
 
+            context.setMixInAnnotations(EquivalenceChangeMessage.class, EquivalenceChangeMessageConfiguration.class);
+
             SimpleDeserializers deserializers = new SimpleDeserializers();
             deserializers.addDeserializer(Timestamp.class, new TimestampDeserializer());
             context.addDeserializers(deserializers);
@@ -145,6 +146,7 @@ public class JacksonMessageSerializer<M extends Message> implements MessageSeria
                     ScheduleUpdateMessage.class,
                     ScheduleUpdateMessageConfiguration.class
             );
+
         }
     }
     

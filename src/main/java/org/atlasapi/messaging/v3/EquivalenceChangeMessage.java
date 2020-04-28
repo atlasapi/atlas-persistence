@@ -8,8 +8,6 @@ import com.metabroadcast.common.time.Timestamp;
 
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * <p>
  * Message listing the change in equivalence on a particular subject for specified sources.
@@ -44,14 +42,14 @@ public class EquivalenceChangeMessage extends AbstractMessage {
     public EquivalenceChangeMessage(
             String messageId,
             Timestamp timestamp,
-            Long subjectId,
+            long subjectId,
             Set<Long> outgoingIdsAdded,
             Set<Long> outgoingIdsRemoved,
             Set<Long> outgoingIdsUnchanged,
             Set<String> sources
     ) {
         super(messageId, timestamp);
-        this.subjectId = checkNotNull(subjectId);
+        this.subjectId = subjectId;
         this.outgoingIdsAdded = ImmutableSet.copyOf(outgoingIdsAdded);
         this.outgoingIdsRemoved = ImmutableSet.copyOf(outgoingIdsRemoved);
         this.outgoingIdsUnchanged = ImmutableSet.copyOf(outgoingIdsUnchanged);
