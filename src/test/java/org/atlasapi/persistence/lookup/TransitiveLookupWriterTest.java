@@ -49,6 +49,7 @@ import static org.atlasapi.persistence.lookup.entry.LookupEntry.lookupEntryFrom;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -625,7 +626,7 @@ public class TransitiveLookupWriterTest extends TestCase {
         );
         verify(changesMessenger, times(1)).sendMessageFromDirectEquivs(
                 argThat(is(initialPaEntry)),
-                argThat(lookupEntryMatcher(paItem.getCanonicalUri())),
+                and(argThat(lookupEntryMatcher(paItem.getCanonicalUri())), argThat(not(initialPaEntry))),
                 argThat(is(sources))
         );
 
