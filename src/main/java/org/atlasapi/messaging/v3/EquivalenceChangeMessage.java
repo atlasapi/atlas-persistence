@@ -50,10 +50,18 @@ public class EquivalenceChangeMessage extends AbstractMessage {
     ) {
         super(messageId, timestamp);
         this.subjectId = subjectId;
-        this.outgoingIdsAdded = ImmutableSet.copyOf(outgoingIdsAdded);
-        this.outgoingIdsRemoved = ImmutableSet.copyOf(outgoingIdsRemoved);
-        this.outgoingIdsUnchanged = ImmutableSet.copyOf(outgoingIdsUnchanged);
-        this.sources = ImmutableSet.copyOf(sources);
+        this.outgoingIdsAdded = outgoingIdsAdded == null
+                ? ImmutableSet.of()
+                : ImmutableSet.copyOf(outgoingIdsAdded);
+        this.outgoingIdsRemoved = outgoingIdsRemoved == null
+                ? ImmutableSet.of()
+                : ImmutableSet.copyOf(outgoingIdsRemoved);
+        this.outgoingIdsUnchanged = outgoingIdsUnchanged == null
+                ? ImmutableSet.of()
+                : ImmutableSet.copyOf(outgoingIdsUnchanged);
+        this.sources = sources == null
+                ? ImmutableSet.of()
+                : ImmutableSet.copyOf(sources);
     }
 
     public long getSubjectId() {
