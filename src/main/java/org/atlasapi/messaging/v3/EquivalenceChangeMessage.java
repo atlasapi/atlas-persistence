@@ -85,11 +85,6 @@ public class EquivalenceChangeMessage extends AbstractMessage {
         return Sets.union(outgoingIdsAdded, outgoingIdsRemoved);
     }
 
-    @JsonIgnore
-    public Set<Long> getOutgoingIds() {
-        return Sets.union(outgoingIdsUnchanged, getOutgoingIdsChanged());
-    }
-
     public Set<String> getSources() {
         return sources;
     }

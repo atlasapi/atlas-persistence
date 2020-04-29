@@ -40,8 +40,6 @@ public class EquivalenceChangeMessageTest {
         assertEquals(msg.getSources(), deserialized.getSources());
 
         assertEquals(msg.getOutgoingIdsChanged(), deserialized.getOutgoingIdsChanged());
-        assertEquals(msg.getOutgoingIds(), deserialized.getOutgoingIds());
-
     }
 
 }
