@@ -39,7 +39,7 @@ public class EquivalenceChangeMessengerTest {
     }
 
     @Test
-    public void todo() throws Exception {
+    public void testCorrectChangesAreDeterminedFromLookupEntries() throws Exception {
 
         Item item1 = item(1);
         LookupRef ref2 = ref(2);

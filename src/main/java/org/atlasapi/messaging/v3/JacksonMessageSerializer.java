@@ -23,8 +23,6 @@ import org.atlasapi.messaging.worker.v3.EntityUpdatedMessageConfiguration;
 import org.atlasapi.messaging.worker.v3.EquivalenceChangeMessageConfiguration;
 import org.atlasapi.messaging.worker.v3.ScheduleUpdateMessageConfiguration;
 import org.atlasapi.serialization.json.JsonFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -32,7 +30,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class JacksonMessageSerializer<M extends Message> implements MessageSerializer<M> {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
 
     public static final <M extends Message> JacksonMessageSerializer<M> forType(Class<? extends M> cls) {
         return new JacksonMessageSerializer<>(cls);
@@ -179,8 +176,6 @@ public class JacksonMessageSerializer<M extends Message> implements MessageSeria
         try {
             return mapper.readValue(serialized, cls);
         } catch (IOException e) {
-            String message = new String(serialized);
-            log.warn("Message failed to be deserialized: {}", message, e);
             throw new MessageDeserializationException(e);
         }
     }
