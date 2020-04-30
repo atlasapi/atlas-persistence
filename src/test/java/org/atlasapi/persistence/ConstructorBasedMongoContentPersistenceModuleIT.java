@@ -134,7 +134,8 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
                 true,
                 true,
                 Parameter.valueOf("false"),
-                "EquivAssert"
+                "EquivAssert",
+                "EquivChangesContent"
         );
 
         moduleWithProcessingConfigTrue = new ConstructorBasedMongoContentPersistenceModule(
@@ -154,7 +155,8 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
                 true,
                 true,
                 Parameter.valueOf("true"),
-                "EquivAssert"
+                "EquivAssert",
+                "EquivChangesContent"
         );
 
     }

@@ -90,6 +90,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Value("${messaging.destination.event.changes}") private String eventChanges;
     @Value("${messaging.destination.organisation.changes}") private String organisationChanges;
     @Value("${messaging.destination.equiv.assert}") private String equivAssertDest;
+    @Value("${messaging.destination.equiv.changes.content}") private String equivChangesContentDest;
     @Value("${messaging.enabled}") private String messagingEnabled;
     @Value("${mongo.audit.dbname}") private String auditDbName;
     @Value("${mongo.audit.enabled}") private boolean auditEnabled;
@@ -145,7 +146,8 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
                 Boolean.valueOf(messagingEnabled),
                 false,
                 processingConfig,
-                equivAssertDest
+                equivAssertDest,
+                equivChangesContentDest
         );
     }
 
