@@ -75,7 +75,7 @@ public class ChannelTranslator implements ModelTranslator<Channel> {
 
     @Override
     public DBObject toDBObject(DBObject dbObject, Channel model) {
-        checkNotNull(model.getMediaType());
+        checkNotNull(model.getMediaType() , "Channel %s had null Media Type ", model.getUri());
 
         dbObject = new BasicDBObject();
 
