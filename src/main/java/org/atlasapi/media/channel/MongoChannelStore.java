@@ -225,6 +225,7 @@ public class MongoChannelStore extends BaseChannelStore implements ServiceChanne
 
         if (existing.isPresent()) {
             maintainParentLinks(channel, existing.get());
+            channel.setId((existing.get().getId()));
         } else {
             channel.setId(codec.decode(idGenerator.generate()).longValue());
         }
