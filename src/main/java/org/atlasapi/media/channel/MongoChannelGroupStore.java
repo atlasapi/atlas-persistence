@@ -77,15 +77,28 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
     @Override
     public ChannelGroup createOrUpdate(ChannelGroup group) {
         checkNotNull(group);
-        if (group.getId() == null) {
-            group.setId(idGenerator.generateRaw());
-        } else {
-            Optional<ChannelGroup> resolved = channelGroupFor(group.getId());
+        MongoQueryBuilder where;
+
+        if (group.getCanonicalUri() != null) {
+            Optional<ChannelGroup> resolved = channelGroupFor(group.getCanonicalUri());
 
             Preconditions.checkState(resolved.isPresent(), "Channel Group not found to update");
             removeOldReferences(group, resolved.get());
+            where = where().fieldEquals(IdentifiedTranslator.CANONICAL_URL, group.getCanonicalUri());
         }
-        
+        else {
+            if (group.getId() != null) {
+                Optional<ChannelGroup> resolved = channelGroupFor(group.getId());
+
+                Preconditions.checkState(resolved.isPresent(), "Channel Group not found to update");
+                removeOldReferences(group, resolved.get());
+            }
+            else {
+                group.setId(idGenerator.generateRaw());
+            }
+            where = where().fieldEquals(IdentifiedTranslator.ID, group.getId());
+        }
+
         if (group instanceof Region) {
             Region region = (Region) group;
             if (region.getPlatform() != null) {
@@ -96,8 +109,8 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
                 channelGroups.update(new BasicDBObject(MongoConstants.ID, platform.getId()), translator.toDBObject(null, platform), UPSERT, SINGLE);
             }
         }
-        
-        channelGroups.update(new BasicDBObject(MongoConstants.ID, group.getId()), translator.toDBObject(null, group), UPSERT, SINGLE);
+
+        channelGroups.update(where.build(), translator.toDBObject(null, group), UPSERT, SINGLE);
         return group;
     }
 
