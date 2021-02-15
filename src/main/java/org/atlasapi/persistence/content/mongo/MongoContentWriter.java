@@ -154,16 +154,6 @@ public class MongoContentWriter implements ContentWriter {
                 );
             }
 
-            //TODO require container if series exists? Perhaps we should allow no container
-//            if (episode.getSeriesRef() != null && episode.getContainer() == null) {
-//                throw new IllegalArgumentException(
-//                        String.format(
-//                                "Episodes with series must have containers: Episode %s",
-//                                episode.getCanonicalUri()
-//                        )
-//                );
-//            }
-
             if (episode.getSeriesRef() != null || episode.getContainer() != null) {
                 itemOrParentlessEpisode = false;
                 childRefWriter.includeEpisodeInSeriesAndBrand(episode);
