@@ -1,7 +1,18 @@
 package org.atlasapi.persistence.content.mongo;
 
-import java.util.Set;
-
+import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
+import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
+import com.metabroadcast.common.persistence.mongo.MongoConstants;
+import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.time.Clock;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.Broadcast;
 import org.atlasapi.media.entity.ChildRef;
@@ -12,6 +23,7 @@ import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Item;
 import org.atlasapi.media.entity.Location;
 import org.atlasapi.media.entity.Policy;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.media.entity.Series;
 import org.atlasapi.media.entity.SeriesRef;
 import org.atlasapi.media.entity.Version;
@@ -25,24 +37,11 @@ import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 import org.atlasapi.persistence.media.entity.ItemTranslator;
 import org.atlasapi.persistence.player.PlayerResolver;
 import org.atlasapi.persistence.service.ServiceResolver;
-
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.ids.SubstitutionTableNumberCodec;
-import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
-import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
-import com.metabroadcast.common.time.Clock;
-
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -59,6 +58,12 @@ public class MongoContentWriter implements ContentWriter {
     private static final Set<String> KEYS_TO_REMOVE = ImmutableSet.of(DescribedTranslator.LINKS_KEY);
     private final Logger log = LoggerFactory.getLogger(MongoContentWriter.class);
     private static final Logger timerLog = LoggerFactory.getLogger("TIMER");
+
+    // We are only allowing this for certain publishers for now in case existing ingests are relying on
+    // errors being thrown when hierarchy is missing.
+    private static final Set<Publisher> CONTAINERLESS_EPISODE_ALLOWED_PUBLISHERS = ImmutableSet.of(
+            Publisher.TESTING_MBST
+    );
     
     private final Clock clock;
     private final NewLookupWriter lookupStore;
@@ -117,8 +122,6 @@ public class MongoContentWriter implements ContentWriter {
     }
     @Override
     public Item createOrUpdate(Item item) {
-        Long lastTime = System.nanoTime();
-        timerLog.debug("TIMER MC entered. {} {}",item.getId(), Thread.currentThread().getName());
         checkNotNull(item, "Tried to persist null item");
 
         setThisOrChildLastUpdated(item);
@@ -134,54 +137,50 @@ public class MongoContentWriter implements ContentWriter {
 
         validateRefs(item);
 
-        timerLog.debug("TIMER MC validated refs"+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-        lastTime = System.nanoTime();
         persistenceAuditLog.logWrite(item);
-        timerLog.debug("TIMER MC Persisted audit log"+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-        lastTime = System.nanoTime();
         log.debug("Item {} hash changed so writing to db", item.getCanonicalUri());
 
+        boolean itemOrParentlessEpisode = true;
         if (item instanceof Episode) {
-            if (item.getContainer() == null) {
-                throw new IllegalArgumentException(String.format("Episodes must have containers: Episode %s", item.getCanonicalUri()));
+            Episode episode = (Episode) item;
+            boolean containerlessEpisodeAllowed = item.getPublisher() != null
+                    && CONTAINERLESS_EPISODE_ALLOWED_PUBLISHERS.contains(item.getPublisher());
+            if (item.getContainer() == null && !containerlessEpisodeAllowed) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Episodes from this publisher must have containers: Episode %s",
+                                item.getCanonicalUri()
+                        )
+                );
             }
 
-            childRefWriter.includeEpisodeInSeriesAndBrand((Episode) item);
-            timerLog.debug("TIMER MC included episode in series and brand"+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-            lastTime = System.nanoTime();
-            DBObject dbo = itemTranslator.toDB(item);
-            children.update(where.build(), checkContainerRefs(dbo), UPSERT, SINGLE);
+            if (episode.getSeriesRef() != null || episode.getContainer() != null) {
+                itemOrParentlessEpisode = false;
+                childRefWriter.includeEpisodeInSeriesAndBrand(episode);
+                DBObject dbo = itemTranslator.toDB(item);
+                children.update(where.build(), checkContainerRefs(dbo), UPSERT, SINGLE);
 
-            timerLog.debug("TIMER MC children updated "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-            lastTime = System.nanoTime();
-            remove(item.getCanonicalUri(), topLevelItems);
-            timerLog.debug("TIMER MC removed "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-            lastTime = System.nanoTime();
-        } else if (item.getContainer() != null) {
+                remove(item.getCanonicalUri(), topLevelItems);
+            }
+        }
+        if (itemOrParentlessEpisode) {
+            if (item.getContainer() != null) {
 
-            childRefWriter.includeItemInTopLevelContainer(item);
-            timerLog.debug("TIMER MC included container"+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-            lastTime = System.nanoTime();
-            DBObject dbo = itemTranslator.toDB(item);
-            children.update(where.build(), checkContainerRefs(dbo), UPSERT, SINGLE);
+                childRefWriter.includeItemInTopLevelContainer(item);
+                DBObject dbo = itemTranslator.toDB(item);
+                children.update(where.build(), checkContainerRefs(dbo), UPSERT, SINGLE);
 
-            timerLog.debug("TIMER MC children updated "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-            lastTime = System.nanoTime();
-            remove(item.getCanonicalUri(), topLevelItems);
-            timerLog.debug("TIMER MC removed "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-            lastTime = System.nanoTime();
-        } else {
-            topLevelItems.update(where.build(), itemTranslator.toDB(item), UPSERT, SINGLE);
+                remove(item.getCanonicalUri(), topLevelItems);
+            } else {
+                topLevelItems.update(where.build(), itemTranslator.toDB(item), UPSERT, SINGLE);
 
-            timerLog.debug("TIMER MC updated top level item "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
-            lastTime = System.nanoTime();
-            //disabled for now. need to remove the childref from the brand/series if enabled
-            //remove(item.getCanonicalUri(), children);
+                //disabled for now. need to remove the childref from the brand/series if enabled
+                //remove(item.getCanonicalUri(), children);
+            }
         }
 
         lookupStore.ensureLookup(item);
 
-        timerLog.debug("TIMER MC ensured lookup "+Long.toString((System.nanoTime() - lastTime)/1000000)+"ms. {} {}",item.getId(), Thread.currentThread().getName());
         return item;
     }
 
