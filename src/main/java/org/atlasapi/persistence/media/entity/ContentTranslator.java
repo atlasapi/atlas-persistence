@@ -1,10 +1,18 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.intl.Countries;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Certificate;
 import org.atlasapi.media.entity.Clip;
 import org.atlasapi.media.entity.Content;
@@ -16,20 +24,8 @@ import org.atlasapi.media.entity.TopicRef;
 import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.intl.Countries;
-import com.metabroadcast.common.persistence.mongo.MongoConstants;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-
-import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -50,6 +46,24 @@ public class ContentTranslator implements ModelTranslator<Content> {
     public static final String VERSIONS_KEY = "versions";
     public static final String AWARDS = "awards";
     private static final String COUNTRIES_OF_ORIGIN_KEY = "countries";
+
+    public static final Set<String> DB_KEYS = ImmutableSet.of(
+            PEOPLE,
+            CLIPS_KEY,
+            TOPICS_KEY,
+            PHRASES_KEY,
+            CONTENT_GROUP_KEY,
+            CERTIFICATES_KEY,
+            LANGUAGES_KEY,
+            YEAR_KEY,
+            GENERIC_DESCRIPTION_KEY,
+            SIMILAR_CONTENT_KEY,
+            EVENTS_KEY,
+            EDITORIAL_PRIORITY_KEY,
+            VERSIONS_KEY,
+            AWARDS,
+            COUNTRIES_OF_ORIGIN_KEY
+    );
 
     private final ClipTranslator clipTranslator;
     private final KeyPhraseTranslator keyPhraseTranslator;

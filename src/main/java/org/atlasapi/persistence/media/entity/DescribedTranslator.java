@@ -1,8 +1,13 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.List;
-import java.util.Locale;
-
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Ordering;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Described;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Identified;
@@ -16,14 +21,9 @@ import org.atlasapi.media.entity.Review;
 import org.atlasapi.media.entity.Specialization;
 import org.atlasapi.persistence.ModelTranslator;
 
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Ordering;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class DescribedTranslator implements ModelTranslator<Described> {
 
@@ -54,6 +54,36 @@ public class DescribedTranslator implements ModelTranslator<Described> {
     public static final String RATINGS_KEY = "ratings";
     public static final String AUDIENCE_STATISTICS_KEY = "audienceStatistics";
     public static final String ITEM_PRIORITY_KEY = "priority";
+
+    public static final Set<String> DB_KEYS = ImmutableSet.of(
+            TAGS_KEY,
+            THUMBNAIL_KEY,
+            TITLE_KEY,
+            MEDIA_TYPE_KEY,
+            SPECIALIZATION_KEY,
+            PRESENTATION_CHANNEL_KEY,
+            IMAGES_KEY,
+            IMAGE_KEY,
+            GENRES_KEY,
+            FIRST_SEEN_KEY,
+            DESCRIPTION_KEY,
+            PUBLISHER_KEY,
+            SCHEDULE_ONLY_KEY,
+            THIS_OR_CHILD_LAST_UPDATED_KEY,
+            TYPE_KEY,
+            LAST_FETCHED_KEY,
+            SHORT_DESC_KEY,
+            MEDIUM_DESC_KEY,
+            LONG_DESC_KEY,
+            ACTIVELY_PUBLISHED_KEY,
+            LINKS_KEY,
+            LOCALIZED_DESCRIPTIONS_KEY,
+            LOCALIZED_TITLES_KEY,
+            REVIEWS_KEY,
+            RATINGS_KEY,
+            AUDIENCE_STATISTICS_KEY,
+            ITEM_PRIORITY_KEY
+    );
     
     public static final Ordering<LocalizedDescription> LOCALIZED_DESCRIPTION_ORDERING =
             Ordering.from((o1, o2) -> ComparisonChain.start()

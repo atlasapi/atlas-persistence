@@ -1,8 +1,15 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.intl.Countries;
+import com.metabroadcast.common.intl.Country;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.atlasapi.media.entity.EntityType;
 import org.atlasapi.media.entity.Episode;
 import org.atlasapi.media.entity.Film;
@@ -12,7 +19,6 @@ import org.atlasapi.media.entity.ReleaseDate;
 import org.atlasapi.media.entity.ReleaseDate.ReleaseType;
 import org.atlasapi.media.entity.Song;
 import org.atlasapi.media.entity.Subtitles;
-import org.atlasapi.media.entity.Version;
 import org.atlasapi.persistence.ModelTranslator;
 import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
 import org.joda.time.Duration;
@@ -20,18 +26,7 @@ import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.intl.Countries;
-import com.metabroadcast.common.intl.Country;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import java.util.Set;
 
 public class ItemTranslator implements ModelTranslator<Item> {
 
@@ -47,18 +42,34 @@ public class ItemTranslator implements ModelTranslator<Item> {
     private static final String EPISODE_NUMBER = "episodeNumber";
     private static final String SERIES_NUMBER = "seriesNumber";
     private static final String SPECIAL = "special";
-    private static final String SHORT_DESCRIPTION = "shortDescription";
-    private static final String MEDIUM_DESCRIPTION = "mediumDescription";
-    private static final String LONG_DESCRIPTION = "longDescription";
 
-	private static final String TYPE_KEY = "type";
 	private static final String IS_LONG_FORM_KEY = "isLongForm";
 	private static final String EPISODE_SERIES_URI_KEY = "seriesUri";
 	private static final String FILM_WEBSITE_URL_KEY = "websiteUrl";
 	private static final String BLACK_AND_WHITE_KEY = "blackAndWhite";
 	private static final String DURATION_KEY = "duration";
+    private static final String ISRC_KEY = "isrc";
 
-	private final ContentTranslator contentTranslator;
+    public static final Set<String> DB_KEYS = ImmutableSet.of(
+            CONTAINER,
+            SERIES,
+            SERIES_ID,
+            CONTAINER_ID,
+            FILM_RELEASES_KEY,
+            FILM_SUBTITLES_KEY,
+            PART_NUMBER,
+            EPISODE_NUMBER,
+            SERIES_NUMBER,
+            SPECIAL,
+            IS_LONG_FORM_KEY,
+            EPISODE_SERIES_URI_KEY,
+            FILM_WEBSITE_URL_KEY,
+            BLACK_AND_WHITE_KEY,
+            DURATION_KEY,
+            ISRC_KEY
+    );
+
+    private final ContentTranslator contentTranslator;
 
     private final DbObjectHashCodeDebugger dboHashCodeDebugger = new DbObjectHashCodeDebugger();
 
@@ -101,7 +112,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         
         item.setIsLongForm((Boolean) dbObject.get(IS_LONG_FORM_KEY));
         item.setBlackAndWhite(TranslatorUtils.toBoolean(dbObject, BLACK_AND_WHITE_KEY));
-        Long duration = TranslatorUtils.toLong(dbObject, "duration");
+        Long duration = TranslatorUtils.toLong(dbObject, DURATION_KEY);
         if (duration != null) {
             item.setDuration(Duration.standardSeconds(duration));
         }
@@ -126,9 +137,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
             episode.setEpisodeNumber((Integer) dbObject.get(EPISODE_NUMBER));
             episode.setSeriesNumber((Integer) dbObject.get(SERIES_NUMBER));
             episode.setSpecial(TranslatorUtils.toBoolean(dbObject, SPECIAL));
-            episode.setShortDescription(TranslatorUtils.toString(dbObject, SHORT_DESCRIPTION));
-            episode.setMediumDescription(TranslatorUtils.toString(dbObject, MEDIUM_DESCRIPTION));
-            episode.setLongDescription(TranslatorUtils.toString(dbObject, LONG_DESCRIPTION));
 
             if (dbObject.containsField(EPISODE_SERIES_URI_KEY)) {
                 episode.setSeriesRef(new ParentRef((String) dbObject.get(EPISODE_SERIES_URI_KEY),seriesId));
@@ -145,7 +153,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         
         if (item instanceof Song) {
             Song song = (Song) item;
-            song.setIsrc(TranslatorUtils.toString(dbObject, "isrc"));
+            song.setIsrc(TranslatorUtils.toString(dbObject, ISRC_KEY));
         }
         
         item.setReadHash(generateHashByRemovingFieldsFromTheDbo(dbObject));
@@ -182,7 +190,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     @Override
     public DBObject toDBObject(DBObject itemDbo, Item entity) {
         itemDbo = contentTranslator.toDBObject(itemDbo, entity);
-        itemDbo.put(TYPE_KEY, EntityType.from(entity).toString());
+        itemDbo.put(DescribedTranslator.TYPE_KEY, EntityType.from(entity).toString());
         encodeReleases(itemDbo, entity.getReleaseDates());
         
         itemDbo.put(IS_LONG_FORM_KEY, entity.getIsLongForm());
@@ -190,7 +198,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
         TranslatorUtils.from(itemDbo, BLACK_AND_WHITE_KEY, entity.getBlackAndWhite());
 
         if (entity.getDuration() != null) {
-            TranslatorUtils.from(itemDbo, "duration", entity.getDuration().getStandardSeconds());
+            TranslatorUtils.from(itemDbo, DURATION_KEY, entity.getDuration().getStandardSeconds());
         }
 		
         if(entity.getContainer() != null) {
@@ -210,9 +218,6 @@ public class ItemTranslator implements ModelTranslator<Item> {
 			TranslatorUtils.from(itemDbo, EPISODE_NUMBER, episode.getEpisodeNumber());
 			TranslatorUtils.from(itemDbo, SERIES_NUMBER, episode.getSeriesNumber());
 			TranslatorUtils.from(itemDbo, SPECIAL, episode.getSpecial());
-            TranslatorUtils.from(itemDbo, SHORT_DESCRIPTION, episode.getShortDescription());
-            TranslatorUtils.from(itemDbo, MEDIUM_DESCRIPTION, episode.getMediumDescription());
-            TranslatorUtils.from(itemDbo, LONG_DESCRIPTION, episode.getLongDescription());
 
 			ParentRef series = episode.getSeriesRef();
 			if (series != null) {
@@ -229,7 +234,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
 		
         if (entity instanceof Song) {
             Song song = (Song) entity;
-            TranslatorUtils.from(itemDbo, "isrc", song.getIsrc());
+            TranslatorUtils.from(itemDbo, ISRC_KEY, song.getIsrc());
         }
 		
         return itemDbo;
