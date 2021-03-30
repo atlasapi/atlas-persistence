@@ -62,7 +62,8 @@ public class MongoContentWriter implements ContentWriter {
     // We are only allowing this for certain publishers for now in case existing ingests are relying on
     // errors being thrown when hierarchy is missing.
     private static final Set<Publisher> CONTAINERLESS_EPISODE_ALLOWED_PUBLISHERS = ImmutableSet.of(
-            Publisher.TESTING_MBST
+            Publisher.TESTING_MBST,
+            Publisher.RADIO_TIMES_OVERRIDES
     );
     
     private final Clock clock;
