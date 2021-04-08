@@ -318,7 +318,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         ContentWriter contentWriter = new MongoContentWriter(
                 db, lookupStore(), persistenceAuditLog(),
                 playerResolver(), serviceResolver(), new SystemClock()
-        );
+        ).withAllContainerKeysToRemove();
 
         EquivalenceContentWriter equivalenceContentWriter = new EquivalenceWritingContentWriter(contentWriter, explicitLookupWriter());
 

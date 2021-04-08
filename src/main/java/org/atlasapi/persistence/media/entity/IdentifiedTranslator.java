@@ -1,6 +1,7 @@
 package org.atlasapi.persistence.media.entity;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -22,16 +23,30 @@ public class IdentifiedTranslator implements ModelTranslator<Identified> {
 
     public static final String ALIASES = "aliases";
     public static final String IDS = "ids";
-    public static final String IDS_NAMESPACE = "ids.namespace";
-    public static final String IDS_VALUE = "ids.value";
     public static final String LAST_UPDATED = "lastUpdated";
     public static final String EQUIVALENT_TO = "equivalent";
     public static final String ID = MongoConstants.ID;
     public static final String CANONICAL_URL = "uri";
-    public static final String TYPE = "type";
-    public static final String PUBLISHER = "publisher";
     public static final String OPAQUE_ID = "aid";
     public static final String CUSTOM_FIELDS = "customFields";
+
+    public static final String PUBLISHER = "publisher";
+    public static final String TYPE = "type";
+
+    public static final String IDS_NAMESPACE = "ids.namespace";
+    public static final String IDS_VALUE = "ids.value";
+
+    public static final Set<String> DB_KEYS = ImmutableSet.of(
+            CURIE,
+            ALIASES,
+            IDS,
+            LAST_UPDATED,
+            EQUIVALENT_TO,
+            ID,
+            CANONICAL_URL,
+            OPAQUE_ID,
+            CUSTOM_FIELDS
+    );
 
     private static final LookupRefTranslator lookupRefTranslator = new LookupRefTranslator();
     private static final Function<DBObject, LookupRef> equivalentFromDbo = input -> lookupRefTranslator

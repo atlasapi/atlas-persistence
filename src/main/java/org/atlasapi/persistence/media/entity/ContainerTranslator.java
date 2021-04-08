@@ -1,8 +1,11 @@
 package org.atlasapi.persistence.media.entity;
 
-import java.util.Comparator;
-import java.util.List;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Ordering;
+import com.metabroadcast.common.ids.NumberToShortStringCodec;
+import com.metabroadcast.common.persistence.translator.TranslatorUtils;
+import com.mongodb.DBObject;
 import org.atlasapi.media.entity.Brand;
 import org.atlasapi.media.entity.ChildRef;
 import org.atlasapi.media.entity.Container;
@@ -15,11 +18,9 @@ import org.atlasapi.persistence.content.mongo.DbObjectHashCodeDebugger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-import com.metabroadcast.common.ids.NumberToShortStringCodec;
-import com.metabroadcast.common.persistence.translator.TranslatorUtils;
-import com.mongodb.DBObject;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 
 public class ContainerTranslator {
 
@@ -31,8 +32,16 @@ public class ContainerTranslator {
     public static final String CHILDREN_KEY = "childRefs";
     public static final String SERIES_NUMBER_KEY = "seriesNumber";
     public static final String TOTAL_EPISODES = "totalEpisodes";
-
     public static final String FULL_SERIES_KEY = "series";
+
+    public static final Set<String> DB_KEYS = ImmutableSet.of(
+            CONTAINER,
+            CONTAINER_ID,
+            CHILDREN_KEY,
+            SERIES_NUMBER_KEY,
+            TOTAL_EPISODES,
+            FULL_SERIES_KEY
+    );
 
     private final ContentTranslator contentTranslator;
     private final ChildRefTranslator childRefTranslator;
