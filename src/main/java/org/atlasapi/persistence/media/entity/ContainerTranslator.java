@@ -130,6 +130,7 @@ public class ContainerTranslator {
     }
 
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject, boolean includeChildren) {
+        dbObject.removeField(CONTAINER_ID);
         contentTranslator.removeFieldsForHash(dbObject);
         
         if (!includeChildren) {
