@@ -165,7 +165,7 @@ public class ItemTranslator implements ModelTranslator<Item> {
     }
 
     private String generateHashByRemovingFieldsFromTheDbo(DBObject dbObject) {
-        // don't include the last-fetched/update time in the hash
+        // don't include the last-fetched/update time and container/series ids in the hash
         removeFieldsForHash(dbObject);
         if (log.isTraceEnabled()) {
             dboHashCodeDebugger.logHashCodes(dbObject, log);
@@ -175,6 +175,8 @@ public class ItemTranslator implements ModelTranslator<Item> {
 
     @SuppressWarnings("unchecked")
     public void removeFieldsForHash(DBObject dbObject) {
+        dbObject.removeField(CONTAINER_ID);
+        dbObject.removeField(SERIES_ID);
         contentTranslator.removeFieldsForHash(dbObject);
 
     }
