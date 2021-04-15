@@ -234,7 +234,7 @@ public class ConstructorBasedMongoContentPersistenceModuleIT {
     public void testContentWritingAndRetrievalKnownTypeContentResolver() {
         ContentWriter contentWriter = module.contentWriter();
         LookupEntryStore lookupStore = module.lookupStore();
-        KnownTypeContentResolver knownTypeContentResolver = module.knownTypeContentResolver();
+        KnownTypeContentResolver knownTypeContentResolver = module.mongoContentResolver();
 
         String uri = "itemUri";
         Item item = new Item(uri, "itemCurie", Publisher.BBC);

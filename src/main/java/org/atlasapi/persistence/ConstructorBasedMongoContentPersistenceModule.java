@@ -49,7 +49,6 @@ import org.atlasapi.persistence.content.EquivalenceContentWriter;
 import org.atlasapi.persistence.content.EquivalenceWritingContentWriter;
 import org.atlasapi.persistence.content.EquivalentContentResolver;
 import org.atlasapi.persistence.content.IdSettingContentWriter;
-import org.atlasapi.persistence.content.KnownTypeContentResolver;
 import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.LookupResolvingContentResolver;
 import org.atlasapi.persistence.content.MessageQueueingContentWriter;
@@ -220,7 +219,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
                         ),
                 new SystemClock(),
                 lookupStore(),
-                knownTypeContentResolver()
+                mongoContentResolver()
         );
     }
 
@@ -335,10 +334,10 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
 
     @Override
     public ContentResolver contentResolver() {
-        return new LookupResolvingContentResolver(knownTypeContentResolver(), lookupStore());
+        return new LookupResolvingContentResolver(mongoContentResolver(), lookupStore());
     }
 
-    public KnownTypeContentResolver knownTypeContentResolver() {
+    public MongoContentResolver mongoContentResolver() {
         return new MongoContentResolver(db, lookupStore());
     }
 
@@ -420,7 +419,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     public EquivalentContentResolver equivContentResolver() {
-        return new DefaultEquivalentContentResolver(knownTypeContentResolver(), lookupStore());
+        return new DefaultEquivalentContentResolver(mongoContentResolver(), lookupStore());
     }
 
     @Override
@@ -458,7 +457,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
     }
 
     public MongoContentLister contentLister() {
-        return new MongoContentLister(db, knownTypeContentResolver());
+        return new MongoContentLister(db, mongoContentResolver());
     }
 
     @Override

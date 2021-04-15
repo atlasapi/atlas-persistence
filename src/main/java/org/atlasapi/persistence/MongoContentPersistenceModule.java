@@ -34,6 +34,7 @@ import org.atlasapi.persistence.content.LookupBackedContentIdGenerator;
 import org.atlasapi.persistence.content.PeopleQueryResolver;
 import org.atlasapi.persistence.content.listing.MongoProgressStore;
 import org.atlasapi.persistence.content.mongo.MongoContentLister;
+import org.atlasapi.persistence.content.mongo.MongoContentResolver;
 import org.atlasapi.persistence.content.organisation.OrganisationStore;
 import org.atlasapi.persistence.content.people.ItemsPeopleWriter;
 import org.atlasapi.persistence.content.people.PersonStore;
@@ -227,9 +228,15 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     @Primary
-    @Bean
+    @Bean //I left this bean when creating MongoContentResolver Bean because something could be using this
     public KnownTypeContentResolver knownTypeContentResolver() {
-        return persistenceModule().knownTypeContentResolver();
+        return persistenceModule().mongoContentResolver();
+    }
+
+    @Primary
+    @Bean
+    public MongoContentResolver mongoContentResolver() {
+        return persistenceModule().mongoContentResolver();
     }
 
     @Primary
