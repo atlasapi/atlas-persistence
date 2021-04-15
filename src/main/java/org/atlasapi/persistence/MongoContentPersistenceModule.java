@@ -233,7 +233,6 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
         return persistenceModule().mongoContentResolver();
     }
 
-    @Primary
     @Bean
     public MongoContentResolver mongoContentResolver() {
         return persistenceModule().mongoContentResolver();
