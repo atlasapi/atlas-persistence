@@ -45,6 +45,7 @@ import org.atlasapi.persistence.event.EventStore;
 import org.atlasapi.persistence.event.EventWriter;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.player.PlayerResolver;
 import org.atlasapi.persistence.service.ServiceResolver;
@@ -270,7 +271,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     }
 
     @Bean(name = BLACKLIST_LOOKUP_WRITER)
-    public LookupWriter blacklistLookupWriter() {
+    public TransitiveLookupWriter blacklistLookupWriter() {
         return persistenceModule().blacklistLookupWriter();
     }
 

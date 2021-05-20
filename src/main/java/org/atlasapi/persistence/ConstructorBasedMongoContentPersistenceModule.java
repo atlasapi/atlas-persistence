@@ -396,7 +396,7 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         }
     }
 
-    protected LookupWriter blacklistLookupWriter() {
+    protected TransitiveLookupWriter blacklistLookupWriter() {
         MongoLookupEntryStore entryStore = new MongoLookupEntryStore(
                 mongoDatabase,
                 LOOKUP,
