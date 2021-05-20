@@ -1,15 +1,14 @@
 package org.atlasapi.media.channel;
 
-import java.util.Set;
-
-import org.atlasapi.media.entity.Publisher;
-import org.atlasapi.persistence.ModelTranslator;
-import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
-
 import com.metabroadcast.common.intl.Countries;
 import com.metabroadcast.common.persistence.translator.TranslatorUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.atlasapi.media.entity.Publisher;
+import org.atlasapi.persistence.ModelTranslator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+
+import java.util.Set;
 
 public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
 
@@ -24,7 +23,8 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
     private static final String PLATFORM_KEY = "platform";
     public static final String CHANNEL_NUMBERINGS_KEY = "channelNumberings";
     public static final String CHANNELS_KEY = "channels";
-    
+    public static final String CHANNEL_NUMBERS_FROM_KEY = "channelNumbersFrom";
+
     private final IdentifiedTranslator identifiedTranslator = new IdentifiedTranslator(true);
     private final ChannelNumberingTranslator channelNumberingTranslator = new ChannelNumberingTranslator();
     private final TemporalTitleTranslator temporalTitleTranslator = new TemporalTitleTranslator();
@@ -57,6 +57,10 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         
         if (model.getChannelNumberings() != null) {
             channelNumberingTranslator.fromChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY, model.getChannelNumberings());
+        }
+
+        if (model.getChannelNumbersFrom() != null) {
+            TranslatorUtils.from(dbObject, CHANNEL_NUMBERS_FROM_KEY, model.getChannelNumbersFrom());
         }
         
         return dbObject;
@@ -123,6 +127,10 @@ public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
         
         if (dbObject.containsField(CHANNEL_NUMBERINGS_KEY)) {
             model.setChannelNumberings(channelNumberingTranslator.toChannelNumberingSet(dbObject, CHANNEL_NUMBERINGS_KEY));
+        }
+
+        if (dbObject.containsField(CHANNEL_NUMBERS_FROM_KEY)) {
+            model.setChannelNumbersFrom(TranslatorUtils.toLong(dbObject, CHANNEL_NUMBERS_FROM_KEY));
         }
         
         return model;
