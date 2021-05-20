@@ -396,6 +396,24 @@ public class ConstructorBasedMongoContentPersistenceModule implements ContentPer
         }
     }
 
+    protected LookupWriter blacklistLookupWriter() {
+        MongoLookupEntryStore entryStore = new MongoLookupEntryStore(
+                mongoDatabase,
+                LOOKUP,
+                persistenceAuditLog(),
+                ReadPreference.primary()
+        );
+        if (messagingEnabled) {
+            return TransitiveLookupWriter.blacklistTransitiveLookupWriterWithMessengers(
+                    entryStore,
+                    messenger(),
+                    equivChangesContentMessenger()
+            );
+        } else {
+            return TransitiveLookupWriter.blacklistTransitiveLookupWriter(entryStore);
+        }
+    }
+
     /**
      * We are passing in channel store here instead of initializing it like the other arguements
      * is because the start() and stop() of CachingChannelStore has to be called pre-construction
