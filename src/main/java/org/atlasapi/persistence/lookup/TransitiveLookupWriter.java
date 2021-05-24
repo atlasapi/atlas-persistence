@@ -373,7 +373,7 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private void sendEquivalenceChangeMessage(LookupEntry originalEntry, LookupEntry updatedEntry) {
-        //No need to re-run equiv just unless direct equivs have changed
+        //No need to re-run equiv unless direct equivs have changed
         if (equivChangeMessenger == null || !equivType.equals(EquivType.DIRECT)) {
             return;
         }
