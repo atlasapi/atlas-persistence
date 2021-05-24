@@ -45,6 +45,7 @@ import org.atlasapi.persistence.event.EventStore;
 import org.atlasapi.persistence.event.EventWriter;
 import org.atlasapi.persistence.logging.AdapterLog;
 import org.atlasapi.persistence.lookup.LookupWriter;
+import org.atlasapi.persistence.lookup.TransitiveLookupWriter;
 import org.atlasapi.persistence.lookup.mongo.MongoLookupEntryStore;
 import org.atlasapi.persistence.player.PlayerResolver;
 import org.atlasapi.persistence.service.ServiceResolver;
@@ -73,6 +74,7 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     public static final String NON_ID_SETTING_CONTENT_WRITER = "nonIdSettingContentWriter";
     public static final String NO_EQUIVALENCE_WRITING_CONTENT_WRITER = "noEquivalenceWritingContentWriter";
     public static final String EXPLICIT_LOOKUP_WRITER = "explicitLookupWriter";
+    public static final String BLACKLIST_LOOKUP_WRITER = "blacklistLookupWriter";
 
     @Autowired private ReadPreference readPreference;
     @Autowired private Mongo mongo;
@@ -266,6 +268,11 @@ public class MongoContentPersistenceModule implements ContentPersistenceModule {
     @Bean
     public LookupWriter generatedLookupWriter() {
         return persistenceModule().generatedLookupWriter();
+    }
+
+    @Bean(name = BLACKLIST_LOOKUP_WRITER)
+    public TransitiveLookupWriter blacklistLookupWriter() {
+        return persistenceModule().blacklistLookupWriter();
     }
 
     @Primary

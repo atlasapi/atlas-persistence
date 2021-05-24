@@ -1,15 +1,12 @@
 package org.atlasapi.persistence.lookup;
 
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.metabroadcast.common.stream.MoreCollectors;
-import com.mongodb.MongoCommandException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import org.atlasapi.equiv.ContentRef;
 import org.atlasapi.media.entity.LookupRef;
 import org.atlasapi.media.entity.Publisher;
@@ -19,14 +16,20 @@ import org.atlasapi.persistence.Transaction;
 import org.atlasapi.persistence.lookup.entry.LookupEntry;
 import org.atlasapi.persistence.lookup.entry.LookupEntryStore;
 import org.atlasapi.util.GroupLock;
+
+import com.metabroadcast.common.stream.MoreCollectors;
+
+import com.google.common.base.Functions;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.mongodb.MongoCommandException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.emptyToNull;
@@ -45,7 +48,7 @@ public class TransitiveLookupWriter implements LookupWriter {
             .collect(MoreCollectors.toImmutableSet());
 
     private final LookupEntryStore entryStore;
-    private final boolean explicit;
+    private final EquivType equivType;
     private final ContentEquivalenceAssertionMessenger equivAssertionMessenger;
     private final EquivalenceChangeMessenger equivChangeMessenger;
 
@@ -54,11 +57,11 @@ public class TransitiveLookupWriter implements LookupWriter {
             ContentEquivalenceAssertionMessenger equivAssertionMessenger,
             EquivalenceChangeMessenger equivChangeMessenger
     ) {
-        return new TransitiveLookupWriter(entryStore, true, equivAssertionMessenger, equivChangeMessenger);
+        return new TransitiveLookupWriter(entryStore, EquivType.EXPLICIT, equivAssertionMessenger, equivChangeMessenger);
     }
 
     public static TransitiveLookupWriter explicitTransitiveLookupWriter(LookupEntryStore entryStore) {
-        return new TransitiveLookupWriter(entryStore, true, null, null);
+        return new TransitiveLookupWriter(entryStore, EquivType.EXPLICIT, null, null);
     }
 
     public static TransitiveLookupWriter generatedTransitiveLookupWriterWithMessengers(
@@ -66,21 +69,33 @@ public class TransitiveLookupWriter implements LookupWriter {
             ContentEquivalenceAssertionMessenger equivAssertionMessenger,
             EquivalenceChangeMessenger equivChangeMessenger
     ) {
-        return new TransitiveLookupWriter(entryStore, false, equivAssertionMessenger, equivChangeMessenger);
+        return new TransitiveLookupWriter(entryStore, EquivType.DIRECT, equivAssertionMessenger, equivChangeMessenger);
     }
     
     public static TransitiveLookupWriter generatedTransitiveLookupWriter(LookupEntryStore entryStore) {
-        return new TransitiveLookupWriter(entryStore, false, null, null);
+        return new TransitiveLookupWriter(entryStore, EquivType.DIRECT, null, null);
+    }
+
+    public static TransitiveLookupWriter blacklistTransitiveLookupWriterWithMessengers(
+            LookupEntryStore entryStore,
+            ContentEquivalenceAssertionMessenger equivAssertionMessenger,
+            EquivalenceChangeMessenger equivChangeMessenger
+    ) {
+        return new TransitiveLookupWriter(entryStore, EquivType.BLACKLIST, equivAssertionMessenger, equivChangeMessenger);
+    }
+
+    public static TransitiveLookupWriter blacklistTransitiveLookupWriter(LookupEntryStore entryStore) {
+        return new TransitiveLookupWriter(entryStore, EquivType.BLACKLIST, null, null);
     }
 
     private TransitiveLookupWriter(
             LookupEntryStore entryStore,
-            Boolean explicit,
+            EquivType equivType,
             @Nullable ContentEquivalenceAssertionMessenger equivAssertionMessenger,
             @Nullable EquivalenceChangeMessenger equivChangeMessenger
     ) {
         this.entryStore = checkNotNull(entryStore);
-        this.explicit = checkNotNull(explicit);
+        this.equivType = checkNotNull(equivType);
         this.equivAssertionMessenger = equivAssertionMessenger;
         this.equivChangeMessenger = equivChangeMessenger;
     }
@@ -200,7 +215,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         UpdateResult subsetUpdateResult = null;
         // If we break some existing direct equivalences, update these first
         // so we can reduce the size of the transitive equiv set
-        if (!explicit) {
+        if (equivType.equals(EquivType.DIRECT)) {
             Set<String> existingSubjectDirectUris = subjectEntry.directEquivalents().getOutgoing().stream()
                     .map(LookupRef::uri)
                     .collect(MoreCollectors.toImmutableSet());
@@ -358,8 +373,8 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private void sendEquivalenceChangeMessage(LookupEntry originalEntry, LookupEntry updatedEntry) {
-        //Currently no need to re-run equiv just because explicit equivs changed
-        if (equivChangeMessenger == null || explicit) {
+        //No need to re-run equiv unless direct equivs have changed
+        if (equivChangeMessenger == null || !equivType.equals(EquivType.DIRECT)) {
             return;
         }
         equivChangeMessenger.sendMessageFromDirectEquivs(
@@ -426,7 +441,7 @@ public class TransitiveLookupWriter implements LookupWriter {
         // since a user has explicitly asked us to make the assertion, so we must
         // honour it
         // If we will shrink the direct equivalences then we allow this as well
-        if (!explicit && transitiveSetUris.size() > maxSetSize && !strictSubset) {
+        if (equivType.equals(EquivType.DIRECT) && transitiveSetUris.size() > maxSetSize && !strictSubset) {
             throw new OversizeTransitiveSetException(transitiveSetUris.size());
         }
         Set<String> urisToLock = transitiveSetUris.stream()
@@ -436,8 +451,12 @@ public class TransitiveLookupWriter implements LookupWriter {
         return lock.tryLock(urisToLock) ? transitiveSetUris : null;
     }
 
-    private LookupEntry updateEntryNeighbours(LookupEntry entry, LookupEntry subject,
-            Set<LookupEntry> subjectNeighbours, Set<Publisher> sources) {
+    private LookupEntry updateEntryNeighbours(
+            LookupEntry entry,
+            LookupEntry subject,
+            Set<LookupEntry> subjectNeighbours,
+            Set<Publisher> sources
+    ) {
         if (entry.equals(subject)) {
             return updateSubjectNeighbours(subject, subjectNeighbours, sources);
         } 
@@ -477,38 +496,62 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private LookupEntry updateOutgoingNeighbours(LookupEntry equivalent, Set<LookupRef> updatedNeighbours) {
-        if (explicit) {
+        switch (equivType) {
+        case EXPLICIT:
             return equivalent.copyWithExplicitEquivalents(
                     equivalent.explicitEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
             );
-        } else {
+        case DIRECT:
             return equivalent.copyWithDirectEquivalents(
                     equivalent.directEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
             );
+        case BLACKLIST:
+            return equivalent.copyWithBlacklistedEquivalents(
+                    equivalent.blacklistedEquivalents().copyAndReplaceOutgoing(updatedNeighbours)
+            );
+        default:
+            // should never reach this, unless a new EquivType was added and its not fully implemented
+            throw new IllegalStateException("Cannot determine equiv type; please verify expected writer & behaviour");
         }
     }
 
     private LookupEntry addIncomingNeighbour(LookupEntry equivalent, LookupRef neighbour) {
-        if (explicit) {
+        switch (equivType) {
+        case EXPLICIT:
             return equivalent.copyWithExplicitEquivalents(
                     equivalent.explicitEquivalents().copyWithLink(neighbour, INCOMING)
             );
-        } else {
+        case DIRECT:
             return equivalent.copyWithDirectEquivalents(
                     equivalent.directEquivalents().copyWithLink(neighbour, INCOMING)
             );
+        case BLACKLIST:
+            return equivalent.copyWithBlacklistedEquivalents(
+                    equivalent.blacklistedEquivalents().copyWithLink(neighbour, INCOMING)
+            );
+        default:
+            // should never reach this, unless a new EquivType was added and its not fully implemented
+            throw new IllegalStateException("Cannot determine equiv type; please verify expected writer & behaviour");
         }
     }
 
     private LookupEntry removeIncomingNeighbour(LookupEntry equivalent, LookupRef neighbour) {
-        if (explicit) {
+        switch (equivType) {
+        case EXPLICIT:
             return equivalent.copyWithExplicitEquivalents(
                     equivalent.explicitEquivalents().copyWithoutLink(neighbour, INCOMING)
             );
-        } else {
+        case DIRECT:
             return equivalent.copyWithDirectEquivalents(
                     equivalent.directEquivalents().copyWithoutLink(neighbour, INCOMING)
             );
+        case BLACKLIST:
+            return equivalent.copyWithBlacklistedEquivalents(
+                    equivalent.blacklistedEquivalents().copyWithoutLink(neighbour, INCOMING)
+            );
+        default:
+            // should never reach this, unless a new EquivType was added and its not fully implemented
+            throw new IllegalStateException("Cannot determine equiv type; please verify expected writer & behaviour");
         }
     }
 
@@ -517,7 +560,11 @@ public class TransitiveLookupWriter implements LookupWriter {
             ImmutableSet<String> newNeighbours,
             Set<Publisher> sources
     ) {
-        Set<String> subjectAndNeighbours = Sets.union(newNeighbours, ImmutableSet.of(subject.uri()));
+        // we're not expecting to find ourself in the blacklisted equivs
+        Set<String> subjectAndNeighbours = equivType.equals(EquivType.BLACKLIST)
+                ? newNeighbours
+                : Sets.union(newNeighbours, ImmutableSet.of(subject.uri()));
+
         Set<String> currentNeighbourUris = getRelevantOutgoingNeighbours(subject).stream()
                 .filter(neighbour -> sources.contains(neighbour.publisher()))
                 .map(LookupRef::uri)
@@ -531,8 +578,17 @@ public class TransitiveLookupWriter implements LookupWriter {
     }
 
     private Set<LookupRef> getRelevantOutgoingNeighbours(LookupEntry subjectEntry) {
-        return explicit ? subjectEntry.explicitEquivalents().getOutgoing()
-                        : subjectEntry.directEquivalents().getOutgoing();
+        switch (equivType) {
+        case EXPLICIT:
+            return subjectEntry.explicitEquivalents().getOutgoing();
+        case DIRECT:
+            return subjectEntry.directEquivalents().getOutgoing();
+        case BLACKLIST:
+            return subjectEntry.blacklistedEquivalents().getOutgoing();
+        default:
+            // should never reach this, unless a new EquivType was added and its not fully implemented
+            throw new IllegalStateException("Cannot determine equiv type; please verify expected writer & behaviour");
+        }
     }
 
     private Map<String, LookupEntry> recomputeTransitiveClosures(Map<String, LookupEntry> entries) {
@@ -631,6 +687,13 @@ public class TransitiveLookupWriter implements LookupWriter {
         public boolean isSubjectOutgoingsChanged() {
             return subjectOutgoingsChanged;
         }
+    }
+
+    private enum EquivType {
+        DIRECT,
+        EXPLICIT,
+        BLACKLIST,
+        ;
     }
     
 }
