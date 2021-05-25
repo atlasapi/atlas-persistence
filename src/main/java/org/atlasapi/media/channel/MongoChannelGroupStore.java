@@ -1,15 +1,5 @@
 package org.atlasapi.media.channel;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
-import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
-
-import java.util.Set;
-
-import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
-import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
-
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -22,6 +12,15 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
+import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
+
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
+import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 
 public class MongoChannelGroupStore implements ChannelGroupStore {
 
@@ -95,6 +94,14 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
                 platform.addRegion(region);
                 channelGroups.update(new BasicDBObject(MongoConstants.ID, platform.getId()), translator.toDBObject(null, platform), UPSERT, SINGLE);
             }
+        }
+
+        if (group.getChannelNumbersFrom() != null) {
+            Optional<ChannelGroup> possiblePlatform = channelGroupFor(group.getChannelNumbersFrom());
+            Preconditions.checkState(
+                    possiblePlatform.isPresent(),
+                    "Could not resolve channelNumbersFrom group with id " + group.getChannelNumbersFrom()
+            );
         }
         
         channelGroups.update(new BasicDBObject(MongoConstants.ID, group.getId()), translator.toDBObject(null, group), UPSERT, SINGLE);
