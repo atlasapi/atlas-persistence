@@ -12,15 +12,15 @@ import java.util.Set;
 
 public class ChannelGroupTranslator implements ModelTranslator<ChannelGroup>{
 
-    private static final String TYPE_KEY = "type";
-    private static final String PLATFORM_VALUE = "platform";
-    private static final String REGION_VALUE = "region";
-    private static final String SOURCE_KEY = "source";
-    private static final String TITLE_KEY = "title";
-    private static final String TITLES_KEY = "titles";
-    private static final String COUNTRIES_KEY = "countries";
-    private static final String REGIONS_KEY = "regions";
-    private static final String PLATFORM_KEY = "platform";
+    public static final String TYPE_KEY = "type";
+    public static final String PLATFORM_VALUE = "platform";
+    public static final String REGION_VALUE = "region";
+    public static final String SOURCE_KEY = "source";
+    public static final String TITLE_KEY = "title";
+    public static final String TITLES_KEY = "titles";
+    public static final String COUNTRIES_KEY = "countries";
+    public static final String REGIONS_KEY = "regions";
+    public static final String PLATFORM_KEY = "platform";
     public static final String CHANNEL_NUMBERINGS_KEY = "channelNumberings";
     public static final String CHANNELS_KEY = "channels";
     public static final String CHANNEL_NUMBERS_FROM_KEY = "channelNumbersFrom";

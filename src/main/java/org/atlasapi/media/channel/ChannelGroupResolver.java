@@ -18,4 +18,5 @@ public interface ChannelGroupResolver {
      
      Iterable<ChannelGroup> channelGroupsFor(Channel channel);
 
+     Iterable<ChannelGroup> channelGroupsFor(ChannelGroupQuery query);
 }

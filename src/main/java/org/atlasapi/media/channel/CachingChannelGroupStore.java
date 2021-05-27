@@ -103,6 +103,11 @@ public class CachingChannelGroupStore implements ChannelGroupStore {
     }
 
     @Override
+    public Iterable<ChannelGroup> channelGroupsFor(ChannelGroupQuery query) {
+        return delegate.channelGroupsFor(query);
+    }
+
+    @Override
     public void deleteChannelGroupById(long channelGroupId) {
         delegate.deleteChannelGroupById(channelGroupId);
     }

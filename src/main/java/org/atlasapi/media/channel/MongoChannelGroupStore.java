@@ -8,10 +8,13 @@ import com.google.common.collect.Sets;
 import com.metabroadcast.common.persistence.mongo.DatabasedMongo;
 import com.metabroadcast.common.persistence.mongo.MongoConstants;
 import com.metabroadcast.common.persistence.mongo.MongoQueryBuilder;
+import com.metabroadcast.common.persistence.mongo.MongoSortBuilder;
+import com.metabroadcast.common.stream.MoreCollectors;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import org.atlasapi.media.entity.Publisher;
 import org.atlasapi.persistence.ids.MongoSequentialIdGenerator;
 import org.atlasapi.persistence.media.entity.IdentifiedTranslator;
 
@@ -21,6 +24,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.metabroadcast.common.persistence.mongo.MongoBuilders.where;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
+import static org.atlasapi.media.channel.ChannelGroupTranslator.CHANNEL_NUMBERS_FROM_KEY;
+import static org.atlasapi.media.channel.ChannelGroupTranslator.SOURCE_KEY;
 
 public class MongoChannelGroupStore implements ChannelGroupStore {
 
@@ -157,5 +162,30 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
 //            }
 //        }
 //        return Optional.absent();
+    }
+
+    @Override
+    public Iterable<ChannelGroup> channelGroupsFor(ChannelGroupQuery query) {
+        MongoQueryBuilder mongoQuery = new MongoQueryBuilder();
+        if (query.getPublishers() != null) {
+            mongoQuery.fieldIn(SOURCE_KEY, publisherKeys(query.getPublishers()));
+        }
+        if (query.getChannelGroupIds() != null) {
+            mongoQuery.longFieldIn(MongoConstants.ID, query.getChannelGroupIds());
+        }
+        if (query.getChannelNumbersFromIds() != null) {
+            mongoQuery.longFieldIn(CHANNEL_NUMBERS_FROM_KEY, query.getChannelNumbersFromIds());
+        }
+
+        return transform(
+                channelGroups.find(mongoQuery.build())
+                        .sort(new MongoSortBuilder().ascending(MongoConstants.ID).build())
+        );
+    }
+
+    private Set<String> publisherKeys(Set<Publisher> publishers) {
+        return publishers.stream()
+                .map(Publisher::key)
+                .collect(MoreCollectors.toImmutableSet());
     }
 }
