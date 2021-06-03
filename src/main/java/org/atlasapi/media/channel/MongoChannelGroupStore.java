@@ -26,6 +26,7 @@ import static com.metabroadcast.common.persistence.mongo.MongoConstants.SINGLE;
 import static com.metabroadcast.common.persistence.mongo.MongoConstants.UPSERT;
 import static org.atlasapi.media.channel.ChannelGroupTranslator.CHANNEL_NUMBERS_FROM_KEY;
 import static org.atlasapi.media.channel.ChannelGroupTranslator.SOURCE_KEY;
+import static org.atlasapi.media.channel.ChannelGroupTranslator.TYPE_KEY;
 
 public class MongoChannelGroupStore implements ChannelGroupStore {
 
@@ -175,6 +176,9 @@ public class MongoChannelGroupStore implements ChannelGroupStore {
         }
         if (query.getChannelNumbersFromIds() != null) {
             mongoQuery.longFieldIn(CHANNEL_NUMBERS_FROM_KEY, query.getChannelNumbersFromIds());
+        }
+        if (query.getTypes() != null) {
+            mongoQuery.fieldIn(TYPE_KEY, query.getTypes());
         }
 
         return transform(

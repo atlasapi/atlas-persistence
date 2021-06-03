@@ -15,6 +15,8 @@ public class ChannelGroupQuery {
     private final Set<Long> channelGroupIds;
     @Nullable
     private final Set<Long> channelNumbersFromIds;
+    @Nullable
+    private final Set<String> types;
 
     private ChannelGroupQuery(Builder builder) {
         publishers = builder.publishers == null
@@ -26,6 +28,9 @@ public class ChannelGroupQuery {
         channelNumbersFromIds = builder.channelNumbersFromIds == null
                 ? null
                 : ImmutableSet.copyOf(builder.channelNumbersFromIds);
+        types = builder.types == null
+                ? null
+                : ImmutableSet.copyOf(builder.types);
     }
 
     @Nullable
@@ -43,25 +48,31 @@ public class ChannelGroupQuery {
         return channelNumbersFromIds;
     }
 
+    @Nullable
+    public Set<String> getTypes() {
+        return types;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ChannelGroupQuery that = (ChannelGroupQuery) o;
-        return Objects.equals(publishers, that.publishers) && Objects.equals(channelGroupIds, that.channelGroupIds) && Objects.equals(channelNumbersFromIds, that.channelNumbersFromIds);
+        return Objects.equals(publishers, that.publishers) && Objects.equals(channelGroupIds, that.channelGroupIds) && Objects.equals(channelNumbersFromIds, that.channelNumbersFromIds) && Objects.equals(types, that.types);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(publishers, channelGroupIds, channelNumbersFromIds);
+        return Objects.hash(publishers, channelGroupIds, channelNumbersFromIds, types);
     }
 
     @Override
     public String toString() {
         return "ChannelGroupQuery{" +
                 "publishers=" + publishers +
-                ", ids=" + channelGroupIds +
+                ", channelGroupIds=" + channelGroupIds +
                 ", channelNumbersFromIds=" + channelNumbersFromIds +
+                ", types=" + types +
                 '}';
     }
 
@@ -70,9 +81,10 @@ public class ChannelGroupQuery {
     }
 
     public static final class Builder {
-        private Set<Publisher> publishers;
-        private Set<Long> channelGroupIds;
-        private Set<Long> channelNumbersFromIds;
+        private Iterable<Publisher> publishers;
+        private Iterable<Long> channelGroupIds;
+        private Iterable<Long> channelNumbersFromIds;
+        private Iterable<String> types;
 
         private Builder() {
         }
@@ -82,7 +94,7 @@ public class ChannelGroupQuery {
             return this;
         }
 
-        public Builder withPublishers(Set<Publisher> publishers) {
+        public Builder withPublishers(Iterable<Publisher> publishers) {
             this.publishers = publishers;
             return this;
         }
@@ -92,7 +104,7 @@ public class ChannelGroupQuery {
             return this;
         }
 
-        public Builder withChannelGroupIds(Set<Long> channelGroupIds) {
+        public Builder withChannelGroupIds(Iterable<Long> channelGroupIds) {
             this.channelGroupIds = channelGroupIds;
             return this;
         }
@@ -102,8 +114,18 @@ public class ChannelGroupQuery {
             return this;
         }
 
-        public Builder withChannelNumbersFromIds(Set<Long> channelNumbersFromIds) {
+        public Builder withChannelNumbersFromIds(Iterable<Long> channelNumbersFromIds) {
             this.channelNumbersFromIds = channelNumbersFromIds;
+            return this;
+        }
+
+        public Builder withType(String type) {
+            this.types = ImmutableSet.of(type);
+            return this;
+        }
+
+        public Builder withTypes(Iterable<String> types) {
+            this.types = types;
             return this;
         }
 
